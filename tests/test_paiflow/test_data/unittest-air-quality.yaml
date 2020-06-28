@@ -1,0 +1,427 @@
+apiVersion: core/v1
+metadata:
+  identifier: unittest_air_quality
+  provider: 0
+  version: v1.0.0
+spec:
+  inputs:
+    parameters:
+      - name: __project
+        type: String
+      - name: __execution
+        required: true
+        type: Map
+      - name: cols_to_double
+        required: true
+        type: String
+      - name: histogram_selected_col_names
+        required: true
+        type: String
+      - name: sql
+        required: true
+        type: String
+      - name: normalize_selected_col_names
+        required: true
+        type: String
+      - name: fraction
+        required: true
+        type: Double
+      - name: randomforest_feature_col_names
+        required: true
+        type: String
+      - name: randomforest_label_col_names
+        required: true
+        type: String
+      - name: prediction1_feature_col_names
+        required: true
+        type: String
+      - name: prediction1_append_col_names
+        required: true
+        type: String
+      - name: prediction1_result_col_names
+        required: true
+        type: String
+      - name: prediction1_score_col_names
+        required: true
+        type: String
+      - name: prediction1_detail_col_names
+        required: true
+        type: String
+      - name: evaluate1_label_col_name
+        required: true
+        type: String
+      - name: evaluate1_score_col_name
+        required: true
+        type: String
+      - name: evaluate1_positive_label
+        required: true
+        type: String
+      - name: evaluate1_bin_count
+        required: true
+        type: Int
+      - name: logisticregression_feature_col_names
+        required: true
+        type: String
+      - name: logisticregression_label_col_names
+        required: true
+        type: String
+      - name: logisticregression_good_value
+        required: true
+        type: Int
+      - name: prediction2_feature_col_names
+        required: true
+        type: String
+      - name: prediction2_append_col_names
+        required: true
+        type: String
+      - name: prediction2_result_col_names
+        required: true
+        type: String
+      - name: prediction2_score_col_names
+        required: true
+        type: String
+      - name: prediction2_detail_col_names
+        required: true
+        type: String
+      - name: evaluate2_label_col_name
+        required: true
+        type: String
+      - name: evaluate2_score_col_name
+        required: true
+        type: String
+      - name: evaluate2_positive_label
+        required: true
+        type: String
+      - name: evaluate2_bin_count
+        required: true
+        type: Int
+  outputs:
+    artifacts:
+      - from: '{{pipelines.evaluate2.outputs.artifacts.outputDetailArtifact}}'
+        name: predictionResult
+        type:
+          ModelEvaluation:
+            locationType: MaxComputeTable
+  pipelines:
+    - metadata:
+        identifier: odps-data-source
+        name: dataSource
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          parameters:
+            - name: tableName
+              value: pai_online_project.wumai_data
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+    - metadata:
+        identifier: type-transform-xflow-ODPS
+        name: typeTransform
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.dataSource.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTable
+              value: type-transform-xflow-ODPS
+            - from: '{{input.parameters.cols_to_double}}'
+              name: cols_to_double
+        dependencies:
+          - dataSource
+    - metadata:
+        identifier: histogram-xflow-ODPS
+        name: histogram
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.typeTransform.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTableName
+              value: pai_temp_172808_1779985_1
+            - from: '{{input.parameters.histogram_selected_col_names}}'
+              name: selectedColNames
+        dependencies:
+          - typeTransform
+    - metadata:
+        identifier: sql-xflow-ODPS
+        name: sql
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.typeTransform.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact1
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTable
+              value: pai_temp_83935_1099579_1
+            - from: '{{input.parameters.sql}}'
+              name: sql
+        dependencies:
+          - typeTransform
+    - metadata:
+        identifier: fe-meta-runner-xflow-ODPS
+        name: feMetaRunner
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.sql.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTable
+              value: pai_temp_83935_1099581_1
+            - name: mapTable
+              value: pai_temp_83935_1099581_2
+            - name: selectedCols
+              value: pm10,so2,co,no2
+            - name: labelCol
+              value: _c2
+        dependencies:
+          - sql
+    - metadata:
+        identifier: normalize-xflow-ODPS
+        name: normalize
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.sql.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTableName
+              value: pai_temp_83935_1099582_1
+            - name: outputParaTableName
+              value: pai_temp_83935_1099582_2
+            - from: '{{input.parameters.normalize_selected_col_names}}'
+              name: selectedColNames
+        dependencies:
+          - sql
+    - metadata:
+        identifier: split-xflow-ODPS
+        name: split
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.normalize.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - from: '{{input.parameters.fraction}}'
+              name: fraction
+            - name: output1TableName
+              value: pai_temp_83935_1099583_1
+            - name: output2TableName
+              value: pai_temp_83935_1199583_1
+        dependencies:
+          - normalize
+    - metadata:
+        identifier: randomforests-xflow-ODPS
+        name: randomforests
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.split.outputs.artifacts.outputArtifact1}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - from: '{{input.parameters.__project}}'
+              name: __userProject
+            - from: '{{input.parameters.randomforest_label_col_names}}'
+              name: labelColName
+            - name: modelName
+              value: xlab_m_random_forests_1099584_v0
+            - name: treeNum
+              value: 100
+            - from: '{{input.parameters.randomforest_feature_col_names}}'
+              name: featureColNames
+            - name: __generatePMML
+              value: true
+            - name: __pmmlModelPublicProject
+              value: pai_online_project
+            - name: __pmmlModelPublicEndpoint
+              value: http://service.cn-shanghai.maxcompute.aliyun.com/api
+            - name: __pmmlModelVolume
+              value: pai_model_1557702098194904
+            - name: __pmmlModelPartition
+              value: partition_1099584
+        dependencies:
+          - split
+    - metadata:
+        identifier: prediction-xflow-ODPS
+        name: prediction1
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.split.outputs.artifacts.outputArtifact2}}'
+              name: inputDataSetArtifact
+            - from: '{{pipelines.randomforests.outputs.artifacts.outputArtifact}}'
+              name: inputModelArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTableName
+              value: pai_temp_83935_1029583_1
+            - from: '{{input.parameters.prediction1_feature_col_names}}'
+              name: featureColNames
+            - from: '{{input.parameters.prediction1_append_col_names}}'
+              name: appendColNames
+            - from: '{{input.parameters.prediction1_result_col_names}}'
+              name: resultColName
+            - from: '{{input.parameters.prediction1_score_col_names}}'
+              name: scoreColName
+            - from: '{{input.parameters.prediction1_detail_col_names}}'
+              name: detailColName
+        dependencies:
+          - randomforests
+          - split
+    - metadata:
+        identifier: evaluate-xflow-ODPS
+        name: evaluate1
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.prediction1.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputDetailTableName
+              value: pai_temp_83935_1099586_1
+            - name: outputELDetailTableName
+              value: pai_temp_83935_1299589_1
+            - name: outputMetricTableName
+              value: pai_temp_83935_1228529_1
+            - from: '{{input.parameters.evaluate1_positive_label}}'
+              name: positiveLabel
+            - from: '{{input.parameters.evaluate1_bin_count}}'
+              name: binCount
+            - from: '{{input.parameters.evaluate1_score_col_name}}'
+              name: scoreColName
+            - from: '{{input.parameters.evaluate1_label_col_name}}'
+              name: labelColName
+        dependencies:
+          - prediction1
+    - metadata:
+        identifier: logisticregression-binary-xflow-ODPS
+        name: logisticregression
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.split.outputs.artifacts.outputArtifact1}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - from: '{{input.parameters.__project}}'
+              name: __userProject
+            - from: '{{input.parameters.logisticregression_label_col_names}}'
+              name: labelColName
+            - from: '{{input.parameters.logisticregression_feature_col_names}}'
+              name: featureColNames
+            - name: __generatePMML
+              value: true
+            - name: modelName
+              value: xlab_m_logisticregres_1099587_v0
+            - from: '{{input.parameters.logisticregression_good_value}}'
+              name: goodValue
+            - name: __pmmlModelPublicProject
+              value: pai_online_project
+            - name: __pmmlModelPublicEndpoint
+              value: http://service.cn-shanghai.maxcompute.aliyun.com/api
+            - name: __pmmlModelVolume
+              value: pai_model_1557702098194904
+            - name: __pmmlModelPartition
+              value: partition_1099587
+        dependencies:
+          - split
+    - metadata:
+        identifier: prediction-xflow-ODPS
+        name: prediction2
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.split.outputs.artifacts.outputArtifact2}}'
+              name: inputDataSetArtifact
+            - from: '{{pipelines.logisticregression.outputs.artifacts.outputArtifact}}'
+              name: inputModelArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputTableName
+              value: pai_temp_83935_1099588_1
+            - from: '{{input.parameters.prediction2_feature_col_names}}'
+              name: featureColNames
+            - from: '{{input.parameters.prediction2_append_col_names}}'
+              name: appendColNames
+            - from: '{{input.parameters.prediction2_result_col_names}}'
+              name: resultColName
+            - from: '{{input.parameters.prediction2_score_col_names}}'
+              name: scoreColName
+            - from: '{{input.parameters.prediction2_detail_col_names}}'
+              name: detailColName
+        dependencies:
+          - logisticregression
+          - split
+    - metadata:
+        identifier: evaluate-xflow-ODPS
+        name: evaluate2
+        provider: 1557702098194904
+        version: v1
+      spec:
+        arguments:
+          artifacts:
+            - from: '{{pipelines.prediction2.outputs.artifacts.outputArtifact}}'
+              name: inputArtifact
+          parameters:
+            - from: '{{input.parameters.__execution}}'
+              name: __execution
+            - name: outputDetailTableName
+              value: pai_temp_83935_1099589_1
+            - name: outputELDetailTableName
+              value: pai_temp_83935_1199589_1
+            - name: outputMetricTableName
+              value: pai_temp_83935_1428529_1
+            - from: '{{input.parameters.evaluate2_positive_label}}'
+              name: positiveLabel
+            - from: '{{input.parameters.evaluate2_bin_count}}'
+              name: binCount
+            - from: '{{input.parameters.evaluate2_score_col_name}}'
+              name: scoreColName
+            - from: '{{input.parameters.evaluate2_label_col_name}}'
+              name: labelColName
+        dependencies:
+          - prediction2

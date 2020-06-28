@@ -51,7 +51,7 @@ spec:
   pipelines:
   - metadata:
       identifier: randomforests-xflow-ODPS
-      name: randomforests-xflow-ODPS
+      name: random-forests-xflow-ODPS
       provider: 1557702098194904
       version: v1
     spec:
@@ -60,40 +60,18 @@ spec:
         - from: '{{input.artifacts.inputArtifact}}'
           name: inputArtifact
         parameters:
-        - name: __xflowProject
-          value: algo_public
         - from: '{{input.parameters.__execution}}'
           name: __execution
         - from: '{{input.parameters.__userProject}}'
           name: __userProject
-          value: ''
         - name: labelColName
           value: _c2
         - from: '{{input.parameters.modelName}}'
           name: modelName
         - name: treeNum
           value: 100
-        - name: weightColName
-          value: ''
         - from: '{{input.parameters.featureColNames}}'
           name: featureColNames
-          value: ''
-        - name: excludedColNames
-          value: ''
-        - name: forceCategorical
-          value: ''
-        - name: algorithmTypes
-          value: ''
-        - name: randomColNum
-          value: ''
-        - name: minNumObj
-          value: 2
-        - name: minNumPer
-          value: 0.0
-        - name: maxTreeDeep
-          value: ''
-        - name: maxRecordSize
-          value: 100000
         - name: __generatePMML
           value: true
         - name: __pmmlModelPublicProject
@@ -104,8 +82,6 @@ spec:
           value: pai_model_1557702098194904
         - name: __pmmlModelPartition
           value: partition_1099584
-        - name: __modelPartition
-          value: ''
   - metadata:
       identifier: prediction-evaluate
       name: prediction1
@@ -114,7 +90,7 @@ spec:
     spec:
       arguments:
         artifacts:
-        - from: '{{pipelines.randomforests-xflow-ODPS.outputs.artifacts.outputArtifact}}'
+        - from: '{{pipelines.random-forests-xflow-ODPS.outputs.artifacts.outputArtifact}}'
           name: inputModelArtifact
         - from: '{{input.artifacts.inputArtifact2}}'
           name: inputDataSetArtifact
@@ -136,7 +112,7 @@ spec:
         - name: outputELDetailTableName2
           value: pai_temp_83935_1399589_1
       dependencies:
-      - randomforests-xflow-ODPS
+      - random-forests-xflow-ODPS
   - metadata:
       identifier: prediction-evaluate
       name: prediction2
@@ -145,7 +121,7 @@ spec:
     spec:
       arguments:
         artifacts:
-        - from: '{{pipelines.randomforests-xflow-ODPS.outputs.artifacts.outputArtifact}}'
+        - from: '{{pipelines.random-forests-xflow-ODPS.outputs.artifacts.outputArtifact}}'
           name: inputModelArtifact
         - from: '{{input.artifacts.inputArtifact2}}'
           name: inputDataSetArtifact
@@ -167,4 +143,4 @@ spec:
         - name: outputELDetailTableName2
           value: pai_temp_83935_1399589_2
       dependencies:
-      - randomforests-xflow-ODPS
+      - random-forests-xflow-ODPS

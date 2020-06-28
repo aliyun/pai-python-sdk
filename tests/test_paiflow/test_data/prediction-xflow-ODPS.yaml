@@ -1,0 +1,124 @@
+apiVersion: core/v1
+metadata:
+  provider: 1557702098194904
+  identifier: prediction-xflow-ODPS
+  version: v1
+spec:
+  inputs:
+    artifacts:
+    - name: inputDataSetArtifact
+      type: {DataSet: {locationType: MaxComputeTable}}
+      required: true
+    - name: inputModelArtifact
+      type: {Model: {locationType: MaxComputeVolume, modelType: OfflineModel}}
+      required: true
+    parameters:
+    - name: __xflowProject
+      type: String
+      required: true
+      value: algo_public
+    - name: __execution
+      type: Map
+      desc: "必选，执行环境"
+      required: true
+    - name: outputTableName
+      type: String
+      required: true
+      desc: '输出表'
+    - name: featureColNames
+      type: String           
+      desc: '输入表中哪些列作为预测的feature，多列以逗号分隔'
+      value: ""
+    - name: appendColNames
+      type: String
+      desc: '输出表中需要附加的预测输入表的列'
+      value: ""
+    - name: outputTablePartition
+      type: String
+      desc: '输出到输出表的分区'
+      value: ""
+    - name: resultColName
+      type: String
+      desc: '输出表中result 列名'
+      value: ""
+    - name: scoreColName
+      type: String
+      desc: '输出表中score列名'
+      value: ""
+    - name: detailColName
+      type: String
+      desc: '输出表中detail列名'
+      value: ""
+    - name: enableSparse
+      type: Bool
+      value: false
+      desc: '输入表数据是否为稀疏格式（要求数据格式和训练时一致）'
+    - name: itemDelimiter
+      type: String
+      value: ' '
+      desc: '当输入表数据为稀疏格式时，kv间的分割符'
+    - name: kvDelimiter
+      type: String
+      value: ':'
+      desc: '当输入表数据为稀疏格式时，key和value的分割符'
+    - name: lifecycle
+      type: Int
+      desc: '指定输出表的生命周期'
+      feasible:
+        range: '[1,INF)'
+      value: ""
+    - name: coreNum
+      type: Int
+      value: ""
+      desc: '可选，节点个数'
+      feasible:
+        range: '[1,INF)'
+    - name: memSizePerCore
+      type: Int
+      value: ""
+      desc: '可选，单个节点内存大小，单位M'
+      feasible:
+        range: '[1,INF)'
+  outputs:
+    artifacts:
+    - name: outputArtifact
+      type: {DataSet: {locationType: MaxComputeTable}}
+      required: true
+      desc: '输出表'
+  #PAI -name prediction -project algo_public -Dlifecycle='28' -DmodelName='xlab_m_logisticregres_1099587_v0' -DscoreColName='prediction_score' -DenableSparse='false' -DoutputTableName='pai_temp_83935_1099588_1' -DdetailColName='prediction_detail' -DkvDelimiter=':' -DresultColName='prediction_result' -DitemDelimiter=',' -DinputTableName='pai_temp_83935_1099583_2' -DappendColNames='time,hour,_c2,pm10,so2,co,no2' -DfeatureColNames='pm10,so2,co,no2';
+  execution:
+    image: "registry.cn-shanghai.aliyuncs.com/kubeflow_demo/kf_odpscmd:studio0.6"
+    command:
+    - /usr/local/bin/start.sh
+    args:
+    - |-
+      {
+       "env": {
+         "_PPC_MaxCompute": {{inputs.parameters.__execution}}
+       },
+       "args": {
+         "inputTableName|location|table": "{{inputs.artifacts.inputDataSetArtifact.path}}",
+         "inputTablePartitions|location|partition": "{{inputs.artifacts.inputDataSetArtifact.path}}",
+         "__template": "pai_cmd",
+         "__dropTables": ["{{inputs.parameters.outputTableName}}"],
+         "__xflowName": "prediction",
+         "__xflowProject": "{{inputs.parameters.__xflowProject}}",
+         "outputTableName": "{{inputs.parameters.outputTableName}}",
+         "modelName|config|modelName": "{{inputs.artifacts.inputModelArtifact.path}}",
+         "coreNum": "{{inputs.parameters.coreNum}}",
+         "memSizePerCore": "{{inputs.parameters.memSizePerCore}}",
+         "lifecycle": "{{inputs.parameters.lifecycle}}",
+         "featureColNames": "{{inputs.parameters.featureColNames}}",
+         "appendColNames": "{{inputs.parameters.appendColNames}}",
+         "outputTablePartition": "{{inputs.parameters.outputTablePartition}}",
+         "resultColName": "{{inputs.parameters.resultColName}}",
+         "scoreColName": "{{inputs.parameters.scoreColName}}",
+         "detailColName": "{{inputs.parameters.detailColName}}",
+         "enableSparse": "{{inputs.parameters.enableSparse}}",
+         "itemDelimiter": "{{inputs.parameters.itemDelimiter}}",
+         "kvDelimiter": "{{inputs.parameters.kvDelimiter}}"
+        },
+       "outputs": {
+         "{{outputs.artifacts.outputArtifact.path}}": {"type": "DataSet", "location": {"type": "MaxComputeTable", "table": "{{inputs.parameters.outputTableName}}"}}
+         }
+      }

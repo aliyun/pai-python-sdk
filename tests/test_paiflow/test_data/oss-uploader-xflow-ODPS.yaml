@@ -1,0 +1,38 @@
+apiVersion: core/v1
+metadata:
+  provider: 1557702098194904
+  identifier: oss-uploader
+  version: v1
+spec:
+  inputs:
+    parameters:
+    - name: __execution
+      type: Map
+      desc: "必选，执行环境"
+    artifacts:
+    - name: inputModelArtifact
+      type: {Model: {locationType: MaxComputeVolume, modelType: PMML}}
+      required: true
+  outputs:
+    artifacts:
+    - name: outputArtifact
+      type: {Model: {locationType: OSS, modelType: PMML}}
+      required: true
+      desc: "输出模型"
+  execution:
+    image: "registry.cn-shanghai.aliyuncs.com/paiflow-core/oss-uploader:0.6"
+    command:
+    - /usr/local/bin/start.sh
+    args:
+    - |-
+      {
+       "env": {
+         "_PPC_MaxCompute": {{inputs.parameters.__execution}}
+       },
+      "args": {
+        "configPath": "{{inputs.artifacts.inputModelArtifact.path}}",
+      },
+       "outputs": {
+         "{{outputs.artifacts.outputArtifact.path}}": {"type": "Model", "config": {"modelName": "{{inputs.parameters.modelName}}", "modelFormat": "PMML"}, "location": {"type": "OSS", "path": "{{inputs.parameters.tableName}}","bucket": "{{inputs.parameters.tableName}}","bucket": "{{inputs.parameters.tableName}}", "endpoint": "{{inputs.parameters.partition}}"}}
+         }
+      }

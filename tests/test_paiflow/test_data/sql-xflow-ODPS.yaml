@@ -1,0 +1,63 @@
+apiVersion: core/v1
+metadata:
+  provider: 1557702098194904
+  identifier: sql-xflow-ODPS
+  version: v1
+spec:
+  inputs:
+    artifacts:
+    - name: inputArtifact1
+      type: {DataSet: {locationType: MaxComputeTable}}
+    - name: inputArtifact2
+      type: {DataSet: {locationType: MaxComputeTable}}
+    - name: inputArtifact3
+      type: {DataSet: {locationType: MaxComputeTable}}
+    - name: inputArtifact4
+      type: {DataSet: {locationType: MaxComputeTable}}
+    parameters: #形参
+    - name: __execution
+      type: Map
+      desc: "必选，执行环境"
+    - name: outputTable
+      type: String
+      required: true
+    - name: lifecycle
+      type: Int
+      value: 28
+      feasible:
+        range: '(1,INF)'
+    - name: sql
+      type: String
+      required: true
+  outputs:
+    artifacts:
+    - name: outputArtifact
+      type: {DataSet: {locationType: MaxComputeTable}}
+      required: true
+      desc: '输出表'
+  #create table pai_temp_83935_1099579_1 lifecycle 28as select time,hour,(case when pm2>200 then 1 else 0 end),pm10,so2,co,no2 from pai_temp_83935_1099578_1;)
+  execution:
+    image: "registry.cn-shanghai.aliyuncs.com/kubeflow_demo/kf_odpscmd:studio0.6"
+    command:
+    - /usr/local/bin/start.sh
+    args:
+    - |-
+      {
+       "env": {
+         "_PPC_MaxCompute": {{inputs.parameters.__execution}}
+       },
+       "args": {
+         "__template": "pai_sql",
+         "outputTable": "{{inputs.parameters.outputTable}}",
+         "lifecycle": "{{inputs.parameters.lifecycle}}",
+         "sql": "{{inputs.parameters.sql}}",
+         "tableName": "{{inputs.parameters.outputTable}}",
+         "t1|location|table": "{{inputs.artifacts.inputArtifact1.path}}",
+         "t2|location|table": "{{inputs.artifacts.inputArtifact2.path}}",
+         "t3|location|table": "{{inputs.artifacts.inputArtifact3.path}}",
+         "t4|location|table": "{{inputs.artifacts.inputArtifact4.path}}"
+        },
+       "outputs": {
+         "{{outputs.artifacts.outputArtifact.path}}": {"type": "DataSet", "location": {"type": "MaxComputeTable", "table": "{{inputs.parameters.outputTable}}"}}
+         }
+      }

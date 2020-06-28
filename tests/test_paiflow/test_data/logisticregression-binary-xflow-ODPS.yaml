@@ -1,0 +1,126 @@
+apiVersion: core/v1
+metadata:
+  provider: 1557702098194904
+  identifier: logisticregression-binary-xflow-ODPS
+  version: v1
+spec:
+  inputs:
+    artifacts:
+    - name: inputArtifact
+      type: {DataSet: {locationType: MaxComputeTable}}
+      required: true
+    parameters:
+    - name: __xflowProject
+      type: String
+      required: true
+      value: algo_public
+    - name: __execution
+      type: Map
+      desc: "必选，执行环境"
+    - name: __userProject
+      type: String
+      required: false
+      value: ""
+    - name: labelColName
+      type: String           
+      required: true
+      desc: '逻辑回归算法的输入字段'
+    - name: featureColNames
+      type: String
+      required: true
+      desc: '输入表中选择的用于训练的特征列名'
+    - name: itemDelimiter
+      type: String
+      required: false
+      desc: '当输入表数据为稀疏格式时，kv间的分割符'
+      value: ' '
+    - name: kvDelimiter
+      type: String
+      required: false
+      value: ':'
+      desc: '当输入表数据为稀疏格式时，key和value的分割符'
+    - name: epsilon
+      type: Double
+      value: ""
+    - name: maxIter
+      type: Int
+      value: ""
+    - name: regularizedLevel
+      type: Double
+      value: ""
+    - name: __generatePMML
+      type: Bool
+      value: false
+    - name: modelName
+      type: String
+      required: true
+    - name: goodValue
+      type: Int
+      required: false
+      value: ""
+    - name: __pmmlModelPublicProject
+      type: String
+      required: false
+      value: ""
+    - name: __pmmlModelPublicEndpoint
+      type: String
+      required: false
+      value: ""
+    - name: __pmmlModelVolume
+      type: String
+      required: false
+      value: ""
+    - name: __pmmlModelPartition
+      type: String
+      required: false
+      value: ""
+    - name: __modelPartition
+      type: String
+      required: false
+      value: ""
+  outputs:
+    artifacts:
+    - name: outputArtifact
+      type: {Model: {locationType: MaxComputeVolume, modelType: OfflineModel}}
+    - name: pmmlArtifact
+      type: {Model: {locationType: MaxComputeVolume, modelType: PMML}}
+  #PAI -name logisticregression_binary -project algo_public -DlabelColName='_c2' -Depsilon='0.000001' -DmodelName='xlab_m_logisticregres_1099587_v0' -DenableSparse='false' -DregularizedLevel='1' -DmaxIter='100' -DkvDelimiter=':' -DgoodValue='1' -DitemDelimiter=',' -DregularizedType='None' -DinputTableName='pai_temp_83935_1099583_1' -DfeatureColNames='pm10,so2,co,no2';
+  #PAI -name modeltransfer -project algo_public -DmodelName=pai_test_0006/offlinemodels/xlab_m_logisticregres_1099587_v0 -DvolumeName=pai_online_project/volumes/pai_model_1557702098194904 -Dpartition=partition_1099587 -Dformat=pmml
+  execution:
+    image: "registry.cn-shanghai.aliyuncs.com/kubeflow_demo/kf_odpscmd:studio0.6"
+    command:
+    - /usr/local/bin/start.sh
+    args:
+    - |-
+      {
+       "env": {
+         "_PPC_MaxCompute": {{inputs.parameters.__execution}}
+       },
+       "args": {
+         "inputTableName|location|table": "{{inputs.artifacts.inputArtifact.path}}",
+         "__template": "pai_cmd",
+         "__deleteModels": ["{{inputs.parameters.modelName}}"],
+         "__xflowName": "logisticregression_binary",
+         "__xflowProject": "{{inputs.parameters.__xflowProject}}",
+         "modelName": "{{inputs.parameters.modelName}}",
+         "labelColName": "{{inputs.parameters.labelColName}}",
+         "featureColNames": "{{inputs.parameters.featureColNames}}",
+         "itemDelimiter": "{{inputs.parameters.itemDelimiter}}",
+         "kvDelimiter": "{{inputs.parameters.kvDelimiter}}",
+         "epsilon": "{{inputs.parameters.epsilon}}",
+         "maxIter": "{{inputs.parameters.maxIter}}",
+         "regularizedLevel": "{{inputs.parameters.regularizedLevel}}",
+         "__generatePMML": "{{inputs.parameters.__generatePMML}}",
+         "goodValue": "{{inputs.parameters.goodValue}}",
+         "__pmmlModelPublicProject": "{{inputs.parameters.__pmmlModelPublicProject}}",
+         "__pmmlModelPublicEndpoint": "{{inputs.parameters.__pmmlModelPublicEndpoint}}",
+         "__pmmlModelVolume": "{{inputs.parameters.__pmmlModelVolume}}",
+         "__pmmlModelPartition": "{{inputs.parameters.__pmmlModelPartition}}",
+         "__modelPartition": "{{inputs.parameters.__modelPartition}}",
+         "__userProject": "{{inputs.parameters.__userProject}}"
+        },
+       "outputs": {
+         "{{outputs.artifacts.outputArtifact.path}}": {"type": "Model", "location": {"type": "OfflineModel", "name": "{{inputs.parameters.modelName}}"}, "config": {"modelName": "{{inputs.parameters.modelName}}", "modelFormat": "OfflineModel"}},
+         "{{outputs.artifacts.pmmlArtifact.path}}": {"type": "Model", "location": {"type": "MaxComputeVolume", "volume": "{{inputs.parameters.__pmmlModelPublicProject}}/volumes/{{inputs.parameters.__pmmlModelVolume}}", "volumePartiton": "{{inputs.parameters.__pmmlModelPartition}}"}, "config": {"modelName": "{{inputs.parameters.modelName}}", "modelFormat": "PMML"}}
+         }
+      }

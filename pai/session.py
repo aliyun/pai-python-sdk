@@ -1,5 +1,4 @@
 import yaml
-
 from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
@@ -28,11 +27,11 @@ class Session(object):
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
         self.sts_client = ClientFactory.create_sts_client(self._acs_client)
 
-        # caller_identity = self.sts_client.get_caller_identity()
-        # self._account_id = caller_identity["AccountId"]
-
     @property
     def account_id(self):
+        if not hasattr(self, "_account_id"):
+            caller_identity = self.sts_client.get_caller_identity()
+            self._account_id = caller_identity["AccountId"]
         return self._account_id
 
     def get_pipeline(self, identifier, provider, version):
@@ -41,7 +40,7 @@ class Session(object):
         if len(resp["Data"]) == 0:
             return
 
-        pipeline_id = resp["Data"]["PipelineId"]
+        pipeline_id = resp["Data"][0]["PipelineId"]
         return self.paiflow_client.get_pipeline(pipeline_id)["Data"]
 
     def get_pipeline_by_id(self, pipeline_id):
@@ -66,14 +65,13 @@ class Session(object):
             page_size=page_size,
         )
 
-    def create_pipeline(self, pipeline_def, identifier, version=None, provider=None):
+    def create_pipeline(self, pipeline_def, identifier, version=None):
         """
         create_pipeline submit `pipeline_manifest` to pipeline service and store. Identifier-provider-version
          is unique key. The same triple combination will result overwrite.
 
         Args:
             identifier: pipeline identifier.
-            provider: provider of identifier, account uid is used as default.
             version: version of submitted pipeline, md5 value of yaml definition is used as default.
             pipeline_def: pipeline definition manifest.
 
@@ -113,9 +111,8 @@ class Session(object):
 
         return run_id
 
-    def list_pipeline_run(self):
-        run_infos = self.paiflow_client.list_run()
-        pass
+    # def list_pipeline_run(self):
+    #     run_infos = self.paiflow_client.list_run()
 
     def get_pipeline_run(self, run_id):
         run_info = self.paiflow_client.get_run(run_id)
@@ -139,5 +136,4 @@ class Session(object):
 
     def start_pipeline_run(self, run_id):
         resp = self.paiflow_client.retry_run(run_id)
-        return resp["runId"] == run_id
         return resp["Data"]["runId"] == run_id

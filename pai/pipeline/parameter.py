@@ -71,7 +71,7 @@ class Interval(object):
         self.max_inclusive = max_inclusive
 
     def __str__(self):
-        return "{left}{min_},{max_}{right}".format(
+        return "{left}{min_}, {max_}{right}".format(
             left="[" if self.min_inclusive else "(",
             min_=self.value_str(self.min_),
             max_=self.value_str(self.max_),

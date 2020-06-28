@@ -13,6 +13,6 @@ class PipelineArtifact(PipelineVariable):
         return True
 
 
-def _create_artifact(name, typ, kind, desc=None, required=None, value=None, from_=None, parent=None):
+def create_artifact(name, typ, kind, desc=None, required=None, value=None, from_=None, parent=None):
     return PipelineArtifact(name=name, typ=typ, kind=kind, desc=desc, required=required, value=value,
                             parent=parent, from_=from_)

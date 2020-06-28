@@ -6,7 +6,7 @@ from collections import deque
 import six
 import yaml
 
-from pai.pipeline._artifact import _create_artifact
+from pai.pipeline.artifact import create_artifact
 from pai.pipeline.parameter import create_pipeline_parameter, PipelineParameter
 from pai.pipeline.pipeline_variable import PipelineVariable
 from pai.pipeline.run import RunInstance
@@ -43,7 +43,7 @@ class Pipeline(object):
         return self.metadata["provider"]
 
     @classmethod
-    def new_pipeline(cls, identifier, version, session):
+    def new_pipeline(cls, identifier, version, session=None):
         """
         Create new pipeline instance without inputs/outputs definition and implementation. Pipeline provider
          is assigned as account id of Alibaba Cloud from session.
@@ -89,8 +89,8 @@ class Pipeline(object):
         return param
 
     def create_input_artifact(self, name, typ, desc=None, required=False, value=None):
-        af = _create_artifact(name=name, typ=typ, kind="input", desc=desc,
-                              required=required, value=value, parent=self)
+        af = create_artifact(name=name, typ=typ, kind="input", desc=desc,
+                             required=required, value=value, parent=self)
         if name in self.inputs:
             raise ValueError("Input variable name conflict: input %s exists" % name)
         self.inputs[name] = af
@@ -104,7 +104,7 @@ class Pipeline(object):
 
     def create_output_artifact(self, name, from_, desc=None):
         typ = from_.typ
-        af = _create_artifact(name=name, typ=typ, kind="output", desc=desc, parent=self, from_=from_)
+        af = create_artifact(name=name, typ=typ, kind="output", desc=desc, parent=self, from_=from_)
         self.outputs[name] = af
         return af
 
@@ -115,7 +115,7 @@ class Pipeline(object):
         return
 
     @classmethod
-    def create_by_manifest(cls, manifest, pipeline_id=None):
+    def load_by_manifest(cls, manifest, pipeline_id=None):
         """
         Create pipeline instance from pipeline definition manifest
 
@@ -146,10 +146,6 @@ class Pipeline(object):
             p.pipelines = spec["pipelines"]
 
         return p
-
-    @property
-    def _is_definition_locked(self):
-        return bool(self.pipeline_id)
 
     @property
     def ref_name(self):
@@ -288,6 +284,10 @@ class PipelineStep(object):
         if self.parent.cycle_detection():
             raise ValueError("Cycle detected in pipeline")
 
+        for step_input in self.inputs.values():
+            if step_input.required and not step_input.is_assigned and step_input.value is None:
+                raise ValueError("Parameter: %s is required but not assigned")
+
     def _add_dependency(self, step):
         if not step:
             return
@@ -312,7 +312,7 @@ class PipelineStep(object):
         spec = {
             "arguments": dict(),
         }
-        inputs = [(arg.variable_category, arg.to_argument()) for arg in self.inputs.values()]
+        inputs = [(arg.variable_category, arg.to_argument()) for arg in self.inputs.values() if arg.is_assigned]
         for cat, v in inputs:
             if cat in spec["arguments"]:
                 spec["arguments"][cat].append(v)
@@ -361,7 +361,7 @@ def _load_artifact(p, artifact_dict, kind):
     typ = artifact_dict.pop("type", None)
     name = artifact_dict.pop("name", None)
     from_ = artifact_dict.pop("from", None)
-    af = _create_artifact(name=name, typ=typ, kind=kind, parent=p, from_=from_, **artifact_dict)
+    af = create_artifact(name=name, typ=typ, kind=kind, parent=p, from_=from_, **artifact_dict)
     getattr(p, kind)[name] = af
     return af
 

@@ -1,7 +1,7 @@
 import unittest
 from decimal import Decimal
 
-from pai.pipeline.parameter import Interval, ParameterValidator
+from pai.pipeline.parameter import Interval, ParameterValidator, create_pipeline_parameter
 from tests import BaseTestCase
 
 
@@ -19,6 +19,8 @@ class TestParameter(BaseTestCase):
                 "name": "integer_type_param",
                 "input": {
                     "name": "treeNum",
+                    "kind": "input",
+                    "typ": int,
                     "value": 100,
                     "feasible": {
                         "range": "[1, 1000]"
@@ -26,13 +28,35 @@ class TestParameter(BaseTestCase):
                 },
                 "expected": {
                     "name": "treeNum",
+                    "type": "Int",
                     "value": 100,
                     "feasible": {
-                        "range": "[1,100]"
+                        "range": "[1, 1000]"
                     }
-                }
+                },
+            },
+            {
+                "name": "str_type_param",
+                "input": {
+                    "name": "outputTableName",
+                    "kind": "input",
+                    "typ": str,
+                    "required": True,
+                    "value": "pai_temp_18090911",
+                },
+                "expected": {
+                    "name": "outputTableName",
+                    "type": "String",
+                    "value": "pai_temp_18090911",
+                    "required": True,
+                },
             },
         ]
+
+        for case in cases:
+            param = create_pipeline_parameter(**case["input"])
+            self.assertDictEqual(param.to_dict(), case["expected"])
+            self.assertEqual(param.kind, case["input"]["kind"])
 
     def testParameterRangeValidator(self):
         cases = [

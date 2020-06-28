@@ -3,6 +3,7 @@ from six import with_metaclass
 
 
 class PipelineVariable(with_metaclass(ABCMeta, object)):
+    """Base class of Artifact and PipelineParameter."""
     variable_category = NotImplemented
 
     def __init__(self, name, typ, desc=None, kind="input", value=None, from_=None, required=None, parent=None,
@@ -23,32 +24,12 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         self.kind = kind
         self.typ = typ
         self.desc = desc
-        self._value = value
-        self._from = from_
+        self.value = value
+        self.from_ = from_
         self.required = required
         self.parent = parent
         self.validator = validator
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, variable):
-        # a bit of explanation: variable.parent is None means variable is default value
-        # for step in pipeline.
-        if variable.parent is None:
-            self._value = variable.value
-            return
-        self.from_ = variable
-
-    @property
-    def from_(self):
-        return self._from
-
-    @from_.setter
-    def from_(self, variable):
-        self._from = variable
+        self._is_assigned = False
 
     @abstractmethod
     def validate_value(self, val):
@@ -60,21 +41,28 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         return True
 
     def assign(self, arg):
+        if self._is_assigned:
+            raise ValueError("Input:%s has been assigned." % self.name)
+
         if not isinstance(arg, PipelineVariable):
             if not self.validate_value(arg):
                 raise ValueError("Arg:%s is invalid value for %s" % (arg, self))
-            self._value = arg
-            return
-        if arg.parent is None:
+            self.value = arg
+        elif arg.parent is None:
             if not self.validate_value(arg.value):
                 raise ValueError("Value(%s) is invalid value for %s" % (arg.value, self))
-            self._value = arg.value
+            self.value = arg.value
         else:
             if not self.validate_from(arg):
                 raise ValueError(
                     "invalid assignment. %s left: %s, right: %s" % (
                         self.fullname, self.typ, arg.typ))
             self.from_ = arg
+        self._is_assigned = True
+
+    @property
+    def is_assigned(self):
+        return self._is_assigned
 
     @property
     def fullname(self):
@@ -89,10 +77,10 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             "name": self.name
         }
 
-        if self.value is not None:
-            arguments["value"] = self.value
         if self.from_ is not None:
-            arguments["from"] = "%s" % self._from
+            arguments["from"] = "%s" % self.from_
+        elif self.value is not None:
+            arguments["value"] = self.value
         return arguments
 
     def to_dict(self):

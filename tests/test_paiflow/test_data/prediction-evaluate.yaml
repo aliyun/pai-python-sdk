@@ -122,7 +122,7 @@ spec:
         required: true
     artifacts:
       - name: inputModelArtifact
-        type: {Model: {locationType: MaxComputeOfflineModel, modelType: OfflineModel}}
+        type: {Model: {locationType: MaxComputeVolume, modelType: OfflineModel}}
         required: true
       - name: inputDataSetArtifact
         type: {DataSet: {locationType: MaxComputeTable}}

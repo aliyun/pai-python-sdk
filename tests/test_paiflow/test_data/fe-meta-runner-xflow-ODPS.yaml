@@ -1,0 +1,116 @@
+apiVersion: core/v1
+metadata:
+  provider: 1557702098194904
+  identifier: fe-meta-runner-xflow-ODPS
+  version: v1
+spec:
+  inputs:
+    artifacts:
+    - name: inputArtifact
+      type: {DataSet: {locationType: MaxComputeTable}}
+      desc: '可选，切分至输出表1的数据比例'
+      required: true
+    parameters: #形参
+    - name: __xflowProject
+      type: String
+      required: true
+      value: algo_public
+    - name: __execution
+      type: Map
+      desc: "必选，执行环境"
+    - name: outputTable
+      type: String
+      required: true
+    - name: mapTable
+      type: String
+      desc: '必填，输出映射表，数据视图对String类字符串会做一个统计映射成数字'
+      required: true
+    - name: selectedCols
+      type: String
+      desc: '输入表选择列名类型'
+      required: true
+    - name: labelCol
+      type: String
+      desc: '选择目标列'
+      required: true
+    - name: categoryCols
+      type: String
+      value: ""
+      desc: '把Int或者Double字段当做枚举特征，可选'
+    - name: maxBins
+      type: Int
+      value: 100
+      desc: '连续性特征等距离划分最大区间数，可选'
+    - name: isSparse
+      type: Bool
+      value: false
+      desc: '是否是k:v的稀疏特征，可选，默认稠密数据'
+    - name: itemSpliter
+      type: String
+      value: ','
+      desc: '稀疏特征item分隔符，可选，默认逗号'
+    - name: kvSpliter
+      type: String
+      value: ','
+      desc: '稀疏特征item分隔符，可选，默认冒号'
+    - name: coreNum
+      type: Int
+      feasible:
+        range: '(1,9999)'
+      desc: '节点个数'
+      value: ""
+    - name: memSizePerCore
+      type: Int
+      feasible:
+        range: '[1024,65536]'
+      desc: '单个结点内存大小，单位M'
+      value: ""
+    - name: lifecycle
+      type: Int
+      value: 28
+      desc: '可选，outputTable结果表生命周期'
+  outputs:
+    artifacts:
+    - name: outputArtifact1
+      type: {DataSet: {locationType: MaxComputeTable}}
+      required: true
+      desc: '输出表1'
+    - name: outputArtifact2
+      type: {DataSet: {locationType: MaxComputeTable}}
+      required: true
+      desc: '输出表2'
+  #PAI -name fe_meta_runner -project algo_public -Dlifecycle='28' -DkvSpliter=':' -DoutputTable='pai_temp_83935_1099581_1' -DinputTable='pai_temp_83935_1099579_1' -DmaxBins='100' -DisSparse='false' -DmapTable='pai_temp_83935_1099581_2' -DselectedCols='pm10,so2,co,no2' -DlabelCol='_c2' -DitemSpliter=',';
+  execution:
+    image: "registry.cn-shanghai.aliyuncs.com/kubeflow_demo/kf_odpscmd:studio0.6"
+    command:
+    - /usr/local/bin/start.sh
+    args:
+    - |-
+      {
+       "env": {
+         "_PPC_MaxCompute": {{inputs.parameters.__execution}}
+       },
+       "args": {
+         "inputTable|location|table": "{{inputs.artifacts.inputArtifact.path}}",
+         "__template": "pai_cmd",
+         "__dropTables": ["{{inputs.parameters.outputTable}}","{{inputs.parameters.mapTable}}"],
+         "__xflowName": "fe_meta_runner",
+         "__xflowProject": "{{inputs.parameters.__xflowProject}}",
+         "outputTable": "{{inputs.parameters.outputTable}}",
+         "mapTable": "{{inputs.parameters.mapTable}}",
+         "lifecycle": "{{inputs.parameters.lifecycle}}",
+         "coreNum": "{{inputs.parameters.coreNum}}",
+         "memSizePerCore": "{{inputs.parameters.memSizePerCore}}",
+         "kvSpliter": "{{inputs.parameters.kvSpliter}}",
+         "selectedCols": "{{inputs.parameters.selectedCols}}",
+         "labelCol": "{{inputs.parameters.labelCol}}",
+         "categoryCols": "{{inputs.parameters.categoryCols}}",
+         "maxBins": "{{inputs.parameters.maxBins}}",
+         "isSparse": "{{inputs.parameters.isSparse}}",
+         "itemSpliter": "{{inputs.parameters.itemSpliter}}"
+        },
+       "outputs": {
+         "{{outputs.artifacts.outputArtifact1.path}}": {"type": "DataSet", "location": {"type": "MaxComputeTable", "table": "{{inputs.parameters.outputTable}}"}},
+         "{{outputs.artifacts.outputArtifact2.path}}": {"type": "DataSet", "location": {"type": "MaxComputeTable", "table": "{{inputs.parameters.mapTable}}"}}
+         }
+      }
