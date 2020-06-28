@@ -1,0 +1,170 @@
+apiVersion: core/v1
+metadata:
+  identifier: unittest_randomforest
+  provider: 0
+  version: v0.1.0
+spec:
+  inputs:
+    artifacts:
+    - name: inputArtifact
+      required: true
+      type:
+        DataSet:
+          locationType: MaxComputeTable
+    - name: inputArtifact2
+      required: true
+      type:
+        DataSet:
+          locationType: MaxComputeTable
+    parameters:
+    - name: __userProject
+      type: String
+    - name: __execution
+      type: Map
+    - name: featureColNames
+      type: String
+    - name: modelName
+      required: true
+      type: String
+      value: test_randomforest
+    - name: outputDetailTableName1
+      required: true
+      type: String
+    - name: outputDetailTableName2
+      required: true
+      type: String
+    - name: outputMetricTableName1
+      required: true
+      type: String
+    - name: outputMetricTableName2
+      required: true
+      type: String
+    - name: outputTableName
+      required: true
+      type: String
+  outputs:
+    artifacts:
+    - from: '{{pipelines.prediction1.outputs.artifacts.predictionResult}}'
+      name: predictionResult
+    - from: '{{pipelines.prediction2.outputs.artifacts.predictionResult}}'
+      name: predictionResult2
+  pipelines:
+  - metadata:
+      identifier: randomforests-xflow-ODPS
+      name: randomforests-xflow-ODPS
+      provider: 1557702098194904
+      version: v1
+    spec:
+      arguments:
+        artifacts:
+        - from: '{{input.artifacts.inputArtifact}}'
+          name: inputArtifact
+        parameters:
+        - name: __xflowProject
+          value: algo_public
+        - from: '{{input.parameters.__execution}}'
+          name: __execution
+        - from: '{{input.parameters.__userProject}}'
+          name: __userProject
+          value: ''
+        - name: labelColName
+          value: _c2
+        - from: '{{input.parameters.modelName}}'
+          name: modelName
+        - name: treeNum
+          value: 100
+        - name: weightColName
+          value: ''
+        - from: '{{input.parameters.featureColNames}}'
+          name: featureColNames
+          value: ''
+        - name: excludedColNames
+          value: ''
+        - name: forceCategorical
+          value: ''
+        - name: algorithmTypes
+          value: ''
+        - name: randomColNum
+          value: ''
+        - name: minNumObj
+          value: 2
+        - name: minNumPer
+          value: 0.0
+        - name: maxTreeDeep
+          value: ''
+        - name: maxRecordSize
+          value: 100000
+        - name: __generatePMML
+          value: true
+        - name: __pmmlModelPublicProject
+          value: pai_online_project
+        - name: __pmmlModelPublicEndpoint
+          value: http://service.cn-shanghai.maxcompute.aliyun.com/api
+        - name: __pmmlModelVolume
+          value: pai_model_1557702098194904
+        - name: __pmmlModelPartition
+          value: partition_1099584
+        - name: __modelPartition
+          value: ''
+  - metadata:
+      identifier: prediction-evaluate
+      name: prediction1
+      provider: 1557702098194904
+      version: v1
+    spec:
+      arguments:
+        artifacts:
+        - from: '{{pipelines.randomforests-xflow-ODPS.outputs.artifacts.outputArtifact}}'
+          name: inputModelArtifact
+        - from: '{{input.artifacts.inputArtifact2}}'
+          name: inputDataSetArtifact
+        parameters:
+        - from: '{{input.parameters.__execution}}'
+          name: __execution
+        - from: '{{input.parameters.outputTableName}}'
+          name: outputTableName
+        - from: '{{input.parameters.outputDetailTableName1}}'
+          name: outputDetailTableName
+        - from: '{{input.parameters.outputMetricTableName1}}'
+          name: outputMetricTableName
+        - from: '{{input.parameters.outputDetailTableName2}}'
+          name: outputDetailTableName2
+        - from: '{{input.parameters.outputMetricTableName2}}'
+          name: outputMetricTableName2
+        - name: outputELDetailTableName
+          value: pai_temp_83935_1299589_1
+        - name: outputELDetailTableName2
+          value: pai_temp_83935_1399589_1
+      dependencies:
+      - randomforests-xflow-ODPS
+  - metadata:
+      identifier: prediction-evaluate
+      name: prediction2
+      provider: 1557702098194904
+      version: v1
+    spec:
+      arguments:
+        artifacts:
+        - from: '{{pipelines.randomforests-xflow-ODPS.outputs.artifacts.outputArtifact}}'
+          name: inputModelArtifact
+        - from: '{{input.artifacts.inputArtifact2}}'
+          name: inputDataSetArtifact
+        parameters:
+        - from: '{{input.parameters.__execution}}'
+          name: __execution
+        - name: outputTableName
+          value: pai_temp_183935_1029583_1
+        - name: outputDetailTableName
+          value: pai_temp_183935_1099586_2
+        - name: outputMetricTableName
+          value: pai_temp_183935_1228529_2
+        - name: outputDetailTableName2
+          value: pai_temp_183935_1099586_1
+        - name: outputMetricTableName2
+          value: pai_temp_183935_1228529_1
+        - name: outputELDetailTableName
+          value: pai_temp_83935_1299589_2
+        - name: outputELDetailTableName2
+          value: pai_temp_83935_1399589_2
+      dependencies:
+      - randomforests-xflow-ODPS
