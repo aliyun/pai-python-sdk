@@ -36,6 +36,10 @@ class BaseClient(object):
     def _construct_request(self, request_cls):
         req = request_cls()
         req.set_accept_format("json")
+
+        if req.get_method() in ["POST", "PUT"]:
+            req.set_content_type("application/json")
+
         if self._get_endpoint():
             req.set_endpoint(self._get_endpoint())
         req.set_protocol_type("https")

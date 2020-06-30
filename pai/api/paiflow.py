@@ -3,27 +3,19 @@ import yaml
 
 from libs.aliyunsdkpaiflow.request.v20200328 import (
     CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest,
-    ListPipelinesRequest, UpdatePipelineRequest, DescribePipelineRequest,
+    ListPipelinesRequest, UpdatePipelineRequest, DescribePipelineRequest
 )
 from libs.aliyunsdkpaiflow.request.v20200328 import (
     CreateRunRequest, GetRunRequest, TerminateRunRequest, SuspendRunRequest, ResumeRunRequest, RetryRunRequest,
-    StartRunRequest
+    StartRunRequest, GetNodeDetailRequest, ListRunsRequest, ListNodeLogsRequest, ListNodeOutputsRequest
 )
 from pai.api import BaseClient
-
-
-def ensure_str(val):
-    if isinstance(val, six.string_types):
-        return val
-    elif isinstance(val, six.integer_types):
-        return str(val)
-    else:
-        raise ValueError("ensure_str: not support type:%s" % type(val))
+from pai.utils import ensure_str, ensure_unix_time
 
 
 class PAIFlowClient(BaseClient):
 
-    def __init__(self, acs_client=None):
+    def __init__(self, acs_client):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
         Args:
@@ -33,6 +25,7 @@ class PAIFlowClient(BaseClient):
 
     def _get_endpoint(self):
         return "pre-paiflow.data.aliyun.com"  # pre-release env
+        # return "paiflow.aliyuncs.com"  # daily-release env
 
     def get_pipeline(self, pipeline_id):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
@@ -106,35 +99,104 @@ class PAIFlowClient(BaseClient):
         request.set_NoConfirmRequired(no_confirm_required)
         return self._call_service_with_exception(request)
 
-    def list_run(self, sorted_by, page_resize):
-        pass
+    def list_run(self, name=None, run_id=None, pipeline_id=None, status=None, sorted_by=None,
+                 sorted_sequences=None, page_num=1, page_size=50):
+        request = self._construct_request(ListRunsRequest.ListRunsRequest)
+        if name is not None:
+            request.set_Name(name)
+
+        if run_id is not None:
+            request.set_RunId(run_id)
+
+        if pipeline_id is not None:
+            request.set_PipelineId(run_id)
+
+        if status is not None:
+            request.set_Status(status)
+
+        if sorted_by is not None:
+            request.set_SortedBy(sorted_by)
+
+        if sorted_sequences is not None:
+            request.set_sortedSequence(sorted_sequences)
+        request.set_PageSize(page_size)
+        request.set_PageNumber(page_num)
+        return self._call_service_with_exception(request)
 
     def get_run(self, run_id):
         request = self._construct_request(GetRunRequest.GetRunRequest)
-        request.set_RunId(ensure_str(run_id))
+        request.set_RunId(run_id)
         return self._call_service_with_exception(request)
 
     def terminate_run(self, run_id):
         request = self._construct_request(TerminateRunRequest.TerminateRunRequest)
-        request.set_RunId(ensure_str(run_id))
+        request.set_RunId(run_id)
         return self._call_service_with_exception(request)
 
     def suspend_run(self, run_id):
         request = self._construct_request(SuspendRunRequest.SuspendRunRequest)
-        request.set_RunId(ensure_str(run_id))
+        request.set_RunId(run_id)
         return self._call_service_with_exception(request)
 
     def resume_run(self, run_id):
         request = self._construct_request(ResumeRunRequest.ResumeRunRequest)
-        request.set_RunId(ensure_str(run_id))
+        request.set_RunId(run_id)
         return self._call_service_with_exception(request)
 
     def retry_run(self, run_id):
         request = self._construct_request(RetryRunRequest.RetryRunRequest)
-        request.set_RunId(ensure_str(run_id))
+        request.set_RunId(run_id)
         return self._call_service_with_exception(request)
 
     def start_run(self, run_id):
         request = self._construct_request(StartRunRequest.StartRunRequest)
-        request.set_RunId(ensure_str(run_id))
+        request.set_RunId(run_id)
+        return self._call_service_with_exception(request)
+
+    def get_run_detail(self, run_id, node_id, depth=2):
+        request = self._construct_request(GetNodeDetailRequest.GetNodeDetailRequest)
+        request.set_RunId(run_id)
+        request.set_NodeId(node_id)
+        request.set_Depth(depth)
+        return self._call_service_with_exception(request)
+
+    def list_node_log(self, run_id, node_id, from_time=None, to_time=None, keyword=None,
+                      reverse=False, page_offset=0, page_size=100):
+        request = self._construct_request(ListNodeLogsRequest.ListNodeLogsRequest)
+        request.set_RunId(run_id)
+        request.set_NodeId(node_id)
+
+        if from_time is not None:
+            request.set_FromTimeInSeconds(ensure_unix_time(from_time))
+
+        if to_time is not None:
+            request.set_ToTimeInSeconds(ensure_unix_time(to_time))
+
+        if keyword is not None:
+            request.set_Keyword(keyword)
+        if reverse is not None:
+            request.set_Reverse(reverse)
+
+        request.set_PageOffset(page_offset)
+        request.set_PageSize(page_size)
+        return self._call_service_with_exception(request)
+
+    def list_node_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
+                         sorted_sequence=None, typ=None, page_number=1, page_size=50):
+        request = self._construct_request(ListNodeOutputsRequest.ListNodeOutputsRequest)
+
+        request.set_Depth(depth)
+        request.set_NodeId(node_id)
+        request.set_RunId(run_id)
+        request.set_PageNumber(page_number)
+        request.set_PageSize(page_size)
+
+        if name is not None:
+            request.set_Name(name)
+        if sorted_by is not None:
+            request.set_SortedBy(sorted_by)
+        if sorted_sequence is not None:
+            request.set_sortedSequence(sorted_sequence)
+        if typ is not None:
+            request.set_Type(typ)
         return self._call_service_with_exception(request)

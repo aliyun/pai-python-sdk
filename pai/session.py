@@ -2,7 +2,7 @@ import yaml
 from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
-from pai.utils import md5_digest
+from pai.utils import md5_digest, run_detail_url
 
 
 class Session(object):
@@ -106,34 +106,55 @@ class Session(object):
 
         print("Create pipeline run success (run_id: {run_id}), please visit the link below to view"
               " the run detail.".format(run_id=run_id))
-        print("https://pai.data.aliyun.com/console?regionId={region_id}#/task-list/detail/{run_id}"
-              .format(region_id=self.region_id, run_id=run_id))
+        print(run_detail_url(run_id, self.region_id))
 
         return run_id
 
-    # def list_pipeline_run(self):
-    #     run_infos = self.paiflow_client.list_run()
+    def list_pipeline_run(self, name=None, run_id=None, pipeline_id=None, status=None,
+                          sorted_by=None, sorted_sequences=None, page_num=1, page_size=50):
+        kwargs = locals()
+        kwargs.pop("self")
+        run_infos = self.paiflow_client.list_run(**kwargs)
+        return run_infos
 
-    def get_pipeline_run(self, run_id):
+    def get_run_detail(self, run_id, node_id, depth=2):
+        run_info = self.paiflow_client.get_run_detail(run_id, node_id, depth=depth)
+        return run_info["Data"]
+
+    def get_run_log(self, run_id, node_id, from_time=None, to_time=None,
+                    keyword=None, reverse=False, page_offset=0, page_size=100):
+        kwargs = locals()
+        kwargs.pop("self")
+        logs = self.paiflow_client.list_node_log(**kwargs)
+        return logs["Data"]
+
+    def list_node_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
+                         sorted_sequence=None, typ=None, page_number=1, page_size=50):
+        kwargs = locals()
+        kwargs.pop("self")
+        logs = self.paiflow_client.list_node_output(**kwargs)
+        return logs
+
+    def get_run(self, run_id):
         run_info = self.paiflow_client.get_run(run_id)
-        return run_info
+        return run_info["Data"]
 
-    def terminate_pipeline_run(self, run_id):
+    def terminate_run(self, run_id):
         resp = self.paiflow_client.terminate_run(run_id)
         return resp["Data"]["runId"] == run_id
 
-    def suspend_pipeline_run(self, run_id):
+    def suspend_run(self, run_id):
         resp = self.paiflow_client.suspend_run(run_id)
         return resp["Data"]["runId"] == run_id
 
-    def retry_pipeline_run(self, run_id):
+    def retry_run(self, run_id):
         resp = self.paiflow_client.retry_run(run_id)
         return resp["Data"]["runId"] == run_id
 
-    def resume_pipeline_run(self, run_id):
+    def resume_run(self, run_id):
         resp = self.paiflow_client.retry_run(run_id)
         return resp["Data"]["runId"] == run_id
 
-    def start_pipeline_run(self, run_id):
+    def start_run(self, run_id):
         resp = self.paiflow_client.retry_run(run_id)
         return resp["Data"]["runId"] == run_id

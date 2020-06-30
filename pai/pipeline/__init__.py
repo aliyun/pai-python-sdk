@@ -43,7 +43,7 @@ class Pipeline(object):
         return self.metadata["provider"]
 
     @classmethod
-    def new_pipeline(cls, identifier, version, session=None):
+    def new_pipeline(cls, identifier, version, session):
         """
         Create new pipeline instance without inputs/outputs definition and implementation. Pipeline provider
          is assigned as account id of Alibaba Cloud from session.
@@ -81,10 +81,10 @@ class Pipeline(object):
             ValueError if conflict in inputs dict.
 
         """
-        param = create_pipeline_parameter(name=name, typ=typ, kind="input", desc=desc,
-                                          required=required, value=value, parent=self)
         if name in self.inputs:
             raise ValueError("Input variable name conflict: input %s exists" % name)
+        param = create_pipeline_parameter(name=name, typ=typ, kind="input", desc=desc,
+                                          required=required, value=value, parent=self)
         self.inputs[name] = param
         return param
 
