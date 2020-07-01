@@ -1,7 +1,7 @@
 apiVersion: core/v1
 metadata:
-  identifier: unittest_air_quality
-  provider: 0
+  identifier: ut-air-quality
+  provider: 1557702098194904
   version: v1.0.0
 spec:
   inputs:
@@ -104,7 +104,7 @@ spec:
             locationType: MaxComputeTable
   pipelines:
     - metadata:
-        identifier: odps-data-source
+        identifier: ODPS-data-source
         name: dataSource
         provider: 1557702098194904
         version: v1
@@ -113,7 +113,7 @@ spec:
           parameters:
             - name: tableName
               value: pai_online_project.wumai_data
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
     - metadata:
         identifier: type-transform-xflow-ODPS
@@ -126,11 +126,11 @@ spec:
             - from: '{{pipelines.dataSource.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTable
               value: type-transform-xflow-ODPS
-            - from: '{{input.parameters.cols_to_double}}'
+            - from: '{{inputs.parameters.cols_to_double}}'
               name: cols_to_double
         dependencies:
           - dataSource
@@ -145,11 +145,11 @@ spec:
             - from: '{{pipelines.typeTransform.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTableName
               value: pai_temp_172808_1779985_1
-            - from: '{{input.parameters.histogram_selected_col_names}}'
+            - from: '{{inputs.parameters.histogram_selected_col_names}}'
               name: selectedColNames
         dependencies:
           - typeTransform
@@ -164,11 +164,11 @@ spec:
             - from: '{{pipelines.typeTransform.outputs.artifacts.outputArtifact}}'
               name: inputArtifact1
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTable
               value: pai_temp_83935_1099579_1
-            - from: '{{input.parameters.sql}}'
+            - from: '{{inputs.parameters.sql}}'
               name: sql
         dependencies:
           - typeTransform
@@ -183,7 +183,7 @@ spec:
             - from: '{{pipelines.sql.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTable
               value: pai_temp_83935_1099581_1
@@ -206,13 +206,13 @@ spec:
             - from: '{{pipelines.sql.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTableName
               value: pai_temp_83935_1099582_1
             - name: outputParaTableName
               value: pai_temp_83935_1099582_2
-            - from: '{{input.parameters.normalize_selected_col_names}}'
+            - from: '{{inputs.parameters.normalize_selected_col_names}}'
               name: selectedColNames
         dependencies:
           - sql
@@ -227,9 +227,9 @@ spec:
             - from: '{{pipelines.normalize.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
-            - from: '{{input.parameters.fraction}}'
+            - from: '{{inputs.parameters.fraction}}'
               name: fraction
             - name: output1TableName
               value: pai_temp_83935_1099583_1
@@ -248,17 +248,17 @@ spec:
             - from: '{{pipelines.split.outputs.artifacts.outputArtifact1}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
-            - from: '{{input.parameters.__project}}'
+            - from: '{{inputs.parameters.__project}}'
               name: __userProject
-            - from: '{{input.parameters.randomforest_label_col_names}}'
+            - from: '{{inputs.parameters.randomforest_label_col_names}}'
               name: labelColName
             - name: modelName
               value: xlab_m_random_forests_1099584_v0
             - name: treeNum
               value: 100
-            - from: '{{input.parameters.randomforest_feature_col_names}}'
+            - from: '{{inputs.parameters.randomforest_feature_col_names}}'
               name: featureColNames
             - name: __generatePMML
               value: true
@@ -285,19 +285,19 @@ spec:
             - from: '{{pipelines.randomforests.outputs.artifacts.outputArtifact}}'
               name: inputModelArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTableName
               value: pai_temp_83935_1029583_1
-            - from: '{{input.parameters.prediction1_feature_col_names}}'
+            - from: '{{inputs.parameters.prediction1_feature_col_names}}'
               name: featureColNames
-            - from: '{{input.parameters.prediction1_append_col_names}}'
+            - from: '{{inputs.parameters.prediction1_append_col_names}}'
               name: appendColNames
-            - from: '{{input.parameters.prediction1_result_col_names}}'
+            - from: '{{inputs.parameters.prediction1_result_col_names}}'
               name: resultColName
-            - from: '{{input.parameters.prediction1_score_col_names}}'
+            - from: '{{inputs.parameters.prediction1_score_col_names}}'
               name: scoreColName
-            - from: '{{input.parameters.prediction1_detail_col_names}}'
+            - from: '{{inputs.parameters.prediction1_detail_col_names}}'
               name: detailColName
         dependencies:
           - randomforests
@@ -313,7 +313,7 @@ spec:
             - from: '{{pipelines.prediction1.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputDetailTableName
               value: pai_temp_83935_1099586_1
@@ -321,13 +321,13 @@ spec:
               value: pai_temp_83935_1299589_1
             - name: outputMetricTableName
               value: pai_temp_83935_1228529_1
-            - from: '{{input.parameters.evaluate1_positive_label}}'
+            - from: '{{inputs.parameters.evaluate1_positive_label}}'
               name: positiveLabel
-            - from: '{{input.parameters.evaluate1_bin_count}}'
+            - from: '{{inputs.parameters.evaluate1_bin_count}}'
               name: binCount
-            - from: '{{input.parameters.evaluate1_score_col_name}}'
+            - from: '{{inputs.parameters.evaluate1_score_col_name}}'
               name: scoreColName
-            - from: '{{input.parameters.evaluate1_label_col_name}}'
+            - from: '{{inputs.parameters.evaluate1_label_col_name}}'
               name: labelColName
         dependencies:
           - prediction1
@@ -342,19 +342,19 @@ spec:
             - from: '{{pipelines.split.outputs.artifacts.outputArtifact1}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
-            - from: '{{input.parameters.__project}}'
+            - from: '{{inputs.parameters.__project}}'
               name: __userProject
-            - from: '{{input.parameters.logisticregression_label_col_names}}'
+            - from: '{{inputs.parameters.logisticregression_label_col_names}}'
               name: labelColName
-            - from: '{{input.parameters.logisticregression_feature_col_names}}'
+            - from: '{{inputs.parameters.logisticregression_feature_col_names}}'
               name: featureColNames
             - name: __generatePMML
               value: true
             - name: modelName
               value: xlab_m_logisticregres_1099587_v0
-            - from: '{{input.parameters.logisticregression_good_value}}'
+            - from: '{{inputs.parameters.logisticregression_good_value}}'
               name: goodValue
             - name: __pmmlModelPublicProject
               value: pai_online_project
@@ -379,19 +379,19 @@ spec:
             - from: '{{pipelines.logisticregression.outputs.artifacts.outputArtifact}}'
               name: inputModelArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputTableName
               value: pai_temp_83935_1099588_1
-            - from: '{{input.parameters.prediction2_feature_col_names}}'
+            - from: '{{inputs.parameters.prediction2_feature_col_names}}'
               name: featureColNames
-            - from: '{{input.parameters.prediction2_append_col_names}}'
+            - from: '{{inputs.parameters.prediction2_append_col_names}}'
               name: appendColNames
-            - from: '{{input.parameters.prediction2_result_col_names}}'
+            - from: '{{inputs.parameters.prediction2_result_col_names}}'
               name: resultColName
-            - from: '{{input.parameters.prediction2_score_col_names}}'
+            - from: '{{inputs.parameters.prediction2_score_col_names}}'
               name: scoreColName
-            - from: '{{input.parameters.prediction2_detail_col_names}}'
+            - from: '{{inputs.parameters.prediction2_detail_col_names}}'
               name: detailColName
         dependencies:
           - logisticregression
@@ -407,7 +407,7 @@ spec:
             - from: '{{pipelines.prediction2.outputs.artifacts.outputArtifact}}'
               name: inputArtifact
           parameters:
-            - from: '{{input.parameters.__execution}}'
+            - from: '{{inputs.parameters.__execution}}'
               name: __execution
             - name: outputDetailTableName
               value: pai_temp_83935_1099589_1
@@ -415,13 +415,13 @@ spec:
               value: pai_temp_83935_1199589_1
             - name: outputMetricTableName
               value: pai_temp_83935_1428529_1
-            - from: '{{input.parameters.evaluate2_positive_label}}'
+            - from: '{{inputs.parameters.evaluate2_positive_label}}'
               name: positiveLabel
-            - from: '{{input.parameters.evaluate2_bin_count}}'
+            - from: '{{inputs.parameters.evaluate2_bin_count}}'
               name: binCount
-            - from: '{{input.parameters.evaluate2_score_col_name}}'
+            - from: '{{inputs.parameters.evaluate2_score_col_name}}'
               name: scoreColName
-            - from: '{{input.parameters.evaluate2_label_col_name}}'
+            - from: '{{inputs.parameters.evaluate2_label_col_name}}'
               name: labelColName
         dependencies:
           - prediction2

@@ -1,17 +1,13 @@
+from __future__ import absolute_import
+
 import unittest
 from decimal import Decimal
 
 from pai.pipeline.parameter import Interval, ParameterValidator, create_pipeline_parameter
-from tests import BaseTestCase
+from test import BaseTestCase
 
 
 class TestParameter(BaseTestCase):
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
 
     def testParameter(self):
         cases = [

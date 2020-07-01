@@ -1,0 +1,11 @@
+
+six
+PyYAML
+aliyun-python-sdk-core>=2.13.20
+aliyun-python-sdk-sts
+graphviz
+
+
+
+
+

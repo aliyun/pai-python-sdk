@@ -1,20 +1,17 @@
 from __future__ import absolute_import
 
 import os
+import time
 import unittest
+from pprint import pprint
 
-from pai.pipeline import Pipeline, default_step_parameter, PipelineStep
-from tests import BaseTestCase
-from tests.test_paiflow import load_local_yaml
+import yaml
 
-_current_dir_path = os.path.dirname(os.path.abspath(__file__))
+from pai.pipeline import Pipeline, PipelineStep, RunInstance
+from test import BaseTestCase
+from test.paiflow import load_local_yaml
 
-
-class MockPropertySession(object):
-
-    @property
-    def account_id(self):
-        return 0
+_current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestPipeline(BaseTestCase):
@@ -34,6 +31,13 @@ class TestPipeline(BaseTestCase):
         pipeline = self.create_air_quality_prediction()
         expected = load_local_yaml("unittest-air-quality.yaml")
         self.assertDictEqual(pipeline.to_dict(), expected)
+        pipeline_def = pipeline.to_dict()
+
+        new_version = "v%s" % (str(int(time.time() * 1000)))
+        pipeline_def["metadata"]["version"] = new_version
+
+        pipeline_id = self.session.create_pipeline(pipeline_def)
+        self.assertIsNotNone(pipeline_id)
 
     def test_cycle_detection(self):
         with self.assertRaises(ValueError):
@@ -47,8 +51,7 @@ class TestPipeline(BaseTestCase):
         return step
 
     def create_forest_pipeline(self):
-        version = "v0.1.0"
-        p = Pipeline.new_pipeline(identifier="unittest_randomforest", version=version, session=MockPropertySession())
+        p = Pipeline.new_pipeline(identifier="ut-randomforest", version="v0.1.0", session=self.session)
 
         user_proj_input = p.create_input_parameter("__userProject", str)
         execution_input = p.create_input_parameter("__execution", 'map')
@@ -67,7 +70,7 @@ class TestPipeline(BaseTestCase):
                                                   typ={"DataSet": {"locationType": "MaxComputeTable"}},
                                                   required=True)
 
-        randomforest_step = self.add_local_pipeline_step(p, "random-forests-xflow-ODPS")
+        randomforest_step = p.add_step("randomforests-xflow-ODPS", name="randomforests")
         randomforest_step.run_with(
             inputArtifact=input_artifact1,
             __userProject=user_proj_input,
@@ -83,7 +86,7 @@ class TestPipeline(BaseTestCase):
             __pmmlModelPartition="partition_1099584",
         )
 
-        prediction_step1 = self.add_local_pipeline_step(p, "prediction-evaluate", name="prediction1")
+        prediction_step1 = p.add_step("prediction-evaluate", name="prediction1")
 
         prediction_step1.run_with(
             __execution=execution_input,
@@ -92,13 +95,13 @@ class TestPipeline(BaseTestCase):
             outputMetricTableName=output_metric_table_1_input,
             outputDetailTableName2=output_detail_table_2_input,
             outputMetricTableName2=output_metric_table_2_input,
-            outputELDetailTableName=default_step_parameter(typ=str, value="pai_temp_83935_1299589_1"),
-            outputELDetailTableName2=default_step_parameter(typ=str, value="pai_temp_83935_1399589_1"),
+            outputELDetailTableName="pai_temp_83935_1299589_1",
+            outputELDetailTableName2="pai_temp_83935_1399589_1",
             inputModelArtifact=randomforest_step.outputs["outputArtifact"],
             inputDataSetArtifact=input_artifact2,
         )
 
-        prediction_step2 = self.add_local_pipeline_step(p, "prediction-evaluate", name="prediction2")
+        prediction_step2 = p.add_step("prediction-evaluate", name="prediction2")
         prediction_step2.run_with(
             __execution=execution_input,
             outputDetailTableName2="pai_temp_183935_1099586_1",
@@ -117,10 +120,10 @@ class TestPipeline(BaseTestCase):
         return p
 
     def create_air_quality_prediction(self):
-        p = Pipeline.new_pipeline("unittest_air_quality", version="v1.0.0", session=MockPropertySession())
+        p = Pipeline.new_pipeline("ut-air-quality", version="v1.0.0", session=self.session)
 
         project_input = p.create_input_parameter("__project", str)
-        execution_input = p.create_input_parameter("__execution", 'map', required=True)
+        execution_input = p.create_input_parameter("__execution", "map", required=True)
         cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
         hist_cols_input = p.create_input_parameter("histogram_selected_col_names", str, required=True)
         sql_input = p.create_input_parameter("sql", str, required=True)
@@ -155,14 +158,14 @@ class TestPipeline(BaseTestCase):
         evaluate2_positive_label_input = p.create_input_parameter("evaluate2_positive_label", str, required=True)
         evaluate2_bin_count_input = p.create_input_parameter("evaluate2_bin_count", int, required=True)
 
-        data_source_step = self.add_local_pipeline_step(p, "odps-data-source", name="dataSource")
+        data_source_step = p.add_step("odps-data-source", name="dataSource")
 
         data_source_step.run_with(
             __execution=execution_input,
             tableName="pai_online_project.wumai_data",
         )
 
-        type_transform_step = self.add_local_pipeline_step(p, "type-transform-xflow-ODPS", name="typeTransform")
+        type_transform_step = p.add_step("type-transform-xflow-ODPS", name="typeTransform")
         type_transform_step.run_with(
             inputArtifact=data_source_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -170,7 +173,7 @@ class TestPipeline(BaseTestCase):
             cols_to_double=cols_to_double_input,
         )
 
-        histogram_step = self.add_local_pipeline_step(p, "histogram-xflow-ODPS", "histogram")
+        histogram_step = p.add_step("histogram-xflow-ODPS", name="histogram")
         histogram_step.run_with(
             inputArtifact=type_transform_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -178,7 +181,7 @@ class TestPipeline(BaseTestCase):
             selectedColNames=hist_cols_input,
         )
 
-        sql_step = self.add_local_pipeline_step(p, "sql-xflow-ODPS", name="sql")
+        sql_step = p.add_step("sql-xflow-ODPS", name="sql")
         sql_step.run_with(
             inputArtifact1=type_transform_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -186,7 +189,7 @@ class TestPipeline(BaseTestCase):
             sql=sql_input,
         )
 
-        fe_meta_runner_step = self.add_local_pipeline_step(p, "fe-meta-runner-xflow-ODPS", name="feMetaRunner")
+        fe_meta_runner_step = p.add_step("fe-meta-runner-xflow-ODPS", name="feMetaRunner")
 
         fe_meta_runner_step.run_with(
             inputArtifact=sql_step.outputs["outputArtifact"],
@@ -197,7 +200,7 @@ class TestPipeline(BaseTestCase):
             labelCol="_c2",
         )
 
-        normalized_step = self.add_local_pipeline_step(p, "normalize-xflow-ODPS", name="normalize")
+        normalized_step = p.add_step("normalize-xflow-ODPS", name="normalize")
         normalized_step.run_with(
             inputArtifact=sql_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -206,7 +209,7 @@ class TestPipeline(BaseTestCase):
             selectedColNames=normalize_cols_input,
         )
 
-        split_step = self.add_local_pipeline_step(p, "split-xflow-ODPS", name="split")
+        split_step = p.add_step("split-xflow-ODPS", name="split")
         split_step.run_with(
             inputArtifact=normalized_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -215,7 +218,7 @@ class TestPipeline(BaseTestCase):
             output2TableName="pai_temp_83935_1199583_1",
         )
 
-        randomforest_step = self.add_local_pipeline_step(p, "random-forests-xflow-ODPS", "randomforests")
+        randomforest_step = p.add_step("randomforests-xflow-ODPS", name="randomforests")
         randomforest_step.run_with(
             inputArtifact=split_step.outputs["outputArtifact1"],
             __execution=execution_input,
@@ -231,7 +234,7 @@ class TestPipeline(BaseTestCase):
             __userProject=project_input,
         )
 
-        prediction1_step = self.add_local_pipeline_step(p, "prediction-xflow-ODPS", "prediction1")
+        prediction1_step = p.add_step("prediction-xflow-ODPS", name="prediction1")
         prediction1_step.run_with(
             inputModelArtifact=randomforest_step.outputs["outputArtifact"],
             inputDataSetArtifact=split_step.outputs["outputArtifact2"],
@@ -243,7 +246,7 @@ class TestPipeline(BaseTestCase):
             scoreColName=prediction1_score_col_input,
             detailColName=prediction1_detail_col_input,
         )
-        evaluate1_step = self.add_local_pipeline_step(p, "evaluate-xflow-ODPS", "evaluate1")
+        evaluate1_step = p.add_step("evaluate-xflow-ODPS", name="evaluate1")
         evaluate1_step.run_with(
             inputArtifact=prediction1_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -255,7 +258,7 @@ class TestPipeline(BaseTestCase):
             positiveLabel=evaluate1_positive_label_input,
             binCount=evaluate1_bin_count_input,
         )
-        logistic_step = self.add_local_pipeline_step(p, "logisticregression-binary-xflow-ODPS", "logisticregression")
+        logistic_step = p.add_step("logisticregression-binary-xflow-ODPS", name="logisticregression")
 
         logistic_step.run_with(
             inputArtifact=split_step.outputs["outputArtifact1"],
@@ -272,7 +275,7 @@ class TestPipeline(BaseTestCase):
             __pmmlModelPartition="partition_1099587",
         )
 
-        prediction2_step = self.add_local_pipeline_step(p, "prediction-xflow-ODPS", "prediction2")
+        prediction2_step = p.add_step("prediction-xflow-ODPS", name="prediction2")
         prediction2_step.run_with(
             inputModelArtifact=logistic_step.outputs["outputArtifact"],
             inputDataSetArtifact=split_step.outputs["outputArtifact2"],
@@ -285,7 +288,7 @@ class TestPipeline(BaseTestCase):
             detailColName=prediction2_detail_col_input,
         )
 
-        evaluate2_step = self.add_local_pipeline_step(p, "evaluate-xflow-ODPS", "evaluate2")
+        evaluate2_step = p.add_step("evaluate-xflow-ODPS", name="evaluate2")
         evaluate2_step.run_with(
             inputArtifact=prediction2_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -302,17 +305,18 @@ class TestPipeline(BaseTestCase):
         return p
 
     def create_cycle_pipeline(self):
-        p = Pipeline.new_pipeline(identifier="unittest_cycle_case_1", version="v1.0.0", session=MockPropertySession())
-        execution_input = p.create_input_parameter("__execution", 'map', required=True)
+        p = Pipeline.new_pipeline(identifier="unittest_cycle_case_1", version="v1.0.0",
+                                  session=self.session)
+        execution_input = p.create_input_parameter("__execution", "map", required=True)
         cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
 
-        data_source_step = self.add_local_pipeline_step(p, "odps-data-source", name="dataSource")
+        data_source_step = p.add_step("odps-data-source", name="dataSource")
         data_source_step.run_with(
             __execution=execution_input,
             tableName="pai_online_project.wumai_data",
         )
 
-        type_transform_step = self.add_local_pipeline_step(p, "type-transform-xflow-ODPS", name="typeTransform")
+        type_transform_step = p.add_step("type-transform-xflow-ODPS", name="typeTransform")
         type_transform_step.run_with(
             inputArtifact=data_source_step.outputs["outputArtifact"],
             __execution=execution_input,
@@ -321,6 +325,106 @@ class TestPipeline(BaseTestCase):
         )
 
         data_source_step.run_after(type_transform_step)
+
+    @staticmethod
+    def args_for_composite_pipeline_1():
+        arguments = {"parameters": [
+            {
+                "name": "__execution",
+                "value": {
+                    "__odpsInfoFile": "/share/base/odpsInfo.ini",
+                    "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                    "logViewHost": "http://logview.odps.aliyun.com",
+                    "odpsProject": "wyl_test",
+                    "userId": 15577
+                },
+            },
+            {
+                "name": "cols_to_double",
+                "value": "time,hour,pm2,pm10,so2,co,no2"
+            },
+            {
+                "name": "table_name",
+                "value": "pai_online_project.wumai_data",
+            }]
+        }
+
+        env = {"resource": {
+            "compute": {
+                "max_compute": {
+                    "__odpsInfoFile": "/share/base/odpsInfo.ini",
+                    "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                    "logViewHost": "http://logview.odps.aliyun.com",
+                    "odpsProject": "wyl_test",
+                    "userId": 15577,
+                }
+            }
+        },
+            "workflowService": {
+                "config": {
+                    "endpoint": "http://service.cn-shanghai.argo.aliyun.com"
+                },
+                "name": "argo"
+            }
+        }
+        return arguments, env
+
+    def create_composite_pipeline_case_1(self, version=None):
+        """Composite data_source and type_transform pipeline"""
+
+        if version is None:
+            version = "v%s" % (str(int(time.time() * 1000)))
+        p = Pipeline.new_pipeline(identifier="ut-data-source-type-transform", version=version,
+                                  session=self.session)
+
+        execution_input = p.create_input_parameter("__execution", "map", required=True)
+        cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
+        input_table_name = p.create_input_parameter("table_name", str, required=True)
+        # hist_cols_input = p.create_input_parameter("histogram_selected_col_names", str, required=True)
+
+        data_source_step = p.add_step("odps-data-source", provider="1557702098194904",
+                                      version="v1", name="dataSource")
+        data_source_step.run_with(
+            __execution=execution_input,
+            tableName=input_table_name,
+        )
+
+        type_transform_step = p.add_step("type-transform-xflow-ODPS", provider="1557702098194904",
+                                         version="v1", name="typeTransform")
+        type_transform_step.run_with(
+            inputArtifact=data_source_step.outputs["outputArtifact"],
+            __execution=execution_input,
+            outputTable="type-transform-xflow-ODPS",
+            cols_to_double=cols_to_double_input,
+        )
+
+        # histogram_step = p.add_step("histogram-xflow-ODPS", name="histogram")
+        #
+        # histogram_step.run_with(
+        #     inputArtifact=type_transform_step.outputs["outputArtifact"],
+        #     __execution=execution_input,
+        #     outputTableName="pai_temp_172808_1779985_1",
+        #     selectedColNames=hist_cols_input,
+        # )
+        p.create_output_artifact("outputArtifact", type_transform_step.outputs["outputArtifact"])
+
+        return p
+
+    def test_temp_composite_pipeline_run(self):
+        p = self.create_composite_pipeline_case_1()
+        print(yaml.dump(p.to_dict()))
+        arguments, env = self.args_for_composite_pipeline_1()
+        p.run("ut_temp_composite_pipeline_run", arguments=arguments, env=env, wait=True)
+
+    def test_composite_pipeline_submit(self):
+        p = self.create_composite_pipeline_case_1()
+        arguments, env = self.args_for_composite_pipeline_1()
+        pipeline_id = self.session.create_pipeline(p.to_dict())
+        run_id = self.session.create_pipeline_run("ut_composite_pipeline_run", pipeline_id=pipeline_id,
+                                                  arguments=arguments, env=env)
+        self.assertIsNotNone(run_id)
+        run_instance = RunInstance(run_id=run_id, session=self.session)
+        run_instance.wait()
 
 
 if __name__ == "__main__":

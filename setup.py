@@ -12,10 +12,10 @@ def _load_version_info():
     except NameError:
         def execfile(fname, globs, locs=None):
             locs = locs or globs
-            exec(compile(open(fname).read(), fname, "exec"), globs, locs)
+            exec (compile(open(fname).read(), fname, "exec"), globs, locs)
 
     version_ns = {}
-    execfile(os.path.join(repo_root, 'pypai', '_version.py'), version_ns)
+    execfile(os.path.join(repo_root, 'pai', '_version.py'), version_ns)
     return version_ns['__version__']
 
 
