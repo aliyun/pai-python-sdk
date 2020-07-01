@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+
+from pprint import pprint
+
 import yaml
 from aliyunsdkcore.client import AcsClient
 
@@ -31,7 +35,7 @@ class Session(object):
     def account_id(self):
         if not hasattr(self, "_account_id"):
             caller_identity = self.sts_client.get_caller_identity()
-            self._account_id = caller_identity["AccountId"]
+            self._account_id = int(caller_identity["AccountId"])
         return self._account_id
 
     def get_pipeline(self, identifier, provider, version):
@@ -65,7 +69,7 @@ class Session(object):
             page_size=page_size,
         )
 
-    def create_pipeline(self, pipeline_def, identifier, version=None):
+    def create_pipeline(self, pipeline_def):
         """
         create_pipeline submit `pipeline_manifest` to pipeline service and store. Identifier-provider-version
          is unique key. The same triple combination will result overwrite.
@@ -79,23 +83,29 @@ class Session(object):
             pipeline_id
         """
 
-        pipeline_def['metadata'] = {
-            'identifier': identifier,
-            'provider': self.account_id,
-            'version': version,
-        }
+        # pipeline_def['metadata'] = {
+        #     'identifier': identifier,
+        #     'provider': self.account_id,
+        #     'version': version,
+        # }
         pipeline_def = yaml.dump(pipeline_def)
-        if version is None:
-            pipeline_def['metadata']['version'] = md5_digest(pipeline_def)
+        # if version is None:
+        #     pipeline_def['metadata']['version'] = md5_digest(pipeline_def)
 
         resp = self.paiflow_client.create_pipeline(manifest=pipeline_def)
-        return resp["Data"]["pipelineId"]
+        return resp["Data"]["PipelineId"]
 
     def describe_pipeline(self, pipeline_id):
         return self.paiflow_client.describe_pipeline(pipeline_id)
 
+    def update_pipeline_privilege(self, pipeline_id, user_ids):
+        return self.paiflow_client.update_pipeline_privilege(pipeline_id, user_ids)["Data"]
+
+    def list_pipeline_privilege(self, pipeline_id):
+        return self.paiflow_client.list_pipeline_privilege(pipeline_id)["Data"]
+
     def create_pipeline_run(self, name, arguments, env=None, pipeline_id=None, manifest=None,
-                            no_confirm_required=False):
+                            no_confirm_required=True):
         arguments = {
             "arguments": arguments,
             "env": env
@@ -128,12 +138,12 @@ class Session(object):
         logs = self.paiflow_client.list_node_log(**kwargs)
         return logs["Data"]
 
-    def list_node_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
-                         sorted_sequence=None, typ=None, page_number=1, page_size=50):
+    def list_run_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
+                        sorted_sequence=None, typ=None, page_number=1, page_size=50):
         kwargs = locals()
         kwargs.pop("self")
-        logs = self.paiflow_client.list_node_output(**kwargs)
-        return logs
+        outputs = self.paiflow_client.list_run_output(**kwargs)
+        return outputs
 
     def get_run(self, run_id):
         run_info = self.paiflow_client.get_run(run_id)

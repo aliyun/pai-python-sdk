@@ -1,9 +1,14 @@
+from __future__ import absolute_import
+
+from pprint import pprint
+
 import six
 import yaml
 
 from libs.aliyunsdkpaiflow.request.v20200328 import (
-    CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest,
-    ListPipelinesRequest, UpdatePipelineRequest, DescribePipelineRequest
+    CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest, ListPipelinesRequest,
+    UpdatePipelineRequest, DescribePipelineRequest, UpdatePipelinePrivilegeRequest,
+    GetPipelinePrivilegeRequest
 )
 from libs.aliyunsdkpaiflow.request.v20200328 import (
     CreateRunRequest, GetRunRequest, TerminateRunRequest, SuspendRunRequest, ResumeRunRequest, RetryRunRequest,
@@ -54,7 +59,7 @@ class PAIFlowClient(BaseClient):
 
     def create_pipeline(self, manifest):
         request = self._construct_request(CreatePipelineRequest.CreatePipelineRequest)
-        request.set_manifest(manifest)
+        request.set_Manifest(manifest)
         response = self._call_service_with_exception(request)
         return response
 
@@ -74,6 +79,21 @@ class PAIFlowClient(BaseClient):
         request.set_PipelineId(ensure_str(pipeline_id))
         return self._call_service_with_exception(request)
 
+    def update_pipeline_privilege(self, pipeline_id, user_ids):
+        request = self._construct_request(UpdatePipelinePrivilegeRequest.UpdatePipelinePrivilegeRequest)
+        request.set_PipelineId(pipeline_id)
+        if not user_ids:
+            raise ValueError("Argument 'users' should not be empty.")
+        if isinstance(user_ids, six.string_types):
+            user_ids = [user_ids]
+        request.add_body_params("users", user_ids)
+        return self._call_service_with_exception(request)
+
+    def list_pipeline_privilege(self, pipeline_id):
+        request = self._construct_request(GetPipelinePrivilegeRequest.GetPipelinePrivilegeRequest)
+        request.set_PipelineId(pipeline_id)
+        return self._call_service_with_exception(request)
+
     def create_run(self, name, arguments, pipeline_id=None, manifest=None, no_confirm_required=False):
         if not pipeline_id and not manifest:
             raise ValueError("Create pipeline run need either pipeline_id or manifest.")
@@ -86,6 +106,7 @@ class PAIFlowClient(BaseClient):
 
         if manifest:
             if isinstance(manifest, dict):
+                pprint(manifest)
                 manifest = yaml.dump(manifest)
             request.set_PipelineManifest(manifest)
         if pipeline_id:
@@ -181,8 +202,8 @@ class PAIFlowClient(BaseClient):
         request.set_PageSize(page_size)
         return self._call_service_with_exception(request)
 
-    def list_node_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
-                         sorted_sequence=None, typ=None, page_number=1, page_size=50):
+    def list_run_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
+                        sorted_sequence=None, typ=None, page_number=1, page_size=50):
         request = self._construct_request(ListNodeOutputsRequest.ListNodeOutputsRequest)
 
         request.set_Depth(depth)

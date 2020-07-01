@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from pai.pipeline.pipeline_variable import PipelineVariable
 
 
@@ -8,7 +10,7 @@ class PipelineArtifact(PipelineVariable):
         super(PipelineArtifact, self).__init__(name=name, typ=typ, desc=desc, kind=kind, value=value, from_=from_,
                                                required=required, parent=parent)
 
-    # todo: value format of artifact is not set down.
+    # TODO: value format of artifact is not set down.
     def validate_value(self, val):
         return True
 

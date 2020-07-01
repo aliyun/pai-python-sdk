@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import re
 from decimal import Decimal
 
@@ -7,9 +9,11 @@ from pai.pipeline.pipeline_variable import PipelineVariable
 
 StringType = six.string_types
 
+int_float_types = tuple(list(six.integer_types) + list([float]))
+
 _PRIMITIVE_TYPE_MAP = {
-    "Int": (int, long),
-    "Double": (float, int, long),
+    "Int": six.integer_types,
+    "Double": int_float_types,
     "Bool": bool,
     "Str": six.string_types
 }

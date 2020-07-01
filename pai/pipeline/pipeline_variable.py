@@ -1,13 +1,17 @@
+from __future__ import absolute_import
+
 from abc import ABCMeta, abstractmethod
+
 from six import with_metaclass
 
 
 class PipelineVariable(with_metaclass(ABCMeta, object)):
     """Base class of Artifact and PipelineParameter."""
-    variable_category = NotImplemented
 
-    def __init__(self, name, typ, desc=None, kind="input", value=None, from_=None, required=None, parent=None,
-                 validator=None, **kwargs):
+    variable_category = None
+
+    def __init__(self, name, typ, desc=None, kind="inputs", value=None, from_=None, required=None, parent=None,
+                 validator=None):
         """
 
         Args:
@@ -20,6 +24,9 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             validator: parameter value validator.
             parent:
         """
+
+        assert kind in ("inputs", "outputs")
+
         self.name = name
         self.kind = kind
         self.typ = typ
@@ -36,8 +43,16 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         pass
 
     def validate_from(self, arg):
+        if not isinstance(arg, PipelineVariable):
+            raise ValueError("arg is expected to be type of 'PipelineVariable' "
+                             "but was actually of type '%s'" % type(arg))
+
         if arg.typ is not None and self.typ is not None and arg.typ != self.typ:
             return False
+
+        if arg.variable_category != self.variable_category:
+            return False
+
         return True
 
     def assign(self, arg):

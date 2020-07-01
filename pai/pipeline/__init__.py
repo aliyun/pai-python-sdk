@@ -1,10 +1,14 @@
+from __future__ import absolute_import
+
 import copy
 import logging
 from collections import OrderedDict, defaultdict
 from collections import deque
+from pprint import pprint
 
 import six
 import yaml
+from graphviz import Digraph
 
 from pai.pipeline.artifact import create_artifact
 from pai.pipeline.parameter import create_pipeline_parameter, PipelineParameter
@@ -14,6 +18,8 @@ from pai.pipeline.run import RunInstance
 DEFAULT_PIPELINE_API_VERSION = "core/v1"
 
 logger = logging.getLogger(__name__)
+
+PipelineProviderAlibabaPAI = "1557702098194904"
 
 
 class Pipeline(object):
@@ -41,6 +47,11 @@ class Pipeline(object):
     @property
     def provider(self):
         return self.metadata["provider"]
+
+    # TODO: output Pipeline manifest.
+    @property
+    def manifest(self):
+        pass
 
     @classmethod
     def new_pipeline(cls, identifier, version, session):
@@ -83,13 +94,13 @@ class Pipeline(object):
         """
         if name in self.inputs:
             raise ValueError("Input variable name conflict: input %s exists" % name)
-        param = create_pipeline_parameter(name=name, typ=typ, kind="input", desc=desc,
+        param = create_pipeline_parameter(name=name, typ=typ, kind="inputs", desc=desc,
                                           required=required, value=value, parent=self)
         self.inputs[name] = param
         return param
 
     def create_input_artifact(self, name, typ, desc=None, required=False, value=None):
-        af = create_artifact(name=name, typ=typ, kind="input", desc=desc,
+        af = create_artifact(name=name, typ=typ, kind="inputs", desc=desc,
                              required=required, value=value, parent=self)
         if name in self.inputs:
             raise ValueError("Input variable name conflict: input %s exists" % name)
@@ -98,26 +109,26 @@ class Pipeline(object):
 
     def create_output_parameter(self, name, from_, desc=None):
         typ = from_.typ
-        param = create_pipeline_parameter(name=name, typ=typ, kind="output", desc=desc, parent=self, from_=from_)
+        param = create_pipeline_parameter(name=name, typ=typ, kind="outputs", desc=desc, parent=self, from_=from_)
         self.outputs[name] = param
         return param
 
     def create_output_artifact(self, name, from_, desc=None):
         typ = from_.typ
-        af = create_artifact(name=name, typ=typ, kind="output", desc=desc, parent=self, from_=from_)
+        af = create_artifact(name=name, typ=typ, kind="outputs", desc=desc, parent=self, from_=from_)
         self.outputs[name] = af
         return af
 
-    def add_step(self, identifier, provider, version, name=None):
+    def add_step(self, identifier, provider=PipelineProviderAlibabaPAI, version="v1", name=None):
         pipeline_info = self.session.get_pipeline(identifier, provider, version)
-        step = PipelineStep.create_from_manifest(pipeline_info["manifest"], parent=self, name=name)
+        print("pipeline_info", pipeline_info)
+        step = PipelineStep.create_from_manifest(pipeline_info["Manifest"], parent=self, name=name)
         self.steps[name] = step
-        return
+        return step
 
     @classmethod
     def load_by_manifest(cls, manifest, pipeline_id=None):
-        """
-        Create pipeline instance from pipeline definition manifest
+        """Create pipeline instance from pipeline definition manifest
 
         Args:
             manifest: pipeline manifest.
@@ -189,7 +200,7 @@ class Pipeline(object):
         return name
 
     # todo: input arguments validation.
-    def run(self, name, arguments, env):
+    def run(self, name, arguments, env=None, wait=True):
         pipeline_id, manifest = None, None
         if self.pipeline_id:
             pipeline_id = self.pipeline_id
@@ -197,6 +208,12 @@ class Pipeline(object):
             manifest = self.to_dict()
         run_id = self.session.create_pipeline_run(name, arguments, env, no_confirm_required=True,
                                                   pipeline_id=pipeline_id, manifest=manifest)
+
+        if not wait:
+            return run_id
+        run_instance = RunInstance(run_id=run_id, session=self.session)
+        pprint(run_instance.get_run_info())
+        run_instance.wait()
         return run_id
 
     def _convert_spec_to_json(self):
@@ -224,6 +241,14 @@ class Pipeline(object):
         else:
             spec["pipelines"] = [step.to_dict() for step in self.steps.values()]
         return {k: v for k, v in spec.items() if v}
+
+    def dot(self):
+        graph = Digraph()
+        for step_name, step in self.steps.items():
+            graph.node(step_name)
+            for head in step.dependencies.keys():
+                graph.edge(head, step_name)
+        return graph
 
     def to_dict(self):
         manifest = {
@@ -367,4 +392,4 @@ def _load_artifact(p, artifact_dict, kind):
 
 
 def default_step_parameter(typ, value):
-    return create_pipeline_parameter(name=None, typ=typ, kind="output", value=value)
+    return create_pipeline_parameter(name=None, typ=typ, kind="outputs", value=value)

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import hashlib
 from datetime import datetime
 
@@ -9,9 +11,8 @@ def md5_digest(raw_data):
 
 
 def run_detail_url(run_id, region_id):
-    return "https://pai.data.aliyun.com/console?regionId={region_id}#/task-list/detail/{run_id}".format(
-        region_id=region_id, run_id=run_id,
-    )
+    return "https://pai.data.aliyun.com/console?regionId={region_id}#/" \
+           "task-list/detail/{run_id}".format(region_id=region_id, run_id=run_id)
 
 
 def ensure_str(val):
@@ -29,4 +30,4 @@ def ensure_unix_time(t):
     elif isinstance(t, (int, long)):
         return t
     else:
-        raise ValueError("not support format for unix timestamp:%s", t)
+        raise ValueError("not support format, unable to convert to unix timestamp(%s:%s)" % (type(t), t))

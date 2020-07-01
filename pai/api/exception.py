@@ -1,4 +1,4 @@
-import inspect
+from __future__ import absolute_import
 
 from pai.exception import PAIException
 

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import time
 from datetime import datetime
 
@@ -5,28 +7,23 @@ from libs.futures import ThreadPoolExecutor
 from pai.exception import TimeoutException
 from pai.utils import run_detail_url
 
-RunStatusInit = "Init"
-RunStatusRunning = "Running"
-RunStatusSuspended = "Suspended"
-RunStatusSucceeded = "Succeeded"
-RunStatusTerminated = "Terminated"
-RunStatusUnknown = "Unknown"
-RunStatusSkipped = "Skipped"
-RunStatusFailed = "Failed"
+
+class RunStatus(object):
+    Init = "Init"
+    Running = "Running"
+    Suspended = "Suspended"
+    Succeeded = "Succeeded"
+    Terminated = "Terminated"
+    Unknown = "Unknown"
+    Skipped = "Skipped"
+    Failed = "Failed"
 
 
 class RunInstance(object):
 
-    def __init__(self, run_id, session=None):
+    def __init__(self, run_id, session):
         self.run_id = run_id
         self.session = session
-
-    def _prepare(self):
-        run_info = self.session.get_run(self.run_id)
-        node_id = run_info["NodeId"]
-        self.root_node_id = node_id
-        run_detail = self.session.get_run_detail(self.run_id, self.root_node_id)
-        self.root_node_name = run_detail["Metadata"]["Name"]
 
     def travel_node_status_info(self, node_id, depth=10):
         node_status_info = dict()
@@ -63,11 +60,8 @@ class RunInstance(object):
         }
 
     @property
-    def run_detail_web_url(self):
+    def run_detail_url(self):
         return run_detail_url(self.run_id, self.session.region_id)
-
-    def is_root_node(self, node_id, node_name):
-        return node_id == self.root_node_id or node_name == self.root_node_name
 
     def get_run_info(self):
         return self.session.get_run(self.run_id)
@@ -107,12 +101,12 @@ class RunInstance(object):
                 raise StopIteration
             else:
                 status = self.get_status()
-                if status == RunStatusRunning:
+                if status == RunStatus.Running:
                     time.sleep(1)
                 else:
                     raise StopIteration
 
-    def _wait_for_node_id(self, timeout=120):
+    def _wait_for_init(self, timeout=120, retry_interval=1):
         """Wait for "NodeId" allocated to pipeline run.
 
         Args:
@@ -120,49 +114,45 @@ class RunInstance(object):
         """
         start_time = datetime.now()
         run_info = self.get_run_info()
-        while run_info["Status"] == "Running" and run_info["NodeId"] is None:
+        while run_info["Status"] == RunStatus.Running and not run_info["NodeId"]:
             run_info = self.get_run_info()
             time_elapse = datetime.now() - start_time
             if time_elapse.seconds > timeout:
                 raise TimeoutException("")
             time.sleep(1)
 
-        if run_info["NodeId"] is not None:
+        if run_info["NodeId"]:
             return run_info["NodeId"]
         else:
             raise ValueError("Failed in acquire root node_id of pipeline run.")
 
     def wait(self):
-        """Wait until the pipeline run stop.
-
-        Args:
-            with_log:
-        """
+        """Wait until the pipeline run stop."""
         run_info = self.get_run_info()
         run_status = run_info["Status"]
-        if run_status == RunStatusInit:
+        if run_status == RunStatus.Init:
             raise ValueError('Pipeline run instance is in status "Init", please start the run instance.')
-        elif run_status in (RunStatusTerminated, RunStatusSuspended):
+        elif run_status in (RunStatus.Terminated, RunStatus.Suspended):
             raise ValueError("Pipeline run instance is stopped(status:%s), please resume/retry the run." % run_status)
-        elif run_status == RunStatusFailed:
+        elif run_status == RunStatus.Failed:
             raise ValueError("Pipeline run is failed.")
-        elif run_status in (RunStatusSkipped, RunStatusUnknown):
+        elif run_status in (RunStatus.Skipped, RunStatus.Unknown):
             raise ValueError("Pipeline run in unexpected status(%s:%s)" % (self.run_id, run_status))
-        elif run_status == RunStatusSucceeded:
+        elif run_status == RunStatus.Succeeded:
             return
 
         # run status is Running.
         node_id = run_info.get("NodeId")
-        if node_id is None:
-            node_id = self._wait_for_node_id()
-        assert node_id is not None
+        if not node_id:
+            node_id = self._wait_for_init()
+        assert bool(node_id) is True
 
-        run_logger = RunLogger(run_instance=self, node_id=node_id)
+        run_logger = _RunLogger(run_instance=self, node_id=node_id)
         run_logger.submit(node_id=node_id, node_name=self.run_id)
         node_status_infos = self.travel_node_status_info(node_id)
 
         running_node = {node_fullname: status_info for node_fullname, status_info in node_status_infos.items()
-                        if status_info["status"] == RunStatusRunning}
+                        if status_info["status"] == RunStatus.Running}
 
         for node_fullname, status_info in running_node.items():
             run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
@@ -170,15 +160,11 @@ class RunInstance(object):
         prev_status_infos = node_status_infos
         root_node_status = prev_status_infos[self.run_id]["status"]
 
-        print("%s root_node_status is: %s" % (time.time(), root_node_status))
-
-        while root_node_status == RunStatusRunning:
+        while root_node_status == RunStatus.Running:
             time.sleep(5)
-            print("root_node_status is", root_node_status)
             curr_status_infos = self.travel_node_status_info(node_id)
-
             for node in curr_status_infos:
-                if node not in prev_status_infos and curr_status_infos[node]["status"] != RunStatusSkipped:
+                if node not in prev_status_infos and curr_status_infos[node]["status"] != RunStatus.Skipped:
                     run_logger.submit(node_id=curr_status_infos[node]["nodeId"], node_name=node)
             prev_status_infos = curr_status_infos
             root_node_status = prev_status_infos[self.run_id]["status"]
@@ -192,11 +178,11 @@ class RunInstance(object):
         pass
 
 
-class RunLogger(object):
+class _RunLogger(object):
     executor = ThreadPoolExecutor(5)
 
     def __init__(self, run_instance, node_id):
-        super(RunLogger, self).__init__()
+        super(_RunLogger, self).__init__()
         self.run_instance = run_instance
         self.node_id = node_id
         self.running_nodes = set()
@@ -219,7 +205,7 @@ class RunLogger(object):
                 page_offset += page_size
             else:
                 status = self.run_instance.get_status()
-                if status == RunStatusRunning:
+                if status == RunStatus.Running:
                     time.sleep(2)
                 else:
                     break

@@ -1,5 +1,7 @@
-from .paiflow import PAIFlowClient
-from .sts import StsClient
+from __future__ import absolute_import
+
+from pai.api.paiflow import PAIFlowClient
+from pai.api.sts import StsClient
 
 
 class ClientFactory(object):

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from pprint import pprint
 
 from pai.api.exception import ServiceCallException
@@ -16,11 +18,11 @@ class BaseClient(object):
             raw_resp = self._acs_client.do_action_with_exception(request)
             resp = self._response_to_dict(raw_resp)
         except (ClientException, ServerException) as e:
-            raise ServiceCallException(request, str(e))
+            raise ServiceCallException(str(e))
 
-        if int(resp["Code"]) != 200:
-            message = "Service response error, code:%s, message:%s" % (resp["Code"], resp["Message"])
-            raise ServiceCallException(request, message)
+        # if int(resp["Code"]) != 200:
+        #     message = "Service response error, code:%s, message:%s" % (resp["Code"], resp["Message"])
+        #     raise ServiceCallException(message)
         return resp
 
     def _get_endpoint(self):

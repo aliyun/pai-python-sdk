@@ -7,7 +7,7 @@ import threading
 import itertools
 import time
 
-from ..six import reraise
+from six import reraise
 
 __author__ = 'Brian Quinlan (brian@sweetapp.com)'
 

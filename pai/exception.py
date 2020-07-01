@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+
+
 class PAIException(Exception):
     def __init__(self, message):
         self._message = message
