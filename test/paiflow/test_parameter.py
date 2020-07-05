@@ -15,7 +15,7 @@ class TestParameter(BaseTestCase):
                 "name": "integer_type_param",
                 "input": {
                     "name": "treeNum",
-                    "kind": "input",
+                    "kind": "inputs",
                     "typ": int,
                     "value": 100,
                     "feasible": {
@@ -35,7 +35,7 @@ class TestParameter(BaseTestCase):
                 "name": "str_type_param",
                 "input": {
                     "name": "outputTableName",
-                    "kind": "input",
+                    "kind": "inputs",
                     "typ": str,
                     "required": True,
                     "value": "pai_temp_18090911",
