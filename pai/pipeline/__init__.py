@@ -19,8 +19,6 @@ DEFAULT_PIPELINE_API_VERSION = "core/v1"
 
 logger = logging.getLogger(__name__)
 
-PipelineProviderAlibabaPAI = "1557702098194904"
-
 
 class Pipeline(object):
 
@@ -47,11 +45,6 @@ class Pipeline(object):
     @property
     def provider(self):
         return self.metadata["provider"]
-
-    # TODO: output Pipeline manifest.
-    @property
-    def manifest(self):
-        pass
 
     @classmethod
     def new_pipeline(cls, identifier, version, session):
@@ -119,15 +112,30 @@ class Pipeline(object):
         self.outputs[name] = af
         return af
 
-    def add_step(self, identifier, provider=PipelineProviderAlibabaPAI, version="v1", name=None):
+    def create_step(self, identifier, name, provider=None, version=None):
+        """
+        identifier + provider => uk
+
+        latest version
+
+        Args:
+            identifier:
+            provider:
+            version:
+            name:
+
+        Returns:
+
+        """
+
+        provider = self.session.account_id
         pipeline_info = self.session.get_pipeline(identifier, provider, version)
-        print("pipeline_info", pipeline_info)
         step = PipelineStep.create_from_manifest(pipeline_info["Manifest"], parent=self, name=name)
         self.steps[name] = step
         return step
 
     @classmethod
-    def load_by_manifest(cls, manifest, pipeline_id=None):
+    def _load_by_manifest(cls, manifest, pipeline_id=None):
         """Create pipeline instance from pipeline definition manifest
 
         Args:
@@ -156,6 +164,20 @@ class Pipeline(object):
         else:
             p.pipelines = spec["pipelines"]
 
+        return p
+
+    @classmethod
+    def get_by_pipeline_id(cls, session, pipeline_id):
+        pipeline_info = session.get_pipeline_by_id(pipeline_id)
+        p = cls._load_by_manifest(pipeline_info["Manifest"], pipeline_id=pipeline_id)
+        p.session = session
+        return p
+
+    @classmethod
+    def get_by_identifier(cls, session, identifier, provider, version):
+        pipeline_info = session.get_pipeline(identifier=identifier, provider=provider, version=version)
+        p = cls._load_by_manifest(pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"])
+        p.session = session
         return p
 
     @property
@@ -190,7 +212,8 @@ class Pipeline(object):
                 if len(untraveled_steps[step]) == 0:
                     queue.append(step)
         untraveled = {step_name for step_name, previous_steps in untraveled_steps.items() if len(previous_steps) > 0}
-        logger.error("Pipeline Cycle detected, untraveled steps: %s" % ','.join(untraveled))
+        if len(untraveled):
+            logger.error("Pipeline Cycle detected, untraveled steps: %s" % ','.join(untraveled))
 
         return len(untraveled) > 0
 
@@ -212,7 +235,6 @@ class Pipeline(object):
         if not wait:
             return run_id
         run_instance = RunInstance(run_id=run_id, session=self.session)
-        pprint(run_instance.get_run_info())
         run_instance.wait()
         return run_id
 
@@ -286,10 +308,10 @@ class PipelineStep(object):
         step = _load_input_output_spec(step, manifest["spec"])
         return step
 
-    def run_with(self, **kwargs):
+    def set_arguments(self, **kwargs):
         """Config input parameter of pipeline step.
 
-        step.run_with set the source of input parameters, from one of input of pipeline, output of upstream step,
+        step.set_arguments set the source of input parameters, from one of input of pipeline, output of upstream step,
         and default_parameter_input. It also inspect correctness of pipeline, by directed cycle detection,
         input requirement identification, parameter type check.
 
@@ -311,7 +333,7 @@ class PipelineStep(object):
 
         for step_input in self.inputs.values():
             if step_input.required and not step_input.is_assigned and step_input.value is None:
-                raise ValueError("Parameter: %s is required but not assigned")
+                raise ValueError("Parameter: %s is required but not assigned" % step_input.fullname)
 
     def _add_dependency(self, step):
         if not step:
@@ -322,7 +344,7 @@ class PipelineStep(object):
             raise ValueError("Dependent task should belong to the same parent pipeline")
         self.dependencies[step.name] = step
 
-    def run_after(self, *steps):
+    def after(self, *steps):
         dependencies = {step.name: step for step in steps}
         for step in dependencies.values():
             self._add_dependency(step)
@@ -345,7 +367,7 @@ class PipelineStep(object):
                 spec["arguments"][cat] = [v]
 
         if self.dependencies:
-            spec["dependencies"] = self.dependencies.keys()
+            spec["dependencies"] = list(self.dependencies.keys())
         return spec
 
     def to_dict(self):

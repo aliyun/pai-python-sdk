@@ -85,7 +85,12 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         return ".".join(filter(None, [self.parent.ref_name, self.kind, self.variable_category, self.name]))
 
     def __str__(self):
-        return "{{%s}}" % self.fullname
+        return "{name}:{kind}:{variable_category}:{typ}".format(
+            name=self.name,
+            kind=self.kind,
+            variable_category=self.variable_category,
+            typ=self.typ
+        )
 
     def to_argument(self):
         arguments = {
@@ -93,7 +98,10 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         }
 
         if self.from_ is not None:
-            arguments["from"] = "%s" % self.from_
+            if isinstance(self.from_, PipelineVariable):
+                arguments["from"] = "{{%s}}" % self.from_.fullname
+            else:
+                arguments["from"] = self.from_
         elif self.value is not None:
             arguments["value"] = self.value
         return arguments
@@ -113,5 +121,9 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         if self.value is not None:
             d["value"] = self.value
         elif self.from_ is not None:
-            d["from"] = str(self.from_)
+            if isinstance(self.from_, PipelineVariable):
+                d["from"] = "{{%s}}" % self.from_.fullname
+            else:
+                d["from"] = self.from_
+
         return d

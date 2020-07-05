@@ -137,6 +137,7 @@ class Interval(object):
         return False
 
 
+# TODO: Use Enum type
 ParameterTypeMapping = {
     "long": "Int",
     "integer": "Int",

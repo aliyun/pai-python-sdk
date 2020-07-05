@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from pprint import pprint
 
+import six
 import yaml
 from aliyunsdkcore.client import AcsClient
 
@@ -50,24 +51,34 @@ class Session(object):
     def get_pipeline_by_id(self, pipeline_id):
         return self.paiflow_client.get_pipeline(pipeline_id)["Data"]
 
-    def list_pipeline(self, page_num=1, page_size=50, source_type='private'):
-        return self.paiflow_client.list_pipeline(
-            source_type=source_type,
-            page_num=page_num,
-            page_size=page_size,
-        )
-
-    def search_pipeline(self, identifier=None, provider=None, query=None, source_type='private',
+    def search_pipeline(self, identifier=None, provider=None, fuzzy=None, source_type='private',
                         version=None, page_num=1, page_size=50):
-        return self.paiflow_client.list_pipeline(
+        """List Pipelines
+
+        Args:
+            identifier: identifier of pipeline.
+            provider: Alibaba Cloud account id of pipeline provider.
+            fuzzy: if use fuzzy match
+            source_type:
+            version:
+            page_num:
+            page_size:
+
+        Returns:
+
+        """
+        resp = self.paiflow_client.list_pipeline(
             identifier=identifier,
             provider=provider,
-            query=query,
+            fuzzy=fuzzy,
             source_type=source_type,
             version=version,
             page_num=page_num,
             page_size=page_size,
         )
+        total_count = resp["TotalCount"]
+        pipeline_infos = resp["Data"]
+        return pipeline_infos, total_count
 
     def create_pipeline(self, pipeline_def):
         """
@@ -75,24 +86,20 @@ class Session(object):
          is unique key. The same triple combination will result overwrite.
 
         Args:
-            identifier: pipeline identifier.
-            version: version of submitted pipeline, md5 value of yaml definition is used as default.
-            pipeline_def: pipeline definition manifest.
+            pipeline_def: pipeline definition manifest, support types Pipeline,
 
         Returns:
             pipeline_id
         """
+        from pai.pipeline import Pipeline
 
-        # pipeline_def['metadata'] = {
-        #     'identifier': identifier,
-        #     'provider': self.account_id,
-        #     'version': version,
-        # }
-        pipeline_def = yaml.dump(pipeline_def)
-        # if version is None:
-        #     pipeline_def['metadata']['version'] = md5_digest(pipeline_def)
-
-        resp = self.paiflow_client.create_pipeline(manifest=pipeline_def)
+        if isinstance(pipeline_def, dict):
+            manifest = yaml.dump(pipeline_def)
+        elif isinstance(pipeline_def, Pipeline):
+            manifest = yaml.dump(pipeline_def.to_dict())
+        elif not isinstance(pipeline_def, six.string_types):
+            raise ValueError("Not support argument `pipeline_def` type %s, expected dict, Pipeline or str.")
+        resp = self.paiflow_client.create_pipeline(manifest=manifest)
         return resp["Data"]["PipelineId"]
 
     def describe_pipeline(self, pipeline_id):
@@ -138,11 +145,11 @@ class Session(object):
         logs = self.paiflow_client.list_node_log(**kwargs)
         return logs["Data"]
 
-    def list_run_output(self, run_id, node_id, depth=2, name=None, sorted_by=None,
-                        sorted_sequence=None, typ=None, page_number=1, page_size=50):
+    def list_run_outputs(self, run_id, node_id, depth=1, name=None, sorted_by=None,
+                         sorted_sequence=None, typ=None, page_number=1, page_size=50):
         kwargs = locals()
         kwargs.pop("self")
-        outputs = self.paiflow_client.list_run_output(**kwargs)
+        outputs = self.paiflow_client.list_run_outputs(**kwargs)["Data"]
         return outputs
 
     def get_run(self, run_id):
@@ -155,16 +162,16 @@ class Session(object):
 
     def suspend_run(self, run_id):
         resp = self.paiflow_client.suspend_run(run_id)
-        return resp["Data"]["runId"] == run_id
+        return resp["Data"]
 
     def retry_run(self, run_id):
         resp = self.paiflow_client.retry_run(run_id)
         return resp["Data"]["runId"] == run_id
 
     def resume_run(self, run_id):
-        resp = self.paiflow_client.retry_run(run_id)
-        return resp["Data"]["runId"] == run_id
+        resp = self.paiflow_client.resume_run(run_id)
+        return resp["Data"]
 
     def start_run(self, run_id):
-        resp = self.paiflow_client.retry_run(run_id)
-        return resp["Data"]["runId"] == run_id
+        resp = self.paiflow_client.start_run(run_id)
+        return resp["Data"]

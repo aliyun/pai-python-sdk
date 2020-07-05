@@ -1,11 +1,14 @@
 from __future__ import absolute_import
 
+import logging
 import time
 from datetime import datetime
 
 from libs.futures import ThreadPoolExecutor
 from pai.exception import TimeoutException
 from pai.utils import run_detail_url
+
+logger = logging.getLogger(__name__)
 
 
 class RunStatus(object):
@@ -24,6 +27,9 @@ class RunInstance(object):
     def __init__(self, run_id, session):
         self.run_id = run_id
         self.session = session
+
+    def __str__(self):
+        return "RunInstance:%s" % self.run_id
 
     def travel_node_status_info(self, node_id, depth=10):
         node_status_info = dict()
@@ -68,6 +74,14 @@ class RunInstance(object):
 
     def get_run_detail(self, node_id):
         return self.session.get_run_detail(self.run_id, node_id=node_id)
+
+    def get_outputs(self, node_id=None, depth=2):
+        if not node_id:
+            run_info = self.get_run_info()
+            node_id = run_info["NodeId"]
+        if not node_id:
+            return
+        return self.session.list_run_outputs(run_id=self.run_id, node_id=node_id, depth=depth)
 
     def get_status(self):
         return self.get_run_info()["Status"]
@@ -144,6 +158,7 @@ class RunInstance(object):
         # run status is Running.
         node_id = run_info.get("NodeId")
         if not node_id:
+            print("Wait for run workflow init")
             node_id = self._wait_for_init()
         assert bool(node_id) is True
 
@@ -151,10 +166,7 @@ class RunInstance(object):
         run_logger.submit(node_id=node_id, node_name=self.run_id)
         node_status_infos = self.travel_node_status_info(node_id)
 
-        running_node = {node_fullname: status_info for node_fullname, status_info in node_status_infos.items()
-                        if status_info["status"] == RunStatus.Running}
-
-        for node_fullname, status_info in running_node.items():
+        for node_fullname, status_info in node_status_infos.items():
             run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
 
         prev_status_infos = node_status_infos
@@ -163,13 +175,13 @@ class RunInstance(object):
         while root_node_status == RunStatus.Running:
             time.sleep(5)
             curr_status_infos = self.travel_node_status_info(node_id)
-            for node in curr_status_infos:
-                if node not in prev_status_infos and curr_status_infos[node]["status"] != RunStatus.Skipped:
-                    run_logger.submit(node_id=curr_status_infos[node]["nodeId"], node_name=node)
+            for node_fullname, status_info in curr_status_infos.items():
+                if node_fullname not in prev_status_infos and status_info["status"] != RunStatus.Skipped:
+                    run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
             prev_status_infos = curr_status_infos
             root_node_status = prev_status_infos[self.run_id]["status"]
 
-        print("Run Status: %s" % root_node_status)
+        return self
 
     def _wait_with_progress(self):
         pass
