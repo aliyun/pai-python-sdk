@@ -7,12 +7,12 @@ import yaml
 from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
-from pai.utils import md5_digest, run_detail_url
+from pai.utils import run_detail_url
 
 
 class Session(object):
 
-    def __init__(self, access_key, access_secret, region_id):
+    def __init__(self, access_key, access_secret, region_id, odps_project=None):
         """ Construct session object with Alibaba Cloud account credential
 
         Args:
@@ -25,6 +25,7 @@ class Session(object):
             raise ValueError("Please provide access_key, access_secret and region")
 
         self.region_id = region_id
+        self.odps_project = odps_project
         self._initialize(access_key, access_secret, region_id)
 
     def _initialize(self, access_key, access_secret, region):

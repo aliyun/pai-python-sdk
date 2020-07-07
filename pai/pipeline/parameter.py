@@ -38,6 +38,18 @@ class PipelineParameter(PipelineVariable):
             return False
         return True
 
+    @classmethod
+    def to_argument_by_spec(cls, val, param_spec):
+        name = param_spec.pop("name")
+        typ = param_spec.pop("type")
+        kind = "inputs"
+        from_ = param_spec.pop("from",None)
+        param = create_pipeline_parameter(name=name, typ=typ, kind=kind, from_=from_, **param_spec)
+        if not param.validate_value(val):
+            raise ValueError("Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
+        param.value = val
+        return param.to_argument()
+
 
 class ParameterValidator(object):
     def __init__(self, interval=None):
