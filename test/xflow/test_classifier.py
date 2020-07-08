@@ -6,6 +6,7 @@ import odps
 import pandas as pd
 from sklearn.datasets import load_iris
 
+from pai.pipeline import Pipeline
 from pai.xflow.classifier import LogisticRegression
 from test import BaseTestCase
 
@@ -52,6 +53,11 @@ class TestLogisticsRegression(BaseTestCase):
         lr.fit(wait=False, input_data=self.iris_df, feature_cols=self.iris_df, label_col="category",
                model_name=model_name)
 
+        offline_model = lr.create_offline_model()
+
+        offline_model.
+
+
     def testArgumentsNotSatisfy(self):
         lr = LogisticRegression(
             session=self.session,
@@ -61,9 +67,6 @@ class TestLogisticsRegression(BaseTestCase):
             # miss required arguments model_name
             lr.fit(wait=True, input_data=self.iris_df, feature_cols=self.iris_df, label_col="category")
 
-    def testAlgoPipelineBuilder(self):
-        pass
 
-
-class RandomForestClassifier(BaseTestCase):
+class TestRandomForestClassifier(BaseTestCase):
     pass

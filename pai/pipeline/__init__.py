@@ -10,7 +10,7 @@ import six
 import yaml
 from graphviz import Digraph
 
-from pai.pipeline.artifact import create_artifact
+from pai.pipeline.artifact import create_artifact, ArtifactType
 from pai.pipeline.parameter import create_pipeline_parameter, PipelineParameter
 from pai.pipeline.pipeline_variable import PipelineVariable
 from pai.pipeline.run import RunInstance
@@ -33,6 +33,7 @@ class Pipeline(object):
         self.pipelines = []
         self.pipeline_id = pipeline_id
         self.api_version = api_version
+        self._default_step_inputs = dict()
 
     @property
     def identifier(self):
@@ -92,7 +93,9 @@ class Pipeline(object):
         self.inputs[name] = param
         return param
 
-    def create_input_artifact(self, name, typ, desc=None, required=False, value=None):
+    def create_input_artifact(self, name, data_type, location_type, model_type=None, desc=None, required=False,
+                              value=None):
+        typ = ArtifactType(data_type=data_type, location_type=location_type, model_type=model_type)
         af = create_artifact(name=name, typ=typ, kind="inputs", desc=desc,
                              required=required, value=value, parent=self)
         if name in self.inputs:
@@ -128,10 +131,19 @@ class Pipeline(object):
 
         """
 
-        provider = self.session.account_id
+        provider = provider if provider else self.session.account_id
         pipeline_info = self.session.get_pipeline(identifier, provider, version)
         step = PipelineStep.create_from_manifest(pipeline_info["Manifest"], parent=self, name=name)
+        return self._add_step(name, step)
+
+    def create_step_from_manifest(self, manifest, name):
+        step = PipelineStep.create_from_manifest(manifest, parent=self, name=name)
+        return self._add_step(name, step)
+
+    def _add_step(self, name, step):
         self.steps[name] = step
+        default_inputs = {name: value for name, value in self._default_step_inputs.items() if name in step.inputs}
+        step.set_arguments(**default_inputs)
         return step
 
     @classmethod
@@ -165,6 +177,9 @@ class Pipeline(object):
             p.pipelines = spec["pipelines"]
 
         return p
+
+    def set_step_input(self, arg_name, arg_value):
+        self._default_step_inputs[arg_name] = arg_value
 
     @classmethod
     def get_by_pipeline_id(cls, session, pipeline_id):
@@ -331,9 +346,9 @@ class PipelineStep(object):
         if self.parent.cycle_detection():
             raise ValueError("Cycle detected in pipeline")
 
-        for step_input in self.inputs.values():
-            if step_input.required and not step_input.is_assigned and step_input.value is None:
-                raise ValueError("Parameter: %s is required but not assigned" % step_input.fullname)
+        # for step_input in self.inputs.values():
+        #     if step_input.required and not step_input.is_assigned and step_input.value is None:
+        #         raise ValueError("Parameter: %s is required but not assigned" % step_input.fullname)
 
     def _add_dependency(self, step):
         if not step:

@@ -43,6 +43,13 @@ class PipelineArtifact(PipelineVariable):
         param.value = val
         return param.to_argument()
 
+    def to_dict(self):
+        d = super(PipelineArtifact, self).to_dict()
+        if isinstance(self.typ, ArtifactType):
+            d["type"] = self.typ.to_dict()
+
+        return d
+
 
 def create_artifact(name, typ, kind, desc=None, required=None, value=None, from_=None, parent=None):
     return PipelineArtifact(name=name, typ=typ, kind=kind, desc=desc, required=required, value=value,
@@ -56,6 +63,9 @@ class ArtifactType(object):
         self.location_type = location_type
         self.model_type = model_type
 
+    def __str__(self):
+        return '{%s}:{locationType:%s, modelType:%s}' % (self.data_type, self.location_type, self.model_type)
+
     def to_dict(self):
         d = {
             self.data_type.value: {
@@ -68,6 +78,20 @@ class ArtifactType(object):
 
         return d
 
+    def __eq__(self, other):
+
+        if isinstance(other, ArtifactType):
+            return self.data_type == other.data_type and self.location_type == other.location_type \
+                   and self.model_type == other.model_type
+        elif isinstance(other, dict):
+            other = self.from_dict(other)
+            return self.data_type == other.data_type and self.location_type == other.location_type \
+                   and self.model_type == other.model_type
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @classmethod
     def from_dict(cls, d):
         data_type = ArtifactDataType(d.keys()[0])
@@ -77,4 +101,3 @@ class ArtifactType(object):
             model_type = ArtifactModelType(d[data_type.value]["modelType"])
 
         return cls(data_type=data_type, location_type=location_type, model_type=model_type)
-

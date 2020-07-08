@@ -8,6 +8,7 @@ from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
 from pai.utils import run_detail_url
+from odps import ODPS
 
 
 class Session(object):
@@ -26,12 +27,15 @@ class Session(object):
 
         self.region_id = region_id
         self.odps_project = odps_project
-        self._initialize(access_key, access_secret, region_id)
 
-    def _initialize(self, access_key, access_secret, region):
+        self._initialize(access_key, access_secret, region_id, odps_project=odps_project)
+
+    def _initialize(self, access_key, access_secret, region, odps_project=None):
         self._acs_client = AcsClient(ak=access_key, secret=access_secret, region_id=region)
+
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
         self.sts_client = ClientFactory.create_sts_client(self._acs_client)
+        self.odps_client = ODPS(access_id=access_key, secret_access_key=access_secret, project=odps_project)
 
     @property
     def account_id(self):

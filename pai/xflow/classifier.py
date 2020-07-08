@@ -4,11 +4,11 @@ from .estimator import XFlowModelTransferEstimator
 
 
 class LogisticRegression(XFlowModelTransferEstimator):
-    _identifier_cls = "logisticregression-binary-xflow-ODPS"
+    _identifier_default = "logisticregression-binary-xflow-ODPS"
 
-    _version_cls = "v1"
+    _version_default = "v1"
 
-    _provider_cls = ProviderAlibabaPAI
+    _provider_default = ProviderAlibabaPAI
 
     def __init__(self, session, regularized_level=1.0, regularized_type="l1", max_iter=100, epsilon=1e-6):
         super(LogisticRegression, self).__init__(session=session, regularized_level=regularized_level,
@@ -67,11 +67,11 @@ class LogisticRegression(XFlowModelTransferEstimator):
 
 
 class RandomForestClassifier(XFlowModelTransferEstimator):
-    _identifier_cls = "random-forests-xflow-ODPS"
+    _identifier_default = "random-forests-xflow-ODPS"
 
-    _provider_cls = ProviderAlibabaPAI
+    _provider_default = ProviderAlibabaPAI
 
-    _version_cls = "1.0.0"
+    _version_default = "1.0.0"
 
     def __init__(self, session, tree_num, random_col_num, max_tree_deep, min_num_obj=None, min_num_per=None,
                  max_record_size=None, xflow_project=None):
@@ -87,39 +87,3 @@ class RandomForestClassifier(XFlowModelTransferEstimator):
                                                 feature_cols=feature_cols, algo_types=algo_types,
                                                 random_col_num=random_col_num)
         return
-
-
-if __name__ == "__main__":
-    from pai import Session
-
-    # OpenAPI client access key and secret.
-    client_config = {
-        "access_key": "AccessKeyId",
-        "access_secret": "AccessKeySecret",
-        "region": "pre-paiflow.data.aliyun.com",
-    }
-
-    # max_compute config
-    odps_config = {"__odpsInfoFile": "/share/base/odpsInfo.ini",
-                   "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                   "logViewHost": "http://logview.odps.aliyun.com",
-                   "odpsProject": "wyl_test"}
-
-    # To by confirmed: odps configuration requirement in Session instance.
-    session = Session(odps_proejct=odps_config["odpsProject"], **client_config)
-
-    lr_estimator = LogisticRegression(session=session).set_version("1.0.0")
-
-    input_data = "odps://pai_online_project/tables/wumai_data"
-
-    feature_cols = "pm10,so2,co,no2"
-    label_col = "_c2"
-    model_name = "lr_model_demo"
-
-    run = lr_estimator.fit(input_table=input_data,
-                           feature_cols=feature_cols, label_col=label_col,
-                           model_name="lr_demo_model",
-                           good_value=1,
-                           sparse=True,
-                           sparse_delimiter=(" ", ":"),
-                           wait=True)

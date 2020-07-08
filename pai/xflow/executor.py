@@ -11,7 +11,7 @@ import yaml
 
 from ..pipeline.parameter import PipelineParameter
 from ..pipeline.artifact import PipelineArtifact
-from ..pipeline.run import RunInstance
+from ..pipeline.run import RunInstance, RunStatus
 
 Logger = logging.getLogger(__file__)
 
@@ -26,21 +26,22 @@ def reset_pipeline(func):
 
 
 class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
-    _identifier_cls = None
-    _provider_cls = None
-    _version_cls = None
+    _identifier_default = None
+    _provider_default = None
+    _version_default = None
 
     _xflow_project = "algo_public"
 
     def __init__(self, session):
         self.session = session
+        self.run_job = None
         self._manifest = None
-        self._artifacts = dict()
+        self._inputs_artifacts = dict()
         self._initialize()
 
     def _prepare_run(self, job_name=None, *inputs, **kwargs):
         manifest = yaml.load(self.get_pipeline_definition(), yaml.FullLoader)
-        self._artifacts = {af["name"]: af for af in manifest["spec"]["inputs"].get("artifacts", [])}
+        self._inputs_artifacts = {af["name"]: af for af in manifest["spec"]["inputs"].get("artifacts", [])}
         self._parameters = {param["name"]: param for param in manifest["spec"]["inputs"].get("parameters", [])}
         args = self._compile_args(*inputs, **kwargs)
         pipeline_args = self.translate_arguments(args)
@@ -94,7 +95,7 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
     def get_identifier(self):
         if hasattr(self, "_identifier"):
             return self._identifier
-        return self._identifier_cls
+        return self._identifier_default
 
     @reset_pipeline
     def set_provider(self, provider):
@@ -104,7 +105,7 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
     def get_provider(self):
         if hasattr(self, "_provider"):
             return self._provider
-        return self._provider_cls
+        return self._provider_default
 
     @reset_pipeline
     def set_version(self, version):
@@ -114,7 +115,14 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
     def get_version(self):
         if hasattr(self, "_version"):
             return self._version
-        return self._version_cls
+        return self._version_default
+
+    def get_outputs(self):
+        if not self.run_job:
+            raise ValueError("No Run job is available for the Estimator.")
+        if self.run_job.get_status() != RunStatus.Succeeded:
+            raise ValueError("Succeeded Run job is required!")
+        return self.run_job.get_outputs()
 
     def get_pipeline_definition(self):
         if self._manifest:
@@ -135,9 +143,6 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
         self._manifest = pipeline_info["Manifest"]
         return self._manifest
 
-    def get_arguments(self):
-        pass
-
     def _run(self, job_name=None, *inputs, **kwargs):
         job_name, pipeline_args, env = self._prepare_run(job_name, *inputs, **kwargs)
         manifest = self.get_pipeline_definition()
@@ -152,6 +157,7 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
         logging.info("PaiFlowRunnerId is :%s" % run_id)
 
         run = RunInstance(run_id=run_id, session=self.session)
+        self.run_job = run
         return run
 
     def translate_arguments(self, args):
@@ -161,7 +167,7 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
             if arg is None:
                 continue
             param_spec = self._parameters.get(name, None)
-            af_spec = self._artifacts.get(name, None)
+            af_spec = self._inputs_artifacts.get(name, None)
             if param_spec:
                 param = PipelineParameter.to_argument_by_spec(arg, param_spec)
                 parameters.append(param)
@@ -172,7 +178,7 @@ class PaiFlowExecutor(six.with_metaclass(ABCMeta, object)):
                 raise ValueError("Argument %s is not required by pipeline manifest" % name)
 
         requires = set([param_name for param_name, spec in self._parameters.items() if spec.get("required")] + \
-                       [af_name for af_name, spec in self._artifacts.items() if spec.get("required")])
+                       [af_name for af_name, spec in self._inputs_artifacts.items() if spec.get("required")])
         not_supply = requires - set(args.keys())
         if len(not_supply) > 0:
             raise ValueError("Required arguments is not supplied:%s" % ",".join(not_supply))

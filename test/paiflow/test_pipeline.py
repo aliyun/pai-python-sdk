@@ -3,9 +3,13 @@ from __future__ import absolute_import
 import os
 import time
 import unittest
+from pprint import pprint
 
+import yaml
 
+from pai.xflow.classifier import LogisticRegression
 from pai.pipeline import Pipeline, PipelineStep
+from pai.pipeline.artifact import ArtifactType, ArtifactDataType, ArtifactLocationType
 from pai.pipeline.run import RunInstance, RunStatus
 from test import BaseTestCase
 from test.paiflow import load_local_yaml
@@ -99,7 +103,7 @@ class TestPipeline(BaseTestCase):
             inputDataSetArtifact=input_artifact2,
         )
 
-        prediction_step2 = p.create_step("prediction-evaluate", name="prediction2")
+        prediction_step2 = p.create_step("prediction-evaluate", name="prediction")
         prediction_step2.set_arguments(
             __execution=execution_input,
             outputDetailTableName2="pai_temp_183935_1099586_1",
@@ -122,8 +126,8 @@ class TestPipeline(BaseTestCase):
         # version = "v%s" % (str(int(time.time() * 1000)))
         p = Pipeline.new_pipeline("ut-air-quality", version="v1.0.0", session=session)
 
-        project_input = p.create_input_parameter("__project", str)
-        execution_input = p.create_input_parameter("__execution", "map", required=True)
+        project_input = p.create_input_parameter("project", str)
+        execution_input = p.create_input_parameter("execution", "map", required=True)
         cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
         hist_cols_input = p.create_input_parameter("histogram_selected_col_names", str, required=True)
         sql_input = p.create_input_parameter("sql", str, required=True)
@@ -301,7 +305,7 @@ class TestPipeline(BaseTestCase):
             binCount=evaluate2_bin_count_input,
         )
 
-        p.create_output_artifact("predictionResult", from_=evaluate2_step.outputs["outputDetailArtifact"])
+        p.create_output_artifact("predictionResult", from_=evaluate_step.outputs["outputDetailArtifact"])
         return p
 
     def create_cycle_pipeline(self):
@@ -422,6 +426,102 @@ class TestPipeline(BaseTestCase):
         time.sleep(1)
         run_instance = RunInstance(run_id=run_id, session=self.session)
         self.assertEqual(run_instance.get_status(), RunStatus.Running)
+
+    def test_general_input(self):
+        p = Pipeline.new_pipeline("test_algo_build", version="1.0.0", session=self.session)
+
+        dataset_input = p.create_input_artifact("dataset", data_type=ArtifactDataType.DataSet,
+                                                location_type=ArtifactLocationType.MaxComputeTable,
+                                                required=True)
+
+        label_dataset_input = p.create_input_artifact("label_data_set", data_type=ArtifactDataType.DataSet,
+                                                      location_type=ArtifactLocationType.MaxComputeTable,
+                                                      required=True)
+
+        execution_input = p.create_input_parameter("execution", "map", required=True)
+        model_name_input = p.create_input_parameter("model_name", str, required=True)
+        feature_cols_input = p.create_input_parameter("feature_cols", str, required=True)
+        label_col_input = p.create_input_parameter("label_col", str, required=True)
+        user_project_input = p.create_input_parameter("user_project", str, required=True)
+        pmml_volume_input = p.create_input_parameter("pmml_volume", str, required=True)
+
+        pred_feature_col_input = p.create_input_parameter("prediction_feature_col_names", str, required=True)
+        pred_append_col_input = p.create_input_parameter("prediction_append_col_names", str, required=True)
+        pred_result_col_input = p.create_input_parameter("prediction_result_col_names", str, required=True)
+        pred_score_col_input = p.create_input_parameter("prediction_score_col_names", str, required=True)
+        pred_detail_col_input = p.create_input_parameter("prediction_detail_col_names", str, required=True)
+        pred_output_table_input = p.create_input_parameter("prediction_output_table", str, required=True)
+
+        eval_label_col_input = p.create_input_parameter("evaluate_label_col_name", str, required=True)
+        eval_score_col_input = p.create_input_parameter("evaluate_score_col_name", str, required=True)
+        eval_positive_label_input = p.create_input_parameter("evaluate_positive_label", str, required=True)
+        eval_bin_count_input = p.create_input_parameter("evaluate_bin_count", int, required=True)
+        eval_output_detail_table_input = p.create_input_parameter("evaluate_output_detail_table", str, required=True)
+        eval_output_metric_table_input = p.create_input_parameter("evaluate_output_metrics_table", str, required=True)
+        eval_output_el_detail_table_input = p.create_input_parameter("evaluate_output_el_detail_table", str,
+                                                                     required=True)
+        # set default input for step with some common parameter.
+        p.set_step_input("__execution", execution_input)
+        # __userProject maybe remove from XFlow based manifest pipeline in future.
+        p.set_step_input("__userProject", user_project_input)
+        # user default value that could not be assign from pipeline arguments
+        # p.set_step_input("__userProject", self.session.odps_project)
+        p.set_step_input("__generatePMML", True)
+
+        lr_step = p.create_step_from_manifest(LogisticRegression(session=self.session).get_pipeline_definition(),
+                                              name="logistics_regression")
+
+        lr_step.set_arguments(
+            inputArtifact=dataset_input,
+            modelName=model_name_input,
+            featureColNames=feature_cols_input,
+            labelColName=label_col_input,
+            __pmmlModelPublicProject="pai_online_project",
+            __pmmlModelPublicEndpoint="http://service.cn-shanghai.maxcompute.aliyun.com/api",
+            __pmmlModelVolume=pmml_volume_input,
+            __pmmlModelPartition="partition_1099587",
+        )
+
+        prediction_step = p.create_step("prediction-xflow-ODPS", name="prediction")
+        prediction_step.set_arguments(
+            inputModelArtifact=lr_step.outputs["outputArtifact"],
+            inputDataSetArtifact=label_dataset_input,
+            outputTableName=pred_output_table_input,
+            featureColNames=pred_feature_col_input,
+            appendColNames=pred_append_col_input,
+            resultColName=pred_result_col_input,
+            scoreColName=pred_score_col_input,
+            detailColName=pred_detail_col_input,
+        )
+
+        evaluate_step = p.create_step("evaluate-xflow-ODPS", name="evaluate")
+        evaluate_step.set_arguments(
+            inputArtifact=prediction_step.outputs["outputArtifact"],
+            outputDetailTableName=eval_output_detail_table_input,
+            outputMetricTableName=eval_output_metric_table_input,
+            outputELDetailTableName=eval_output_el_detail_table_input,
+            labelColName=eval_label_col_input,
+            scoreColName=eval_score_col_input,
+            positiveLabel=eval_positive_label_input,
+            binCount=eval_bin_count_input,
+        )
+
+        p.create_output_artifact("predictionResult", from_=evaluate_step.outputs["outputDetailArtifact"])
+
+        pipeline_def = p.to_dict()
+
+        pipeline_executions = [param["from"] for p in pipeline_def["spec"]["pipelines"] for param in
+                               p["spec"]["arguments"]["parameters"] if param["name"] == "__execution"]
+
+        expected_execution = "{{inputs.parameters.execution}}"
+        self.assertTrue(all(expected_execution == execution_param for execution_param in pipeline_executions))
+
+        pipeline_generate_pmml = [param["value"] for p in pipeline_def["spec"]["pipelines"] for param in
+                                  p["spec"]["arguments"]["parameters"] if param["name"] == "__generatePMML"]
+        # expected_val = True
+        self.assertTrue(all(param for param in pipeline_generate_pmml))
+
+        return
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from .executor import PaiFlowExecutor
 
+from .model import XFlowOfflineModel, PmmlModel
+
 
 class Estimator(object):
 
@@ -49,6 +51,10 @@ class XFlowEstimator(PaiFlowExecutor, Estimator):
         args["__xflowProject"] = self.get_xflow_project()
         return args
 
+    def create_offline_model(self):
+        output = self.get_outputs()[0]
+        return XFlowOfflineModel(session=self.session, name=output["Name"], model_data=output)
+
 
 class XFlowModelTransferEstimator(XFlowEstimator):
 
@@ -68,3 +74,6 @@ class XFlowModelTransferEstimator(XFlowEstimator):
 
     def create_model(self):
         raise NotImplementedError
+
+    def create_pmml_model(self):
+        pass
