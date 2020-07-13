@@ -4,7 +4,6 @@ import copy
 import logging
 from collections import OrderedDict, defaultdict
 from collections import deque
-from pprint import pprint
 
 import six
 import yaml
@@ -12,7 +11,7 @@ from graphviz import Digraph
 
 from pai.pipeline.artifact import create_artifact, ArtifactType
 from pai.pipeline.parameter import create_pipeline_parameter, PipelineParameter
-from pai.pipeline.pipeline_variable import PipelineVariable
+from pai.pipeline.variable import PipelineVariable
 from pai.pipeline.run import RunInstance
 
 DEFAULT_PIPELINE_API_VERSION = "core/v1"
@@ -115,7 +114,7 @@ class Pipeline(object):
         self.outputs[name] = af
         return af
 
-    def create_step(self, identifier, name, provider=None, version=None):
+    def create_step(self, identifier, name, provider=None, version="v1"):
         """
         identifier + provider => uk
 
@@ -146,6 +145,15 @@ class Pipeline(object):
         step.set_arguments(**default_inputs)
         return step
 
+    def to_estimator(self, parameters):
+        from pai.estimator import PipelineEstimator
+        manifest = self.to_dict()
+        if self.pipeline_id:
+            return PipelineEstimator.from_pipeline_id(pipeline_id=self.pipeline_id, session=self.session,
+                                                      parameters=parameters)
+        else:
+            return PipelineEstimator.from_manifest(manifest, session=self.session, parameters=parameters)
+
     @classmethod
     def _load_by_manifest(cls, manifest, pipeline_id=None):
         """Create pipeline instance from pipeline definition manifest
@@ -173,7 +181,7 @@ class Pipeline(object):
 
         if "execution" in spec:
             p.execution = spec["execution"]
-        else:
+        elif "pipelines" in spec:
             p.pipelines = spec["pipelines"]
 
         return p
@@ -408,22 +416,34 @@ def _load_input_output_spec(p, spec):
     return p
 
 
-def _load_parameter(p, param_dict, kind):
+def _load_parameter(p, param_spec, kind):
     assert kind in ("inputs", "outputs")
-    typ = param_dict.pop("type", None)
-    name = param_dict.pop("name")
-    from_ = param_dict.pop("from", None)
-    param = create_pipeline_parameter(name=name, typ=typ, kind=kind, parent=p, from_=from_, **param_dict)
+
+    typ = param_spec.pop("type", None)
+    name = param_spec.pop("name")
+    from_ = param_spec.pop("from", None)
+    feasible = param_spec.pop("feasible", None)
+    value = param_spec.pop("value", None)
+    desc = param_spec.pop("desc", None)
+    required = param_spec.pop("required", False)
+
+    param = create_pipeline_parameter(name=name, typ=typ, kind=kind, parent=p, from_=from_,
+                                      feasible=feasible, value=value, desc=desc, required=required)
     getattr(p, kind)[name] = param
     return param
 
 
-def _load_artifact(p, artifact_dict, kind):
+def _load_artifact(p, artifact_spec, kind):
     assert kind in ("inputs", "outputs")
-    typ = artifact_dict.pop("type", None)
-    name = artifact_dict.pop("name", None)
-    from_ = artifact_dict.pop("from", None)
-    af = create_artifact(name=name, typ=typ, kind=kind, parent=p, from_=from_, **artifact_dict)
+    typ = ArtifactType.from_dict(artifact_spec.pop("type", None))
+    name = artifact_spec.pop("name", None)
+    from_ = artifact_spec.pop("from", None)
+    value = artifact_spec.pop("value", None)
+    desc = artifact_spec.pop("desc", None)
+    required = artifact_spec.pop("required", False)
+
+    af = create_artifact(name=name, typ=typ, kind=kind, parent=p, from_=from_,
+                         value=value, desc=desc, required=required)
     getattr(p, kind)[name] = af
     return af
 

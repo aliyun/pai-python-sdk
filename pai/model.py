@@ -14,7 +14,7 @@ class Model(object):
 
 class PmmlModel(Model):
 
-    def __init__(self, name, model_data, session):
+    def __init__(self, name, model_data, location_type, session):
         super(PmmlModel, self).__init__(name=name, session=session, model_data=model_data)
 
 

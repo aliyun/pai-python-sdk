@@ -13,3 +13,20 @@ class ParameterType(Enum):
     Double = "Double"
     Bool = "Bool"
     Map = "Map"
+
+
+class ArtifactDataType(Enum):
+    DataSet = "DataSet"
+    Model = "Model"
+    ModelEvaluation = "ModelEvaluation"
+
+
+class ArtifactLocationType(Enum):
+    MaxComputeTable = "MaxComputeTable"
+    MaxComputeVolume = "MaxComputeVolume"
+    MaxComputeOfflineModel = "MaxComputeOfflineModel"
+
+
+class ArtifactModelType(Enum):
+    OfflineModel = "OfflineModel"
+    PMML = "PMML"

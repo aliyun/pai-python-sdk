@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import six
 
-from pai.pipeline.pipeline_variable import PipelineVariable
+from pai.pipeline.variable import PipelineVariable
 
 StringType = six.string_types
 
@@ -40,11 +40,19 @@ class PipelineParameter(PipelineVariable):
 
     @classmethod
     def to_argument_by_spec(cls, val, param_spec):
+        param_spec = param_spec.copy()
+
+        typ = param_spec.pop("type", None)
         name = param_spec.pop("name")
-        typ = param_spec.pop("type")
         kind = "inputs"
-        from_ = param_spec.pop("from",None)
-        param = create_pipeline_parameter(name=name, typ=typ, kind=kind, from_=from_, **param_spec)
+        from_ = param_spec.pop("from", None)
+        feasible = param_spec.pop("feasible", None)
+        value = param_spec.pop("value", None)
+        desc = param_spec.pop("desc", None)
+        required = param_spec.pop("required", False)
+
+        param = create_pipeline_parameter(name=name, typ=typ, kind=kind, from_=from_, value=value, desc=desc,
+                                          required=required, feasible=feasible)
         if not param.validate_value(val):
             raise ValueError("Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
         param.value = val

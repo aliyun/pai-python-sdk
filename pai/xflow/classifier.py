@@ -1,22 +1,24 @@
 from __future__ import absolute_import
 from pai.common import ProviderAlibabaPAI
-from .estimator import XFlowModelTransferEstimator
+from pai.xflow.base import XFlowEstimator
 
 
-class LogisticRegression(XFlowModelTransferEstimator):
+class LogisticRegression(XFlowEstimator):
     _identifier_default = "logisticregression-binary-xflow-ODPS"
 
     _version_default = "v1"
 
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, regularized_level=1.0, regularized_type="l1", max_iter=100, epsilon=1e-6):
-        super(LogisticRegression, self).__init__(session=session, regularized_level=regularized_level,
+    def __init__(self, session, regularized_level=1.0, regularized_type="l1", max_iter=100,
+                 epsilon=1e-6, **kwargs):
+        super(LogisticRegression, self).__init__(session=session,
+                                                 regularized_level=regularized_level,
                                                  regularized_type=regularized_type, max_iter=max_iter,
-                                                 epsilon=epsilon, pmml_config=None)
+                                                 epsilon=epsilon, **kwargs)
 
-    def _compile_args(self, **kwargs):
-        args = super(LogisticRegression, self)._compile_args(**kwargs)
+    def compile_args(self, **kwargs):
+        args = super(LogisticRegression, self).compile_args(**kwargs)
         args["inputArtifact"] = kwargs.get("input_data")
 
         # args["regularizedType"] = kwargs.get("regularized_type")
@@ -24,9 +26,11 @@ class LogisticRegression(XFlowModelTransferEstimator):
         args["maxIter"] = kwargs.get("max_iter")
         args["epsilon"] = kwargs.get("epsilon")
         args["goodValue"] = kwargs.get("good_value")
-        args["featureColNames"] = kwargs.get("feature_cols")
+
         args["labelColName"] = kwargs.get("label_col")
-        args["modelName"] = kwargs.get("modelName")
+        args["modelName"] = kwargs.get("model_name")
+        if kwargs.get("feature_cols") is not None:
+            args["featureColNames"] = ",".join(kwargs.get("feature_cols"))
 
         enable_sparse = kwargs.get("enable_sparse")
         if enable_sparse:
@@ -42,7 +46,7 @@ class LogisticRegression(XFlowModelTransferEstimator):
         """
 
         Args:
-            input_data: ODPS Table object or odps resource url or odps table name
+            input_data: input data for train, could be one of ODPS Table object, odps resource url or odps table name.
             feature_cols:
             label_col:
             model_name:
@@ -56,7 +60,7 @@ class LogisticRegression(XFlowModelTransferEstimator):
         Returns:
 
         """
-        return super(LogisticRegression, self).fit(input_data, job_name=job_name, model_name=model_name,
+        return super(LogisticRegression, self).fit(input_data=input_data, job_name=job_name, model_name=model_name,
                                                    feature_cols=feature_cols,
                                                    label_col=label_col, sparse=sparse,
                                                    sparse_delimiter=sparse_delimiter,
@@ -66,7 +70,7 @@ class LogisticRegression(XFlowModelTransferEstimator):
         pass
 
 
-class RandomForestClassifier(XFlowModelTransferEstimator):
+class RandomForestClassifier(XFlowEstimator):
     _identifier_default = "random-forests-xflow-ODPS"
 
     _provider_default = ProviderAlibabaPAI

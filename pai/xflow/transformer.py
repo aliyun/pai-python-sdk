@@ -1,36 +1,12 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 import six
 
-from .executor import PaiFlowExecutor
-from .. import ProviderAlibabaPAI
+from pai.base import PaiFlowBase
+from pai import ProviderAlibabaPAI
+from pai.transformer import PipelineTransformer
 
 
-class Transformer(six.with_metaclass(ABCMeta, object)):
-
-    def __init__(self, session, **kwargs):
-        self.session = session
-        self._parameters = kwargs
-
-    def transform(self, *inputs, **kwargs):
-        pass
-
-    @abstractmethod
-    def _transform(self, *inputs, **kwargs):
-        raise NotImplementedError
-
-    def parameters(self):
-        return self._parameters
-
-
-class ModelTransformer(Transformer):
-
-    def __init__(self, session, model, **kwargs):
-        self._model = model
-        super(ModelTransformer, self).__init__(session, **kwargs)
-
-
-class XFlowOfflineModelTransformer(PaiFlowExecutor, ModelTransformer):
-
+class XFlowOfflineModelTransformer(PipelineTransformer):
     _identifier_default = "prediction-xflow-ODPS"
 
     _version_default = "v1"
@@ -39,7 +15,10 @@ class XFlowOfflineModelTransformer(PaiFlowExecutor, ModelTransformer):
 
     def __init__(self, session, model, **kwargs):
         super(XFlowOfflineModelTransformer, self).__init__(session=session, model=model, **kwargs)
+        self.model = model
 
-    def transform(self, *inputs, **kwargs):
-        self._run()
-        return self.get_outputs()
+    def compare_args(self, **kwargs):
+        pass
+
+    def transform(self, input_data, wait=True, job_name=None, ):
+        return super(XFlowOfflineModelTransformer, self).transform()

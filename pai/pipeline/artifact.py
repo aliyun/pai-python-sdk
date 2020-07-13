@@ -1,22 +1,7 @@
 from __future__ import absolute_import
 
-from pai.pipeline.pipeline_variable import PipelineVariable
-from enum import Enum
-
-
-class ArtifactDataType(Enum):
-    DataSet = "DataSet"
-    Model = "Model"
-
-
-class ArtifactLocationType(Enum):
-    MaxComputeTable = "MaxComputeTable"
-    MaxComputeVolume = "MaxComputeVolume"
-
-
-class ArtifactModelType(Enum):
-    OfflineModel = "OfflineModel"
-    PMML = "PMML"
+from pai.pipeline.variable import PipelineVariable
+from pai.pipeline.base import ArtifactModelType, ArtifactLocationType, ArtifactDataType
 
 
 class PipelineArtifact(PipelineVariable):
@@ -33,11 +18,17 @@ class PipelineArtifact(PipelineVariable):
     # TODO: Artifact Value and Type Refactor
     @classmethod
     def to_argument_by_spec(cls, val, af_spec):
+        af_spec = af_spec.copy()
         name = af_spec.pop("name")
         typ = af_spec.pop("type")
+        desc = af_spec.pop("desc")
         kind = "inputs"
-        from_ = af_spec.pop("from", None)
-        param = create_artifact(name=name, typ=typ, kind=kind, from_=from_, **af_spec)
+        value = af_spec.pop("value")
+        from_ = af_spec.pop("from")
+        required = af_spec.pop("required")
+
+        param = create_artifact(name=name, typ=typ, kind=kind, from_=from_, required=required, value=value,
+                                desc=desc)
         if not param.validate_value(val):
             raise ValueError("Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
         param.value = val
@@ -94,7 +85,7 @@ class ArtifactType(object):
 
     @classmethod
     def from_dict(cls, d):
-        data_type = ArtifactDataType(d.keys()[0])
+        data_type = ArtifactDataType(list(d.keys())[0])
         location_type = ArtifactLocationType(d[data_type.value]["locationType"])
         model_type = None
         if "modelType" in d[data_type.value]:
