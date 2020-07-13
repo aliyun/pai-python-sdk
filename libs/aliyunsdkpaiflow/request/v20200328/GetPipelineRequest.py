@@ -23,11 +23,29 @@ class GetPipelineRequest(RoaRequest):
 
 	def __init__(self):
 		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'GetPipeline')
-		self.set_uri_pattern('/api/core/v1.0/pipelines/[PipelineId]')
+		self.set_uri_pattern('/api/core/v1.0/pipelines/overview')
 		self.set_method('GET')
 
+	def get_PipelineProvider(self):
+		return self.get_query_params().get('PipelineProvider')
+
+	def set_PipelineProvider(self,PipelineProvider):
+		self.add_query_param('PipelineProvider',PipelineProvider)
+
+	def get_PipelineVersion(self):
+		return self.get_query_params().get('PipelineVersion')
+
+	def set_PipelineVersion(self,PipelineVersion):
+		self.add_query_param('PipelineVersion',PipelineVersion)
+
+	def get_PipelineIdentifier(self):
+		return self.get_query_params().get('PipelineIdentifier')
+
+	def set_PipelineIdentifier(self,PipelineIdentifier):
+		self.add_query_param('PipelineIdentifier',PipelineIdentifier)
+
 	def get_PipelineId(self):
-		return self.get_path_params().get('PipelineId')
+		return self.get_query_params().get('PipelineId')
 
 	def set_PipelineId(self,PipelineId):
-		self.add_path_param('PipelineId',PipelineId)
+		self.add_query_param('PipelineId',PipelineId)

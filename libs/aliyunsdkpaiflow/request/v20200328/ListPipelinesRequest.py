@@ -44,12 +44,6 @@ class ListPipelinesRequest(RoaRequest):
 	def set_FuzzyMatching(self,FuzzyMatching):
 		self.add_query_param('FuzzyMatching',FuzzyMatching)
 
-	def get_SourceType(self):
-		return self.get_query_params().get('SourceType')
-
-	def set_SourceType(self,SourceType):
-		self.add_query_param('SourceType',SourceType)
-
 	def get_PipelineVersion(self):
 		return self.get_query_params().get('PipelineVersion')
 

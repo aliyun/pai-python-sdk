@@ -45,19 +45,18 @@ class Session(object):
         return self._account_id
 
     def get_pipeline(self, identifier, provider, version):
-        resp = self.paiflow_client.list_pipeline(identifier=identifier, provider=provider,
-                                                 version=version)
-        if len(resp["Data"]) == 0:
-            return
-
-        pipeline_id = resp["Data"][0]["PipelineId"]
-        return self.paiflow_client.get_pipeline(pipeline_id)["Data"]
+        self.paiflow_client.get_pipeline(identifier=identifier,
+                                         provider=provider,
+                                         version=version)
+        return self.paiflow_client.get_pipeline(identifier=identifier,
+                                                provider=provider,
+                                                version=version)["Data"]
 
     def get_pipeline_by_id(self, pipeline_id):
-        return self.paiflow_client.get_pipeline(pipeline_id)["Data"]
+        return self.paiflow_client.get_pipeline(pipeline_id=pipeline_id)["Data"]
 
-    def search_pipeline(self, identifier=None, provider=None, fuzzy=None, source_type='private',
-                        version=None, page_num=1, page_size=50):
+    def search_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None,
+                        page_num=1, page_size=50):
         """List Pipelines
 
         Args:
@@ -76,7 +75,6 @@ class Session(object):
             identifier=identifier,
             provider=provider,
             fuzzy=fuzzy,
-            source_type=source_type,
             version=version,
             page_num=page_num,
             page_size=page_size,
@@ -122,8 +120,13 @@ class Session(object):
             "arguments": arguments,
             "env": env
         }
+
+        print("manifest", type(manifest))
+
+
         resp = self.paiflow_client.create_run(name, arguments, pipeline_id=pipeline_id, manifest=manifest,
                                               no_confirm_required=no_confirm_required)
+
         run_id = resp["Data"]["RunId"]
 
         print("Create pipeline run success (run_id: {run_id}), please visit the link below to view"

@@ -32,21 +32,26 @@ class PAIFlowClient(BaseClient):
         return "pre-paiflow.data.aliyun.com"  # pre-release env
         # return "paiflow.aliyuncs.com"  # daily-release env
 
-    def get_pipeline(self, pipeline_id):
+    def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
-        request.set_PipelineId(pipeline_id)
+        if pipeline_id is not None:
+            request.set_PipelineId(pipeline_id)
+        else:
+            assert identifier is not None
+            assert provider is not None
+            assert version is not None
+            request.set_PipelineIdentifier(identifier)
+            request.set_PipelineVersion(version)
+            request.set_PipelineProvider(provider)
         return self._call_service_with_exception(request)
 
-    def list_pipeline(self, identifier=None, provider=None, fuzzy=None, source_type="private",
+    def list_pipeline(self, identifier=None, provider=None, fuzzy=None,
                       version="", page_num=1, page_size=50):
-        source_type = source_type.lower()
-        assert source_type in ("private", "public")
         assert fuzzy is None or isinstance(fuzzy, bool), "Fuzzy should be type bool"
 
         request = self._construct_request(ListPipelinesRequest.ListPipelinesRequest)
         request.set_PageNumber(page_num)
         request.set_PageSize(page_size)
-        request.set_SourceType(source_type)
 
         if provider is not None:
             request.set_PipelineProvider(provider)

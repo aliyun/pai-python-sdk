@@ -23,7 +23,7 @@ class UpdatePipelineRequest(RoaRequest):
 
 	def __init__(self):
 		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'UpdatePipeline')
-		self.set_uri_pattern('/api/core/v1.0/pipelines/[PipelineId]')
+		self.set_uri_pattern('/api/core/v1.0/pipelines')
 		self.set_method('PUT')
 
 	def get_Manifest(self):
@@ -32,8 +32,26 @@ class UpdatePipelineRequest(RoaRequest):
 	def set_Manifest(self,Manifest):
 		self.add_body_params('Manifest', Manifest)
 
+	def get_PipelineProvider(self):
+		return self.get_body_params().get('PipelineProvider')
+
+	def set_PipelineProvider(self,PipelineProvider):
+		self.add_body_params('PipelineProvider', PipelineProvider)
+
+	def get_PipelineVersion(self):
+		return self.get_body_params().get('PipelineVersion')
+
+	def set_PipelineVersion(self,PipelineVersion):
+		self.add_body_params('PipelineVersion', PipelineVersion)
+
+	def get_PipelineIdentifier(self):
+		return self.get_body_params().get('PipelineIdentifier')
+
+	def set_PipelineIdentifier(self,PipelineIdentifier):
+		self.add_body_params('PipelineIdentifier', PipelineIdentifier)
+
 	def get_PipelineId(self):
-		return self.get_path_params().get('PipelineId')
+		return self.get_body_params().get('PipelineId')
 
 	def set_PipelineId(self,PipelineId):
-		self.add_path_param('PipelineId',PipelineId)
+		self.add_body_params('PipelineId', PipelineId)
