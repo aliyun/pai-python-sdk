@@ -16,11 +16,9 @@ _test_root = os.path.dirname(os.path.abspath(__file__))
 class TestPaiFlowAPI(BaseTestCase):
 
     def test_list_pipeline(self):
-        resp = self.session.list_pipeline(page_size=200)
-        pprint(resp)
-
-        for pipeline_outline in resp["Data"]:
-            pprint(self.session.list_pipeline_privilege(pipeline_outline["PipelineId"]))
+        pipeline_infos, total_count = self.session.search_pipeline(page_size=200)
+        if total_count > 0:
+            self.assertTrue(len(pipeline_infos) > 0)
 
     def test_pipeline_create(self):
         pass
@@ -76,23 +74,6 @@ class TestPaiFlowAPI(BaseTestCase):
                'workflowService': {'config': {'endpoint': 'http://service.cn-shanghai.argo.aliyun.com'},
                                    'name': 'argo'}}
         return arguments, env
-
-    def test_pipeline_run_by_id(self):
-        pipeline_id = 'fda7f0a92d784864a15a9ae011f3185f'
-        pipeline_info = self.session.get_pipeline_by_id(pipeline_id)
-        manifest = pipeline_info["Manifest"]
-        manifest = yaml.load(manifest, yaml.FullLoader)
-        manifest["metadata"]["version"] = "v0.1"
-
-        arguments, env = self.data_source_pipeline_arguments_env()
-        name_suffix = str(int(time.time()))
-        run_id = self.session.create_pipeline_run("unittest_paiflow_%s" % name_suffix,
-                                                  pipeline_id=pipeline_id,
-                                                  arguments=arguments,
-                                                  no_confirm_required=True)
-        self.assertIsNotNone(run_id)
-        run = RunInstance(run_id=run_id, session=self.session)
-        run.wait()
 
     def test_run_wait(self):
         pass
