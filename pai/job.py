@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
-from six import with_metaclass
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta
+
 from enum import Enum
+from six import with_metaclass
 
 from pai.pipeline.run import RunStatus
 

@@ -5,10 +5,9 @@ import time
 from datetime import datetime
 
 from libs.futures import ThreadPoolExecutor
+from pai.decorator import cached_property
 from pai.exception import TimeoutException
 from pai.utils import run_detail_url
-from pai.decorator import cached_property
-
 
 logger = logging.getLogger(__name__)
 
@@ -107,9 +106,11 @@ class RunInstance(object):
     def retry(self):
         return self.session.retry_run(self.run_id)
 
-    def get_node_log(self, node_id, pending=False, page_size=100, page_offset=0, from_time=None, to_time=None):
+    def get_node_log(self, node_id, pending=False, page_size=100, page_offset=0, from_time=None,
+                     to_time=None):
         while True:
-            logs = self.session.get_run_log(self.run_id, node_id, from_time=from_time, to_time=to_time,
+            logs = self.session.get_run_log(self.run_id, node_id, from_time=from_time,
+                                            to_time=to_time,
                                             page_size=page_size, page_offset=page_offset)
 
             if logs:
@@ -151,9 +152,12 @@ class RunInstance(object):
         run_info = self.get_run_info()
         run_status = run_info["Status"]
         if run_status == RunStatus.Init:
-            raise ValueError('Pipeline run instance is in status "Init", please start the run instance.')
+            raise ValueError(
+                'Pipeline run instance is in status "Init", please start the run instance.')
         elif run_status in (RunStatus.Terminated, RunStatus.Suspended):
-            raise ValueError("Pipeline run instance is stopped(status:%s), please resume/retry the run." % run_status)
+            raise ValueError(
+                "Pipeline run instance is stopped(status:%s), please resume/retry the run."
+                % run_status)
         elif run_status == RunStatus.Failed:
             raise ValueError("Pipeline run is failed.")
         elif run_status in (RunStatus.Skipped, RunStatus.Unknown):
@@ -182,7 +186,8 @@ class RunInstance(object):
             time.sleep(5)
             curr_status_infos = self.travel_node_status_info(node_id)
             for node_fullname, status_info in curr_status_infos.items():
-                if node_fullname not in prev_status_infos and status_info["status"] != RunStatus.Skipped:
+                if node_fullname not in prev_status_infos and \
+                        status_info["status"] != RunStatus.Skipped:
                     run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
             prev_status_infos = curr_status_infos
             root_node_status = prev_status_infos[self.run_id]["status"]
@@ -228,7 +233,8 @@ class _RunLogger(object):
                 else:
                     break
 
-    def submit(self, node_id, node_name, from_time=None, to_time=None, page_size=100, page_offset=0):
+    def submit(self, node_id, node_name, from_time=None, to_time=None, page_size=100,
+               page_offset=0):
         self.executor.submit(self.tail, node_id=node_id, node_name=node_name, from_time=from_time,
                              to_time=to_time, page_size=page_size, page_offset=page_offset)
 

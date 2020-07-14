@@ -29,7 +29,8 @@ class Estimator(object):
 
 class PipelineEstimator(PaiFlowBase, Estimator):
 
-    def __init__(self, session, parameters=None, _compile_args=False, manifest=None, pipeline_id=None):
+    def __init__(self, session, parameters=None, _compile_args=False, manifest=None,
+                 pipeline_id=None):
         Estimator.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
         self._compile_args = _compile_args
@@ -50,14 +51,16 @@ class PipelineEstimator(PaiFlowBase, Estimator):
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
-        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest, _compile_args=False)
+        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest,
+                               _compile_args=False)
         return pe
 
     @classmethod
     def from_pipeline_id(cls, pipeline_id, session, parameters=None):
         pipeline_info = session.get_pipeline_by_id(pipeline_id)
         manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
-        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest, pipeline_id=pipeline_id,
+        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest,
+                               pipeline_id=pipeline_id,
                                _compile_args=False)
         return pe
 
@@ -72,7 +75,8 @@ class AlgoBaseEstimator(PipelineEstimator):
 
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseEstimator, self).__init__(session=session, _compile_args=True, parameters=kwargs,
+        super(AlgoBaseEstimator, self).__init__(session=session, _compile_args=True,
+                                                parameters=kwargs,
                                                 manifest=manifest, pipeline_id=pipeline_id)
 
     def get_base_info(self, session):
@@ -99,23 +103,24 @@ class _EstimatorJob(RunJob):
     def session(self):
         return self.estimator.session
 
-    def create_model(self, artifact=None):
-        outputs = self.get_outputs()
-        if not outputs:
-            raise ValueError("No model artifact is available to create model")
-
-        model_data = None
-        if name is None:
-            model_data = outputs[0]
-        else:
-            for output in outputs:
-                if output["Name"] == name:
-                    model_data = output
-
-        if not model_data or model_data["Type"] != ArtifactDataType.DataSet:
-            raise ValueError("No model artifact is available to create model")
-
-        if model_data["locationType"]["modelType"] == ArtifactModelType.OfflineModel:
-            return XFlowOfflineModel(session=self.session, name=model_data["Name"], model_data=model_data)
-        else:
-            return PmmlModel(session=self.session, name=model_data["Name"], model_data=model_data)
+    # def create_model(self, artifact=None):
+    #     outputs = self.get_outputs()
+    #     if not outputs:
+    #         raise ValueError("No model artifact is available to create model")
+    #
+    #     model_data = None
+    #     if name is None:
+    #         model_data = outputs[0]
+    #     else:
+    #         for output in outputs:
+    #             if output["Name"] == name:
+    #                 model_data = output
+    #
+    #     if not model_data or model_data["Type"] != ArtifactDataType.DataSet:
+    #         raise ValueError("No model artifact is available to create model")
+    #
+    #     if model_data["locationType"]["modelType"] == ArtifactModelType.OfflineModel:
+    #         return XFlowOfflineModel(session=self.session, name=model_data["Name"],
+    #                                  model_data=model_data)
+    #     else:
+    #         return PmmlModel(session=self.session, name=model_data["Name"], model_data=model_data)

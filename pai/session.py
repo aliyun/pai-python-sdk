@@ -1,14 +1,12 @@
 from __future__ import absolute_import
 
-from pprint import pprint
-
 import six
 import yaml
 from aliyunsdkcore.client import AcsClient
+from odps import ODPS
 
 from pai.api.client_factory import ClientFactory
 from pai.utils import run_detail_url
-from odps import ODPS
 
 
 class Session(object):
@@ -35,7 +33,8 @@ class Session(object):
 
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
         self.sts_client = ClientFactory.create_sts_client(self._acs_client)
-        self.odps_client = ODPS(access_id=access_key, secret_access_key=access_secret, project=odps_project)
+        self.odps_client = ODPS(access_id=access_key, secret_access_key=access_secret,
+                                project=odps_project)
 
     @property
     def account_id(self):
@@ -85,8 +84,9 @@ class Session(object):
 
     def create_pipeline(self, pipeline_def):
         """
-        create_pipeline submit `pipeline_manifest` to pipeline service and store. Identifier-provider-version
-         is unique key. The same triple combination will result overwrite.
+        create_pipeline submit `pipeline_manifest` to pipeline service and store.
+        Identifier-provider-version is unique key. The same triple combination will
+        result overwrite.
 
         Args:
             pipeline_def: pipeline definition manifest, support types Pipeline,
@@ -101,7 +101,8 @@ class Session(object):
         elif isinstance(pipeline_def, Pipeline):
             manifest = yaml.dump(pipeline_def.to_dict())
         elif not isinstance(pipeline_def, six.string_types):
-            raise ValueError("Not support argument `pipeline_def` type %s, expected dict, Pipeline or str.")
+            raise ValueError(
+                "Not support argument `pipeline_def` type %s, expected dict, Pipeline or str.")
         resp = self.paiflow_client.create_pipeline(manifest=manifest)
         return resp["Data"]["PipelineId"]
 
@@ -121,7 +122,8 @@ class Session(object):
             "env": env
         }
 
-        resp = self.paiflow_client.create_run(name, arguments, pipeline_id=pipeline_id, manifest=manifest,
+        resp = self.paiflow_client.create_run(name, arguments, pipeline_id=pipeline_id,
+                                              manifest=manifest,
                                               no_confirm_required=no_confirm_required)
 
         run_id = resp["Data"]["RunId"]

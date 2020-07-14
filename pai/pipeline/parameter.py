@@ -51,10 +51,12 @@ class PipelineParameter(PipelineVariable):
         desc = param_spec.pop("desc", None)
         required = param_spec.pop("required", False)
 
-        param = create_pipeline_parameter(name=name, typ=typ, kind=kind, from_=from_, value=value, desc=desc,
+        param = create_pipeline_parameter(name=name, typ=typ, kind=kind, from_=from_, value=value,
+                                          desc=desc,
                                           required=required, feasible=feasible)
         if not param.validate_value(val):
-            raise ValueError("Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
+            raise ValueError(
+                "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
         param.value = val
         return param.to_argument()
 
@@ -86,7 +88,8 @@ class Interval(object):
 
     _NUMBER_REGEXP = r"(-?(?:(?:[\d]+(\.[\d]*)?)|INF))"
     INTERVAL_PATTERN = re.compile(
-        r"^([(\[])\s*{number_pattern}\s*,\s*{number_pattern}([)\]])$".format(number_pattern=_NUMBER_REGEXP))
+        r"^([(\[])\s*{number_pattern}\s*,\s*{number_pattern}([)\]])$".format(
+            number_pattern=_NUMBER_REGEXP))
 
     def __init__(self, min_, max_, min_inclusive, max_inclusive):
         self.min_ = min_

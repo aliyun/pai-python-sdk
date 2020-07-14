@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 
 from pai import ProviderAlibabaPAI
-from test import BaseTestCase
 from pai.pipeline import Pipeline
+from test import BaseTestCase
 
 
 class TestEstimatorBase(BaseTestCase):
@@ -45,14 +45,14 @@ class TestEstimatorBase(BaseTestCase):
             "modelName": model_name
         }
 
-        train_job = est.fit(wait=True, job_name="ut_pipeline_test", args=fit_args)
+        _ = est.fit(wait=True, job_name="ut_pipeline_test", args=fit_args)
 
         # assert odps offlineModel exists
-        self.assertTrue(self.session.odps_client.exist_offline_model(name=model_name, project=project))
+        self.assertTrue(
+            self.session.odps_client.exist_offline_model(name=model_name, project=project))
 
         # model = job.create_model(artifact="outputArtifact")
         # model.deploy()
 
     def test_new_composite_pipeline_to_estimator(self):
         pass
-

@@ -29,11 +29,14 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
         self._pipeline_id = pipeline_id
 
     def _prepare_run(self, manifest, job_name=None, arguments=None):
-        self._inputs_artifacts = {af["name"]: af for af in manifest["spec"]["inputs"].get("artifacts", [])}
-        self._parameters = {param["name"]: param for param in manifest["spec"]["inputs"].get("parameters", [])}
+        self._inputs_artifacts = {af["name"]: af for af in
+                                  manifest["spec"]["inputs"].get("artifacts", [])}
+        self._parameters = {param["name"]: param for param in
+                            manifest["spec"]["inputs"].get("parameters", [])}
         parameters, artifacts = self.translate_arguments(arguments) if arguments else ([], [])
         if job_name is None:
-            job_name = "{0}-{1}".format(manifest["metadata"]["identifier"][:3], int(time.time() * 1000))
+            job_name = "{0}-{1}".format(manifest["metadata"]["identifier"][:3],
+                                        int(time.time() * 1000))
         run_args = dict()
         if parameters:
             run_args["parameters"] = parameters
@@ -44,7 +47,8 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
 
     def _run(self, job_name=None, arguments=None, env=None):
         manifest = self.get_pipeline_definition()
-        job_name, run_args = self._prepare_run(job_name=job_name, arguments=arguments, manifest=manifest)
+        job_name, run_args = self._prepare_run(job_name=job_name, arguments=arguments,
+                                               manifest=manifest)
 
         if self.get_pipeline_id():
             run_id = self.session.create_pipeline_run(name=job_name, arguments=run_args, env=env,
@@ -78,8 +82,9 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
                 pass
                 # raise ValueError("Argument %s is not support by pipeline manifest" % name)
 
-        requires = set([param_name for param_name, spec in self._parameters.items() if spec.get("required")] + \
-                       [af_name for af_name, spec in self._inputs_artifacts.items() if spec.get("required")])
+        requires = set(
+            [param_name for param_name, spec in self._parameters.items() if spec.get("required")]
+            + [af_name for af_name, spec in self._inputs_artifacts.items() if spec.get("required")])
         not_supply = requires - set(args.keys())
 
         if len(not_supply) > 0:

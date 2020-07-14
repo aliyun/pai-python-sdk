@@ -32,11 +32,12 @@ def ensure_str(val):
 
 def ensure_unix_time(t):
     if isinstance(t, datetime):
-        return datetime.fromtimestamp(t)
-    elif isinstance(t, (int, long)):
+        return (t - datetime(1970, 1, 1)).total_seconds()
+    elif isinstance(t, six.integer_types):
         return t
     else:
-        raise ValueError("not support format, unable to convert to unix timestamp(%s:%s)" % (type(t), t))
+        raise ValueError(
+            "not support format, unable to convert to unix timestamp(%s:%s)" % (type(t), t))
 
 
 def extract_odps_table_info(data):
@@ -58,7 +59,8 @@ def _extract_odps_table_info_from_url(resource):
     if not matches:
         raise ValueError("Not support ODPSTable resource schema.")
 
-    project, table, partition = matches.group("project"), matches.group("table_name"), matches.group("partition").strip(
+    project, table, partition = matches.group("project"), matches.group(
+        "table_name"), matches.group("partition").strip(
         "/")
     return project, table, partition
 

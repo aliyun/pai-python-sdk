@@ -1,16 +1,16 @@
 from __future__ import absolute_import
-
 from __future__ import print_function
+
 import random
 import time
 
 import odps
 import pandas as pd
+from six.moves import zip
 from sklearn.datasets import load_iris
 
 from pai.xflow.classifier import LogisticRegression
 from test import BaseTestCase
-from six.moves import zip
 
 
 class TestLogisticsRegression(BaseTestCase):
@@ -45,10 +45,12 @@ class TestLogisticsRegression(BaseTestCase):
             regularized_type="l2",
         )
         run_job = lr.fit(wait=True, input_data=self.iris_df, label_col="category",
-                         feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
+                         feature_cols=['sepal_length', 'sepal_width', 'petal_length',
+                                       'petal_width'],
                          model_name=model_name)
 
-        offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())), artifact="outputArtifact")
+        offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())),
+                                             artifact="outputArtifact")
         self.assertIsNotNone(offline_model)
 
     def test_async_train(self):
@@ -58,10 +60,12 @@ class TestLogisticsRegression(BaseTestCase):
             regularized_type="l2",
         )
         run_job = lr.fit(wait=True, input_data=self.iris_df, label_col="category",
-                         feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
+                         feature_cols=['sepal_length', 'sepal_width', 'petal_length',
+                                       'petal_width'],
                          model_name=model_name)
         run_job.attach()
-        offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())), artifact="outputArtifact")
+        offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())),
+                                             artifact="outputArtifact")
         self.assertIsNotNone(offline_model)
 
     def test_lr_multiple_call_fit(self):
@@ -85,7 +89,8 @@ class TestLogisticsRegression(BaseTestCase):
         )
         with self.assertRaises(ValueError):
             # miss required arguments model_name
-            lr.fit(wait=True, input_data=self.iris_df, feature_cols=self.iris_df, label_col="category")
+            lr.fit(wait=True, input_data=self.iris_df, feature_cols=self.iris_df,
+                   label_col="category")
 
 
 class TestRandomForestClassifier(BaseTestCase):

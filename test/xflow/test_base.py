@@ -1,12 +1,5 @@
 from __future__ import absolute_import
 
-import random
-import time
-
-import odps
-import pandas as pd
-from sklearn.datasets import load_iris
-
 from pai.xflow.classifier import LogisticRegression
 from test import BaseTestCase
 
@@ -57,7 +50,7 @@ class TestXFlowEstimator(BaseTestCase):
             "itemDelimiter": ",",
             "kvDelimiter": ":",
             "__xflowProject": lr.get_xflow_project(),
-            "__execution": lr.get_execution(),
+            "__execution": lr.get_xflow_execution(),
         }
 
         compiled_args = lr.rebuild_args(

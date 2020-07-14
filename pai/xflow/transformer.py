@@ -47,7 +47,8 @@ class ODPSDataSource(XFlowTransformer):
         :Example:
 
         >> tf = Transformer(session=session)
-        >> job = tf.transform(table_name='pai_online_project.wumai_data', wait=True, job_name='data_source_example_job')
+        >> job = tf.transform(table_name='pai_online_project.wumai_data', wait=True,
+         job_name='data_source_example_job')
         >> job.get_status()
 
         Args:

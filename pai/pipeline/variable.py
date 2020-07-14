@@ -10,8 +10,8 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
     variable_category = None
 
-    def __init__(self, name, typ, desc=None, kind="inputs", value=None, from_=None, required=None, parent=None,
-                 validator=None):
+    def __init__(self, name, typ, desc=None, kind="inputs", value=None, from_=None, required=None,
+                 parent=None, validator=None):
         """
 
         Args:
@@ -82,7 +82,8 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
     @property
     def fullname(self):
         """Unique identifier in pipeline manifest for PipelineVariable"""
-        return ".".join(filter(None, [self.parent.ref_name, self.kind, self.variable_category, self.name]))
+        return ".".join(
+            filter(None, [self.parent.ref_name, self.kind, self.variable_category, self.name]))
 
     def __str__(self):
         return "{name}:{kind}:{variable_category}:{typ}".format(

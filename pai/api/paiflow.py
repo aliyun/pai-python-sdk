@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-from pprint import pprint
-
 import six
 import yaml
 
@@ -11,8 +9,10 @@ from libs.aliyunsdkpaiflow.request.v20200328 import (
     GetPipelinePrivilegeRequest
 )
 from libs.aliyunsdkpaiflow.request.v20200328 import (
-    CreateRunRequest, GetRunRequest, TerminateRunRequest, SuspendRunRequest, ResumeRunRequest, RetryRunRequest,
-    StartRunRequest, GetNodeDetailRequest, ListRunsRequest, ListNodeLogsRequest, ListNodeOutputsRequest
+    CreateRunRequest, GetRunRequest, TerminateRunRequest, SuspendRunRequest, ResumeRunRequest,
+    RetryRunRequest,
+    StartRunRequest, GetNodeDetailRequest, ListRunsRequest, ListNodeLogsRequest,
+    ListNodeOutputsRequest
 )
 from pai.api import BaseClient
 from pai.utils import ensure_str, ensure_unix_time
@@ -87,7 +87,8 @@ class PAIFlowClient(BaseClient):
         return self._call_service_with_exception(request)
 
     def update_pipeline_privilege(self, pipeline_id, user_ids):
-        request = self._construct_request(UpdatePipelinePrivilegeRequest.UpdatePipelinePrivilegeRequest)
+        request = self._construct_request(
+            UpdatePipelinePrivilegeRequest.UpdatePipelinePrivilegeRequest)
         request.set_PipelineId(pipeline_id)
         if not user_ids:
             raise ValueError("Argument 'users' should not be empty.")
@@ -101,7 +102,8 @@ class PAIFlowClient(BaseClient):
         request.set_PipelineId(pipeline_id)
         return self._call_service_with_exception(request)
 
-    def create_run(self, name, arguments, pipeline_id=None, manifest=None, no_confirm_required=False):
+    def create_run(self, name, arguments, pipeline_id=None, manifest=None,
+                   no_confirm_required=False):
         if not pipeline_id and not manifest:
             raise ValueError("Create pipeline run need either pipeline_id or manifest.")
         if pipeline_id and manifest:

@@ -3,14 +3,11 @@ from __future__ import absolute_import
 import os
 import time
 import unittest
-from pprint import pprint
 
-import yaml
-
-from pai.xflow.classifier import LogisticRegression
 from pai.pipeline import Pipeline, PipelineStep
-from pai.pipeline.artifact import ArtifactType, ArtifactDataType, ArtifactLocationType
+from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
 from pai.pipeline.run import RunInstance, RunStatus
+from pai.xflow.classifier import LogisticRegression
 from test import BaseTestCase
 from test.pipeline import load_local_yaml
 
@@ -49,30 +46,36 @@ class TestPipeline(BaseTestCase):
     @staticmethod
     def add_local_pipeline_step(pipeline, identifier, name=None):
         manifest = load_local_yaml("%s.yaml" % identifier)
-        step = PipelineStep.create_from_manifest(manifest, pipeline, name=name if name else identifier)
+        name = name if name else identifier
+        step = PipelineStep.create_from_manifest(manifest, pipeline, name=name)
         pipeline.steps[step.name] = step
         return step
 
     def create_forest_pipeline(self):
-        p = Pipeline.new_pipeline(identifier="ut-randomforest", version="v0.1.0", session=self.session)
+        p = Pipeline.new_pipeline(identifier="ut-randomforest", version="v0.1.0",
+                                  session=self.session)
 
         execution_input = p.create_input_parameter("__execution", 'map')
         feature_col_names_input = p.create_input_parameter("featureColNames", str)
-        model_name_input = p.create_input_parameter("modelName", str, value="test_randomforest", required=True)
+        model_name_input = p.create_input_parameter("modelName", str, value="test_randomforest",
+                                                    required=True)
 
-        output_detail_table_1_input = p.create_input_parameter("outputDetailTableName1", str, required=True)
-        output_detail_table_2_input = p.create_input_parameter("outputDetailTableName2", str, required=True)
-        output_metric_table_1_input = p.create_input_parameter("outputMetricTableName1", str, required=True)
-        output_metric_table_2_input = p.create_input_parameter("outputMetricTableName2", str, required=True)
+        output_detail_table_1_input = p.create_input_parameter("outputDetailTableName1", str,
+                                                               required=True)
+        output_detail_table_2_input = p.create_input_parameter("outputDetailTableName2", str,
+                                                               required=True)
+        output_metric_table_1_input = p.create_input_parameter("outputMetricTableName1", str,
+                                                               required=True)
+        output_metric_table_2_input = p.create_input_parameter("outputMetricTableName2", str,
+                                                               required=True)
         output_table_input = p.create_input_parameter("outputTableName", str, required=True)
 
-        input_artifact1 = p.create_input_artifact("inputArtifact", data_type=ArtifactDataType.DataSet,
-                                                  location_type=ArtifactLocationType.MaxComputeTable,
-                                                  required=True)
-        input_artifact2 = p.create_input_artifact("inputArtifact2",
-                                                  data_type=ArtifactDataType.DataSet,
-                                                  location_type=ArtifactLocationType.MaxComputeTable,
-                                                  required=True)
+        input_artifact1 = p.create_input_artifact(
+            "inputArtifact", data_type=ArtifactDataType.DataSet,
+            location_type=ArtifactLocationType.MaxComputeTable, required=True)
+        input_artifact2 = p.create_input_artifact(
+            "inputArtifact2", data_type=ArtifactDataType.DataSet,
+            location_type=ArtifactLocationType.MaxComputeTable, required=True)
 
         randomforest_step = p.create_step("randomforests-xflow-ODPS", name="randomforests")
         randomforest_step.set_arguments(
@@ -118,8 +121,10 @@ class TestPipeline(BaseTestCase):
             inputDataSetArtifact=input_artifact2,
         )
 
-        p.create_output_artifact("predictionResult", from_=prediction_step1.outputs["predictionResult"])
-        p.create_output_artifact("predictionResult2", from_=prediction_step2.outputs["predictionResult"])
+        p.create_output_artifact("predictionResult",
+                                 from_=prediction_step1.outputs["predictionResult"])
+        p.create_output_artifact("predictionResult2",
+                                 from_=prediction_step2.outputs["predictionResult"])
         return p
 
     @staticmethod
@@ -127,41 +132,65 @@ class TestPipeline(BaseTestCase):
         # version = "v%s" % (str(int(time.time() * 1000)))
         p = Pipeline.new_pipeline("ut-air-quality", version="v1.0.0", session=session)
 
-        project_input = p.create_input_parameter("project", str)
         execution_input = p.create_input_parameter("execution", "map", required=True)
         cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
-        hist_cols_input = p.create_input_parameter("histogram_selected_col_names", str, required=True)
+        hist_cols_input = p.create_input_parameter("histogram_selected_col_names", str,
+                                                   required=True)
         sql_input = p.create_input_parameter("sql", str, required=True)
-        normalize_cols_input = p.create_input_parameter("normalize_selected_col_names", str, required=True)
+        normalize_cols_input = p.create_input_parameter("normalize_selected_col_names", str,
+                                                        required=True)
         fraction_input = p.create_input_parameter("fraction", float, required=True)
-        randomforest_feature_cols_input = p.create_input_parameter("randomforest_feature_col_names", str, required=True)
-        randomforest_label_col_input = p.create_input_parameter("randomforest_label_col_names", str, required=True)
-        prediction1_feature_col_input = p.create_input_parameter("prediction1_feature_col_names", str, required=True)
-        prediction1_append_col_input = p.create_input_parameter("prediction1_append_col_names", str, required=True)
-        prediction1_result_col_input = p.create_input_parameter("prediction1_result_col_names", str, required=True)
-        prediction1_score_col_input = p.create_input_parameter("prediction1_score_col_names", str, required=True)
-        prediction1_detail_col_input = p.create_input_parameter("prediction1_detail_col_names", str, required=True)
+        randomforest_feature_cols_input = p.create_input_parameter("randomforest_feature_col_names",
+                                                                   str, required=True)
+        randomforest_label_col_input = p.create_input_parameter("randomforest_label_col_names", str,
+                                                                required=True)
+        prediction1_feature_col_input = p.create_input_parameter("prediction1_feature_col_names",
+                                                                 str, required=True)
+        prediction1_append_col_input = p.create_input_parameter("prediction1_append_col_names", str,
+                                                                required=True)
+        prediction1_result_col_input = p.create_input_parameter("prediction1_result_col_names", str,
+                                                                required=True)
+        prediction1_score_col_input = p.create_input_parameter("prediction1_score_col_names", str,
+                                                               required=True)
+        prediction1_detail_col_input = p.create_input_parameter("prediction1_detail_col_names", str,
+                                                                required=True)
 
-        evaluate1_label_col_input = p.create_input_parameter("evaluate1_label_col_name", str, required=True)
-        evaluate1_score_col_input = p.create_input_parameter("evaluate1_score_col_name", str, required=True)
-        evaluate1_positive_label_input = p.create_input_parameter("evaluate1_positive_label", str, required=True)
-        evaluate1_bin_count_input = p.create_input_parameter("evaluate1_bin_count", int, required=True)
+        evaluate1_label_col_input = p.create_input_parameter("evaluate1_label_col_name", str,
+                                                             required=True)
+        evaluate1_score_col_input = p.create_input_parameter("evaluate1_score_col_name", str,
+                                                             required=True)
+        evaluate1_positive_label_input = p.create_input_parameter("evaluate1_positive_label", str,
+                                                                  required=True)
+        evaluate1_bin_count_input = p.create_input_parameter("evaluate1_bin_count", int,
+                                                             required=True)
 
-        logistic_feature_col_input = p.create_input_parameter("logisticregression_feature_col_names", str,
-                                                              required=True)
-        logistic_label_col_names = p.create_input_parameter("logisticregression_label_col_names", str, required=True)
-        logistic_good_value_input = p.create_input_parameter("logisticregression_good_value", int, required=True)
+        logistic_feature_col_input = p.create_input_parameter(
+            "logisticregression_feature_col_names", str,
+            required=True)
+        logistic_label_col_names = p.create_input_parameter("logisticregression_label_col_names",
+                                                            str, required=True)
+        logistic_good_value_input = p.create_input_parameter("logisticregression_good_value", int,
+                                                             required=True)
 
-        prediction2_feature_col_input = p.create_input_parameter("prediction2_feature_col_names", str, required=True)
-        prediction2_append_col_input = p.create_input_parameter("prediction2_append_col_names", str, required=True)
-        prediction2_result_col_input = p.create_input_parameter("prediction2_result_col_names", str, required=True)
-        prediction2_score_col_input = p.create_input_parameter("prediction2_score_col_names", str, required=True)
-        prediction2_detail_col_input = p.create_input_parameter("prediction2_detail_col_names", str, required=True)
+        prediction2_feature_col_input = p.create_input_parameter("prediction2_feature_col_names",
+                                                                 str, required=True)
+        prediction2_append_col_input = p.create_input_parameter("prediction2_append_col_names", str,
+                                                                required=True)
+        prediction2_result_col_input = p.create_input_parameter("prediction2_result_col_names", str,
+                                                                required=True)
+        prediction2_score_col_input = p.create_input_parameter("prediction2_score_col_names", str,
+                                                               required=True)
+        prediction2_detail_col_input = p.create_input_parameter("prediction2_detail_col_names", str,
+                                                                required=True)
 
-        evaluate2_label_col_input = p.create_input_parameter("evaluate2_label_col_name", str, required=True)
-        evaluate2_score_col_input = p.create_input_parameter("evaluate2_score_col_name", str, required=True)
-        evaluate2_positive_label_input = p.create_input_parameter("evaluate2_positive_label", str, required=True)
-        evaluate2_bin_count_input = p.create_input_parameter("evaluate2_bin_count", int, required=True)
+        evaluate2_label_col_input = p.create_input_parameter("evaluate2_label_col_name", str,
+                                                             required=True)
+        evaluate2_score_col_input = p.create_input_parameter("evaluate2_score_col_name", str,
+                                                             required=True)
+        evaluate2_positive_label_input = p.create_input_parameter("evaluate2_positive_label", str,
+                                                                  required=True)
+        evaluate2_bin_count_input = p.create_input_parameter("evaluate2_bin_count", int,
+                                                             required=True)
 
         data_source_step = p.create_step("odps-data-source", name="dataSource")
 
@@ -262,7 +291,8 @@ class TestPipeline(BaseTestCase):
             positiveLabel=evaluate1_positive_label_input,
             binCount=evaluate1_bin_count_input,
         )
-        logistic_step = p.create_step("logisticregression-binary-xflow-ODPS", name="logisticregression")
+        logistic_step = p.create_step("logisticregression-binary-xflow-ODPS",
+                                      name="logisticregression")
 
         logistic_step.set_arguments(
             inputArtifact=split_step.outputs["outputArtifact1"],
@@ -304,7 +334,8 @@ class TestPipeline(BaseTestCase):
             binCount=evaluate2_bin_count_input,
         )
 
-        p.create_output_artifact("predictionResult", from_=evaluate2_step.outputs["outputDetailArtifact"])
+        p.create_output_artifact("predictionResult",
+                                 from_=evaluate2_step.outputs["outputDetailArtifact"])
         return p
 
     def create_cycle_pipeline(self):
@@ -382,7 +413,6 @@ class TestPipeline(BaseTestCase):
         execution_input = p.create_input_parameter("__execution", "map", required=True)
         cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
         input_table_name = p.create_input_parameter("table_name", str, required=True)
-        # hist_cols_input = p.create_input_parameter("histogram_selected_col_names", str, required=True)
 
         data_source_step = p.create_step("odps-data-source", provider="1557702098194904",
                                          version="v1", name="dataSource")
@@ -391,7 +421,8 @@ class TestPipeline(BaseTestCase):
             tableName=input_table_name,
         )
 
-        type_transform_step = p.create_step("type-transform-xflow-ODPS", provider="1557702098194904",
+        type_transform_step = p.create_step("type-transform-xflow-ODPS",
+                                            provider="1557702098194904",
                                             version="v1", name="typeTransform")
         type_transform_step.set_arguments(
             inputArtifact=data_source_step.outputs["outputArtifact"],
@@ -400,7 +431,8 @@ class TestPipeline(BaseTestCase):
             cols_to_double=cols_to_double_input,
         )
 
-        p.create_output_artifact("transformedArtifact", type_transform_step.outputs["outputArtifact"])
+        p.create_output_artifact("transformedArtifact",
+                                 type_transform_step.outputs["outputArtifact"])
         return p
 
     def test_temp_composite_pipeline_run(self):
@@ -418,7 +450,8 @@ class TestPipeline(BaseTestCase):
         p = self.create_composite_pipeline_case_1()
         arguments, env = self.args_for_composite_pipeline_1()
         pipeline_id = self.session.create_pipeline(p.to_dict())
-        run_id = self.session.create_pipeline_run("ut_composite_pipeline_run", pipeline_id=pipeline_id,
+        run_id = self.session.create_pipeline_run("ut_composite_pipeline_run",
+                                                  pipeline_id=pipeline_id,
                                                   arguments=arguments, env=env)
         self.assertIsNotNone(run_id)
         time.sleep(1)
@@ -434,9 +467,9 @@ class TestPipeline(BaseTestCase):
                                                 location_type=ArtifactLocationType.MaxComputeTable,
                                                 required=True)
 
-        label_dataset_input = p.create_input_artifact("label_data_set", data_type=ArtifactDataType.DataSet,
-                                                      location_type=ArtifactLocationType.MaxComputeTable,
-                                                      required=True)
+        label_dataset_input = p.create_input_artifact(
+            "label_data_set", data_type=ArtifactDataType.DataSet,
+            location_type=ArtifactLocationType.MaxComputeTable, required=True)
 
         execution_input = p.create_input_parameter("execution", "map", required=True)
         model_name_input = p.create_input_parameter("model_name", str, required=True)
@@ -445,21 +478,33 @@ class TestPipeline(BaseTestCase):
         user_project_input = p.create_input_parameter("user_project", str, required=True)
         pmml_volume_input = p.create_input_parameter("pmml_volume", str, required=True)
 
-        pred_feature_col_input = p.create_input_parameter("prediction_feature_col_names", str, required=True)
-        pred_append_col_input = p.create_input_parameter("prediction_append_col_names", str, required=True)
-        pred_result_col_input = p.create_input_parameter("prediction_result_col_names", str, required=True)
-        pred_score_col_input = p.create_input_parameter("prediction_score_col_names", str, required=True)
-        pred_detail_col_input = p.create_input_parameter("prediction_detail_col_names", str, required=True)
-        pred_output_table_input = p.create_input_parameter("prediction_output_table", str, required=True)
+        pred_feature_col_input = p.create_input_parameter("prediction_feature_col_names", str,
+                                                          required=True)
+        pred_append_col_input = p.create_input_parameter("prediction_append_col_names", str,
+                                                         required=True)
+        pred_result_col_input = p.create_input_parameter("prediction_result_col_names", str,
+                                                         required=True)
+        pred_score_col_input = p.create_input_parameter("prediction_score_col_names", str,
+                                                        required=True)
+        pred_detail_col_input = p.create_input_parameter("prediction_detail_col_names", str,
+                                                         required=True)
+        pred_output_table_input = p.create_input_parameter("prediction_output_table", str,
+                                                           required=True)
 
-        eval_label_col_input = p.create_input_parameter("evaluate_label_col_name", str, required=True)
-        eval_score_col_input = p.create_input_parameter("evaluate_score_col_name", str, required=True)
-        eval_positive_label_input = p.create_input_parameter("evaluate_positive_label", str, required=True)
+        eval_label_col_input = p.create_input_parameter("evaluate_label_col_name", str,
+                                                        required=True)
+        eval_score_col_input = p.create_input_parameter("evaluate_score_col_name", str,
+                                                        required=True)
+        eval_positive_label_input = p.create_input_parameter("evaluate_positive_label", str,
+                                                             required=True)
         eval_bin_count_input = p.create_input_parameter("evaluate_bin_count", int, required=True)
-        eval_output_detail_table_input = p.create_input_parameter("evaluate_output_detail_table", str, required=True)
-        eval_output_metric_table_input = p.create_input_parameter("evaluate_output_metrics_table", str, required=True)
-        eval_output_el_detail_table_input = p.create_input_parameter("evaluate_output_el_detail_table", str,
-                                                                     required=True)
+        eval_output_detail_table_input = p.create_input_parameter("evaluate_output_detail_table",
+                                                                  str, required=True)
+        eval_output_metric_table_input = p.create_input_parameter("evaluate_output_metrics_table",
+                                                                  str, required=True)
+        eval_output_el_detail_table_input = p.create_input_parameter(
+            "evaluate_output_el_detail_table", str,
+            required=True)
         # set default input for step with some common parameter.
         p.set_step_input("__execution", execution_input)
         # __userProject maybe remove from XFlow based manifest pipeline in future.
@@ -468,8 +513,9 @@ class TestPipeline(BaseTestCase):
         # p.set_step_input("__userProject", self.session.odps_project)
         p.set_step_input("__generatePMML", True)
 
-        lr_step = p.create_step_from_manifest(LogisticRegression(session=self.session).get_pipeline_definition(),
-                                              name="logistics_regression")
+        lr_step = p.create_step_from_manifest(
+            LogisticRegression(session=self.session).get_pipeline_definition(),
+            name="logistics_regression")
         lr_step.set_arguments(
             inputArtifact=dataset_input,
             modelName=model_name_input,
@@ -505,18 +551,23 @@ class TestPipeline(BaseTestCase):
             binCount=eval_bin_count_input,
         )
 
-        p.create_output_artifact("predictionResult", from_=evaluate_step.outputs["outputDetailArtifact"])
+        p.create_output_artifact("predictionResult",
+                                 from_=evaluate_step.outputs["outputDetailArtifact"])
 
         pipeline_def = p.to_dict()
 
         pipeline_executions = [param["from"] for p in pipeline_def["spec"]["pipelines"] for param in
-                               p["spec"]["arguments"]["parameters"] if param["name"] == "__execution"]
+                               p["spec"]["arguments"]["parameters"] if
+                               param["name"] == "__execution"]
 
         expected_execution = "{{inputs.parameters.execution}}"
-        self.assertTrue(all(expected_execution == execution_param for execution_param in pipeline_executions))
+        self.assertTrue(
+            all(expected_execution == execution_param for execution_param in pipeline_executions))
 
-        pipeline_generate_pmml = [param["value"] for p in pipeline_def["spec"]["pipelines"] for param in
-                                  p["spec"]["arguments"]["parameters"] if param["name"] == "__generatePMML"]
+        pipeline_generate_pmml = [param["value"] for p in pipeline_def["spec"]["pipelines"] for
+                                  param in
+                                  p["spec"]["arguments"]["parameters"] if
+                                  param["name"] == "__generatePMML"]
         # expected_val = True
         self.assertTrue(all(param for param in pipeline_generate_pmml))
 

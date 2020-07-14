@@ -10,9 +10,9 @@ import yaml
 from graphviz import Digraph
 
 from pai.pipeline.artifact import create_artifact, ArtifactType
-from pai.pipeline.parameter import create_pipeline_parameter, PipelineParameter
-from pai.pipeline.variable import PipelineVariable
+from pai.pipeline.parameter import create_pipeline_parameter
 from pai.pipeline.run import RunInstance
+from pai.pipeline.variable import PipelineVariable
 
 DEFAULT_PIPELINE_API_VERSION = "core/v1"
 
@@ -49,8 +49,8 @@ class Pipeline(object):
     @classmethod
     def new_pipeline(cls, identifier, version, session):
         """
-        Create new pipeline instance without inputs/outputs definition and implementation. Pipeline provider
-         is assigned as account id of Alibaba Cloud from session.
+        Create new pipeline instance without inputs/outputs definition and implementation.
+         Pipeline provider is assigned as account id of Alibaba Cloud from session.
 
         Args:
             identifier: identifier of new pipeline.
@@ -92,7 +92,8 @@ class Pipeline(object):
         self.inputs[name] = param
         return param
 
-    def create_input_artifact(self, name, data_type, location_type, model_type=None, desc=None, required=False,
+    def create_input_artifact(self, name, data_type, location_type, model_type=None, desc=None,
+                              required=False,
                               value=None):
         typ = ArtifactType(data_type=data_type, location_type=location_type, model_type=model_type)
         af = create_artifact(name=name, typ=typ, kind="inputs", desc=desc,
@@ -104,13 +105,15 @@ class Pipeline(object):
 
     def create_output_parameter(self, name, from_, desc=None):
         typ = from_.typ
-        param = create_pipeline_parameter(name=name, typ=typ, kind="outputs", desc=desc, parent=self, from_=from_)
+        param = create_pipeline_parameter(name=name, typ=typ, kind="outputs", desc=desc,
+                                          parent=self, from_=from_)
         self.outputs[name] = param
         return param
 
     def create_output_artifact(self, name, from_, desc=None):
         typ = from_.typ
-        af = create_artifact(name=name, typ=typ, kind="outputs", desc=desc, parent=self, from_=from_)
+        af = create_artifact(name=name, typ=typ, kind="outputs", desc=desc, parent=self,
+                             from_=from_)
         self.outputs[name] = af
         return af
 
@@ -141,7 +144,8 @@ class Pipeline(object):
 
     def _add_step(self, name, step):
         self.steps[name] = step
-        default_inputs = {name: value for name, value in self._default_step_inputs.items() if name in step.inputs}
+        default_inputs = {name: value for name, value in self._default_step_inputs.items() if
+                          name in step.inputs}
         step.set_arguments(**default_inputs)
         return step
 
@@ -149,10 +153,12 @@ class Pipeline(object):
         from pai.estimator import PipelineEstimator
         manifest = self.to_dict()
         if self.pipeline_id:
-            return PipelineEstimator.from_pipeline_id(pipeline_id=self.pipeline_id, session=self.session,
+            return PipelineEstimator.from_pipeline_id(pipeline_id=self.pipeline_id,
+                                                      session=self.session,
                                                       parameters=parameters)
         else:
-            return PipelineEstimator.from_manifest(manifest, session=self.session, parameters=parameters)
+            return PipelineEstimator.from_manifest(manifest, session=self.session,
+                                                   parameters=parameters)
 
     @classmethod
     def _load_by_manifest(cls, manifest, pipeline_id=None):
@@ -168,7 +174,8 @@ class Pipeline(object):
         api_version = manifest["apiVersion"]
         metadata = manifest["metadata"]
         spec = manifest["spec"]
-        identifier, provider, version = metadata["identifier"], metadata["provider"], metadata["version"]
+        identifier, provider, version = metadata["identifier"], metadata["provider"], metadata[
+            "version"]
         p = Pipeline(pipeline_id=pipeline_id, metadata={
             "identifier": identifier,
             "provider": provider,
@@ -177,7 +184,8 @@ class Pipeline(object):
 
         p = _load_input_output_spec(p, spec)
         if "pipelines" in spec and "execution" in spec:
-            raise ValueError("Manifest schema error: Both spec.pipelines and spec.execution is defined")
+            raise ValueError(
+                "Manifest schema error: Both spec.pipelines and spec.execution is defined")
 
         if "execution" in spec:
             p.execution = spec["execution"]
@@ -198,8 +206,10 @@ class Pipeline(object):
 
     @classmethod
     def get_by_identifier(cls, session, identifier, provider, version):
-        pipeline_info = session.get_pipeline(identifier=identifier, provider=provider, version=version)
-        p = cls._load_by_manifest(pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"])
+        pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
+                                             version=version)
+        p = cls._load_by_manifest(pipeline_info["Manifest"],
+                                  pipeline_id=pipeline_info["PipelineId"])
         p.session = session
         return p
 
@@ -223,7 +233,8 @@ class Pipeline(object):
             for parent in parents:
                 rev_dependencies[parent].add(step_name)
 
-        untraveled_steps = {step_name: set(previous_steps) for step_name, previous_steps in dependencies.items() if
+        untraveled_steps = {step_name: set(previous_steps) for step_name, previous_steps in
+                            dependencies.items() if
                             step_name not in entries}
         queue = deque(entries)
         while len(queue) > 0 and count > 0:
@@ -234,7 +245,8 @@ class Pipeline(object):
                 untraveled_steps[step].remove(cur_item)
                 if len(untraveled_steps[step]) == 0:
                     queue.append(step)
-        untraveled = {step_name for step_name, previous_steps in untraveled_steps.items() if len(previous_steps) > 0}
+        untraveled = {step_name for step_name, previous_steps in untraveled_steps.items() if
+                      len(previous_steps) > 0}
         if len(untraveled):
             logger.error("Pipeline Cycle detected, untraveled steps: %s" % ','.join(untraveled))
 
@@ -334,9 +346,10 @@ class PipelineStep(object):
     def set_arguments(self, **kwargs):
         """Config input parameter of pipeline step.
 
-        step.set_arguments set the source of input parameters, from one of input of pipeline, output of upstream step,
-        and default_parameter_input. It also inspect correctness of pipeline, by directed cycle detection,
-        input requirement identification, parameter type check.
+        step.set_arguments set the source of input parameters, from one of input of pipeline,
+         output of upstream step, and default_parameter_input. It also inspect correctness of
+          pipeline, by directed cycle detection, input requirement identification, parameter
+          type check.
 
         Args:
             **kwargs:
@@ -356,7 +369,8 @@ class PipelineStep(object):
 
         # for step_input in self.inputs.values():
         #     if step_input.required and not step_input.is_assigned and step_input.value is None:
-        #         raise ValueError("Parameter: %s is required but not assigned" % step_input.fullname)
+        #         raise ValueError("Parameter: %s is required but not assigned" %
+        #         step_input.fullname)
 
     def _add_dependency(self, step):
         if not step:
@@ -382,7 +396,8 @@ class PipelineStep(object):
         spec = {
             "arguments": dict(),
         }
-        inputs = [(arg.variable_category, arg.to_argument()) for arg in self.inputs.values() if arg.is_assigned]
+        inputs = [(arg.variable_category, arg.to_argument()) for arg in self.inputs.values() if
+                  arg.is_assigned]
         for cat, v in inputs:
             if cat in spec["arguments"]:
                 spec["arguments"][cat].append(v)
@@ -446,7 +461,3 @@ def _load_artifact(p, artifact_spec, kind):
                          value=value, desc=desc, required=required)
     getattr(p, kind)[name] = af
     return af
-
-
-def default_step_parameter(typ, value):
-    return create_pipeline_parameter(name=None, typ=typ, kind="outputs", value=value)

@@ -1,4 +1,5 @@
 from abc import ABCMeta
+
 import six
 import yaml
 
@@ -29,14 +30,16 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
 
 class PipelineTransformer(PaiFlowBase, Transformer):
 
-    def __init__(self, session, parameters=None, _compile_args=False, manifest=None, pipeline_id=None):
+    def __init__(self, session, parameters=None, _compile_args=False, manifest=None,
+                 pipeline_id=None):
         Transformer.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
         self._compile_args = _compile_args
 
     def set_manifest(self, manifest):
         metadata = manifest["metadata"]
-        identifier, provider, version = metadata["identifier"], metadata["provider"], metadata["version"]
+        identifier, provider, version = metadata["identifier"], metadata["provider"], metadata[
+            "version"]
         self.set_identifier(identifier).set_version(version).set_provider(provider)
         self._manifest = manifest
         return self
@@ -72,7 +75,8 @@ class AlgoBaseTransformer(PipelineTransformer):
 
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseTransformer, self).__init__(session=session, _compile_args=True, parameters=kwargs,
+        super(AlgoBaseTransformer, self).__init__(session=session, _compile_args=True,
+                                                  parameters=kwargs,
                                                   manifest=manifest, pipeline_id=pipeline_id)
 
     def get_base_info(self, session):

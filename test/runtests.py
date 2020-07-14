@@ -1,8 +1,6 @@
-import unittest
-import glob
-
 import fnmatch
 import os
+import unittest
 
 
 def main():

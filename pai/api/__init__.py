@@ -1,11 +1,10 @@
 from __future__ import absolute_import
 
-from pprint import pprint
+import json
 
-from pai.api.exception import ServiceCallException
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
 
-import json
+from pai.api.exception import ServiceCallException
 
 
 class BaseClient(object):
@@ -20,9 +19,10 @@ class BaseClient(object):
         except (ClientException, ServerException) as e:
             raise ServiceCallException(e.__str__())
 
-        # if int(resp["Code"]) != 200:
-        #     message = "Service response error, code:%s, message:%s" % (resp["Code"], resp["Message"])
-        #     raise ServiceCallException(message)
+        if int(resp["Code"]) != 200:
+            message = "Service response error, code:%s, message:%s" % (
+                resp["Code"], resp["Message"])
+            raise ServiceCallException(message)
         return resp
 
     def _get_endpoint(self):
