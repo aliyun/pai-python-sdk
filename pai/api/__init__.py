@@ -18,7 +18,7 @@ class BaseClient(object):
             raw_resp = self._acs_client.do_action_with_exception(request)
             resp = self._response_to_dict(raw_resp)
         except (ClientException, ServerException) as e:
-            raise ServiceCallException(str(e))
+            raise ServiceCallException(e.__str__())
 
         # if int(resp["Code"]) != 200:
         #     message = "Service response error, code:%s, message:%s" % (resp["Code"], resp["Message"])

@@ -4,10 +4,16 @@
 #
 #    pip-compile --output-file=requirements.txt ./requirements.in
 #
-aliyun-python-sdk-core==2.13.20  # via -r ./requirements.in, aliyun-python-sdk-sts
+aliyun-python-sdk-core==2.13.23  # via -r ./requirements.in, aliyun-python-sdk-sts
 aliyun-python-sdk-sts==3.0.2  # via -r ./requirements.in
+certifi==2020.6.20        # via requests
+chardet==3.0.4            # via requests
 graphviz==0.14            # via -r ./requirements.in
+idna==2.10                # via requests
 jmespath==0.10.0          # via aliyun-python-sdk-core
 pycryptodome==3.9.8       # via aliyun-python-sdk-core
+pyodps==0.9.3.1           # via -r ./requirements.in
 pyyaml==5.3.1             # via -r ./requirements.in
+requests==2.24.0          # via pyodps
 six==1.15.0               # via -r ./requirements.in
+urllib3==1.25.9           # via requests

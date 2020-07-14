@@ -1,9 +1,15 @@
 from __future__ import absolute_import
 
 import hashlib
+import re
 from datetime import datetime
 
 import six
+from odps import DataFrame as ODPSDataFrame
+from odps.models import Table
+from odps.models.partition import Partition
+
+odps_table_re = r'odps://(?P<project>[^/]+)/tables/(?P<table_name>[^/]+)(?P<partition>.*)'
 
 
 def md5_digest(raw_data):
@@ -31,3 +37,31 @@ def ensure_unix_time(t):
         return t
     else:
         raise ValueError("not support format, unable to convert to unix timestamp(%s:%s)" % (type(t), t))
+
+
+def extract_odps_table_info(data):
+    if isinstance(data, ODPSDataFrame):
+        data = data.data
+
+    if isinstance(data, Table):
+        return "%s.%s" % (data.project.name, data.name), None
+    elif isinstance(data, Partition):
+        return "%s.%s" % (data.table.project.name, data.table.name), data.spec
+    elif isinstance(data, six.string_types):
+        return _extract_odps_table_info_from_url(data)
+    else:
+        raise ValueError("Not support ODPSTable input(type:s)" % type(data))
+
+
+def _extract_odps_table_info_from_url(resource):
+    matches = re.match(odps_table_re, resource)
+    if not matches:
+        raise ValueError("Not support ODPSTable resource schema.")
+
+    project, table, partition = matches.group("project"), matches.group("table_name"), matches.group("partition").strip(
+        "/")
+    return project, table, partition
+
+
+def ensure_unicode(t):
+    return six.ensure_text(t)

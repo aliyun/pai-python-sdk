@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import logging
 import time
 from abc import ABCMeta
-from functools import wraps
 
 import six
 import yaml
@@ -13,60 +12,6 @@ from pai.pipeline.parameter import PipelineParameter
 from pai.pipeline.run import RunInstance
 
 Logger = logging.getLogger(__file__)
-
-{"location":
-     {"MaxComputeTable":
-          {"rolearn": "dddd", "endpoint":
-              "http://service.cn-shanghai.maxcompute.aliyun.com/api", "owner": "1557702098194904",
-           "project": "wyl_test", "table": "pai_online_project.wumai_data"}
-      }
- }
-
-
-class Artifact(object):
-
-    def __init__(self):
-        pass
-
-
-class MaxComputeTableArtifact(Artifact):
-
-    def __init__(self, table, project, endpoint, owner, rolearn):
-        super(MaxComputeTableArtifact, self).__init__()
-        self.project = project
-        self.endpoint = endpoint
-        self.owner = owner
-        self.rolearn = rolearn
-        self.table = table
-
-
-class MaxComputeOfflineModelArtifact(Artifact):
-
-    def __init__(self, name, endpoint, project, rolearn):
-        super(MaxComputeOfflineModelArtifact, self).__init__()
-        self.project = project
-        self.endpoint = endpoint
-        self.rolearn = rolearn
-        self.name = name
-
-
-class OSSArtifact(Artifact):
-
-    def __init__(self, bucket, key, endpoint, rolearn):
-        super(OSSArtifact, self).__init__()
-        self.bucket = bucket
-        self.endpoint = endpoint
-        self.rolearn = rolearn
-        self.key = key
-
-
-def reset(func):
-    @wraps(func)
-    def _(self, *args, **kwargs):
-        self._manifest = None
-        return func(self, *args, **kwargs)
-
-    return _
 
 
 class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
@@ -86,9 +31,9 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
     def _prepare_run(self, manifest, job_name=None, arguments=None):
         self._inputs_artifacts = {af["name"]: af for af in manifest["spec"]["inputs"].get("artifacts", [])}
         self._parameters = {param["name"]: param for param in manifest["spec"]["inputs"].get("parameters", [])}
-        parameters, artifacts = self.translate_arguments(arguments) if arguments else [], []
+        parameters, artifacts = self.translate_arguments(arguments) if arguments else ([], [])
         if job_name is None:
-            job_name = "{0}-{1}".format(manifest["metadata"]["identifier"], int(time.time() * 1000))
+            job_name = "{0}-{1}".format(manifest["metadata"]["identifier"][:3], int(time.time() * 1000))
         run_args = dict()
         if parameters:
             run_args["parameters"] = parameters
@@ -127,10 +72,11 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
                 param = PipelineParameter.to_argument_by_spec(arg, param_spec)
                 parameters.append(param)
             elif af_spec:
-                af = PipelineArtifact.to_argument_by_spec(arg, af_spec)
+                af = PipelineArtifact.to_argument_by_spec(arg, af_spec, kind="inputs")
                 artifacts.append(af)
             else:
-                raise ValueError("Argument %s is not support by pipeline manifest" % name)
+                pass
+                # raise ValueError("Argument %s is not support by pipeline manifest" % name)
 
         requires = set([param_name for param_name, spec in self._parameters.items() if spec.get("required")] + \
                        [af_name for af_name, spec in self._inputs_artifacts.items() if spec.get("required")])

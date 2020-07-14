@@ -17,12 +17,12 @@ class PipelineArtifact(PipelineVariable):
 
     # TODO: Artifact Value and Type Refactor
     @classmethod
-    def to_argument_by_spec(cls, val, af_spec):
+    def to_argument_by_spec(cls, val, af_spec, kind="inputs"):
         af_spec = af_spec.copy()
+
         name = af_spec.pop("name")
         typ = af_spec.pop("type")
         desc = af_spec.pop("desc")
-        kind = "inputs"
         value = af_spec.pop("value")
         from_ = af_spec.pop("from")
         required = af_spec.pop("required")
@@ -92,3 +92,39 @@ class ArtifactType(object):
             model_type = ArtifactModelType(d[data_type.value]["modelType"])
 
         return cls(data_type=data_type, location_type=location_type, model_type=model_type)
+
+
+class ArtifactValue(object):
+    def __init__(self):
+        pass
+
+
+class MaxComputeTableArtifact(ArtifactValue):
+
+    def __init__(self, table, project, endpoint, owner, rolearn):
+        super(MaxComputeTableArtifact, self).__init__()
+        self.project = project
+        self.endpoint = endpoint
+        self.owner = owner
+        self.rolearn = rolearn
+        self.table = table
+
+
+class MaxComputeOfflineModelArtifact(ArtifactValue):
+
+    def __init__(self, name, endpoint, project, rolearn):
+        super(MaxComputeOfflineModelArtifact, self).__init__()
+        self.project = project
+        self.endpoint = endpoint
+        self.rolearn = rolearn
+        self.name = name
+
+
+class OSSArtifact(ArtifactValue):
+
+    def __init__(self, bucket, key, endpoint, rolearn):
+        super(OSSArtifact, self).__init__()
+        self.bucket = bucket
+        self.endpoint = endpoint
+        self.rolearn = rolearn
+        self.key = key

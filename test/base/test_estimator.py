@@ -18,8 +18,8 @@ class TestEstimatorBase(BaseTestCase):
         identifier = "logisticregression-binary-xflow-ODPS"
         version = "v1"
         provider = ProviderAlibabaPAI
-        p = Pipeline.get_by_identifier(session=self.session, identifier=identifier, provider=provider, version=version)
-        pipeline_id = p.pipeline_id
+        p = Pipeline.get_by_identifier(session=self.session, identifier=identifier,
+                                       provider=provider, version=version)
 
         parameters = {
             "__xflowProject": "algo_public",
@@ -28,13 +28,12 @@ class TestEstimatorBase(BaseTestCase):
             # "regularizedType": "l1",
             "regularizedLevel": 1.0,
         }
-
         est = p.to_estimator(parameters=parameters)
 
         self.assertEqual(est.get_identifier(), identifier)
         self.assertEqual(est.get_version(), version)
         self.assertEqual(est.get_provider(), provider)
-        self.assertEqual(est.get_pipeline_id(), pipeline_id)
+        self.assertEqual(est.get_pipeline_id(), p.pipeline_id)
 
         model_name = "ut_estimator_from_pipeline"
         project = self.session.odps_project

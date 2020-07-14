@@ -17,11 +17,13 @@ class LogisticRegression(XFlowEstimator):
                                                  regularized_type=regularized_type, max_iter=max_iter,
                                                  epsilon=epsilon, **kwargs)
 
-    def compile_args(self, **kwargs):
+    def compile_args(self, *inputs, **kwargs):
         args = super(LogisticRegression, self).compile_args(**kwargs)
-        args["inputArtifact"] = kwargs.get("input_data")
+        assert len(inputs) > 0
 
-        # args["regularizedType"] = kwargs.get("regularized_type")
+        args["inputArtifact"] = inputs[0]
+
+        args["regularizedType"] = kwargs.get("regularized_type")
         args["regularizedLevel"] = kwargs.get("regularized_level")
         args["maxIter"] = kwargs.get("max_iter")
         args["epsilon"] = kwargs.get("epsilon")
@@ -60,14 +62,11 @@ class LogisticRegression(XFlowEstimator):
         Returns:
 
         """
-        return super(LogisticRegression, self).fit(input_data=input_data, job_name=job_name, model_name=model_name,
+        return super(LogisticRegression, self).fit(input_data, job_name=job_name, model_name=model_name,
                                                    feature_cols=feature_cols,
                                                    label_col=label_col, sparse=sparse,
                                                    sparse_delimiter=sparse_delimiter,
                                                    good_value=good_value)
-
-    def create_model(self):
-        pass
 
 
 class RandomForestClassifier(XFlowEstimator):

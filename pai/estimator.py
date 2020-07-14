@@ -38,14 +38,15 @@ class PipelineEstimator(PaiFlowBase, Estimator):
         args = self.compile_args(**kwargs)
         return {k: v for k, v in args.items() if v is not None}
 
-    def fit(self, wait=False, job_name=None, args=None, **kwargs):
-        args = args or dict()
+    def fit(self, *inputs, **kwargs):
+        wait = kwargs.pop("wait", True)
+        job_name = kwargs.pop("job_name", None)
         fit_args = self.parameters.copy()
-        fit_args.update(args)
+        fit_args.update(kwargs)
 
         if self._compile_args:
-            fit_args = self.compile_args(**fit_args)
-        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name, args=fit_args, **kwargs)
+            fit_args = {k: v for k, v in self.compile_args(*inputs, **fit_args).items()}
+        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name, args=fit_args)
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
@@ -61,8 +62,9 @@ class PipelineEstimator(PaiFlowBase, Estimator):
         return pe
 
 
+# TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
 class AlgoBaseEstimator(PipelineEstimator):
-    """Base class for PAI """
+    """Base class for PAI Estimator algorithm class """
 
     _identifier_default = None
     _provider_default = None

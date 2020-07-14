@@ -7,6 +7,8 @@ from datetime import datetime
 from libs.futures import ThreadPoolExecutor
 from pai.exception import TimeoutException
 from pai.utils import run_detail_url
+from pai.decorator import cached_property
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,10 @@ class RunInstance(object):
             "startedAt": pipeline_info["StatusInfo"]["StartedAt"],
             "finishedAt": pipeline_info["StatusInfo"]["FinishedAt"],
         }
+
+    @cached_property
+    def name(self):
+        return self.get_run_info()["Name"]
 
     @property
     def run_detail_url(self):

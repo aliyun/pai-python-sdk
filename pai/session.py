@@ -121,9 +121,6 @@ class Session(object):
             "env": env
         }
 
-        print("manifest", type(manifest))
-
-
         resp = self.paiflow_client.create_run(name, arguments, pipeline_id=pipeline_id, manifest=manifest,
                                               no_confirm_required=no_confirm_required)
 

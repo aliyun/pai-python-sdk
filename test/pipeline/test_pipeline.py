@@ -424,6 +424,8 @@ class TestPipeline(BaseTestCase):
         time.sleep(1)
         run_instance = RunInstance(run_id=run_id, session=self.session)
         self.assertEqual(run_instance.get_status(), RunStatus.Running)
+        run_instance.wait()
+        self.assertEqual(run_instance.get_status(), RunStatus.Succeeded)
 
     def test_general_input(self):
         p = Pipeline.new_pipeline("test_alogo_build", version="1.0.0", session=self.session)
