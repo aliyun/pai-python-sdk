@@ -51,12 +51,12 @@ class _XFlowAlgoMixin(object):
 class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
 
     def __init__(self, session, xflow_project=None, xflow_execution=None, **kwargs):
-        AlgoBaseEstimator.__init__(self, session=session, _compile_args=True, **kwargs)
+        AlgoBaseEstimator.__init__(self, session=session, **kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_project=xflow_project, xflow_execution=xflow_execution)
 
 
 class XFlowTransformer(AlgoBaseTransformer, _XFlowAlgoMixin):
 
     def __init__(self, session, xflow_execution=None, xflow_project=None, **kwargs):
-        AlgoBaseTransformer.__init__(self, session=session, _compile_args=True, parameters=kwargs)
+        AlgoBaseTransformer.__init__(self, session=session, parameters=kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_project=xflow_project, xflow_execution=xflow_execution)

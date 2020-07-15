@@ -4,8 +4,6 @@ import os
 import time
 import unittest
 
-import yaml
-
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
 from pai.pipeline.run import RunInstance, RunStatus
@@ -21,11 +19,6 @@ class TestPipeline(BaseTestCase):
     def setUp(self):
         super(TestPipeline, self).setUp()
         self.maxDiff = None
-
-    @unittest.skip
-    def test_forest_pipeline_create(self):
-        with self.assertRaises(ValueError):
-            _ = self.create_forest_pipeline()
 
     def test_air_quality_pipeline_create(self):
         pipeline = self.create_air_quality_prediction(self.session)
@@ -43,6 +36,57 @@ class TestPipeline(BaseTestCase):
         with self.assertRaises(ValueError):
             self.create_cycle_pipeline()
 
+    def test_general_input(self):
+        p = self.create_general_input_pipeline()
+        pipeline_def = p.to_dict()
+
+        pipeline_executions = [param["from"] for p in pipeline_def["spec"]["pipelines"] for param in
+                               p["spec"]["arguments"]["parameters"] if
+                               param["name"] == "__execution"]
+
+        expected_execution = "{{inputs.parameters.execution}}"
+        self.assertTrue(
+            all(expected_execution == execution_param for execution_param in pipeline_executions))
+
+        pipeline_generate_pmml = [param["value"] for p in pipeline_def["spec"]["pipelines"] for
+                                  param in
+                                  p["spec"]["arguments"]["parameters"] if
+                                  param["name"] == "__generatePMML"]
+        # expected_val = True
+        self.assertTrue(all(param for param in pipeline_generate_pmml))
+
+        return
+
+    def test_parameter_with_feasible(self):
+        pass
+
+    @unittest.skip("Backend artifact support not ready")
+    def test_temp_composite_pipeline_run(self):
+        p = self.create_composite_pipeline_case_1()
+        arguments, env = self.args_for_composite_pipeline_1()
+        run_id = p.run("ut_temp_composite_pipeline_run", arguments=arguments, env=env, wait=False)
+        self.assertIsNotNone(run_id)
+        run = RunInstance(run_id=run_id, session=self.session)
+        self.assertEqual(run.get_status(), RunStatus.Running)
+        run.wait()
+        self.assertEqual(run.get_status(), RunStatus.Succeeded)
+        run.get_outputs()
+
+    @unittest.skip("Backend artifact support not ready")
+    def test_composite_pipeline_submit(self):
+        p = self.create_composite_pipeline_case_1()
+        arguments, env = self.args_for_composite_pipeline_1()
+        pipeline_id = self.session.create_pipeline(p.to_dict())
+        run_id = self.session.create_pipeline_run("ut_composite_pipeline_run",
+                                                  pipeline_id=pipeline_id,
+                                                  arguments=arguments, env=env)
+        self.assertIsNotNone(run_id)
+        time.sleep(1)
+        run_instance = RunInstance(run_id=run_id, session=self.session)
+        self.assertEqual(run_instance.get_status(), RunStatus.Running)
+        run_instance.wait()
+        self.assertEqual(run_instance.get_status(), RunStatus.Succeeded)
+
     @staticmethod
     def add_local_pipeline_step(pipeline, identifier, name=None):
         manifest = load_local_yaml("%s.yaml" % identifier)
@@ -50,82 +94,6 @@ class TestPipeline(BaseTestCase):
         step = PipelineStep.create_from_manifest(manifest, pipeline, name=name)
         pipeline.steps[step.name] = step
         return step
-
-    def create_forest_pipeline(self):
-        p = Pipeline.new_pipeline(identifier="ut-randomforest", version="v0.1.0",
-                                  session=self.session)
-
-        execution_input = p.create_input_parameter("__execution", 'map')
-        feature_col_names_input = p.create_input_parameter("featureColNames", str)
-        model_name_input = p.create_input_parameter("modelName", str, value="test_randomforest",
-                                                    required=True)
-
-        output_detail_table_1_input = p.create_input_parameter("outputDetailTableName1", str,
-                                                               required=True)
-        output_detail_table_2_input = p.create_input_parameter("outputDetailTableName2", str,
-                                                               required=True)
-        output_metric_table_1_input = p.create_input_parameter("outputMetricTableName1", str,
-                                                               required=True)
-        output_metric_table_2_input = p.create_input_parameter("outputMetricTableName2", str,
-                                                               required=True)
-        output_table_input = p.create_input_parameter("outputTableName", str, required=True)
-
-        input_artifact1 = p.create_input_artifact(
-            "inputArtifact", data_type=ArtifactDataType.DataSet,
-            location_type=ArtifactLocationType.MaxComputeTable, required=True)
-        input_artifact2 = p.create_input_artifact(
-            "inputArtifact2", data_type=ArtifactDataType.DataSet,
-            location_type=ArtifactLocationType.MaxComputeTable, required=True)
-
-        randomforest_step = p.create_step("randomforests-xflow-ODPS", name="randomforests")
-        randomforest_step.set_arguments(
-            inputArtifact=input_artifact1,
-            __execution=execution_input,
-            featureColNames=feature_col_names_input,
-            modelName=model_name_input,
-            labelColName="_c2",
-            treeNum=100,
-            __generatePMML=True,
-            __pmmlModelPublicProject="pai_online_project",
-            __pmmlModelPublicEndpoint="http://service.cn-shanghai.maxcompute.aliyun.com/api",
-            __pmmlModelVolume="pai_model_1557702098194904",
-            __pmmlModelPartition="partition_1099584",
-        )
-
-        prediction_step1 = p.create_step("prediction-evaluate", name="prediction1")
-
-        prediction_step1.set_arguments(
-            __execution=execution_input,
-            outputTableName=output_table_input,
-            outputDetailTableName=output_detail_table_1_input,
-            outputMetricTableName=output_metric_table_1_input,
-            outputDetailTableName2=output_detail_table_2_input,
-            outputMetricTableName2=output_metric_table_2_input,
-            outputELDetailTableName="pai_temp_83935_1299589_1",
-            outputELDetailTableName2="pai_temp_83935_1399589_1",
-            inputModelArtifact=randomforest_step.outputs["outputArtifact"],
-            inputDataSetArtifact=input_artifact2,
-        )
-
-        prediction_step2 = p.create_step("prediction-evaluate", name="prediction")
-        prediction_step2.set_arguments(
-            __execution=execution_input,
-            outputDetailTableName2="pai_temp_183935_1099586_1",
-            outputMetricTableName2="pai_temp_183935_1228529_1",
-            outputDetailTableName="pai_temp_183935_1099586_2",
-            outputMetricTableName="pai_temp_183935_1228529_2",
-            outputTableName="pai_temp_183935_1029583_1",
-            outputELDetailTableName="pai_temp_83935_1299589_2",
-            outputELDetailTableName2="pai_temp_83935_1399589_2",
-            inputModelArtifact=randomforest_step.outputs["outputArtifact"],
-            inputDataSetArtifact=input_artifact2,
-        )
-
-        p.create_output_artifact("predictionResult",
-                                 from_=prediction_step1.outputs["predictionResult"])
-        p.create_output_artifact("predictionResult2",
-                                 from_=prediction_step2.outputs["predictionResult"])
-        return p
 
     @staticmethod
     def create_air_quality_prediction(session):
@@ -370,7 +338,6 @@ class TestPipeline(BaseTestCase):
                     "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                     "logViewHost": "http://logview.odps.aliyun.com",
                     "odpsProject": "wyl_test",
-                    "userId": 15577
                 },
             },
             {
@@ -435,32 +402,7 @@ class TestPipeline(BaseTestCase):
                                  type_transform_step.outputs["outputArtifact"])
         return p
 
-    def test_temp_composite_pipeline_run(self):
-        p = self.create_composite_pipeline_case_1()
-        arguments, env = self.args_for_composite_pipeline_1()
-        run_id = p.run("ut_temp_composite_pipeline_run", arguments=arguments, env=env, wait=False)
-        self.assertIsNotNone(run_id)
-        run = RunInstance(run_id=run_id, session=self.session)
-        self.assertEqual(run.get_status(), RunStatus.Running)
-        run.wait()
-        self.assertEqual(run.get_status(), RunStatus.Succeeded)
-        run.get_outputs()
-
-    def test_composite_pipeline_submit(self):
-        p = self.create_composite_pipeline_case_1()
-        arguments, env = self.args_for_composite_pipeline_1()
-        pipeline_id = self.session.create_pipeline(p.to_dict())
-        run_id = self.session.create_pipeline_run("ut_composite_pipeline_run",
-                                                  pipeline_id=pipeline_id,
-                                                  arguments=arguments, env=env)
-        self.assertIsNotNone(run_id)
-        time.sleep(1)
-        run_instance = RunInstance(run_id=run_id, session=self.session)
-        self.assertEqual(run_instance.get_status(), RunStatus.Running)
-        run_instance.wait()
-        self.assertEqual(run_instance.get_status(), RunStatus.Succeeded)
-
-    def test_general_input(self):
+    def create_general_input_pipeline(self):
         p = Pipeline.new_pipeline("test_alogo_build", version="1.0.0", session=self.session)
 
         dataset_input = p.create_input_artifact("dataset", data_type=ArtifactDataType.DataSet,
@@ -553,28 +495,7 @@ class TestPipeline(BaseTestCase):
 
         p.create_output_artifact("predictionResult",
                                  from_=evaluate_step.outputs["outputDetailArtifact"])
-
-        pipeline_def = p.to_dict()
-
-        pipeline_executions = [param["from"] for p in pipeline_def["spec"]["pipelines"] for param in
-                               p["spec"]["arguments"]["parameters"] if
-                               param["name"] == "__execution"]
-
-        expected_execution = "{{inputs.parameters.execution}}"
-        self.assertTrue(
-            all(expected_execution == execution_param for execution_param in pipeline_executions))
-
-        pipeline_generate_pmml = [param["value"] for p in pipeline_def["spec"]["pipelines"] for
-                                  param in
-                                  p["spec"]["arguments"]["parameters"] if
-                                  param["name"] == "__generatePMML"]
-        # expected_val = True
-        self.assertTrue(all(param for param in pipeline_generate_pmml))
-
-        return
-
-    def test_parameter_with_feasible(self):
-        pass
+        return p
 
 
 if __name__ == "__main__":

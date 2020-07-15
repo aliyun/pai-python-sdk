@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 from pai.common import ProviderAlibabaPAI
 from pai.xflow.base import XFlowEstimator
 
@@ -108,7 +109,8 @@ class RandomForestClassifier(XFlowEstimator):
     def fit(self, input_data, model_name=None, feature_cols=None, label_col=None, weight_col=None,
             excluded_cols=None, tree_num=None, wait=True, algo_types=None, random_col_num=None,
             force_categorical=False, **kwargs):
-        return super(RandomForestClassifier, self).fit(input_data, wait=wait,
+        return super(RandomForestClassifier, self).fit(input_data,
+                                                       wait=wait,
                                                        model_name=model_name,
                                                        tree_num=tree_num,
                                                        excluded_cols=excluded_cols,

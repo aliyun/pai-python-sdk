@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import unittest
+
 from pai import ProviderAlibabaPAI
 from pai.pipeline import Pipeline
 from test import BaseTestCase
@@ -7,13 +9,7 @@ from test import BaseTestCase
 
 class TestEstimatorBase(BaseTestCase):
 
-    # def setUp(self):
-    #     pass
-    #
-    #
-    # def tearDown(self):
-    #     pass
-
+    @unittest.skip("backend support of artifact not ready")
     def test_estimator_from_pipeline(self):
         identifier = "logisticregression-binary-xflow-ODPS"
         version = "v1"
@@ -42,7 +38,15 @@ class TestEstimatorBase(BaseTestCase):
                 project_name=project, table_name="test_table"),
             "labelColName": "_c2",
             "featureColNames": "",
-            "modelName": model_name
+            "modelName": model_name,
+            "__xflowProject": "algo_public",
+            "__execution": {
+                "__odpsInfoFile": "/share/base/odpsInfo.ini",
+                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                "logViewHost": "http://logview.odps.aliyun.com",
+                "odpsProject": "wyl_test",
+            },
+
         }
 
         _ = est.fit(wait=True, job_name="ut_pipeline_test", args=fit_args)

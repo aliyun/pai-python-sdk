@@ -20,6 +20,7 @@ class TestXFlowEstimator(BaseTestCase):
             "max_iter": 200,
             "epsilon": 1e-6,
         }
+
         self.assertEqual(lr.parameters, expected_parameters)
 
     def test_estimator_build(self):
@@ -53,11 +54,14 @@ class TestXFlowEstimator(BaseTestCase):
             "__execution": lr.get_xflow_execution(),
         }
 
-        compiled_args = lr.rebuild_args(
+        compiled_args = lr.compile_args(
+            "pai_temp_table",
             **args
         )
 
-        self.assertEqual(expected, compiled_args)
+        result_args = {k: v for k, v in compiled_args.items() if k in expected}
+
+        self.assertDictEqual(result_args, expected)
 
     def test_multiple_call_fit(self):
         pass

@@ -30,38 +30,27 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
 
 class PipelineTransformer(PaiFlowBase, Transformer):
 
-    def __init__(self, session, parameters=None, _compile_args=False, manifest=None,
+    def __init__(self, session, parameters=None, manifest=None,
                  pipeline_id=None):
         Transformer.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
-        self._compile_args = _compile_args
-
-    def set_manifest(self, manifest):
-        metadata = manifest["metadata"]
-        identifier, provider, version = metadata["identifier"], metadata["provider"], metadata[
-            "version"]
-        self.set_identifier(identifier).set_version(version).set_provider(provider)
-        self._manifest = manifest
-        return self
-
-    def rebuild_args(self, **kwargs):
-        args = self.compile_args(**kwargs)
-        return {k: v for k, v in args.items() if v is not None}
-
-    def transform(self, *inputs, **kwargs):
-        wait = kwargs.pop("wait", True)
-        job_name = kwargs.pop("job_name", None)
-
-        origin_args = self.parameters.copy()
-        origin_args.update(kwargs)
-
-        if self._compile_args:
-            args = {k: v for k, v in self.compile_args(*inputs, **kwargs).items() if v is not None}
-        return super(PipelineTransformer, self).transform(wait=wait, job_name=job_name, args=args)
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
         pe = PipelineTransformer(session=session, parameters=parameters).set_manifest(manifest)
+        return pe
+
+    @classmethod
+    def from_manifest(cls, manifest, session, parameters=None):
+        pe = PipelineTransformer(session=session, parameters=parameters, manifest=manifest)
+        return pe
+
+    @classmethod
+    def from_pipeline_id(cls, pipeline_id, session, parameters=None):
+        pipeline_info = session.get_pipeline_by_id(pipeline_id)
+        manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
+        pe = PipelineTransformer(session=session, parameters=parameters, manifest=manifest,
+                                 pipeline_id=pipeline_id)
         return pe
 
 
@@ -75,7 +64,7 @@ class AlgoBaseTransformer(PipelineTransformer):
 
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseTransformer, self).__init__(session=session, _compile_args=True,
+        super(AlgoBaseTransformer, self).__init__(session=session,
                                                   parameters=kwargs,
                                                   manifest=manifest, pipeline_id=pipeline_id)
 
@@ -89,8 +78,15 @@ class AlgoBaseTransformer(PipelineTransformer):
 
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
 
-    def compile_args(self, *inputs, **kwargs):
-        return dict()
+    def transform(self, *inputs, **kwargs):
+        wait = kwargs.pop("wait", True)
+        job_name = kwargs.pop("job_name", None)
+        fit_args = self.parameters.copy()
+        fit_args.update(kwargs)
+
+        fit_args = {k: v for k, v in self.compile_args(*inputs, **fit_args).items()}
+        return super(AlgoBaseTransformer, self).transform(wait=wait, job_name=job_name,
+                                                          args=fit_args)
 
 
 class _TransformJob(RunJob):

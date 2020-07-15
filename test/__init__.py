@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
-import os
 import logging
+import os
 import unittest
 
-from six.moves import configparser
 from odps import ODPS
+from six.moves import configparser
 
 from pai.session import Session
 
@@ -41,12 +41,12 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def get_odps_client(cls):
         configs = cls.get_test_config()
-        access_key = configs["odps"]["access_key"]
-        access_secret = configs["odps"]["access_secret"]
+        access_key_id = configs["odps"]["access_key_id"]
+        access_key_secret = configs["odps"]["access_key_secret"]
         project = configs["odps"]["project"]
         return ODPS(
-            access_id=access_key,
-            secret_access_key=access_secret,
+            access_id=access_key_id,
+            secret_access_key=access_key_secret,
             project=project,
         )
 
@@ -54,21 +54,21 @@ class BaseTestCase(unittest.TestCase):
     def get_test_config(cls):
         cfg_parser = configparser.ConfigParser()
         cfg_parser.read(os.path.join(_test_root, "test.conf"))
-        access_key = cfg_parser.get("client", "access_key")
-        access_secret = cfg_parser.get("client", "access_secret")
-        region = cfg_parser.get("client", "region")
-        odps_project = cfg_parser.get("odps", "odps_project")
+        access_key_id = cfg_parser.get("client", "access_key_id")
+        access_key_secret = cfg_parser.get("client", "access_key_secret")
+        region_id = cfg_parser.get("client", "region_id")
+        odps_project = cfg_parser.get("odps", "project")
 
         return {
             "client": {
-                "region_id": region,
-                "access_key": access_key,
-                "access_secret": access_secret
+                "region_id": region_id,
+                "access_key_id": access_key_id,
+                "access_key_secret": access_key_secret
             },
             "odps": {
                 "project": odps_project,
-                "access_key": access_key,
-                "access_secret": access_secret,
+                "access_key_id": access_key_id,
+                "access_key_secret": access_key_secret,
             }
         }
 

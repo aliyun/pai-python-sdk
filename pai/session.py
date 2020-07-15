@@ -11,22 +11,26 @@ from pai.utils import run_detail_url
 
 class Session(object):
 
-    def __init__(self, access_key, access_secret, region_id, odps_project=None):
-        """ Construct session object with Alibaba Cloud account credential
+    def __init__(self, access_key_id, access_key_secret, region_id, **kwargs):
+        """ Wrap all functionality provided by Alibaba Cloud PAI services
+
+        This class encapsulates convenient methods to access PAI services, currently focus
+        on Pipeline service, future include EAS inference service, Model optimize, etc.
 
         Args:
-            access_key:
-            access_secret:
-            region_id:
+            access_key_id (str): Alibaba Cloud access key id.
+            access_key_secret (str): Alibaba Cloud access key secret.
+            region_id (str): Alibaba Cloud region id
         """
 
-        if not access_key or not access_secret or not region_id:
+        if not access_key_id or not access_key_secret or not region_id:
             raise ValueError("Please provide access_key, access_secret and region")
 
         self.region_id = region_id
-        self.odps_project = odps_project
 
-        self._initialize(access_key, access_secret, region_id, odps_project=odps_project)
+        odps_project = kwargs.pop("odps_project", None)
+
+        self._initialize(access_key_id, access_key_secret, region_id, odps_project=odps_project)
 
     def _initialize(self, access_key, access_secret, region, odps_project=None):
         self._acs_client = AcsClient(ak=access_key, secret=access_secret, region_id=region)
@@ -42,6 +46,10 @@ class Session(object):
             caller_identity = self.sts_client.get_caller_identity()
             self._account_id = int(caller_identity["AccountId"])
         return self._account_id
+
+    @property
+    def odps_project(self):
+        return self.odps_client.project
 
     def get_pipeline(self, identifier, provider, version):
         self.paiflow_client.get_pipeline(identifier=identifier,

@@ -23,36 +23,20 @@ class Estimator(object):
         run_job = _EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_instance.attach()
+            run_job.attach()
         return run_job
 
 
 class PipelineEstimator(PaiFlowBase, Estimator):
 
-    def __init__(self, session, parameters=None, _compile_args=False, manifest=None,
+    def __init__(self, session, parameters=None, manifest=None,
                  pipeline_id=None):
         Estimator.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
-        self._compile_args = _compile_args
-
-    def rebuild_args(self, **kwargs):
-        args = self.compile_args(**kwargs)
-        return {k: v for k, v in args.items() if v is not None}
-
-    def fit(self, *inputs, **kwargs):
-        wait = kwargs.pop("wait", True)
-        job_name = kwargs.pop("job_name", None)
-        fit_args = self.parameters.copy()
-        fit_args.update(kwargs)
-
-        if self._compile_args:
-            fit_args = {k: v for k, v in self.compile_args(*inputs, **fit_args).items()}
-        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name, args=fit_args)
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
-        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest,
-                               _compile_args=False)
+        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest)
         return pe
 
     @classmethod
@@ -60,8 +44,7 @@ class PipelineEstimator(PaiFlowBase, Estimator):
         pipeline_info = session.get_pipeline_by_id(pipeline_id)
         manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
         pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest,
-                               pipeline_id=pipeline_id,
-                               _compile_args=False)
+                               pipeline_id=pipeline_id)
         return pe
 
 
@@ -75,8 +58,7 @@ class AlgoBaseEstimator(PipelineEstimator):
 
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseEstimator, self).__init__(session=session, _compile_args=True,
-                                                parameters=kwargs,
+        super(AlgoBaseEstimator, self).__init__(session=session, parameters=kwargs,
                                                 manifest=manifest, pipeline_id=pipeline_id)
 
     def get_base_info(self, session):
@@ -88,6 +70,15 @@ class AlgoBaseEstimator(PipelineEstimator):
                                              version=self._version_default)
 
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
+
+    def fit(self, *inputs, **kwargs):
+        wait = kwargs.pop("wait", True)
+        job_name = kwargs.pop("job_name", None)
+        fit_args = self.parameters.copy()
+        fit_args.update(kwargs)
+
+        fit_args = {k: v for k, v in self.compile_args(*inputs, **fit_args).items()}
+        return super(AlgoBaseEstimator, self).fit(wait=wait, job_name=job_name, args=fit_args)
 
 
 class _EstimatorJob(RunJob):
