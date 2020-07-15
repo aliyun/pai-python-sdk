@@ -89,9 +89,6 @@ class AlgoBaseEstimator(PipelineEstimator):
 
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
 
-    def compile_args(self):
-        return dict()
-
 
 class _EstimatorJob(RunJob):
 

@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import unittest
 from decimal import Decimal
 
-from pai.pipeline.parameter import Interval, ParameterValidator, create_pipeline_parameter
+from pai.pipeline.parameter import Interval, ParameterValidator, create_pipeline_parameter, \
+    ParameterType
 from test import BaseTestCase
 
 
@@ -103,7 +104,7 @@ class TestParameter(BaseTestCase):
             results = [validator.validate(candidate) for candidate in case["input"]["candidates"]]
             self.assertListEqual(results, case["expected"],
                                  "Unexpected validate result, case:%s, expected:%s, result:%s" % (
-                                 case["name"], case["expected"], results))
+                                     case["name"], case["expected"], results))
 
     @staticmethod
     def interval_helper(interval):
@@ -187,6 +188,89 @@ class TestParameter(BaseTestCase):
         for case in error_cases:
             with self.assertRaises(ValueError):
                 Interval.load(case["input"])
+
+    def test_parameter_type_transform(self):
+        cases = [
+            {
+                "name": "case_int_1",
+                "input": "int",
+                "expected": ParameterType.Integer,
+            },
+            {
+                "name": "case_int_2",
+                "input": "integer",
+                "expected": ParameterType.Integer,
+            },
+            {
+                "name": "case_int_3",
+                "input": int,
+                "expected": ParameterType.Integer,
+            },
+            {
+                "name": "case_int_4",
+                "input": ParameterType.Integer,
+                "expected": ParameterType.Integer,
+            },
+            {
+                "name": "case_str_1",
+                "input": str,
+                "expected": ParameterType.String,
+            },
+            {
+                "name": "case_str_1",
+                "input": "string",
+                "expected": ParameterType.String,
+            },
+            {
+                "name": "case_float_1",
+                "input": "float",
+                "expected": ParameterType.Double,
+            },
+            {
+                "name": "case_float_2",
+                "input": float,
+                "expected": ParameterType.Double,
+            },
+            {
+                "name": "case_float_3",
+                "input": "double",
+                "expected": ParameterType.Double,
+            },
+            {
+                "name": "case_bool_1",
+                "input": bool,
+                "expected": ParameterType.Bool,
+            },
+            {
+                "name": "case_bool_2",
+                "input": "boolean",
+                "expected": ParameterType.Bool,
+            },
+            {
+                "name": "case_bool_3",
+                "input": "Bool",
+                "expected": ParameterType.Bool,
+            },
+            {
+                "name": "case_bool_4",
+                "input": ParameterType.Bool,
+                "expected": ParameterType.Bool,
+            },
+            {
+                "name": "case_map_1",
+                "input": dict,
+                "expected": ParameterType.Map,
+            },
+            {
+                "name": "case_map_2",
+                "input": "Map",
+                "expected": ParameterType.Map,
+            },
+        ]
+
+        for case in cases:
+            result = ParameterType.normalize_typ(case["input"])
+            self.assertEqual(result, case["expected"])
 
 
 if __name__ == '__main__':

@@ -6,8 +6,6 @@ metadata:
 spec:
   inputs:
     parameters:
-    - name: project
-      type: String
     - name: execution
       required: true
       type: Map

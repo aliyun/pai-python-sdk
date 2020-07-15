@@ -4,6 +4,8 @@ import os
 import time
 import unittest
 
+import yaml
+
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
 from pai.pipeline.run import RunInstance, RunStatus
@@ -18,9 +20,7 @@ class TestPipeline(BaseTestCase):
 
     def setUp(self):
         super(TestPipeline, self).setUp()
-
-    def tearDown(self):
-        super(TestPipeline, self).tearDown()
+        self.maxDiff = None
 
     @unittest.skip
     def test_forest_pipeline_create(self):
@@ -572,6 +572,9 @@ class TestPipeline(BaseTestCase):
         self.assertTrue(all(param for param in pipeline_generate_pmml))
 
         return
+
+    def test_parameter_with_feasible(self):
+        pass
 
 
 if __name__ == "__main__":

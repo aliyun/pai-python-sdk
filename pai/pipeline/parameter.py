@@ -4,6 +4,7 @@ import re
 from decimal import Decimal
 
 import six
+from enum import Enum
 
 from pai.pipeline.variable import PipelineVariable
 
@@ -160,7 +161,6 @@ class Interval(object):
         return False
 
 
-# TODO: Use Enum type
 ParameterTypeMapping = {
     "long": "Int",
     "integer": "Int",
@@ -171,28 +171,37 @@ ParameterTypeMapping = {
     "str": "String",
     "bool": "Bool",
     "boolean": "Bool",
-
     "map": "Map",
+    "dict": "Map",
+    "array": "Array",
+    "list": "Array"
 }
 
 
-def _cls_to_str(typ_cls):
-    return typ_cls.__name__.lower()
+class ParameterType(Enum):
+    String = "String"
+    Integer = "Int"
+    Double = "Double"
+    Bool = "Bool"
+    Map = "Map"
+    Array = "Array"
 
-
-def _parameter_type_normalize(typ):
-    if isinstance(typ, type):
-        type_name = _cls_to_str(typ)
-    elif isinstance(typ, six.string_types):
-        type_name = typ.lower()
-    else:
-        raise ValueError("Not Supported PipelineParameter Type: {typ}".format(typ=typ))
-    return ParameterTypeMapping[type_name]
+    @classmethod
+    def normalize_typ(cls, typ_instance):
+        if isinstance(typ_instance, type):
+            type_name = typ_instance.__name__.lower()
+        elif isinstance(typ_instance, six.string_types):
+            type_name = typ_instance.lower()
+        elif isinstance(typ_instance, cls):
+            return typ_instance
+        else:
+            raise ValueError("Not Supported PipelineParameter Type: {typ}".format(typ=typ_instance))
+        return ParameterType(ParameterTypeMapping[type_name])
 
 
 def create_pipeline_parameter(name, typ, kind, desc=None, required=False, value=None,
                               parent=None, from_=None, **kwargs):
-    typ = _parameter_type_normalize(typ)
+    typ = ParameterType.normalize_typ(typ)
     validator = None
     feasible = kwargs.get("feasible", None)
 

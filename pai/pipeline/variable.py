@@ -113,7 +113,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         }
 
         if self.typ:
-            d["type"] = self.typ
+            d["type"] = self.typ.value
         if self.required:
             d["required"] = self.required
         if self.validator:

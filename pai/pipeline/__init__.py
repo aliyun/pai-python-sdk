@@ -418,20 +418,20 @@ class PipelineStep(object):
 
 def _load_input_output_spec(p, spec):
     for param in spec["inputs"].get("parameters", []):
-        _load_parameter(p, param, "inputs")
+        _load_parameter_spec(p, param, "inputs")
 
     for af in spec["inputs"].get("artifacts", []):
-        _load_artifact(p, af, "inputs")
+        _load_artifact_spec(p, af, "inputs")
 
     for param in spec["outputs"].get("parameters", []):
-        _load_parameter(p, param, "outputs")
+        _load_parameter_spec(p, param, "outputs")
 
     for af in spec["outputs"].get("artifacts", []):
-        _load_artifact(p, af, "outputs")
+        _load_artifact_spec(p, af, "outputs")
     return p
 
 
-def _load_parameter(p, param_spec, kind):
+def _load_parameter_spec(p, param_spec, kind):
     assert kind in ("inputs", "outputs")
 
     typ = param_spec.pop("type", None)
@@ -448,7 +448,7 @@ def _load_parameter(p, param_spec, kind):
     return param
 
 
-def _load_artifact(p, artifact_spec, kind):
+def _load_artifact_spec(p, artifact_spec, kind):
     assert kind in ("inputs", "outputs")
     typ = ArtifactType.from_dict(artifact_spec.pop("type", None))
     name = artifact_spec.pop("name", None)

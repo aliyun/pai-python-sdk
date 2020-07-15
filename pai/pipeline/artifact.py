@@ -76,6 +76,10 @@ class ArtifactType(object):
 
         return d
 
+    @property
+    def value(self):
+        return self.to_dict()
+
     def __eq__(self, other):
         if isinstance(other, ArtifactType):
             return self.data_type == other.data_type \

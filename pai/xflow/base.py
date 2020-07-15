@@ -5,6 +5,8 @@ from pai.transformer import AlgoBaseTransformer
 
 
 class _XFlowAlgoMixin(object):
+
+    enable_sparse = False
     XFlowProjectDefault = 'algo_public'
 
     def __init__(self, xflow_execution=None, xflow_project=None):
@@ -35,28 +37,26 @@ class _XFlowAlgoMixin(object):
             "__xflowProject": self.get_xflow_project(),
         }
 
+    def compile_args(self, *inputs, **kwargs):
+        args = self.get_xflow_args()
+        if self.enable_sparse and kwargs.pop("enable_sparse"):
+            args["enableSparse"] = True
+            sparse_delimiter = kwargs["sparse_delimiter"]
+            item_delimiter, kv_delimiter = sparse_delimiter
+            args["itemDelimiter"] = item_delimiter
+            args["kvDelimiter"] = kv_delimiter
+        return args
+
 
 class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
-    _default_xflow_project = "algo_public"
 
     def __init__(self, session, xflow_project=None, xflow_execution=None, **kwargs):
         AlgoBaseEstimator.__init__(self, session=session, _compile_args=True, **kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_project=xflow_project, xflow_execution=xflow_execution)
 
-    def compile_args(self, **kwargs):
-        args = super(XFlowEstimator, self).compile_args()
-        args.update(self.get_xflow_args())
-        return args
-
 
 class XFlowTransformer(AlgoBaseTransformer, _XFlowAlgoMixin):
-    XFlowProjectDefault = 'algo_public'
 
     def __init__(self, session, xflow_execution=None, xflow_project=None, **kwargs):
         AlgoBaseTransformer.__init__(self, session=session, _compile_args=True, parameters=kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_project=xflow_project, xflow_execution=xflow_execution)
-
-    def compile_args(self, *inputs, **kwargs):
-        args = super(XFlowTransformer, self).compile_args(*inputs, **kwargs)
-        args.update(self.get_xflow_args())
-        return args
