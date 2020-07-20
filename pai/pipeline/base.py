@@ -53,8 +53,8 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
         manifest = self.get_pipeline_definition()
         job_name, run_args = self._prepare_run(job_name=job_name, arguments=arguments,
                                                manifest=manifest)
-        print(run_args)
 
+        print(run_args)
         if self.get_pipeline_id():
             run_id = self.session.create_pipeline_run(name=job_name, arguments=run_args, env=env,
                                                       pipeline_id=self.get_pipeline_id(),
@@ -84,8 +84,9 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
                 af = PipelineArtifact.to_argument_by_spec(arg, af_spec, kind="inputs")
                 artifacts.append(af)
             else:
-                pass
-                # raise ValueError("Argument %s is not support by pipeline manifest" % name)
+                Logger.warn(
+                    "Provider useless argument:%s, it is not require by the pipeline manifest spec."
+                    % name)
 
         requires = set(
             [param_name for param_name, spec in parameters_spec.items() if spec.get("required")]

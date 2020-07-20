@@ -52,7 +52,7 @@ class TestEstimatorBase(BaseTestCase):
 
         }
 
-        job = est.fit(wait=True, job_name="ut_pipeline_test", args=fit_args)
+        job = est.fit(wait=True, job_name="pysdk-test-estimator-pipeline", args=fit_args)
 
         print(job.get_outputs())
 

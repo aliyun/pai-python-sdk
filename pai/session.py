@@ -29,11 +29,11 @@ class Session(object):
 
         self.region_id = region_id
 
-        self._initialize(access_key_id, access_key_secret, region_id,
-                         odps_project=odps_project, odps_endpoint=odps_endpoint)
+        self._init_clients(access_key_id, access_key_secret, region_id,
+                           odps_project=odps_project, odps_endpoint=odps_endpoint)
 
-    def _initialize(self, access_key, access_secret, region, odps_project=None,
-                    odps_endpoint=None):
+    def _init_clients(self, access_key, access_secret, region, odps_project=None,
+                      odps_endpoint=None):
 
         # paiflow_acs_client = AcsClient(
         #     ak="AccessKeyId",
@@ -64,7 +64,6 @@ class Session(object):
 
     def _init_account(self):
         caller_identity = self.sts_client.get_caller_identity()
-        print(caller_identity)
         self._account_id = int(caller_identity["AccountId"])
         self._user_id = int(caller_identity["UserId"])
         self._arn = caller_identity["Arn"]
@@ -77,10 +76,6 @@ class Session(object):
         pipeline_info = self.paiflow_client.get_pipeline(identifier=identifier,
                                                          provider=provider,
                                                          version=version)["Data"]
-        # TODO: remove `provider` injection after backend completed
-        # manifest = yaml.load(pipeline_info["Manifest"])
-        # manifest["metadata"]["provider"] = provider
-        # pipeline_info["Manifest"] = yaml.dump(manifest)
         return pipeline_info
 
     def get_pipeline_by_id(self, pipeline_id):

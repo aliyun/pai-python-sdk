@@ -40,7 +40,6 @@ class RunJob(with_metaclass(ABCMeta, object)):
         if self.run_instance.get_status() != RunStatus.Succeeded:
             raise ValueError("Succeeded Run job is required!")
         run_outputs = self.run_instance.get_outputs()
-        print(run_outputs)
         return run_outputs
 
     def terminate(self):

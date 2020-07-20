@@ -34,7 +34,7 @@ class _XFlowAlgoMixin(object):
             "__XFlow_project": self.get_xflow_project(),
         }
 
-    def compile_args(self, *inputs, **kwargs):
+    def _compile_args(self, *inputs, **kwargs):
         args = self.get_xflow_args()
         if type(self)._enable_sparse_input and kwargs.get("enable_sparse"):
             args["enableSparse"] = True

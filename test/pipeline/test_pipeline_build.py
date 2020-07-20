@@ -65,7 +65,8 @@ class TestPipelineBuild(BaseTestCase):
     def test_temp_composite_pipeline_run(self):
         p = self.create_composite_pipeline_case_1()
         arguments, env = self.args_for_composite_pipeline_1()
-        run_id = p.run("ut_temp_composite_pipeline_run", arguments=arguments, env=env, wait=False)
+        run_id = p.run("pysdk-test-temp-composite-pipeline-run", arguments=arguments, env=env,
+                       wait=False)
         self.assertIsNotNone(run_id)
         run = RunInstance(run_id=run_id, session=self.session)
         self.assertEqual(run.get_status(), RunStatus.Running)
@@ -78,7 +79,7 @@ class TestPipelineBuild(BaseTestCase):
         arguments, env = self.args_for_composite_pipeline_1()
 
         pipeline_id = self.session.create_pipeline(p.to_dict())
-        run_id = self.session.create_pipeline_run("ut_composite_pipeline_run",
+        run_id = self.session.create_pipeline_run("pysdk-test-composite-pipeline-run",
                                                   pipeline_id=pipeline_id,
                                                   arguments=arguments, env=env)
         self.assertIsNotNone(run_id)
@@ -354,11 +355,6 @@ class TestPipelineBuild(BaseTestCase):
             {
                 "name": "execution",
                 "value": {
-                    # "accessKey": "3AccessKeySecret",
-                    # "accessId": "AccessKeyId",
-
-                    # "accessId": "AccessKeyId",
-                    # "accessKey": "AccessKeySecret",
                     "odpsInfoFile": "/share/base/odpsInfo.ini",
                     "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                     "logViewHost": "http://logview.odps.aliyun.com",
@@ -378,10 +374,6 @@ class TestPipelineBuild(BaseTestCase):
         env = {"resource": {
             "compute": {
                 "max_compute": {
-                    # "accessKey": "3AccessKeySecret",
-                    # "accessId": "AccessKeyId",
-                    # "accessId": "AccessKeyId",
-                    # "accessKey": "AccessKeySecret",
                     "odpsInfoFile": "/share/base/odpsInfo.ini",
                     "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                     "logViewHost": "http://logview.odps.aliyun.com",
@@ -389,12 +381,6 @@ class TestPipelineBuild(BaseTestCase):
                 }
             }
         },
-            # "workflowService": {
-            #     "config": {
-            #         "endpoint": "http://service.cn-shanghai.argo.aliyun.com"
-            #     },
-            #     "name": "argo"
-            # }
         }
         return arguments, env
 
@@ -403,7 +389,8 @@ class TestPipelineBuild(BaseTestCase):
 
         if version is None:
             version = "v%s" % (str(int(time.time() * 1000)))
-        p = Pipeline.new_pipeline(identifier="ut-data-source-type-transform", version=version,
+        p = Pipeline.new_pipeline(identifier="pysdk-test-data-source-type-transform",
+                                  version=version,
                                   session=self.session)
 
         execution_input = p.create_input_parameter("execution", "map", required=True)
@@ -617,42 +604,39 @@ class TestPipelineBuild(BaseTestCase):
                 "outputArtifact", from_=inner_step.outputs["outputArtifact"]
             )
             pipeline_id = self.session.create_pipeline(p.to_dict())
-            print("CUrrentPipelineID", pipeline_id)
             self.assertIsNotNone(pipeline_id)
             prev_pipeline = p
 
-        run_instance = prev_pipeline.run(name="test-nested-pipeline-run", arguments={
+        run_instance = prev_pipeline.run(name="pysdk-test-nested-pipeline-run", arguments={
             "xflow_execution": {
-                # "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "accessId": "AccessKeyId",
-                "accessKey": "3AccessKeySecret",
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                 "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": "wyl_test",
+                "odpsProject": "pai_sdk_test",
             },
         }, wait=False)
         self.assertEqual(RunStatus.Running, run_instance.get_status())
 
     def test_composite_pipeline_run(self):
-        p = self.create_composite_run(self.session)
+        p = self.create_composite_pipeline_to_oss(self.session)
         arguments = {
             "xflow_execution": {
                 "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                 "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": "wyl_test",
+                "odpsProject": "pai_sdk_test",
             },
             "rolearn": "acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
         }
 
-        run_id = p.run(name="test_composite_with_oss_model", arguments=arguments, wait=False)
+        run_id = p.run(name="pysdk-test-composite-with-oss-model", arguments=arguments, wait=False)
         run_instance = RunInstance(run_id, session=self.session)
         self.assertEqual(RunStatus.Running, run_instance.get_status())
         run_instance.wait()
         self.assertEqual(RunStatus.Succeeded, run_instance.get_status())
 
     @staticmethod
-    def create_composite_run(session):
+    def create_composite_pipeline_to_oss(session):
         p = Pipeline.new_pipeline(
             identifier="test-composite-lr-pipeline",
             version="v%s" % (str(int(time.time() * 1000))),

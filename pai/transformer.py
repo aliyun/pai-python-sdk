@@ -98,7 +98,7 @@ class AlgoBaseTransformer(PipelineTransformer):
         fit_args = self.parameters.copy()
         fit_args.update(kwargs)
 
-        fit_args = {k: v for k, v in self.compile_args(*inputs, **fit_args).items()}
+        fit_args = {k: v for k, v in self._compile_args(*inputs, **fit_args).items()}
         return super(AlgoBaseTransformer, self).transform(wait=wait, job_name=job_name,
                                                           args=fit_args)
 

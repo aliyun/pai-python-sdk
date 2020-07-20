@@ -54,7 +54,7 @@ class TestXFlowEstimator(BaseTestCase):
             "__XFlow_execution": lr.get_xflow_execution(),
         }
 
-        compiled_args = lr.compile_args(
+        compiled_args = lr._compile_args(
             "pai_temp_table",
             **args
         )

@@ -1,18 +1,10 @@
 from __future__ import absolute_import
 
 import os
-import time
-import unittest
-from pprint import pprint
 
-from pai.pipeline import Pipeline, PipelineStep
-from pai.pipeline.parameter import ParameterType
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
-from pai.pipeline.run import RunInstance, RunStatus
-from pai.xflow.classifier import LogisticRegression
+from pai.pipeline import Pipeline
 from test import BaseTestCase
-from test.pipeline import load_local_yaml
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 

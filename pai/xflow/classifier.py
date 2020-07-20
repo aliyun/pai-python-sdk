@@ -21,8 +21,8 @@ class LogisticRegression(XFlowEstimator):
                                                  max_iter=max_iter,
                                                  epsilon=epsilon, **kwargs)
 
-    def compile_args(self, *inputs, **kwargs):
-        args = super(LogisticRegression, self).compile_args(*inputs, **kwargs)
+    def _compile_args(self, *inputs, **kwargs):
+        args = super(LogisticRegression, self)._compile_args(*inputs, **kwargs)
         assert len(inputs) > 0
 
         args["inputArtifact"] = inputs[0]
@@ -87,8 +87,8 @@ class RandomForestClassifier(XFlowEstimator):
                                                      max_record_size=max_record_size,
                                                      **kwargs)
 
-    def compile_args(self, *inputs, **kwargs):
-        args = super(RandomForestClassifier, self).compile_args(*inputs, **kwargs)
+    def _compile_args(self, *inputs, **kwargs):
+        args = super(RandomForestClassifier, self)._compile_args(*inputs, **kwargs)
         assert len(inputs) > 0
 
         args["inputArtifact"] = inputs[0]

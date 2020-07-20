@@ -46,11 +46,10 @@ class TestLogisticsRegression(BaseTestCase):
             session=self.session,
             regularized_type="l2",
         )
-        run_job = lr.fit(wait=True, input_data=self.iris_df, label_col="category",
+        run_job = lr.fit(wait=True, input_data=self.iris_df, job_name="pysdk-test-lr-sync-fit",
+                         model_name=model_name, good_value=1, label_col="category",
                          feature_cols=['sepal_length', 'sepal_width', 'petal_length',
-                                       'petal_width'],
-                         good_value=1,
-                         model_name=model_name)
+                                       'petal_width'])
 
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         print(run_job.get_outputs())
@@ -66,9 +65,9 @@ class TestLogisticsRegression(BaseTestCase):
             regularized_type="l2",
         )
         run_job = lr.fit(wait=True, input_data=self.iris_df, label_col="category",
+                         job_name="pysdk-test-lr-async-fit", model_name=model_name,
                          feature_cols=['sepal_length', 'sepal_width', 'petal_length',
-                                       'petal_width'],
-                         model_name=model_name)
+                                       'petal_width'])
 
         self.assertEqual(JobStatus.Running, run_job.get_status())
         run_job.attach()
@@ -83,13 +82,14 @@ class TestLogisticsRegression(BaseTestCase):
             session=self.session,
             regularized_level=1.0,
         )
-        job1 = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
-                      feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
-                      model_name=model_name)
+        job1 = lr.fit(wait=False, input_data=self.iris_df, job_name="pysdk-test-lr-multi-fit-1",
+                      label_col="category", model_name=model_name,
+                      feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],)
 
         self.assertEqual(lr.last_job, job1)
 
         job2 = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
+                      job_name="pysdk-test-lr-multi-fit-2",
                       feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
                       model_name=model_name)
         self.assertEqual(lr.last_job, job2)

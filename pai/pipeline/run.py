@@ -7,6 +7,7 @@ from datetime import datetime
 from libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.exception import TimeoutException
+from pai.pipeline.artifact import ArtifactInfo
 from pai.utils import run_detail_url
 
 logger = logging.getLogger(__name__)
@@ -86,8 +87,9 @@ class RunInstance(object):
             node_id = run_info["NodeId"]
         if not node_id:
             return
-        print(self.run_id, node_id)
-        return self.session.list_run_outputs(run_id=self.run_id, node_id=node_id, depth=depth, typ=typ)
+        outputs = self.session.list_run_outputs(run_id=self.run_id, node_id=node_id, depth=depth,
+                                                typ=typ)
+        return [ArtifactInfo.from_run_output(output) for output in outputs]
 
     def get_status(self):
         return self.get_run_info()["Status"]

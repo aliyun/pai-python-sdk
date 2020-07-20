@@ -283,6 +283,7 @@ class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
     def to_dict(self):
         d = super(MaxComputeOfflineModelArtifact, self).to_dict()
         d["location"]["name"] = self.offline_model
+        d["name"] = self.offline_model
         return d
 
 
@@ -344,3 +345,54 @@ class ArtifactLocationType(Enum):
 class ArtifactModelType(Enum):
     OfflineModel = "OfflineModel"
     PMML = "PMML"
+
+
+class ArtifactInfo(object):
+
+    def __init__(self, metadata, value, name, producer, artifact_id):
+        """
+
+        Args:
+            metadata (:class:`~.pai.pipeline.artifact.ArtifactMetadata`): Artifact metadata info.
+            value (:class:`~.pai.pipeline.artifact.ArtifactValue`): Artifact value.
+            name (str): name of
+            producer (str):
+            artifact_id (str):
+        """
+        self.name = name
+        self.metadata = metadata
+        self.value = value
+        self.producer = producer
+        self.artifact_id = artifact_id
+
+    @classmethod
+    def from_run_output(cls, output):
+        """ Build new ArtifactInfo instance from Run output json.
+
+        Output Example:
+
+        {'Info':
+         {'value':
+         '{"location": {"table": "pai_temp_77c08aeb2e514c9d8649feba4a88ee77"}}',
+         'metadata': {'path': '/tmp/outputs/artifacts/outputArtifact/data',
+          'type': {'DataSet': {'locationType': 'MaxComputeTable'}}}},
+          'Name': 'outputArtifact',
+          'Producer': 'flow-ec67rsug8kyly4049z',
+          'CreateTime': 1595214018000,
+          'Type': 'DataSet',
+          'Id': 'artifact-e0xdqhsfhqctxkpyli'
+        }
+
+        Args:
+            output (dict): Run output return by pipeline service.
+        Returns:
+            ArtifactInfo: ArtifactInfo instance.
+        """
+
+        name = output["Name"]
+        af_value = ArtifactValue.from_resource(output["Info"]["value"])
+        af_metadata = ArtifactMetadata.from_dict(output["Info"]["metadata"])
+        producer = output["Producer"]
+        artifact_id = output["Id"]
+        return ArtifactInfo(metadata=af_metadata, value=af_value, name=name, producer=producer,
+                            artifact_id=artifact_id)

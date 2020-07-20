@@ -301,8 +301,10 @@ class Pipeline(object):
                 af = PipelineArtifact.to_argument_by_spec(arg, af_spec, kind="inputs")
                 artifacts.append(af)
             else:
+                logger.warn(
+                    "Provider useless argument:%s, it is not require by the pipeline manifest spec."
+                    % name)
                 pass
-                # raise ValueError("Argument %s is not support by pipeline manifest" % name)
 
         requires = set(
             [param_name for param_name, spec in parameters_spec.items() if spec.get("required")]
@@ -311,22 +313,23 @@ class Pipeline(object):
 
         if len(not_supply) > 0:
             raise ValueError("Required arguments is not supplied:%s" % ",".join(not_supply))
-        return {
-            "parameters": parameters,
-            "artifacts": artifacts,
-
-        }
+        return parameters, artifacts
 
     # todo: input arguments validation.
     def run(self, name, arguments, env=None, wait=True):
-        arguments = self.translate_arguments(arguments)
+        parameters, artifacts = self.translate_arguments(arguments)
+        pipeline_args = {
+            "parameters": parameters,
+            "artifacts": artifacts,
+        }
 
         pipeline_id, manifest = None, None
         if self.pipeline_id:
             pipeline_id = self.pipeline_id
         else:
             manifest = self.to_dict()
-        run_id = self.session.create_pipeline_run(name, arguments, env, no_confirm_required=True,
+        run_id = self.session.create_pipeline_run(name, pipeline_args, env,
+                                                  no_confirm_required=True,
                                                   pipeline_id=pipeline_id, manifest=manifest)
 
         if not wait:
