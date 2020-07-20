@@ -9,12 +9,11 @@ import pandas as pd
 from six.moves import zip
 from sklearn.datasets import load_iris
 
+from pai.job import JobStatus
 from pai.xflow.classifier import LogisticRegression
 from test import BaseTestCase
-import unittest
 
 
-@unittest.skip("Backend artifact support not ready")
 class TestLogisticsRegression(BaseTestCase):
     temp_tables = []
 
@@ -40,6 +39,8 @@ class TestLogisticsRegression(BaseTestCase):
             cls.odps_client.delete_table(name, if_exists=True, async_=True)
 
     def test_sync_train(self):
+        import socket
+        print(socket.gethostbyname('pre-paiflow.data.aliyun.com'))
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             session=self.session,
@@ -48,7 +49,11 @@ class TestLogisticsRegression(BaseTestCase):
         run_job = lr.fit(wait=True, input_data=self.iris_df, label_col="category",
                          feature_cols=['sepal_length', 'sepal_width', 'petal_length',
                                        'petal_width'],
+                         good_value=1,
                          model_name=model_name)
+
+        self.assertEqual(JobStatus.Succeeded, run_job.get_status())
+        print(run_job.get_outputs())
 
         offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())),
                                              artifact="outputArtifact")
@@ -64,7 +69,10 @@ class TestLogisticsRegression(BaseTestCase):
                          feature_cols=['sepal_length', 'sepal_width', 'petal_length',
                                        'petal_width'],
                          model_name=model_name)
+
+        self.assertEqual(JobStatus.Running, run_job.get_status())
         run_job.attach()
+        self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())),
                                              artifact="outputArtifact")
         self.assertIsNotNone(offline_model)
@@ -73,25 +81,29 @@ class TestLogisticsRegression(BaseTestCase):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             session=self.session,
-            regularized_level="l2"
+            regularized_level=1.0,
         )
         job1 = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
                       feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
                       model_name=model_name)
+
+        self.assertEqual(lr.last_job, job1)
+
         job2 = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
                       feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
                       model_name=model_name)
+        self.assertEqual(lr.last_job, job2)
         self.assertNotEqual(job1.run_id, job2.run_id)
 
-    def testArgumentsNotMeetR(self):
-        lr = LogisticRegression(
-            session=self.session,
-            regularized_type="l2",
-        )
-        with self.assertRaises(ValueError):
-            # miss required arguments model_name
-            lr.fit(wait=True, input_data=self.iris_df, label_col="category",
-                   feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
+    # def testArgumentsNotMeetR(self):
+    #     lr = LogisticRegression(
+    #         session=self.session,
+    #         regularized_type="l2",
+    #     )
+    #     with self.assertRaises(ValueError):
+    #         # miss required arguments model_name
+    #         lr.fit(wait=True, input_data=self.iris_df, label_col="category",
+    #                feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
 
 
 class TestRandomForestClassifier(BaseTestCase):

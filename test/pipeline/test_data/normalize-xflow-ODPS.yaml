@@ -1,109 +1,205 @@
-apiVersion: core/v1
+apiVersion: "core/v1"
 metadata:
-  provider: 1557702098194904
-  identifier: normalize-xflow-ODPS
-  version: v1
+  provider: "1326689413376250"
+  name: null
+  version: "v1"
+  identifier: "normalize-xflow-maxCompute"
+  uuid: "l0s75k2qx48l7vd5of"
+  namespace: null
+  labels: null
 spec:
   inputs:
     artifacts:
-    - name: inputArtifact
-      type: {DataSet: {locationType: MaxComputeTable}}
-      required: true
+    - name: "inputArtifact"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
       desc: "输入数据"
-    - name: provider
-      type: {DataSet: {locationType: MaxComputeTable}}
+      defaultValue: null
+      value: null
+      from: null
+      required: true
+    - name: "provider"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
       desc: "配置输入表，即归一化节点生成的参数列表，通过此参数，可以将一张表的配置参数应用到一张新的表"
+      defaultValue: null
+      value: null
+      from: null
+      required: false
     parameters:
-    - name: __xflowProject
-      type: String
+    - name: "__XFlow_project"
+      type: "String"
+      desc: null
+      value: "algo_public"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
       required: true
-      value: algo_public
-    - name: __execution
-      type: Map
+    - name: "__XFlow_execution"
+      type: "Map"
       desc: "必选，执行环境"
-    - name: outputTableName
-      type: String
+      value: null
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "outputTableName"
+      type: "String"
       desc: "必选，输出表"
-    - name: outputParaTableName
-      type: String
+      value: null
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "outputParaTableName"
+      type: "String"
       desc: "必选，配置输出表"
-    - name: lifecycle
-      type: Int
-      required: true
+      value: null
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "lifecycle"
+      type: "Int"
+      desc: null
       value: 28
-    - name: selectedColNames
-      type: String
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
       required: true
+    - name: "selectedColNames"
+      type: "String"
       desc: "可选，输入表选择列, 默认选中所有列"
-    - name: keepOriginal
-      desc: "可选，是否保留原始列(keepOriginal =true时，处理过的列重命名;原始列保留，keepOriginal=false时，全部列保留且不重命名)"
+      value: null
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: true
+    - name: "keepOriginal"
+      type: "Bool"
+      desc: "可选，是否保留原始列(keepOriginal =true时，处理过的列重命名;原始列保留，keepOriginal=false时，全部列\
+        保留且不重命名)"
       value: false
-      type: Bool
-    - name: coreNum
-      type: Int
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "coreNum"
+      type: "Int"
       desc: "可选，核心个数"
       value: ""
-    - name: memSizePerCore
-      type: Int
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "memSizePerCore"
+      type: "Int"
       desc: "可选，单个核心使用的内存数"
       value: ""
-    - name: enableSparse
-      type: Bool
-      value: false
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "enableSparse"
+      type: "Bool"
       desc: "可选，是否打开稀疏支持"
-    - name: itemDelimiter
-      value: " "
+      value: false
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "itemDelimiter"
+      type: "String"
       desc: "可选，kv数据的分隔符"
-      type: String
-    - name: kvDelimiter
-      value: ":"
+      value: " "
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "kvDelimiter"
+      type: "String"
       desc: "可选，kv数据k，v值的分隔符"
-      type: String
-    - name: kvIndices
-      value: ""
+      value: ":"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
+    - name: "kvIndices"
+      type: "String"
       desc: "可选，kv表中需要归一化的特征索引"
-      type: String
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+      required: false
   outputs:
     artifacts:
-    - name: outputArtifact
-      type: {DataSet: {locationType: MaxComputeTable}}
-      required: true
+    - name: "outputArtifact"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
       desc: "输出数据"
-    - name: outputParaArtifact
-      type: {DataSet: {locationType: MaxComputeTable}}
+      defaultValue: null
+      value: "{\"location\": {\"table\": \"{{inputs.parameters.outputTableName}}\"\
+        }}"
+      from: null
       required: true
+    - name: "outputParaArtifact"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
       desc: "输出配置表，用于应用到其他的数据集上"
+      defaultValue: null
+      value: "{\"location\": {\"table\": \"{{inputs.parameters.outputParaTableName}}\"\
+        }}"
+      from: null
+      required: true
+    parameters: []
+  arguments:
+    artifacts: []
+    parameters: []
+  dependencies: []
   execution:
-    image: "registry.cn-shanghai.aliyuncs.com/kubeflow_demo/kf_odpscmd:studio0.6"
+    image: "registry.cn-shanghai.aliyuncs.com/paiflow-core/max-compute-executor:1.0.0"
     command:
-    - /usr/local/bin/start.sh
-    args:
-    - |-
-     {
-      "env": {
-        "_PPC_MaxCompute": {{inputs.parameters.__execution}}
-      },
-      "args": {
-        "inputParaTableName|location|table": "{{inputs.artifacts.provider.path}}",
-        "__template": "pai_cmd",
-        "__dropTables": ["{{inputs.parameters.outputTableName}}","{{inputs.parameters.outputParaTableName}}"],
-        "__xflowName": "normalize",
-         "__xflowProject": "{{inputs.parameters.__xflowProject}}",
-        "outputTableName": "{{inputs.parameters.outputTableName}}",
-        "outputParaTableName": "{{inputs.parameters.outputParaTableName}}",
-        "lifecycle": "{{inputs.parameters.lifecycle}}",
-        "selectedColNames": "{{inputs.parameters.selectedColNames}}",
-        "keepOriginal": "{{inputs.parameters.keepOriginal}}",
-        "inputTableName|location|table": "{{inputs.artifacts.inputArtifact.path}}",
-        "coreNum": "{{inputs.parameters.coreNum}}",
-        "memSizePerCore": "{{inputs.parameters.memSizePerCore}}",
-        "enableSparse": "{{inputs.parameters.enableSparse}}",
-        "itemDelimiter": "{{inputs.parameters.itemDelimiter}}",
-        "kvDelimiter": "{{inputs.parameters.kvDelimiter}}",
-        "kvIndices": "{{inputs.parameters.kvIndices}}"
-       },
-      "outputs": {
-        "{{outputs.artifacts.outputArtifact.path}}": {"type": "DataSet", "location": {"type": "MaxComputeTable", "table": "{{inputs.parameters.outputTableName}}"}},
-        "{{outputs.artifacts.outputParaArtifact.path}}": {"type": "DataSet", "location": {"type": "MaxComputeTable", "table": "{{inputs.parameters.outputParaTableName}}"}}
-        }
-     }
+    - "python"
+    - "-c"
+    - "import json\nimport os\nfrom executor import execute\nfrom utils import read_file,\
+      \ get_json_value\nimport sys\n\nargs = '''{\n     \"__XFlow_execution\": {{inputs.parameters.__XFlow_execution}},\n\
+      \   \"__XFlow_template\": \"pai_cmd\",\n   \"__XFlow_dropTables\": [\"{{inputs.parameters.outputTableName}}\"\
+      ,\"{{inputs.parameters.outputParaTableName}}\"],\n   \"__XFlow_name\": \"normalize\"\
+      ,\n   \"__XFlow_project\": \"{{inputs.parameters.__XFlow_project}}\",\n   \"\
+      outputTableName\": \"{{inputs.parameters.outputTableName}}\",\n   \"outputParaTableName\"\
+      : \"{{inputs.parameters.outputParaTableName}}\",\n   \"lifecycle\": \"{{inputs.parameters.lifecycle}}\"\
+      ,\n   \"selectedColNames\": \"{{inputs.parameters.selectedColNames}}\",\n  \
+      \ \"keepOriginal\": \"{{inputs.parameters.keepOriginal}}\",\n   \"coreNum\"\
+      : \"{{inputs.parameters.coreNum}}\",\n   \"memSizePerCore\": \"{{inputs.parameters.memSizePerCore}}\"\
+      ,\n   \"enableSparse\": \"{{inputs.parameters.enableSparse}}\",\n   \"itemDelimiter\"\
+      : \"{{inputs.parameters.itemDelimiter}}\",\n   \"kvDelimiter\": \"{{inputs.parameters.kvDelimiter}}\"\
+      ,\n   \"kvIndices\": \"{{inputs.parameters.kvIndices}}\"\n}'''\n\nresolved_args\
+      \ = json.loads(args)\ncontent = read_file('{{inputs.artifacts.provider.path}}')\n\
+      if len(content.strip()) != 0:\n    data = json.loads(content)\n    resolved_args['inputParaTableName']\
+      \ = get_json_value(data, '{{ data.location.table }}')\n\ndata = json.loads(read_file('{{inputs.artifacts.inputArtifact.path}}'))\n\
+      resolved_args['inputTableName'] = get_json_value(data, '{{ data.location.table\
+      \ }}')\nexit_code = execute(resolved_args)\nsys.exit(exit_code)"
+    args: null
+  pipelines: []

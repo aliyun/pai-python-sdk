@@ -50,8 +50,8 @@ class TestXFlowEstimator(BaseTestCase):
             "enableSparse": True,
             "itemDelimiter": ",",
             "kvDelimiter": ":",
-            "__xflowProject": lr.get_xflow_project(),
-            "__execution": lr.get_xflow_execution(),
+            "__XFlow_project": lr.get_xflow_project(),
+            "__XFlow_execution": lr.get_xflow_execution(),
         }
 
         compiled_args = lr.compile_args(

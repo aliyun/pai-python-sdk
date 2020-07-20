@@ -9,47 +9,52 @@ from test import BaseTestCase
 
 class TestEstimatorBase(BaseTestCase):
 
-    @unittest.skip("backend support of artifact not ready")
-    def test_estimator_from_pipeline(self):
-        identifier = "logisticregression-binary-xflow-ODPS"
+    def init_base_lr_estimator(self):
+        identifier = "logisticregression-binary-xflow-maxCompute"
         version = "v1"
         provider = ProviderAlibabaPAI
         p = Pipeline.get_by_identifier(session=self.session, identifier=identifier,
                                        provider=provider, version=version)
-
         parameters = {
-            "__xflowProject": "algo_public",
+            "__XFlow_project": "algo_public",
             "epsilon": 1e-06,
             "maxIter": 100,
             # "regularizedType": "l1",
             "regularizedLevel": 1.0,
         }
         est = p.to_estimator(parameters=parameters)
+        return p, est
 
-        self.assertEqual(est.get_identifier(), identifier)
-        self.assertEqual(est.get_version(), version)
-        self.assertEqual(est.get_provider(), provider)
+    def test_init_base_lr_estimator(self):
+        p, est = self.init_base_lr_estimator()
+        self.assertEqual(est.get_identifier(), p.identifier)
+        self.assertEqual(est.get_version(), p.version)
+        self.assertEqual(est.get_provider(), p.provider)
         self.assertEqual(est.get_pipeline_id(), p.pipeline_id)
 
+    def test_estimator_from_pipeline(self):
+        p, est = self.init_base_lr_estimator()
         model_name = "ut_estimator_from_pipeline"
-        project = self.session.odps_project
+        project = "pai_sdk_test"
         fit_args = {
             "inputArtifact": "odps://{project_name}/tables/{table_name}".format(
-                project_name=project, table_name="test_table"),
+                project_name=project, table_name="pai_sdk_test.lr_data_set"),
             "labelColName": "_c2",
-            "featureColNames": "",
+            "featureColNames": "pm10,so2,co,no2",
             "modelName": model_name,
-            "__xflowProject": "algo_public",
-            "__execution": {
-                "__odpsInfoFile": "/share/base/odpsInfo.ini",
+            "goodValue": 1,
+            "__XFlow_execution": {
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                 "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": "wyl_test",
+                "odpsProject": "pai_sdk_test",
             },
 
         }
 
-        _ = est.fit(wait=True, job_name="ut_pipeline_test", args=fit_args)
+        job = est.fit(wait=True, job_name="ut_pipeline_test", args=fit_args)
+
+        print(job.get_outputs())
 
         # assert odps offlineModel exists
         self.assertTrue(

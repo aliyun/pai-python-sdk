@@ -7,7 +7,7 @@ from pai.xflow.base import XFlowEstimator
 class LogisticRegression(XFlowEstimator):
     enable_sparse = True
 
-    _identifier_default = "logisticregression-binary-xflow-ODPS"
+    _identifier_default = "logisticregression-binary-xflow-maxCompute"
 
     _version_default = "v1"
 
@@ -59,7 +59,9 @@ class LogisticRegression(XFlowEstimator):
         Returns:
 
         """
-        return super(LogisticRegression, self).fit(input_data, job_name=job_name,
+        return super(LogisticRegression, self).fit(input_data,
+                                                   job_name=job_name,
+                                                   wait=wait,
                                                    model_name=model_name,
                                                    feature_cols=feature_cols,
                                                    label_col=label_col,
@@ -69,7 +71,7 @@ class LogisticRegression(XFlowEstimator):
 
 
 class RandomForestClassifier(XFlowEstimator):
-    _identifier_default = "random-forests-xflow-ODPS"
+    _identifier_default = "random-forests-xflow-maxCompute"
 
     _provider_default = ProviderAlibabaPAI
 

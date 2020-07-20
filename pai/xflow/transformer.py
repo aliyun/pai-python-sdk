@@ -1,41 +1,80 @@
 from pai import ProviderAlibabaPAI
 from pai.xflow.base import XFlowTransformer
+from pai.utils import gen_temp_table_name
 
 
-class XFlowOfflineModelTransformer(XFlowTransformer):
-    _identifier_default = "prediction-xflow-ODPS"
+class OfflineModelTransformer(XFlowTransformer):
+    _enable_spare_input = True
+
+    _identifier_default = "prediction-xflow-maxCompute"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, model, **kwargs):
-        super(XFlowOfflineModelTransformer, self).__init__(session=session, model=model, **kwargs)
-        self.model = model
+    def __init__(self, session, model, table_lifecycle=None, **kwargs):
+        """
 
-    def compare_args(self, **kwargs):
-        pass
+        Args:
+            session: PAI Session instance.
+            model (url, : OfflineModel data, could be offlinemodel resource url, ODPS OfflineModel object,
+                   or
+            **kwargs:
+        """
+        super(OfflineModelTransformer, self).__init__(session=session,
+                                                      model=model,
+                                                      table_lifecycle=table_lifecycle,
+                                                      **kwargs)
 
-    def transform(self, input_data, wait=True, job_name=None, ):
-        return super(XFlowOfflineModelTransformer, self).transform()
+    def compile_args(self, *inputs, **kwargs):
+        args = super(OfflineModelTransformer, self).compile_args(*inputs, **kwargs)
+        assert len(inputs) > 0
+        args["inputDataSetArtifact"] = inputs[0]
+        args["inputModelArtifact"] = kwargs.get("model")
+        args["outputTableName"] = kwargs.get("output_table") or gen_temp_table_name()
+        args['outputPartition'] = kwargs.get("partitions")
+        feature_cols = kwargs.get("feature_cols")
+        if isinstance(feature_cols, (list, tuple)):
+            feature_cols = ','.join(feature_cols)
+        args["featureColNames"] = feature_cols
+        args["appendColNames"] = kwargs.get("append_cols")
+        args["resultColName"] = kwargs.get("result_col")
+
+        return args
+
+    def transform(self, input_data, wait=True, job_name=None, feature_cols=None, label_col=None,
+                  result_col=None, score_col=None, detail_col=None, append_cols=None,
+                  output_table=None, output_partition=None, **kwargs):
+        return super(OfflineModelTransformer, self).transform(
+            input_data,
+            wait=wait,
+            job_name=job_name,
+            feature_cols=feature_cols,
+            label_col=label_col,
+            result_col=result_col,
+            append_cols=append_cols,
+            output_table=output_table,
+            output_partition=output_partition,
+            **kwargs
+        )
 
 
 class FeatureNormalize(XFlowTransformer):
     pass
 
 
-class ODPSDataSource(XFlowTransformer):
+class MaxComputeDataSource(XFlowTransformer):
     """
     Transform plain odps table/partition info to ODPS Table Artifact
     """
 
-    _identifier_default = "odps-data-source"
+    _identifier_default = "dataSource-xflow-maxCompute"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
     def __init__(self, session, **kwargs):
-        super(ODPSDataSource, self).__init__(session=session, **kwargs)
+        super(MaxComputeDataSource, self).__init__(session=session, **kwargs)
 
     def compile_args(self, *inputs, **kwargs):
-        args = super(ODPSDataSource, self).compile_args(*inputs, **kwargs)
+        args = super(MaxComputeDataSource, self).compile_args(*inputs, **kwargs)
         assert len(inputs) > 0
         args["tableName"] = inputs[0]
         args["partition"] = kwargs.pop("partition")
@@ -61,7 +100,7 @@ class ODPSDataSource(XFlowTransformer):
                             timestamp.
             **kwargs: base class keyword argument values.
         """
-        return super(ODPSDataSource, self).transform(
+        return super(MaxComputeDataSource, self).transform(
             table_name,
             partition=partition,
             wait=wait,
