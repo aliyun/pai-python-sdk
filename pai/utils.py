@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 
 import six
+import uuid
 from odps import DataFrame as ODPSDataFrame
 from odps.models import Table
 from odps.models.partition import Partition
@@ -67,3 +68,10 @@ def _extract_odps_table_info_from_url(resource):
 
 def ensure_unicode(t):
     return six.ensure_text(t)
+
+
+def gen_temp_table_name(prefix="pai_temp_"):
+    return '{prefix}{identifier}'.format(
+        prefix=prefix,
+        identifier=uuid.uuid4().hex,
+    )

@@ -29,7 +29,8 @@ class PAIFlowClient(BaseClient):
         super(PAIFlowClient, self).__init__(acs_client=acs_client)
 
     def _get_endpoint(self):
-        return "pre-paiflow.data.aliyun.com"  # pre-release env
+        return "paiflow-share.cn-hangzhou.aliyuncs.com"  # pre-release env
+        # return "paiflow.cn-shanghai.aliyuncs.com"  # release env
         # return "paiflow.aliyuncs.com"  # daily-release env
 
     def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):

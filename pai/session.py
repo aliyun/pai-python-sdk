@@ -11,7 +11,8 @@ from pai.utils import run_detail_url
 
 class Session(object):
 
-    def __init__(self, access_key_id, access_key_secret, region_id, **kwargs):
+    def __init__(self, access_key_id, access_key_secret, region_id,
+                 odps_project=None, odps_endpoint=None):
         """ Wrap all functionality provided by Alibaba Cloud PAI services
 
         This class encapsulates convenient methods to access PAI services, currently focus
@@ -28,36 +29,59 @@ class Session(object):
 
         self.region_id = region_id
 
-        odps_project = kwargs.pop("odps_project", None)
+        self._initialize(access_key_id, access_key_secret, region_id,
+                         odps_project=odps_project, odps_endpoint=odps_endpoint)
 
-        self._initialize(access_key_id, access_key_secret, region_id, odps_project=odps_project)
+    def _initialize(self, access_key, access_secret, region, odps_project=None,
+                    odps_endpoint=None):
 
-    def _initialize(self, access_key, access_secret, region, odps_project=None):
+        # paiflow_acs_client = AcsClient(
+        #     ak="AccessKeyId",
+        #     secret="zXJ7QF79Oz",
+        #     region_id="ch-shanghai",
+        # )
+
         self._acs_client = AcsClient(ak=access_key, secret=access_secret, region_id=region)
-
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
+
         self.sts_client = ClientFactory.create_sts_client(self._acs_client)
         self.odps_client = ODPS(access_id=access_key, secret_access_key=access_secret,
-                                project=odps_project)
+                                project=odps_project,
+                                endpoint=odps_endpoint)
+        self._init_account()
 
     @property
     def account_id(self):
-        if not hasattr(self, "_account_id"):
-            caller_identity = self.sts_client.get_caller_identity()
-            self._account_id = int(caller_identity["AccountId"])
         return self._account_id
+
+    @property
+    def user_id(self):
+        return self._user_id
+
+    @property
+    def rolearn(self):
+        return self._arn
+
+    def _init_account(self):
+        caller_identity = self.sts_client.get_caller_identity()
+        print(caller_identity)
+        self._account_id = int(caller_identity["AccountId"])
+        self._user_id = int(caller_identity["UserId"])
+        self._arn = caller_identity["Arn"]
 
     @property
     def odps_project(self):
         return self.odps_client.project
 
     def get_pipeline(self, identifier, provider, version):
-        self.paiflow_client.get_pipeline(identifier=identifier,
-                                         provider=provider,
-                                         version=version)
-        return self.paiflow_client.get_pipeline(identifier=identifier,
-                                                provider=provider,
-                                                version=version)["Data"]
+        pipeline_info = self.paiflow_client.get_pipeline(identifier=identifier,
+                                                         provider=provider,
+                                                         version=version)["Data"]
+        # TODO: remove `provider` injection after backend completed
+        # manifest = yaml.load(pipeline_info["Manifest"])
+        # manifest["metadata"]["provider"] = provider
+        # pipeline_info["Manifest"] = yaml.dump(manifest)
+        return pipeline_info
 
     def get_pipeline_by_id(self, pipeline_id):
         return self.paiflow_client.get_pipeline(pipeline_id=pipeline_id)["Data"]
@@ -162,9 +186,17 @@ class Session(object):
 
     def list_run_outputs(self, run_id, node_id, depth=1, name=None, sorted_by=None,
                          sorted_sequence=None, typ=None, page_number=1, page_size=50):
-        kwargs = locals()
-        kwargs.pop("self")
-        outputs = self.paiflow_client.list_run_outputs(**kwargs)["Data"]
+        outputs = self.paiflow_client.list_run_outputs(
+            run_id=run_id,
+            node_id=node_id,
+            depth=depth,
+            name=name,
+            sorted_by=sorted_by,
+            sorted_sequence=sorted_sequence,
+            typ=typ,
+            page_number=page_number,
+            page_size=page_size,
+        )["Data"]
         return outputs
 
     def get_run(self, run_id):

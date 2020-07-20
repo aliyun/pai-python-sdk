@@ -5,7 +5,7 @@ from abc import ABCMeta
 from enum import Enum
 from six import with_metaclass
 
-from pai.pipeline.run import RunStatus
+from pai.pipeline import RunStatus
 
 
 class JobStatus(Enum):
@@ -39,7 +39,9 @@ class RunJob(with_metaclass(ABCMeta, object)):
     def get_outputs(self):
         if self.run_instance.get_status() != RunStatus.Succeeded:
             raise ValueError("Succeeded Run job is required!")
-        return self.run_instance.get_outputs()
+        run_outputs = self.run_instance.get_outputs()
+        print(run_outputs)
+        return run_outputs
 
     def terminate(self):
         self.run_instance.terminate()

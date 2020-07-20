@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 
+from abc import ABCMeta, abstractmethod
+
+import six
 import yaml
 
-from .base import PaiFlowBase
+from .pipeline import PaiFlowBase
 from .job import RunJob
 
 
-class Estimator(object):
+class Estimator(six.with_metaclass(ABCMeta, object)):
 
     def __init__(self, session, parameters=None):
         self.session = session
@@ -17,22 +20,31 @@ class Estimator(object):
     def parameters(self):
         return self._parameters
 
+    @abstractmethod
+    def _run(self, job_name, arguments, **kwargs):
+        raise NotImplementedError
+
     def fit(self, wait=True, job_name=None, args=None, **kwargs):
-        run_instance = self._run(job_name=job_name, arguments=args,
-                                 **kwargs)
+        run_instance = self._run(job_name=job_name, arguments=args, **kwargs)
         run_job = _EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
             run_job.attach()
         return run_job
 
+    @property
+    def last_job(self):
+        if self._jobs:
+            return self._jobs[-1]
+
 
 class PipelineEstimator(PaiFlowBase, Estimator):
 
-    def __init__(self, session, parameters=None, manifest=None,
+    def __init__(self, session, parameters=None, manifest=None, _compiled_args=False,
                  pipeline_id=None):
         Estimator.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
+        self._compiled_args = _compiled_args
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
@@ -46,6 +58,16 @@ class PipelineEstimator(PaiFlowBase, Estimator):
         pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest,
                                pipeline_id=pipeline_id)
         return pe
+
+    def fit(self, wait=True, job_name=None, args=None, **kwargs):
+        args = args or dict()
+        if not self._compiled_args:
+            run_args = self.parameters.copy()
+            run_args.update(args)
+        else:
+            run_args = args
+        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name, args=run_args,
+                                                  **kwargs)
 
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
@@ -74,6 +96,7 @@ class AlgoBaseEstimator(PipelineEstimator):
     def fit(self, *inputs, **kwargs):
         wait = kwargs.pop("wait", True)
         job_name = kwargs.pop("job_name", None)
+
         fit_args = self.parameters.copy()
         fit_args.update(kwargs)
 
@@ -91,24 +114,25 @@ class _EstimatorJob(RunJob):
     def session(self):
         return self.estimator.session
 
-    # def create_model(self, artifact=None):
-    #     outputs = self.get_outputs()
-    #     if not outputs:
-    #         raise ValueError("No model artifact is available to create model")
-    #
-    #     model_data = None
-    #     if name is None:
-    #         model_data = outputs[0]
-    #     else:
-    #         for output in outputs:
-    #             if output["Name"] == name:
-    #                 model_data = output
-    #
-    #     if not model_data or model_data["Type"] != ArtifactDataType.DataSet:
-    #         raise ValueError("No model artifact is available to create model")
-    #
-    #     if model_data["locationType"]["modelType"] == ArtifactModelType.OfflineModel:
-    #         return XFlowOfflineModel(session=self.session, name=model_data["Name"],
-    #                                  model_data=model_data)
-    #     else:
-    #         return PmmlModel(session=self.session, name=model_data["Name"], model_data=model_data)
+    def create_model(self, artifact_name=None):
+        outputs = self.get_outputs()
+        if not outputs:
+            raise ValueError("No model artifact is available to create model")
+
+        model_data = None
+        if artifact_name is None:
+            model_data = outputs[0]
+        else:
+            for output in outputs:
+                if output["Name"] == name:
+                    model_data = output
+
+        if not model_data or model_data["Type"] != ArtifactDataType.DataSet:
+            raise ValueError("No model artifact is available to create model")
+
+        if model_data["locationType"]["modelType"] == ArtifactModelType.OfflineModel:
+            return XFlowOfflineModel(session=self.session, name=model_data["Name"],
+                                     model_data=model_data)
+        else:
+            return PmmlModel(session=self.session, name=model_data["Name"], model_data=model_data)
+

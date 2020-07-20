@@ -1,9 +1,9 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 import six
 import yaml
 
-from pai.base import PaiFlowBase
+from pai.pipeline import PaiFlowBase
 from pai.job import RunJob
 
 
@@ -20,25 +20,30 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
         run_job = _TransformJob(transformer=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_instance.attach()
+            run_job.attach()
         return run_job
+
+    @abstractmethod
+    def _run(self, job_name, arguments, **kwargs):
+        raise NotImplementedError
 
     @property
     def parameters(self):
         return self._parameters
 
+    @property
+    def last_job(self):
+        if self._jobs:
+            return self._jobs[-1]
+
 
 class PipelineTransformer(PaiFlowBase, Transformer):
 
-    def __init__(self, session, parameters=None, manifest=None,
+    def __init__(self, session, parameters=None, manifest=None, _compiled_args=False,
                  pipeline_id=None):
         Transformer.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
-
-    @classmethod
-    def from_manifest(cls, manifest, session, parameters=None):
-        pe = PipelineTransformer(session=session, parameters=parameters).set_manifest(manifest)
-        return pe
+        self._compiled_args = _compiled_args
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
@@ -53,6 +58,16 @@ class PipelineTransformer(PaiFlowBase, Transformer):
                                  pipeline_id=pipeline_id)
         return pe
 
+    def transform(self, wait=True, job_name=None, args=None, **kwargs):
+        args = args or dict()
+        if not self._compiled_args:
+            run_args = self.parameters.copy()
+            run_args.update(args)
+        else:
+            run_args = args
+        return super(PipelineTransformer, self).transform(wait=wait, job_name=job_name,
+                                                          args=run_args, **kwargs)
+
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
 class AlgoBaseTransformer(PipelineTransformer):
@@ -64,8 +79,7 @@ class AlgoBaseTransformer(PipelineTransformer):
 
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseTransformer, self).__init__(session=session,
-                                                  parameters=kwargs,
+        super(AlgoBaseTransformer, self).__init__(session=session, parameters=kwargs,
                                                   manifest=manifest, pipeline_id=pipeline_id)
 
     def get_base_info(self, session):
@@ -98,6 +112,3 @@ class _TransformJob(RunJob):
     @property
     def session(self):
         return self.transformer.session
-
-    def get_outputs(self):
-        pass
