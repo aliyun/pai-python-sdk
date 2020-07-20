@@ -10,7 +10,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
     variable_category = None
 
-    def __init__(self, name, typ, desc=None, kind="inputs", value=None, from_=None, required=None,
+    def __init__(self, name, desc=None, kind="inputs", value=None, from_=None, required=None,
                  parent=None, validator=None):
         """
 
@@ -29,7 +29,6 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
         self.name = name
         self.kind = kind
-        self.typ = typ
         self.desc = desc
         self.value = value
         self.from_ = from_
@@ -41,19 +40,6 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
     @abstractmethod
     def validate_value(self, val):
         pass
-
-    def validate_from(self, arg):
-        if not isinstance(arg, PipelineVariable):
-            raise ValueError("arg is expected to be type of 'PipelineVariable' "
-                             "but was actually of type '%s'" % type(arg))
-
-        if arg.typ is not None and self.typ is not None and arg.typ != self.typ:
-            return False
-
-        if arg.variable_category != self.variable_category:
-            return False
-
-        return True
 
     def assign(self, arg):
         if self._is_assigned:
@@ -112,15 +98,11 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             "name": self.name,
         }
 
-        if self.typ:
-            d["type"] = self.typ.value
         if self.required:
             d["required"] = self.required
         if self.validator:
             d["feasible"] = self.validator.to_dict()
 
-        if self.value is not None:
-            d["value"] = self.value
         elif self.from_ is not None:
             if isinstance(self.from_, PipelineVariable):
                 d["from"] = "{{%s}}" % self.from_.fullname

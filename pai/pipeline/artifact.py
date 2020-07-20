@@ -1,63 +1,98 @@
 from __future__ import absolute_import
 
-from pai.pipeline.base import ArtifactModelType, ArtifactLocationType, ArtifactDataType
+import json
+import re
+
+import six
+from enum import Enum
+from odps.df import DataFrame as ODPSDataFrame
+from odps.models import Table as ODPSTable, Partition as ODPSPartition, Volume as ODPSVolume
+from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
+
 from pai.pipeline.variable import PipelineVariable
 
 
 class PipelineArtifact(PipelineVariable):
     variable_category = "artifacts"
 
-    def __init__(self, name, typ, desc=None, kind="input", value=None, from_=None, required=None,
-                 parent=None):
-        super(PipelineArtifact, self).__init__(name=name, typ=typ, desc=desc, kind=kind,
+    def __init__(self, name, metadata=None, desc=None, kind="input", value=None,
+                 from_=None, required=None, parent=None):
+        super(PipelineArtifact, self).__init__(name=name, desc=desc, kind=kind,
                                                value=value, from_=from_,
                                                required=required, parent=parent)
+        self.metadata = metadata
 
-    # TODO: value format of artifact is not set down.
+    def validate_from(self, arg):
+        if not isinstance(arg, PipelineArtifact):
+            raise ValueError("arg is expected to be type of 'PipelineParameter' "
+                             "but was actually of type '%s'" % type(arg))
+
+        if arg.metadata is not None and self.metadata is not None and arg.metadata != self.metadata:
+            return False
+
+        return True
+
+    # TODO: Artifact value validation
     def validate_value(self, val):
         return True
 
-    # TODO: Artifact Value and Type Refactor
     @classmethod
     def to_argument_by_spec(cls, val, af_spec, kind="inputs"):
         af_spec = af_spec.copy()
 
         name = af_spec.pop("name")
-        typ = af_spec.pop("type")
+        metadata = ArtifactMetadata.from_dict(af_spec.pop("metadata", None))
         desc = af_spec.pop("desc")
-        value = af_spec.pop("value")
         from_ = af_spec.pop("from")
         required = af_spec.pop("required")
 
-        param = create_artifact(name=name, typ=typ, kind=kind, from_=from_, required=required,
-                                value=value,
-                                desc=desc)
+        param = create_artifact(name=name, metadata=metadata, kind=kind, from_=from_,
+                                required=required, desc=desc)
+        af_value = ArtifactValue.from_resource(val)
         if not param.validate_value(val):
             raise ValueError(
                 "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
-        param.value = val
+        param.value = af_value
         return param.to_argument()
+
+    def to_argument(self):
+        arguments = {
+            "name": self.name
+        }
+
+        if self.from_ is not None:
+            if isinstance(self.from_, PipelineArtifact):
+                arguments["from"] = "{{%s}}" % self.from_.fullname
+            else:
+                arguments["from"] = self.from_
+        elif self.value is not None:
+            arguments["value"] = json.dumps(self.value.to_dict())
+        return arguments
 
     def to_dict(self):
         d = super(PipelineArtifact, self).to_dict()
-        if isinstance(self.typ, ArtifactType):
-            d["type"] = self.typ.to_dict()
-
+        d["metadata"] = self.metadata.to_dict()
+        if self.value is not None:
+            if isinstance(self.value, ArtifactValue):
+                d["value"] = self.value.to_dict()
+            else:
+                d["value"] = self.value
         return d
 
 
-def create_artifact(name, typ, kind, desc=None, required=None, value=None, from_=None, parent=None):
-    return PipelineArtifact(name=name, typ=typ, kind=kind, desc=desc, required=required,
-                            value=value,
-                            parent=parent, from_=from_)
+def create_artifact(name, metadata, kind, desc=None, required=None, value=None, from_=None,
+                    parent=None):
+    return PipelineArtifact(name=name, metadata=metadata, kind=kind, desc=desc, required=required,
+                            value=value, parent=parent, from_=from_)
 
 
-class ArtifactType(object):
+class ArtifactMetadata(object):
 
-    def __init__(self, data_type, location_type, model_type=None):
+    def __init__(self, data_type, location_type, model_type=None, path=None):
         self.data_type = data_type
         self.location_type = location_type
         self.model_type = model_type
+        self.path = path
 
     def __str__(self):
         return '{%s}:{locationType:%s, modelType:%s}' % (self.data_type,
@@ -66,13 +101,17 @@ class ArtifactType(object):
 
     def to_dict(self):
         d = {
-            self.data_type.value: {
-                "locationType": self.location_type.value,
+            "type": {
+                self.data_type.value: {
+                    "locationType": self.location_type.value,
+                }
             }
         }
 
         if self.model_type is not None:
-            d[self.data_type.value]["modelType"] = self.model_type.value
+            d["type"][self.data_type.value]["modelType"] = self.model_type.value
+        if self.path is not None:
+            d["path"] = self.path
 
         return d
 
@@ -81,10 +120,10 @@ class ArtifactType(object):
         return self.to_dict()
 
     def __eq__(self, other):
-        if isinstance(other, ArtifactType):
+        if isinstance(other, ArtifactMetadata):
             return self.data_type == other.data_type \
-                and self.location_type == other.location_type \
-                and self.model_type == other.model_type
+                   and self.location_type == other.location_type \
+                   and self.model_type == other.model_type
         elif isinstance(other, dict):
             other = self.from_dict(other)
             return self.__eq__(other)
@@ -95,39 +134,172 @@ class ArtifactType(object):
 
     @classmethod
     def from_dict(cls, d):
-        data_type = ArtifactDataType(list(d.keys())[0])
-        location_type = ArtifactLocationType(d[data_type.value]["locationType"])
-        model_type = None
-        if "modelType" in d[data_type.value]:
-            model_type = ArtifactModelType(d[data_type.value]["modelType"])
+        af_typ = d["type"]
 
-        return cls(data_type=data_type, location_type=location_type, model_type=model_type)
+        data_type = ArtifactDataType(list(af_typ.keys())[0])
+        location_type = ArtifactLocationType(af_typ[data_type.value]["locationType"])
+        model_type = None
+        if "modelType" in af_typ[data_type.value]:
+            model_type = ArtifactModelType(af_typ[data_type.value]["modelType"])
+        path = d.get("path")
+
+        return cls(data_type=data_type, location_type=location_type,
+                   model_type=model_type, path=path)
 
 
 class ArtifactValue(object):
+
     def __init__(self):
         pass
 
+    @classmethod
+    def from_resource(cls, resource):
+        if isinstance(resource, six.string_types):
+            if resource.startswith("odps://"):
+                return MaxComputeResourceArtifact.from_resource_url(resource)
+            elif resource.startswith("oss://"):
+                return OSSArtifact.from_resource_url(resource)
+            else:
+                raise ValueError("Not support artifact url schema:%s", resource)
+        elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
+            return MaxComputeResourceArtifact.from_odps_resource(resource)
+        raise ValueError("Not support artifact resource:%s", type(resource))
 
-class MaxComputeTableArtifact(ArtifactValue):
 
-    def __init__(self, table, project, endpoint, owner, rolearn):
-        super(MaxComputeTableArtifact, self).__init__()
+class MaxComputeResourceArtifact(ArtifactValue):
+    MaxComputeResourceUrlPattern = re.compile(
+        r"odps://(?P<project>[^/]+)/(?P<resource_type>(?:tables)|(?:volumes)|(?:offlinemodels))/"
+        r"(?P<resource_name>[^/]+)/?(?P<sub_resource>[^\?]+)?(?P<arguments>[.*])?")
+
+    def __init__(self, project, endpoint=None):
+        super(MaxComputeResourceArtifact, self).__init__()
         self.project = project
         self.endpoint = endpoint
-        self.owner = owner
-        self.rolearn = rolearn
+
+    def to_dict(self):
+        d = {
+            "location": {
+                "project": self.project,
+            }
+        }
+        if self.endpoint:
+            d["location"]["endpoint"] = self.endpoint
+        return d
+
+    @classmethod
+    def from_resource_url(cls, resource_url):
+        matches = cls.MaxComputeResourceUrlPattern.match(resource_url)
+        if not matches:
+            raise ValueError("Not support MaxCompute resource url format.")
+        resource_type = matches.group("resource_type")
+        project = matches.group("project")
+        if resource_type == "tables":
+            table = matches.group('resource_name')
+            partition = matches.group("sub_resource")
+            return MaxComputeTableArtifact(
+                project=project,
+                table=table,
+                partition=partition.strip("/") if partition else None,
+            )
+        elif resource_type == "volumes":
+            volume = matches.group("resource_name")
+            sub_resource = matches.group("sub_resource").strip("/")
+            idx = sub_resource.find("/")
+            partition = sub_resource[:idx]
+            file_name = sub_resource[idx + 1:]
+            return MaxComputeVolumeArtifact(
+                project=project,
+                volume=volume,
+                partition=partition,
+                file_name=file_name,
+            )
+
+        elif resource_type == "offlinemodels":
+            name = matches.group("resource_name")
+            return MaxComputeOfflineModelArtifact(
+                project=project,
+                offline_model=name,
+            )
+        else:
+            raise ValueError("Not support MaxCompute resource type :%s" % resource_type)
+
+    @classmethod
+    def from_odps_resource(cls, resource):
+        if not isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
+            raise ValueError("Not support resource type:%s" % type(resource))
+
+        if isinstance(resource, ODPSDataFrame):
+            resource = resource.data
+
+        if isinstance(resource, ODPSTable):
+            project = resource.project.name
+            table = resource.name
+            return MaxComputeTableArtifact(
+                project=project,
+                table=table,
+            )
+        elif isinstance(resource, ODPSPartition):
+            table = resource.table.name
+            project = resource.table.project.name
+            partition = ','.join(["%s=%s" % (k, v) for k, v in resource.partition_spec.kv.items()])
+            return MaxComputeTableArtifact(
+                project=project,
+                partition=partition,
+                table=table
+            )
+        elif isinstance(resource, ODPSOfflineModel):
+            project = resource.project.name
+            offlinemodel = resource.name
+            return MaxComputeOfflineModelArtifact(
+                project=project,
+                offline_model=offlinemodel
+            )
+        # TODO: ODPSVolume Support
+        elif isinstance(resource, ODPSVolume):
+            pass
+
+
+class MaxComputeTableArtifact(MaxComputeResourceArtifact):
+
+    def __init__(self, table, project, endpoint=None, partition=None):
+        super(MaxComputeTableArtifact, self).__init__(project=project, endpoint=endpoint)
         self.table = table
+        self.partition = partition
+
+    def to_dict(self):
+        d = super(MaxComputeTableArtifact, self).to_dict()
+        d["location"]["table"] = self.table
+        if self.partition:
+            d["location"]["partition"] = self.partition
+        return d
 
 
-class MaxComputeOfflineModelArtifact(ArtifactValue):
+class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
 
-    def __init__(self, name, endpoint, project, rolearn):
-        super(MaxComputeOfflineModelArtifact, self).__init__()
-        self.project = project
-        self.endpoint = endpoint
-        self.rolearn = rolearn
-        self.name = name
+    def __init__(self, offline_model, project, endpoint=None):
+        super(MaxComputeOfflineModelArtifact, self).__init__(project=project, endpoint=endpoint)
+        self.offline_model = offline_model
+
+    def to_dict(self):
+        d = super(MaxComputeOfflineModelArtifact, self).to_dict()
+        d["location"]["name"] = self.offline_model
+        return d
+
+
+class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
+
+    def __init__(self, volume, project, file_name, endpoint=None, partition=None):
+        super(MaxComputeVolumeArtifact, self).__init__(project=project, endpoint=endpoint)
+        self.volume = volume
+        self.partition = partition
+        self.file_name = file_name
+
+    def to_dict(self):
+        d = super(MaxComputeVolumeArtifact, self).to_dict()
+        d["location"]["volume"] = self.volume
+        d["location"]["volumePartition"] = self.partition
+        d["location"]["file"] = self.file_name
+        return d
 
 
 class OSSArtifact(ArtifactValue):
@@ -138,3 +310,37 @@ class OSSArtifact(ArtifactValue):
         self.endpoint = endpoint
         self.rolearn = rolearn
         self.key = key
+
+    def to_dict(self):
+        d = {
+            "location": {
+                "endpoint": self.endpoint,
+                "bucket": self.bucket,
+                "key": self.key,
+                "rolearn": self.rolearn,
+            }
+        }
+        return d
+
+    # TODO: OSS Artifact Implementation
+    @classmethod
+    def from_resource_url(cls):
+        pass
+
+
+class ArtifactDataType(Enum):
+    DataSet = "DataSet"
+    Model = "Model"
+    ModelEvaluation = "ModelEvaluation"
+
+
+class ArtifactLocationType(Enum):
+    MaxComputeTable = "MaxComputeTable"
+    MaxComputeVolume = "MaxComputeVolume"
+    MaxComputeOfflineModel = "MaxComputeOfflineModel"
+    OSS = "OSS"
+
+
+class ArtifactModelType(Enum):
+    OfflineModel = "OfflineModel"
+    PMML = "PMML"

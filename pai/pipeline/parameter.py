@@ -27,7 +27,8 @@ class PipelineParameter(PipelineVariable):
     variable_category = "parameters"
 
     def __init__(self, name, typ, **kwargs):
-        super(PipelineParameter, self).__init__(name=name, typ=typ, **kwargs)
+        super(PipelineParameter, self).__init__(name=name, **kwargs)
+        self.typ = typ
 
     def validate_value(self, val):
         if self.typ in _PRIMITIVE_TYPE_MAP:
@@ -37,6 +38,16 @@ class PipelineParameter(PipelineVariable):
                 return False
         if self.validator and not self.validator.validate(val):
             return False
+        return True
+
+    def validate_from(self, arg):
+        if not isinstance(arg, PipelineParameter):
+            raise ValueError("arg is expected to be type of 'PipelineParameter' "
+                             "but was actually of type '%s'" % type(arg))
+
+        if arg.typ is not None and self.typ is not None and arg.typ != self.typ:
+            return False
+
         return True
 
     @classmethod
@@ -60,6 +71,13 @@ class PipelineParameter(PipelineVariable):
                 "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
         param.value = val
         return param.to_argument()
+
+    def to_dict(self):
+        d = super(PipelineParameter, self).to_dict()
+        d["type"] = self.typ.value
+        if self.value is not None:
+            d["value"] = self.value
+        return d
 
 
 class ParameterValidator(object):
