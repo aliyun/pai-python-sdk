@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import logging
+
 import six
 import yaml
 from aliyunsdkcore.client import AcsClient
@@ -8,20 +10,27 @@ from odps import ODPS
 from pai.api.client_factory import ClientFactory
 from pai.utils import run_detail_url
 
+Logger = logging.getLogger(__file__)
+
 
 class Session(object):
+    """Wrap functionality provided by Alibaba Cloud PAI services
+
+    This class encapsulates convenient methods to access PAI services, currently focus
+    on Pipeline service, future include EAS inference service, Model optimize, etc.
+
+    """
 
     def __init__(self, access_key_id, access_key_secret, region_id,
                  odps_project=None, odps_endpoint=None):
-        """ Wrap all functionality provided by Alibaba Cloud PAI services
-
-        This class encapsulates convenient methods to access PAI services, currently focus
-        on Pipeline service, future include EAS inference service, Model optimize, etc.
+        """ PAI Session constructor.
 
         Args:
             access_key_id (str): Alibaba Cloud access key id.
             access_key_secret (str): Alibaba Cloud access key secret.
             region_id (str): Alibaba Cloud region id
+            odps_project (str): Default MaxCompute(ODPS) project used for session.
+            odps_endpoint (str): Endpoint for entry
         """
 
         if not access_key_id or not access_key_secret or not region_id:
@@ -52,15 +61,13 @@ class Session(object):
 
     @property
     def account_id(self):
+        """int: Alibaba account ID of specific access key in constructor."""
         return self._account_id
 
     @property
     def user_id(self):
+        """int: Owner user id (Alibaba UserId) of session."""
         return self._user_id
-
-    @property
-    def rolearn(self):
-        return self._arn
 
     def _init_account(self):
         caller_identity = self.sts_client.get_caller_identity()

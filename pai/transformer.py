@@ -17,7 +17,7 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
     def transform(self, wait=True, job_name=None, args=None, **kwargs):
         run_instance = self._run(job_name=job_name, arguments=args,
                                  **kwargs)
-        run_job = _TransformJob(transformer=self, run_instance=run_instance)
+        run_job = TransformJob(transformer=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
             run_job.attach()
@@ -80,6 +80,7 @@ class AlgoBaseTransformer(PipelineTransformer):
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
         super(AlgoBaseTransformer, self).__init__(session=session, parameters=kwargs,
+                                                  _compiled_args=True,
                                                   manifest=manifest, pipeline_id=pipeline_id)
 
     def get_base_info(self, session):
@@ -103,12 +104,17 @@ class AlgoBaseTransformer(PipelineTransformer):
                                                           args=fit_args)
 
 
-class _TransformJob(RunJob):
+class TransformJob(RunJob):
+    """Transform job manager, used to get outputs of transform result, handle job run status"""
 
     def __init__(self, transformer, run_instance):
-        super(_TransformJob, self).__init__(run_instance=run_instance)
+        super(TransformJob, self).__init__(run_instance=run_instance)
         self.transformer = transformer
 
-    @property
-    def session(self):
-        return self.transformer.session
+    def get_outputs(self):
+        """
+        Returns:
+
+        """
+        outputs = super(TransformJob, self).get_outputs()
+        return {output.name: output for output in outputs}

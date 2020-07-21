@@ -68,6 +68,7 @@ class TestArtifact(BaseTestCase):
                 "name": "offline_model_case3",
                 "input": "odps://prj_om/offlinemodels/xlab_m_GBDT_LR_1_1685664_v0_m_2",
                 "expected": {
+                    "name": "xlab_m_GBDT_LR_1_1685664_v0_m_2",
                     "location": {
                         "project": "prj_om",
                         "name": "xlab_m_GBDT_LR_1_1685664_v0_m_2",

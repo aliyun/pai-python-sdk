@@ -48,16 +48,17 @@ class TestPaiFlowAPI(BaseTestCase):
         pass
 
     def test_run_outputs(self):
-        run = RunInstance(run_id="flow-lr7pcxkfjqmzi6pwd9", session=self.session)
-        pprint(run.get_run_info())
-        print("ouputs is")
-        pprint(run.get_outputs(depth=2))
+        run_id = 'flow-mm1sljb2a6etgdjlvq'
+        node_id = 'node-wr2ez8v7updhsjssjr'
+        run_instance = RunInstance(run_id=run_id,
+                                   session=self.session)
+        outputs = run_instance.get_outputs(node_id=node_id)
+        print(outputs)
 
     def test_list_pipelines(self):
-        pipelines, count = self.session.search_pipeline()
-
-        print(count)
-        print(pipelines)
+        pipelines, count = self.session.search_pipeline(provider=ProviderAlibabaPAI)
+        self.assertTrue(len(pipelines) > 0)
+        self.assertTrue(count > 0)
 
 
 if __name__ == "__main__":

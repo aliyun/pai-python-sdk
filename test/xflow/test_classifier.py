@@ -39,8 +39,6 @@ class TestLogisticsRegression(BaseTestCase):
             cls.odps_client.delete_table(name, if_exists=True, async_=True)
 
     def test_sync_train(self):
-        import socket
-        print(socket.gethostbyname('pre-paiflow.data.aliyun.com'))
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             session=self.session,
@@ -52,10 +50,9 @@ class TestLogisticsRegression(BaseTestCase):
                                        'petal_width'])
 
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
-        print(run_job.get_outputs())
-
-        offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())),
-                                             artifact="outputArtifact")
+        # PipelineOutput is not ready while status switch to succeed.
+        time.sleep(10)
+        offline_model = run_job.create_model(output_name="outputArtifact")
         self.assertIsNotNone(offline_model)
 
     def test_async_train(self):
@@ -64,17 +61,20 @@ class TestLogisticsRegression(BaseTestCase):
             session=self.session,
             regularized_type="l2",
         )
-        run_job = lr.fit(wait=True, input_data=self.iris_df, label_col="category",
+        run_job = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
                          job_name="pysdk-test-lr-async-fit", model_name=model_name,
+                         good_value=1,
                          feature_cols=['sepal_length', 'sepal_width', 'petal_length',
                                        'petal_width'])
 
         self.assertEqual(JobStatus.Running, run_job.get_status())
         run_job.attach()
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
-        offline_model = run_job.create_model(name="ut_lr_%d" % (int(time.time())),
-                                             artifact="outputArtifact")
+        offline_model = run_job.create_model(output_name="outputArtifact")
         self.assertIsNotNone(offline_model)
+
+        self.assertTrue(self.session.odps_client.exist_offline_model(
+            model_name, project=self.session.odps_client.project.name))
 
     def test_lr_multiple_call_fit(self):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
@@ -84,7 +84,7 @@ class TestLogisticsRegression(BaseTestCase):
         )
         job1 = lr.fit(wait=False, input_data=self.iris_df, job_name="pysdk-test-lr-multi-fit-1",
                       label_col="category", model_name=model_name,
-                      feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],)
+                      feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'], )
 
         self.assertEqual(lr.last_job, job1)
 
@@ -94,6 +94,9 @@ class TestLogisticsRegression(BaseTestCase):
                       model_name=model_name)
         self.assertEqual(lr.last_job, job2)
         self.assertNotEqual(job1.run_id, job2.run_id)
+
+    def test_enable_spare(self):
+        pass
 
     # def testArgumentsNotMeetR(self):
     #     lr = LogisticRegression(

@@ -5,7 +5,7 @@ from pai.xflow.base import XFlowEstimator
 
 
 class LogisticRegression(XFlowEstimator):
-    enable_sparse = True
+    _enable_sparse_ = True
 
     _identifier_default = "logisticregression-binary-xflow-maxCompute"
 

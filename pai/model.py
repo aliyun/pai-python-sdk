@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+
+
 class Model(object):
 
     def __init__(self, name, model_data, session):
@@ -23,9 +26,8 @@ class PmmlModel(Model):
 
 class XFlowOfflineModel(Model):
 
-    def __init__(self, session, odps_project, name, model_data):
+    def __init__(self, session, name, model_data):
         super(XFlowOfflineModel, self).__init__(name=name, session=session, model_data=model_data)
-        self.odps_project = odps_project
 
     def transformer(self):
         pass

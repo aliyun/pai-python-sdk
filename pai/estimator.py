@@ -5,8 +5,10 @@ from abc import ABCMeta, abstractmethod
 import six
 import yaml
 
+from .model import XFlowOfflineModel, PmmlModel
 from .pipeline import PaiFlowBase
 from .job import RunJob
+from .pipeline.artifact import ArtifactModelType
 
 
 class Estimator(six.with_metaclass(ABCMeta, object)):
@@ -26,7 +28,7 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
 
     def fit(self, wait=True, job_name=None, args=None, **kwargs):
         run_instance = self._run(job_name=job_name, arguments=args, **kwargs)
-        run_job = _EstimatorJob(estimator=self, run_instance=run_instance)
+        run_job = EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
             run_job.attach()
@@ -81,7 +83,8 @@ class AlgoBaseEstimator(PipelineEstimator):
     def __init__(self, session, **kwargs):
         manifest, pipeline_id = self.get_base_info(session)
         super(AlgoBaseEstimator, self).__init__(session=session, parameters=kwargs,
-                                                manifest=manifest, pipeline_id=pipeline_id)
+                                                _compiled_args=True, manifest=manifest,
+                                                pipeline_id=pipeline_id)
 
     def get_base_info(self, session):
         assert self._identifier_default is not None
@@ -100,39 +103,58 @@ class AlgoBaseEstimator(PipelineEstimator):
         fit_args = self.parameters.copy()
         fit_args.update(kwargs)
 
-        fit_args = {k: v for k, v in self.compile_args(*inputs, **fit_args).items()}
+        fit_args = {k: v for k, v in self._compile_args(*inputs, **fit_args).items()}
         return super(AlgoBaseEstimator, self).fit(wait=wait, job_name=job_name, args=fit_args)
 
 
-class _EstimatorJob(RunJob):
+class EstimatorJob(RunJob):
 
     def __init__(self, estimator, run_instance):
-        super(_EstimatorJob, self).__init__(run_instance=run_instance)
+        super(EstimatorJob, self).__init__(run_instance=run_instance)
         self.estimator = estimator
 
     @property
     def session(self):
         return self.estimator.session
 
-    def create_model(self, artifact_name=None):
+    def create_model(self, output_name=None):
+        """Create :class:`~pai.model.Model`
+
+        Args:
+            output_name:
+
+        Returns:
+
+        """
         outputs = self.get_outputs()
         if not outputs:
             raise ValueError("No model artifact is available to create model")
+        artifact_infos = [output for output in outputs if output.is_model]
 
-        model_data = None
-        if artifact_name is None:
-            model_data = outputs[0]
+        if len(artifact_infos) == 0:
+            raise ValueError("No model data is available to create model")
+
+        if output_name is None:
+            if len(artifact_infos) > 1:
+                raise ValueError("More than one model in Estimator outputs, please specific"
+                                 " the output used to create model")
+            artifact_info = artifact_infos[0]
         else:
-            for output in outputs:
-                if output["Name"] == name:
-                    model_data = output
+            infos = [m for m in artifact_infos if m.name == output_name]
+            if not infos:
+                raise ValueError("No specific model data with name :%s" % output_name)
+            elif len(infos) > 1:
+                raise ValueError(
+                    "Unexpected EstimatorJob outputs, more than one output has name:%s ",
+                    output_name)
+            artifact_info = infos[0]
 
-        if not model_data or model_data["Type"] != ArtifactDataType.DataSet:
-            raise ValueError("No model artifact is available to create model")
+        model_data = artifact_info.value
+        metadata = artifact_info.metadata
 
-        if model_data["locationType"]["modelType"] == ArtifactModelType.OfflineModel:
-            return XFlowOfflineModel(session=self.session, name=model_data["Name"],
+        if metadata.model_type == ArtifactModelType.OfflineModel:
+            return XFlowOfflineModel(session=self.session, name=model_data.offline_model,
                                      model_data=model_data)
         else:
-            return PmmlModel(session=self.session, name=model_data["Name"], model_data=model_data)
-
+            return PmmlModel(session=self.session, name=artifact_info.name,
+                             model_data=model_data)

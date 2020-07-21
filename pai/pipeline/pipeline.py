@@ -332,11 +332,11 @@ class Pipeline(object):
                                                   no_confirm_required=True,
                                                   pipeline_id=pipeline_id, manifest=manifest)
 
-        if not wait:
-            return run_id
         run_instance = RunInstance(run_id=run_id, session=self.session)
+        if not wait:
+            return run_instance
         run_instance.wait()
-        return run_id
+        return run_instance
 
     def _convert_spec_to_json(self):
         spec = {

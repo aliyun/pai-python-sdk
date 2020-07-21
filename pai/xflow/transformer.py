@@ -4,24 +4,25 @@ from pai.utils import gen_temp_table_name
 
 
 class OfflineModelTransformer(XFlowTransformer):
+    """XFlow based algorithm, transform data set from MaxCompute table use offlinemodel"""
+
     _enable_spare_input = True
 
     _identifier_default = "prediction-xflow-maxCompute"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, model, table_lifecycle=None, **kwargs):
-        """
+    def __init__(self, session, model, **kwargs):
+        """OfflineModelTransformer constructor.
 
         Args:
             session: PAI Session instance.
-            model (str): OfflineModel data, could be offlinemodel resource url, ODPS OfflineModel object,
-                   or
-            **kwargs:
+            model (str): OfflineModel data, offlinemodel resource url.
+                Examples:
+                    odps://project_name/offlinemodels/offline_model_name.
         """
         super(OfflineModelTransformer, self).__init__(session=session,
                                                       model=model,
-                                                      table_lifecycle=table_lifecycle,
                                                       **kwargs)
 
     def _compile_args(self, *inputs, **kwargs):
@@ -37,12 +38,13 @@ class OfflineModelTransformer(XFlowTransformer):
         args["featureColNames"] = feature_cols
         args["appendColNames"] = kwargs.get("append_cols")
         args["resultColName"] = kwargs.get("result_col")
+        args["tableLifecycle"] = kwargs.get("table_lifecycle")
 
         return args
 
     def transform(self, input_data, wait=True, job_name=None, feature_cols=None, label_col=None,
                   result_col=None, score_col=None, detail_col=None, append_cols=None,
-                  output_table=None, output_partition=None, **kwargs):
+                  output_table=None, output_partition=None, table_lifecycle=None, **kwargs):
         return super(OfflineModelTransformer, self).transform(
             input_data,
             wait=wait,
@@ -69,8 +71,7 @@ class ModelTransferToOSS(XFlowTransformer):
     _provider_default = ProviderAlibabaPAI
     _version_default = "v1"
 
-    def __init__(self, session, bucket, endpoint, rolearn, model_format="pmml",
-                 overwrite=True, **kwargs):
+    def __init__(self, session, bucket, endpoint, rolearn, overwrite=True, **kwargs):
         """
 
         Args:
@@ -86,7 +87,6 @@ class ModelTransferToOSS(XFlowTransformer):
             bucket=bucket,
             endpoint=endpoint,
             rolearn=rolearn,
-            model_format=model_format,
             overwrite=overwrite,
             **kwargs
         )
@@ -97,8 +97,7 @@ class ModelTransferToOSS(XFlowTransformer):
         assert len(inputs) > 0
         args["inputArtifact"] = inputs[0]
         args["rolearn"] = kwargs["rolearn"]
-        args["host"] = kwargs["endpoint"]
-        args["format"] = kwargs["model_format"]
+        args["endpoint"] = kwargs["endpoint"]
         args["bucket"] = kwargs["bucket"]
 
         oss_path = kwargs["path"]
@@ -107,7 +106,7 @@ class ModelTransferToOSS(XFlowTransformer):
         if not oss_path.endswith("/"):
             oss_path = oss_path + '/'
 
-        args["key"] = oss_path
+        args["path"] = oss_path
 
         return args
 
@@ -133,7 +132,31 @@ class ModelTransferToOSS(XFlowTransformer):
 
 
 class FeatureNormalize(XFlowTransformer):
-    pass
+    """Normalize input dataset"""
+    _identifier_default = "dataSource-xflow-maxCompute"
+    _version_default = "v1"
+    _provider_default = ProviderAlibabaPAI
+
+    def __init__(self, session, **kwargs):
+        super(FeatureNormalize, self).__init__(session=session, **kwargs)
+
+    def _compile_args(self, *inputs, **kwargs):
+        args = super(FeatureNormalize, self)._compile_args(*inputs, **kwargs)
+        args["inputArtifact"] = kwargs.get("input_table")
+        args["outputArtifact"] = kwargs.get("output_table")
+        args["outputParaArtifact"] = kwargs.get("output_para_table")
+        args["inputParaArtifact"] = kwargs.get("input_para_table")
+        args["outputPartition"] = kwargs.get("output_partition")
+
+    def transform(self, input_table, output_table, output_para_table, input_para_table=None,
+                  output_partition=None, selected_cols=None, keep_original=False, **kwargs):
+        super(FeatureNormalize, self).transform(
+            input_table=input_table, output_table=output_table,
+            output_para_table=output_para_table,
+            output_partition=output_partition,
+            selected_cols=selected_cols,
+            keep_original=keep_original,
+            **kwargs)
 
 
 class MaxComputeDataSource(XFlowTransformer):

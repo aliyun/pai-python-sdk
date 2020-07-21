@@ -16,7 +16,7 @@ class TestEstimatorBase(BaseTestCase):
         p = Pipeline.get_by_identifier(session=self.session, identifier=identifier,
                                        provider=provider, version=version)
         parameters = {
-            "__XFlow_project": "algo_public",
+            "project": "algo_public",
             "epsilon": 1e-06,
             "maxIter": 100,
             # "regularizedType": "l1",
@@ -43,13 +43,12 @@ class TestEstimatorBase(BaseTestCase):
             "featureColNames": "pm10,so2,co,no2",
             "modelName": model_name,
             "goodValue": 1,
-            "__XFlow_execution": {
+            "execution": {
                 "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                 "logViewHost": "http://logview.odps.aliyun.com",
                 "odpsProject": "pai_sdk_test",
             },
-
         }
 
         job = est.fit(wait=True, job_name="pysdk-test-estimator-pipeline", args=fit_args)

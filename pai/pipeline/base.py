@@ -36,8 +36,8 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
                           manifest["spec"]["inputs"].get("artifacts", [])}
         parameters_spec = {param["name"]: param for param in
                            manifest["spec"]["inputs"].get("parameters", [])}
-        parameters, artifacts = self.translate_arguments(arguments, parameters_spec,
-                                                         artifacts_spec) if arguments else ([], [])
+        parameters, artifacts = self._translate_arguments(arguments, parameters_spec,
+                                                          artifacts_spec) if arguments else ([], [])
         if job_name is None:
             job_name = "{0}-{1}".format(manifest["metadata"]["identifier"][:3],
                                         int(time.time() * 1000))
@@ -53,8 +53,6 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
         manifest = self.get_pipeline_definition()
         job_name, run_args = self._prepare_run(job_name=job_name, arguments=arguments,
                                                manifest=manifest)
-
-        print(run_args)
         if self.get_pipeline_id():
             run_id = self.session.create_pipeline_run(name=job_name, arguments=run_args, env=env,
                                                       pipeline_id=self.get_pipeline_id(),
@@ -66,7 +64,8 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
         run = RunInstance(run_id=run_id, session=self.session)
         return run
 
-    def translate_arguments(self, args, parameters_spec, artifacts_spec):
+    @staticmethod
+    def _translate_arguments(args, parameters_spec, artifacts_spec):
         """Transform arguments to pipeline inputs format"""
         parameters, artifacts = [], []
         if not args:

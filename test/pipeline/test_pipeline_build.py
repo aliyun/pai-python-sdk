@@ -22,6 +22,7 @@ class TestPipelineBuild(BaseTestCase):
         super(TestPipelineBuild, self).setUp()
         self.maxDiff = None
 
+    @unittest.skip("Skip")
     def test_air_quality_pipeline_create(self):
         pipeline = self.create_air_quality_prediction(self.session)
         expected = load_local_yaml("unittest-air-quality.yaml")
@@ -44,7 +45,7 @@ class TestPipelineBuild(BaseTestCase):
 
         pipeline_executions = [param["from"] for p in pipeline_def["spec"]["pipelines"] for param in
                                p["spec"]["arguments"]["parameters"] if
-                               param["name"] == "__XFlow_execution"]
+                               param["name"] == "execution"]
 
         expected_execution = "{{inputs.parameters.execution}}"
         self.assertTrue(
@@ -64,29 +65,37 @@ class TestPipelineBuild(BaseTestCase):
 
     def test_temp_composite_pipeline_run(self):
         p = self.create_composite_pipeline_case_1()
-        arguments, env = self.args_for_composite_pipeline_1()
-        run_id = p.run("pysdk-test-temp-composite-pipeline-run", arguments=arguments, env=env,
-                       wait=False)
-        self.assertIsNotNone(run_id)
-        run = RunInstance(run_id=run_id, session=self.session)
+        arguments = {"execution":
+            {
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
+                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                "logViewHost": "http://logview.odps.aliyun.com",
+                "odpsProject": "wyl_test",
+            },
+            "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
+            "table_name": "pai_online_project.wumai_data",
+        }
+
+        run = p.run("pysdk-test-temp-pl-run", arguments=arguments,
+                    wait=False)
+        self.assertIsNotNone(run)
         self.assertEqual(run.get_status(), RunStatus.Running)
-        run.wait()
+        run.wait(log_outputs=False)
         self.assertEqual(run.get_status(), RunStatus.Succeeded)
-        run.get_outputs()
 
     def test_composite_pipeline_submit(self):
         p = self.create_composite_pipeline_case_1()
         arguments, env = self.args_for_composite_pipeline_1()
 
         pipeline_id = self.session.create_pipeline(p.to_dict())
-        run_id = self.session.create_pipeline_run("pysdk-test-composite-pipeline-run",
+        run_id = self.session.create_pipeline_run("pysdk-test-composite-run",
                                                   pipeline_id=pipeline_id,
                                                   arguments=arguments, env=env)
         self.assertIsNotNone(run_id)
         time.sleep(1)
         run_instance = RunInstance(run_id=run_id, session=self.session)
         self.assertEqual(run_instance.get_status(), RunStatus.Running)
-        run_instance.wait()
+        run_instance.wait(log_outputs=False)
         self.assertEqual(run_instance.get_status(), RunStatus.Succeeded)
 
     @staticmethod
@@ -167,7 +176,7 @@ class TestPipelineBuild(BaseTestCase):
                                          name="dataSource")
 
         data_source_step.set_arguments(
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             tableName="pai_online_project.wumai_data",
         )
 
@@ -176,7 +185,7 @@ class TestPipelineBuild(BaseTestCase):
                                             name="typeTransform")
         type_transform_step.set_arguments(
             inputArtifact=data_source_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTable="type-transform-xflow-maxCompute",
             cols_to_double=cols_to_double_input,
         )
@@ -186,7 +195,7 @@ class TestPipelineBuild(BaseTestCase):
                                        name="histogram")
         histogram_step.set_arguments(
             inputArtifact=type_transform_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTableName="pai_temp_172808_1779985_1",
             selectedColNames=hist_cols_input,
         )
@@ -196,7 +205,7 @@ class TestPipelineBuild(BaseTestCase):
                                  name="sql")
         sql_step.set_arguments(
             inputArtifact1=type_transform_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTable="pai_temp_83935_1099579_1",
             sql=sql_input,
         )
@@ -207,7 +216,7 @@ class TestPipelineBuild(BaseTestCase):
 
         fe_meta_runner_step.set_arguments(
             inputArtifact=sql_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTable="pai_temp_83935_1099581_1",
             mapTable="pai_temp_83935_1099581_2",
             selectedCols="pm10,so2,co,no2",
@@ -219,7 +228,7 @@ class TestPipelineBuild(BaseTestCase):
                                         name="normalize")
         normalized_step.set_arguments(
             inputArtifact=sql_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTableName="pai_temp_83935_1099582_1",
             outputParaTableName="pai_temp_83935_1099582_2",
             selectedColNames=normalize_cols_input,
@@ -230,7 +239,7 @@ class TestPipelineBuild(BaseTestCase):
                                    name="split")
         split_step.set_arguments(
             inputArtifact=normalized_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             output1TableName="pai_temp_83935_1099583_1",
             fraction=fraction_input,
             output2TableName="pai_temp_83935_1199583_1",
@@ -241,7 +250,7 @@ class TestPipelineBuild(BaseTestCase):
                                           name="randomforests")
         randomforest_step.set_arguments(
             inputArtifact=split_step.outputs["outputArtifact1"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             featureColNames=randomforest_feature_cols_input,
             labelColName=randomforest_label_col_input,
             treeNum=100,
@@ -254,7 +263,7 @@ class TestPipelineBuild(BaseTestCase):
         prediction1_step.set_arguments(
             inputModelArtifact=randomforest_step.outputs["outputArtifact"],
             inputDataSetArtifact=split_step.outputs["outputArtifact2"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTableName="pai_temp_83935_1029583_1",
             featureColNames=prediction1_feature_col_input,
             appendColNames=prediction1_append_col_input,
@@ -267,7 +276,7 @@ class TestPipelineBuild(BaseTestCase):
                                        name="evaluate1")
         evaluate1_step.set_arguments(
             inputArtifact=prediction1_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputDetailTableName="pai_temp_83935_1099586_1",
             outputMetricTableName="pai_temp_83935_1228529_1",
             outputELDetailTableName="pai_temp_83935_1299589_1",
@@ -282,7 +291,7 @@ class TestPipelineBuild(BaseTestCase):
 
         logistic_step.set_arguments(
             inputArtifact=split_step.outputs["outputArtifact1"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             modelName="xlab_m_logisticregres_1099587_v0",
             featureColNames=logistic_feature_col_input,
             labelColName=logistic_label_col_names,
@@ -295,7 +304,7 @@ class TestPipelineBuild(BaseTestCase):
         prediction2_step.set_arguments(
             inputModelArtifact=logistic_step.outputs["outputArtifact"],
             inputDataSetArtifact=split_step.outputs["outputArtifact2"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTableName="pai_temp_83935_1099588_1",
             featureColNames=prediction2_feature_col_input,
             appendColNames=prediction2_append_col_input,
@@ -309,7 +318,7 @@ class TestPipelineBuild(BaseTestCase):
                                        name="evaluate2")
         evaluate2_step.set_arguments(
             inputArtifact=prediction2_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputDetailTableName="pai_temp_83935_1099589_1",
             outputMetricTableName="pai_temp_83935_1428529_1",
             outputELDetailTableName="pai_temp_83935_1199589_1",
@@ -328,12 +337,11 @@ class TestPipelineBuild(BaseTestCase):
                                   session=self.session)
         execution_input = p.create_input_parameter("execution", "map", required=True)
         cols_to_double_input = p.create_input_parameter("cols_to_double", str, required=True)
-
         data_source_step = p.create_step("dataSource-xflow-maxCompute",
                                          provider=ProviderAlibabaPAI,
                                          name="dataSource")
         data_source_step.set_arguments(
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             tableName="pai_online_project.wumai_data",
         )
 
@@ -342,7 +350,7 @@ class TestPipelineBuild(BaseTestCase):
                                             name="typeTransform")
         type_transform_step.set_arguments(
             inputArtifact=data_source_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTable="type-transform-xflow-maxCompute",
             cols_to_double=cols_to_double_input,
         )
@@ -370,18 +378,7 @@ class TestPipelineBuild(BaseTestCase):
                 "value": "pai_online_project.wumai_data",
             }]
         }
-
-        env = {"resource": {
-            "compute": {
-                "max_compute": {
-                    "odpsInfoFile": "/share/base/odpsInfo.ini",
-                    "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                    "logViewHost": "http://logview.odps.aliyun.com",
-                    "odpsProject": "wyl_test",
-                }
-            }
-        },
-        }
+        env = None
         return arguments, env
 
     def create_composite_pipeline_case_1(self, version=None):
@@ -401,7 +398,7 @@ class TestPipelineBuild(BaseTestCase):
                                          provider=ProviderAlibabaPAI,
                                          version="v1", name="dataSource")
         data_source_step.set_arguments(
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             tableName=input_table_name,
         )
 
@@ -410,7 +407,7 @@ class TestPipelineBuild(BaseTestCase):
                                             version="v1", name="typeTransform")
         type_transform_step.set_arguments(
             inputArtifact=data_source_step.outputs["outputArtifact"],
-            __XFlow_execution=execution_input,
+            execution=execution_input,
             outputTable="pai_temp_181827919_818182838",
             cols_to_double=cols_to_double_input,
         )
@@ -465,7 +462,7 @@ class TestPipelineBuild(BaseTestCase):
             "evaluate_output_el_detail_table", str,
             required=True)
         # set default input for step with some common parameter.
-        p.set_step_input("__XFlow_execution", execution_input)
+        p.set_step_input("execution", execution_input)
         # __userProject maybe remove from XFlow based manifest pipeline in future.
         p.set_step_input("__userProject", user_project_input)
         # user default value that could not be assign from pipeline arguments
@@ -534,7 +531,7 @@ class TestPipelineBuild(BaseTestCase):
                                              version="v1", name="dataSource")
 
             data_source_step.set_arguments(
-                __XFlow_execution=xflow_execution_input,
+                execution=xflow_execution_input,
                 tableName="pai_online_project.wumai_data",
             )
             type_transform_step = p.create_step("type-transform-xflow-maxCompute",
@@ -542,7 +539,7 @@ class TestPipelineBuild(BaseTestCase):
                                                 name="typeTransform")
             type_transform_step.set_arguments(
                 inputArtifact=data_source_step.outputs["outputArtifact"],
-                __XFlow_execution=xflow_execution_input,
+                execution=xflow_execution_input,
                 outputTable="pai_temp_172808_1779985_100",
                 cols_to_double="time,hour,pm2,pm10,so2,co,no2",
             )
@@ -552,10 +549,10 @@ class TestPipelineBuild(BaseTestCase):
                                      name="sql")
             sql_step.set_arguments(
                 inputArtifact1=type_transform_step.outputs["outputArtifact"],
-                __XFlow_execution=xflow_execution_input,
+                execution=xflow_execution_input,
                 outputTable="pai_temp_83935_1099579_1",
                 sql='select time,hour,(case when pm2>200 then 1 else 0 end),pm10,so2,co,no2'
-                    ' from pai_temp_83935_1099578_1',
+                    ' from pai_temp_172808_1779985_100',
             )
 
             normalized_step = p.create_step("normalize-xflow-maxCompute",
@@ -563,7 +560,7 @@ class TestPipelineBuild(BaseTestCase):
                                             name="normalize")
             normalized_step.set_arguments(
                 inputArtifact=sql_step.outputs["outputArtifact"],
-                __XFlow_execution=xflow_execution_input,
+                execution=xflow_execution_input,
                 outputTableName="pai_temp_83935_1099582_1",
                 outputParaTableName="pai_temp_83935_1099582_2",
                 selectedColNames="pm10,so2,co,no2",
@@ -616,6 +613,8 @@ class TestPipelineBuild(BaseTestCase):
             },
         }, wait=False)
         self.assertEqual(RunStatus.Running, run_instance.get_status())
+        run_instance.wait(log_outputs=False)
+        self.assertEqual(RunStatus.Succeeded, run_instance.get_status())
 
     def test_composite_pipeline_run(self):
         p = self.create_composite_pipeline_to_oss(self.session)
@@ -629,10 +628,9 @@ class TestPipelineBuild(BaseTestCase):
             "rolearn": "acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
         }
 
-        run_id = p.run(name="pysdk-test-composite-with-oss-model", arguments=arguments, wait=False)
-        run_instance = RunInstance(run_id, session=self.session)
+        run_instance = p.run(name="pysdk-test-with-oss-model", arguments=arguments, wait=False)
         self.assertEqual(RunStatus.Running, run_instance.get_status())
-        run_instance.wait()
+        run_instance.wait(log_outputs=False)
         self.assertEqual(RunStatus.Succeeded, run_instance.get_status())
 
     @staticmethod
@@ -658,7 +656,7 @@ class TestPipelineBuild(BaseTestCase):
         sql_input = p.create_input_parameter(
             "sql", ParameterType.String, required=False,
             value="select time,hour,(case when pm2>200 then 1 else 0 end),pm10,so2,co,no2"
-                  " from pai_temp_83935_1099578_1",
+                  " from pai_temp_172808_1779985_100",
         )
         normalize_cols_input = p.create_input_parameter(
             "normalize_selected_col_names", ParameterType.String,
@@ -736,7 +734,7 @@ class TestPipelineBuild(BaseTestCase):
                                          version="v1", name="dataSource")
 
         data_source_step.set_arguments(
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             tableName=table_input
         )
 
@@ -745,7 +743,7 @@ class TestPipelineBuild(BaseTestCase):
                                             name="typeTransform")
         type_transform_step.set_arguments(
             inputArtifact=data_source_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTable="pai_temp_172808_1779985_100",
             cols_to_double=cols_to_double_input,
         )
@@ -755,7 +753,7 @@ class TestPipelineBuild(BaseTestCase):
                                  name="sql")
         sql_step.set_arguments(
             inputArtifact1=type_transform_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTable="pai_temp_83935_1099579_1",
             sql=sql_input,
         )
@@ -765,7 +763,7 @@ class TestPipelineBuild(BaseTestCase):
                                         name="normalize")
         normalized_step.set_arguments(
             inputArtifact=sql_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTableName="pai_temp_83935_1099582_1",
             outputParaTableName="pai_temp_83935_1099582_2",
             selectedColNames=normalize_cols_input,
@@ -776,7 +774,7 @@ class TestPipelineBuild(BaseTestCase):
                                    name="split")
         split_step.set_arguments(
             inputArtifact=normalized_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             output1TableName="pai_temp_83935_1099583_1",
             fraction=fraction_input,
             output2TableName="pai_temp_83935_1199583_1",
@@ -788,7 +786,7 @@ class TestPipelineBuild(BaseTestCase):
 
         logistic_step.set_arguments(
             inputArtifact=split_step.outputs["outputArtifact1"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             modelName="xlab_m_logisticregres_1099587_v0",
             featureColNames=logistic_feature_col_input,
             labelColName=logistic_label_col_names,
@@ -801,7 +799,7 @@ class TestPipelineBuild(BaseTestCase):
         prediction2_step.set_arguments(
             inputModelArtifact=logistic_step.outputs["outputArtifact"],
             inputDataSetArtifact=split_step.outputs["outputArtifact2"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTableName="pai_temp_83935_1099588_1",
             featureColNames=prediction_feature_col_input,
             appendColNames=prediction_append_col_input,
@@ -815,7 +813,7 @@ class TestPipelineBuild(BaseTestCase):
                                        name="evaluate2")
         evaluate2_step.set_arguments(
             inputArtifact=prediction2_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputDetailTableName="pai_temp_83935_1099589_1",
             outputMetricTableName="pai_temp_83935_1428529_1",
             outputELDetailTableName="pai_temp_83935_1199589_1",
@@ -833,12 +831,12 @@ class TestPipelineBuild(BaseTestCase):
         )
 
         modeltransfer2oss_step.set_arguments(
-            __XFlow_execution=xflow_execution_input,
-            __XFlow_project="algo_public",
+            execution=xflow_execution_input,
+            project="algo_public",
             inputArtifact=logistic_step.outputs["outputArtifact"],
             bucket=oss_bucket_input,
-            host=oss_endpoint_input,
-            key=oss_key_input,
+            endpoint=oss_endpoint_input,
+            path=oss_key_input,
             rolearn=rolearn_input
         )
 
@@ -866,7 +864,7 @@ class TestPipelineBuild(BaseTestCase):
                                          version="v1", name="dataSource")
 
         data_source_step.set_arguments(
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             tableName="pai_online_project.wumai_data",
         )
 
@@ -875,7 +873,7 @@ class TestPipelineBuild(BaseTestCase):
                                             name="typeTransform")
         type_transform_step.set_arguments(
             inputArtifact=data_source_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTable="pai_temp_172808_1779985_100",
             cols_to_double="time,hour,pm2,pm10,so2,co,no2",
         )
@@ -885,7 +883,7 @@ class TestPipelineBuild(BaseTestCase):
                                  name="sql")
         sql_step.set_arguments(
             inputArtifact1=type_transform_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTable="pai_temp_83935_1099579_1",
             sql="select time,hour,(case when pm2>200 then 1 else 0 end),pm10,so2,co,no2"
                 " from pai_temp_83935_1099578_1",
@@ -896,7 +894,7 @@ class TestPipelineBuild(BaseTestCase):
                                         name="normalize")
         normalized_step.set_arguments(
             inputArtifact=sql_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTableName="pai_temp_83935_1099582_1",
             outputParaTableName="pai_temp_83935_1099582_2",
             selectedColNames="pm10,so2,co,no2",
@@ -907,7 +905,7 @@ class TestPipelineBuild(BaseTestCase):
                                    name="split")
         split_step.set_arguments(
             inputArtifact=normalized_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             output1TableName="pai_temp_83935_1099583_1",
             fraction=0.8,
             output2TableName="pai_temp_83935_1199583_1",
@@ -919,7 +917,7 @@ class TestPipelineBuild(BaseTestCase):
 
         logistic_step.set_arguments(
             inputArtifact=split_step.outputs["outputArtifact1"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             modelName="xlab_m_logisticregres_1099587_v0",
             featureColNames='pm10,so2,co,no2',
             labelColName="_c2",
@@ -932,7 +930,7 @@ class TestPipelineBuild(BaseTestCase):
         prediction2_step.set_arguments(
             inputModelArtifact=logistic_step.outputs["outputArtifact"],
             inputDataSetArtifact=split_step.outputs["outputArtifact2"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputTableName="pai_temp_83935_1099588_1",
             featureColNames="pm10,so2,co,no2",
             appendColNames="time,hour,_c2,pm10,so2,co,no2",
@@ -946,7 +944,7 @@ class TestPipelineBuild(BaseTestCase):
                                        name="evaluate2")
         evaluate2_step.set_arguments(
             inputArtifact=prediction2_step.outputs["outputArtifact"],
-            __XFlow_execution=xflow_execution_input,
+            execution=xflow_execution_input,
             outputDetailTableName="pai_temp_83935_1099589_1",
             outputMetricTableName="pai_temp_83935_1428529_1",
             outputELDetailTableName="pai_temp_83935_1199589_1",

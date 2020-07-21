@@ -7,7 +7,7 @@ from datetime import datetime
 from libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.exception import TimeoutException
-from pai.pipeline.artifact import ArtifactInfo
+from pai.pipeline.artifact import ArtifactEntity
 from pai.utils import run_detail_url
 
 logger = logging.getLogger(__name__)
@@ -81,15 +81,20 @@ class RunInstance(object):
     def get_run_detail(self, node_id):
         return self.session.get_run_detail(self.run_id, node_id=node_id)
 
-    def get_outputs(self, node_id=None, depth=1, typ=None):
+    def get_outputs(self, node_id=None, depth=1, typ=None, page_number=1, page_size=200):
         if not node_id:
             run_info = self.get_run_info()
             node_id = run_info["NodeId"]
+
         if not node_id:
             return
         outputs = self.session.list_run_outputs(run_id=self.run_id, node_id=node_id, depth=depth,
-                                                typ=typ)
-        return [ArtifactInfo.from_run_output(output) for output in outputs]
+                                                typ=typ, page_number=page_number,
+                                                page_size=page_size)
+
+        logger.info("RunInstance outputs: run_id:%s, node_id:%s, outputs:%s" % (
+        self.run_id, node_id, outputs))
+        return [ArtifactEntity.from_run_output(output) for output in outputs]
 
     def get_status(self):
         return self.get_run_info()["Status"]
@@ -150,8 +155,9 @@ class RunInstance(object):
         else:
             raise ValueError("Failed in acquire root node_id of pipeline run.")
 
-    def wait(self):
+    def wait(self, log_outputs=True, timeout=240):
         """Wait until the pipeline run stop."""
+        wait_start = datetime.now()
         run_info = self.get_run_info()
         run_status = run_info["Status"]
         if run_status == RunStatus.Init:
@@ -175,7 +181,11 @@ class RunInstance(object):
             node_id = self._wait_for_init()
         assert bool(node_id) is True
 
-        run_logger = _RunLogger(run_instance=self, node_id=node_id)
+        if log_outputs:
+            run_logger = _RunLogger(run_instance=self, node_id=node_id)
+        else:
+            run_logger = _MockRunLogger(run_instance=self, node_id=node_id)
+
         run_logger.submit(node_id=node_id, node_name=self.run_id)
         node_status_infos = self.travel_node_status_info(node_id)
 
@@ -186,7 +196,10 @@ class RunInstance(object):
         root_node_status = prev_status_infos[self.run_id]["status"]
 
         while root_node_status == RunStatus.Running:
-            time.sleep(5)
+            time.sleep(2)
+            curr_time = datetime.now()
+            if timeout and (curr_time - wait_start).total_seconds() > timeout:
+                raise TimeoutException("RunInstance wait timeout.")
             curr_status_infos = self.travel_node_status_info(node_id)
             for node_fullname, status_info in curr_status_infos.items():
                 if node_fullname not in prev_status_infos and \
@@ -243,3 +256,17 @@ class _RunLogger(object):
 
     def stop_tail(self):
         self._tail = False
+
+
+class _MockRunLogger(object):
+
+    def __init__(self, run_instance, node_id):
+        super(_MockRunLogger, self).__init__()
+        self.run_instance = run_instance
+        self.node_id = node_id
+
+    def tail(self, **kwargs):
+        pass
+
+    def submit(self, *args, **kwargs):
+        pass

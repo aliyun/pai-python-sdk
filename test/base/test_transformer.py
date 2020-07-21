@@ -16,12 +16,12 @@ class TestTransformer(BaseTestCase):
         p = Pipeline.get_by_identifier(session=self.session, identifier=identifier,
                                        provider=provider, version=version)
         parameters = {
-            "__XFlow_project": "algo_public",
-            "__XFlow_execution": {
-                # "odpsInfoFile": "/share/base/odpsInfo.ini",
+            "project": "algo_public",
+            "execution": {
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
                 "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": "wyl_test",
+                "odpsProject": "pai_sdk_test",
             },
         }
         transformer = p.to_transformer(parameters=parameters)
@@ -67,4 +67,3 @@ class TestTransformer(BaseTestCase):
         job2 = transformer.transform(wait=False, job_name="test_transform_job", args=run_args)
         self.assertEqual(transformer.last_job, job2)
         self.assertNotEqual(job1, job2)
-

@@ -20,7 +20,7 @@ class TestPipelineBase(BaseTestCase):
         return p
 
     def test_pipeline_init(self):
-        identifier ="prediction-xflow-maxCompute"
+        identifier = "prediction-xflow-maxCompute"
         provider = ProviderAlibabaPAI
         version = "v1"
         p = self.init_prediction_pipeline(identifier, version, provider)
@@ -28,13 +28,13 @@ class TestPipelineBase(BaseTestCase):
         self.assertEqual(p.version, version)
         self.assertEqual(p.provider, provider)
 
-        expected_param_specs = {'__XFlow_execution': {'name': '__XFlow_execution',
-                                                      'required': True,
-                                                      'type': 'Map'},
-                                '__XFlow_project': {'name': '__XFlow_project',
-                                                    'required': True,
-                                                    'type': 'String',
-                                                    'value': 'algo_public'},
+        expected_param_specs = {'execution': {'name': 'execution',
+                                              'required': True,
+                                              'type': 'Map'},
+                                'project': {'name': 'project',
+                                            'required': True,
+                                            'type': 'String',
+                                            'value': 'algo_public'},
                                 'appendColNames': {'name': 'appendColNames', 'type': 'String',
                                                    'value': ''},
                                 'coreNum': {'feasible': {'range': '[1, INF['},
@@ -89,12 +89,35 @@ class TestPipelineBase(BaseTestCase):
         p = self.init_prediction_pipeline()
 
         arguments = {
-            "__XFlow_execution":  {
+            "execution": {
                 "k1": "value",
                 "k2": "value",
             },
-            "__XFlow_project": "algo_Public",
+            "project": "algo_Public",
             "outputTableName": "pai_output_test_table",
         }
 
-        parameters, artifacts = p.translate_arguments(arguments)
+        parameters, _ = p.translate_arguments(arguments)
+
+        expected_parameters = [
+            {
+                "name": "execution",
+                "value": {
+                    "k1": "value",
+                    "k2": "value",
+                },
+            },
+            {
+                "name": "project",
+                "value": "algo_public"
+            },
+            {
+                "name": "outputTableName",
+                "value": "pai_output_test_table",
+            }
+        ]
+
+        def sort_parameter(param):
+            return param.sort(key=lambda x: x["name"])
+
+        self.assertEqual(sort_parameter(expected_parameters), sort_parameter(parameters))

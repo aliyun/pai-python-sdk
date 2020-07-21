@@ -21,7 +21,9 @@ class TestXFlowEstimator(BaseTestCase):
             "epsilon": 1e-6,
         }
 
-        self.assertEqual(lr.parameters, expected_parameters)
+        parameters = {k: v for k, v in lr.parameters.items() if v is not None}
+
+        self.assertEqual(parameters, expected_parameters)
 
     def test_estimator_build(self):
         lr = LogisticRegression(
@@ -50,8 +52,8 @@ class TestXFlowEstimator(BaseTestCase):
             "enableSparse": True,
             "itemDelimiter": ",",
             "kvDelimiter": ":",
-            "__XFlow_project": lr.get_xflow_project(),
-            "__XFlow_execution": lr.get_xflow_execution(),
+            "project": lr.get_xflow_project(),
+            "execution": lr.get_xflow_execution(),
         }
 
         compiled_args = lr._compile_args(

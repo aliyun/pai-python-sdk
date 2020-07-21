@@ -35,7 +35,6 @@ class RunJob(with_metaclass(ABCMeta, object)):
     def run_id(self):
         return self.run_instance.run_id
 
-    # TODO: return self-defined class but not json
     def get_outputs(self):
         if self.run_instance.get_status() != RunStatus.Succeeded:
             raise ValueError("Succeeded Run job is required!")
@@ -51,8 +50,8 @@ class RunJob(with_metaclass(ABCMeta, object)):
     def resume(self):
         self.run_instance.resume()
 
-    def attach(self):
-        self.run_instance.wait()
+    def attach(self, log_outputs=True, timeout=240):
+        self.run_instance.wait(log_outputs=log_outputs, timeout=timeout)
 
     def get_status(self):
         return JobStatus(self.run_instance.get_status())

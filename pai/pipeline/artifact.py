@@ -153,17 +153,31 @@ class ArtifactValue(object):
         pass
 
     @classmethod
-    def from_resource(cls, resource):
+    def from_resource(cls, resource, metadata=None):
         if isinstance(resource, six.string_types):
             if resource.startswith("odps://"):
                 return MaxComputeResourceArtifact.from_resource_url(resource)
             elif resource.startswith("oss://"):
                 return OSSArtifact.from_resource_url(resource)
             else:
-                raise ValueError("Not support artifact url schema:%s", resource)
+                try:
+                    resource_dict = json.loads(resource)
+                except json.JSONDecodeError as e:
+                    raise ValueError("Not support artifact url schema:%s", resource)
+                return cls.from_raw_value(resource_dict, metadata)
         elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
             return MaxComputeResourceArtifact.from_odps_resource(resource)
         raise ValueError("Not support artifact resource:%s", type(resource))
+
+    @classmethod
+    def from_raw_value(cls, value, metadata):
+        if metadata is None:
+            raise ValueError(
+                400, "ArtifactMetadata should provide while parse artifact value from dict data.")
+        if metadata.location_type == ArtifactLocationType.OSS:
+            return OSSArtifact.from_dict(value)
+        elif metadata.location_type == ArtifactLocationType.MaxComputeTable:
+            return MaxComputeTableArtifact.from_dict(value)
 
 
 class MaxComputeResourceArtifact(ArtifactValue):
@@ -273,6 +287,14 @@ class MaxComputeTableArtifact(MaxComputeResourceArtifact):
             d["location"]["partition"] = self.partition
         return d
 
+    @classmethod
+    def from_dict(cls, d):
+        table = d["location"]["table"]
+        project = d["location"].get("project")
+        endpoint = d["location"].get("endpoint")
+        partition = d["location"].get("partition")
+        return cls(table=table, project=project, endpoint=endpoint, partition=partition)
+
 
 class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
 
@@ -285,6 +307,13 @@ class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
         d["location"]["name"] = self.offline_model
         d["name"] = self.offline_model
         return d
+
+    @classmethod
+    def from_dict(cls, d):
+        project = d["location"]["project"]
+        name = d["location"]["name"]
+        endpoint = d["location"].get("endpoint")
+        return cls(offline_model=name, project=project, endpoint=endpoint)
 
 
 class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
@@ -301,6 +330,16 @@ class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
         d["location"]["volumePartition"] = self.partition
         d["location"]["file"] = self.file_name
         return d
+
+    @classmethod
+    def from_dict(cls, d):
+        endpoint = d["location"].get("endpoint", None)
+        project = d["location"]["project"]
+        volume = d["location"]["volume"]
+        partition = d["location"].get("volumePartition", None)
+        file = d["location"].get("file", None)
+        return cls(volume=volume, project=project, file_name=file, endpoint=endpoint,
+                   partition=partition)
 
 
 class OSSArtifact(ArtifactValue):
@@ -328,6 +367,16 @@ class OSSArtifact(ArtifactValue):
     def from_resource_url(cls):
         pass
 
+    @classmethod
+    def from_dict(cls, d):
+        if not d["location"].get("bucket"):
+            return
+        bucket = d["location"]["bucket"]
+        key = d["location"]["key"]
+        endpoint = d["location"].get("endpoint")
+        rolearn = d["location"].get("rolearn")
+        return OSSArtifact(bucket=bucket, key=key, endpoint=endpoint, rolearn=rolearn)
+
 
 class ArtifactDataType(Enum):
     DataSet = "DataSet"
@@ -347,17 +396,19 @@ class ArtifactModelType(Enum):
     PMML = "PMML"
 
 
-class ArtifactInfo(object):
+class ArtifactEntity(object):
+    """Artifact instance, hold the information of metadata and value of artifact."""
 
     def __init__(self, metadata, value, name, producer, artifact_id):
-        """
+        """ArtifactEntity class constructor.
 
         Args:
             metadata (:class:`~.pai.pipeline.artifact.ArtifactMetadata`): Artifact metadata info.
             value (:class:`~.pai.pipeline.artifact.ArtifactValue`): Artifact value.
-            name (str): name of
-            producer (str):
-            artifact_id (str):
+            name (str): name of artifact, actually, it is the name of artifact in manifest of
+                source pipeline.
+            producer (str): Producer of the artifact, identified by step name of pipeline.
+            artifact_id (str): Unique artifact identifier in pipeline service.
         """
         self.name = name
         self.metadata = metadata
@@ -386,13 +437,17 @@ class ArtifactInfo(object):
         Args:
             output (dict): Run output return by pipeline service.
         Returns:
-            ArtifactInfo: ArtifactInfo instance.
+            ArtifactEntity: ArtifactInfo instance.
         """
 
         name = output["Name"]
-        af_value = ArtifactValue.from_resource(output["Info"]["value"])
-        af_metadata = ArtifactMetadata.from_dict(output["Info"]["metadata"])
+        metadata = ArtifactMetadata.from_dict(output["Info"]["metadata"])
+        value = ArtifactValue.from_resource(output["Info"]["value"], metadata=metadata)
         producer = output["Producer"]
         artifact_id = output["Id"]
-        return ArtifactInfo(metadata=af_metadata, value=af_value, name=name, producer=producer,
-                            artifact_id=artifact_id)
+        return ArtifactEntity(metadata=metadata, value=value, name=name, producer=producer,
+                              artifact_id=artifact_id)
+
+    @property
+    def is_model(self):
+        return self.metadata.data_type == ArtifactDataType.Model

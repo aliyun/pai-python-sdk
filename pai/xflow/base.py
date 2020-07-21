@@ -5,7 +5,7 @@ from pai.transformer import AlgoBaseTransformer
 
 
 class _XFlowAlgoMixin(object):
-    _enable_sparse_input = False
+    _enable_sparse_ = False
     XFlowProjectDefault = 'algo_public'
 
     def __init__(self, xflow_execution=None, xflow_project=None, core_num=None,
@@ -30,13 +30,13 @@ class _XFlowAlgoMixin(object):
 
     def get_xflow_args(self):
         return {
-            "__XFlow_execution": self.get_xflow_execution(),
-            "__XFlow_project": self.get_xflow_project(),
+            "execution": self.get_xflow_execution(),
+            "project": self.get_xflow_project(),
         }
 
     def _compile_args(self, *inputs, **kwargs):
         args = self.get_xflow_args()
-        if type(self)._enable_sparse_input and kwargs.get("enable_sparse"):
+        if type(self)._enable_sparse_ and kwargs.get("enable_sparse"):
             args["enableSparse"] = True
             sparse_delimiter = kwargs["sparse_delimiter"]
             item_delimiter, kv_delimiter = sparse_delimiter
@@ -49,10 +49,23 @@ class _XFlowAlgoMixin(object):
 
 
 class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
+    _pmml_model_ = False
 
     def __init__(self, session, xflow_project=None, xflow_execution=None, **kwargs):
-        AlgoBaseEstimator.__init__(self, session=session, **kwargs)
+        AlgoBaseEstimator.__init__(self, session=session, oss_path=None, oss_endpoint=None,
+                                   rolearn=None, oss_bucket=None, **kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_project=xflow_project, xflow_execution=xflow_execution)
+
+    def _compile_args(self, *inputs, **kwargs):
+        args = super(XFlowEstimator, self)._compile_args(*inputs, **kwargs)
+        if type(self)._pmml_model_ and kwargs.get("generate_pmml"):
+            args["path"] = kwargs.get("oss_path")
+            args["endpoint"] = kwargs.get("oss_endpoint")
+            args["rolearn"] = kwargs.get("rolearn")
+            args["bucket"] = kwargs.get("oss_bucket")
+            args["generatePmml"] = kwargs.get("generate_pmml")
+
+        return args
 
 
 class XFlowTransformer(AlgoBaseTransformer, _XFlowAlgoMixin):
