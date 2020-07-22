@@ -178,6 +178,12 @@ class ArtifactValue(object):
             return OSSArtifact.from_dict(value)
         elif metadata.location_type == ArtifactLocationType.MaxComputeTable:
             return MaxComputeTableArtifact.from_dict(value)
+        elif metadata.location_type == ArtifactLocationType.MaxComputeOfflineModel:
+            return MaxComputeOfflineModelArtifact.from_dict(value)
+        elif metadata.location_type == ArtifactLocationType.MaxComputeVolume:
+            return MaxComputeVolumeArtifact.from_dict(value)
+        else:
+            raise ValueError("Not support artifact location_type: %s", metadata.location_type)
 
 
 class MaxComputeResourceArtifact(ArtifactValue):

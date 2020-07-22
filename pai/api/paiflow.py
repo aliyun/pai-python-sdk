@@ -14,7 +14,7 @@ from libs.aliyunsdkpaiflow.request.v20200328 import (
     StartRunRequest, GetNodeDetailRequest, ListRunsRequest, ListNodeLogsRequest,
     ListNodeOutputsRequest
 )
-from pai.api import BaseClient
+from pai.api import BaseClient, ServiceCallException
 from pai.utils import ensure_str, ensure_unix_time
 
 
@@ -28,9 +28,16 @@ class PAIFlowClient(BaseClient):
         """
         super(PAIFlowClient, self).__init__(acs_client=acs_client)
 
+    def _call_service_with_exception(self, request):
+        resp = super(PAIFlowClient, self)._call_service_with_exception(request)
+        if resp["Code"] is not None:
+            message = "Service response error, request:%s code:%s, message:%s" % (
+                request, resp["Code"], resp["Message"])
+            raise ServiceCallException(message)
+        return resp
+
     def _get_endpoint(self):
-        # return "paiflow-share.cn-hangzhou.aliyuncs.com"  # pre-release env
-        return "paiflow.cn-shanghai.aliyuncs.com"  # release env
+        return "paiflow.{region_id}.aliyuncs.com".format(region_id=self._acs_client.get_region_id())
 
     def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)

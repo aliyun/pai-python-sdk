@@ -44,12 +44,6 @@ class Session(object):
     def _init_clients(self, access_key, access_secret, region, odps_project=None,
                       odps_endpoint=None):
 
-        # paiflow_acs_client = AcsClient(
-        #     ak="AccessKeyId",
-        #     secret="zXJ7QF79Oz",
-        #     region_id="ch-shanghai",
-        # )
-
         self._acs_client = AcsClient(ak=access_key, secret=access_secret, region_id=region)
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
 
@@ -174,6 +168,10 @@ class Session(object):
         kwargs.pop("self")
         run_infos = self.paiflow_client.list_run(**kwargs)
         return run_infos
+
+    def delete_pipeline(self, pipeline_id):
+        _ = self.paiflow_client.delete_pipeline(pipeline_id)
+        return True
 
     def get_run_detail(self, run_id, node_id, depth=2):
         run_info = self.paiflow_client.get_run_detail(run_id, node_id, depth=depth)

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-version_info = (0, 1, 1)
+version_info = (0, 1, 2)
 
 _num_index = max(idx if isinstance(v, int) else 0
                  for idx, v in enumerate(version_info))

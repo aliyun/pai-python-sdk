@@ -70,11 +70,12 @@ class TestLogisticsRegression(BaseTestCase):
         self.assertEqual(JobStatus.Running, run_job.get_status())
         run_job.attach()
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
+        time.sleep(20)
         offline_model = run_job.create_model(output_name="outputArtifact")
         self.assertIsNotNone(offline_model)
 
         self.assertTrue(self.session.odps_client.exist_offline_model(
-            model_name, project=self.session.odps_client.project.name))
+            model_name, project=self.session.odps_client.project))
 
     def test_lr_multiple_call_fit(self):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
@@ -83,13 +84,13 @@ class TestLogisticsRegression(BaseTestCase):
             regularized_level=1.0,
         )
         job1 = lr.fit(wait=False, input_data=self.iris_df, job_name="pysdk-test-lr-multi-fit-1",
-                      label_col="category", model_name=model_name,
+                      label_col="category", model_name=model_name, good_value=1,
                       feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'], )
 
         self.assertEqual(lr.last_job, job1)
 
         job2 = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
-                      job_name="pysdk-test-lr-multi-fit-2",
+                      job_name="pysdk-test-lr-multi-fit-2", good_value=1,
                       feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
                       model_name=model_name)
         self.assertEqual(lr.last_job, job2)

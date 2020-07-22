@@ -18,11 +18,6 @@ class BaseClient(object):
             resp = self._response_to_dict(raw_resp)
         except (ClientException, ServerException) as e:
             raise ServiceCallException(e.__str__())
-
-        # if int(resp["Code"]) != 200:
-        #     message = "Service response error, code:%s, message:%s" % (
-        #         resp["Code"], resp["Message"])
-        #     raise ServiceCallException(message)
         return resp
 
     def _get_endpoint(self):

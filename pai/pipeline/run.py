@@ -93,7 +93,7 @@ class RunInstance(object):
                                                 page_size=page_size)
 
         logger.info("RunInstance outputs: run_id:%s, node_id:%s, outputs:%s" % (
-        self.run_id, node_id, outputs))
+            self.run_id, node_id, outputs))
         return [ArtifactEntity.from_run_output(output) for output in outputs]
 
     def get_status(self):
@@ -155,7 +155,7 @@ class RunInstance(object):
         else:
             raise ValueError("Failed in acquire root node_id of pipeline run.")
 
-    def wait(self, log_outputs=True, timeout=240):
+    def wait(self, log_outputs=True, timeout=None):
         """Wait until the pipeline run stop."""
         wait_start = datetime.now()
         run_info = self.get_run_info()

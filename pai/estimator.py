@@ -129,7 +129,7 @@ class EstimatorJob(RunJob):
         outputs = self.get_outputs()
         if not outputs:
             raise ValueError("No model artifact is available to create model")
-        artifact_infos = [output for output in outputs if output.is_model]
+        artifact_infos = [output for output in outputs if output.is_model and output.value]
 
         if len(artifact_infos) == 0:
             raise ValueError("No model data is available to create model")
