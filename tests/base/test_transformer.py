@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from pai import ProviderAlibabaPAI
 from pai.job import JobStatus
 from pai.pipeline import Pipeline
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestTransformer(BaseTestCase):

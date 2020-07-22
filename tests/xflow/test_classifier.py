@@ -11,7 +11,7 @@ from sklearn.datasets import load_iris
 
 from pai.job import JobStatus
 from pai.xflow.classifier import LogisticRegression
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestLogisticsRegression(BaseTestCase):

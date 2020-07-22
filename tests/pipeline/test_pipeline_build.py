@@ -10,8 +10,8 @@ from pai.common import ProviderAlibabaPAI
 from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
 from pai.pipeline.run import RunInstance, RunStatus
 from pai.xflow.classifier import LogisticRegression
-from test import BaseTestCase
-from test.pipeline import load_local_yaml
+from tests import BaseTestCase
+from tests.pipeline import load_local_yaml
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 

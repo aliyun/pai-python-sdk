@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from pai.utils import extract_odps_table_info
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestUtils(BaseTestCase):

@@ -5,7 +5,7 @@ import unittest
 from pprint import pprint
 
 from pai import RunInstance
-from test import BaseTestCase
+from tests import BaseTestCase
 
 from pai.common import ProviderAlibabaPAI
 

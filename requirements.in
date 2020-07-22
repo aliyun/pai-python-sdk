@@ -6,6 +6,9 @@ aliyun-python-sdk-sts
 graphviz
 pyodps
 
+# Python2 Enum support
+enum34
+
 
 
 

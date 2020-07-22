@@ -4,7 +4,7 @@ import os
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline
-from test import BaseTestCase
+from tests import BaseTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 

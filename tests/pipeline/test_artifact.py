@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from pai.pipeline.artifact import MaxComputeResourceArtifact
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestArtifact(BaseTestCase):

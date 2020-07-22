@@ -5,7 +5,7 @@ import time
 from pai.job import JobStatus
 from pai.xflow.transformer import OfflineModelTransformer, MaxComputeDataSource, ModelTransferToOSS, \
     FeatureNormalize
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestOfflineModelPredictionTransformer(BaseTestCase):

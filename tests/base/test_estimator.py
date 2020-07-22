@@ -4,7 +4,7 @@ import unittest
 
 from pai import ProviderAlibabaPAI
 from pai.pipeline import Pipeline
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestEstimatorBase(BaseTestCase):

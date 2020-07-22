@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pai.pipeline.parameter import Interval, ParameterValidator, create_pipeline_parameter, \
     ParameterType
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestParameter(BaseTestCase):

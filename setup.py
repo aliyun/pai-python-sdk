@@ -33,7 +33,7 @@ setup(
     version=_load_version_info(),
     description="Alibaba Cloud PAI Python SDK",
     long_description=long_description,
-    packages=find_packages(exclude=["test"]),
+    packages=find_packages(exclude=["tests"]),
     install_requires=requirements,
     author="Alibaba PAI team",
     keywords="ML Alibaba Cloud PAI Training Inference Pipeline",

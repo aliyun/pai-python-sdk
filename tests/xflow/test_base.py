@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from pai.xflow.classifier import LogisticRegression
-from test import BaseTestCase
+from tests import BaseTestCase
 
 
 class TestXFlowEstimator(BaseTestCase):

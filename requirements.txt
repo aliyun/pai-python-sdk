@@ -8,6 +8,7 @@ aliyun-python-sdk-core==2.13.23  # via -r ./requirements.in, aliyun-python-sdk-s
 aliyun-python-sdk-sts==3.0.2  # via -r ./requirements.in
 certifi==2020.6.20        # via requests
 chardet==3.0.4            # via requests
+enum34==1.1.10            # via -r ./requirements.in
 graphviz==0.14            # via -r ./requirements.in
 idna==2.10                # via requests
 jmespath==0.10.0          # via aliyun-python-sdk-core
