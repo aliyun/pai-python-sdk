@@ -36,13 +36,14 @@ class TestEstimatorBase(BaseTestCase):
         p, est = self.init_base_lr_estimator()
         model_name = "ut_estimator_from_pipeline"
         project = "pai_sdk_test"
-        fit_args = {
+        run_args = {
             "inputArtifact": "odps://{project_name}/tables/{table_name}".format(
                 project_name=project, table_name="pai_sdk_test.lr_data_set"),
             "labelColName": "_c2",
             "featureColNames": "pm10,so2,co,no2",
             "modelName": model_name,
             "goodValue": 1,
+            "project": "algo_public",
             "execution": {
                 "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
@@ -51,7 +52,7 @@ class TestEstimatorBase(BaseTestCase):
             },
         }
 
-        job = est.fit(wait=True, job_name="pysdk-test-estimator-pipeline", args=fit_args)
+        job = est.fit(wait=True, job_name="pysdk-test-estimator-pipeline", args=run_args)
 
         print(job.get_outputs())
 

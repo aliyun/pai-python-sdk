@@ -417,7 +417,7 @@ class TestPipelineBuild(BaseTestCase):
         return p
 
     def create_general_input_pipeline(self):
-        p = Pipeline.new_pipeline("test_alogo_build", version="1.0.0", session=self.session)
+        p = Pipeline.new_pipeline("test_algo_build", version="1.0.0", session=self.session)
 
         dataset_input = p.create_input_artifact("dataset", data_type=ArtifactDataType.DataSet,
                                                 location_type=ArtifactLocationType.MaxComputeTable,
@@ -832,7 +832,6 @@ class TestPipelineBuild(BaseTestCase):
 
         modeltransfer2oss_step.set_arguments(
             execution=xflow_execution_input,
-            project="algo_public",
             inputArtifact=logistic_step.outputs["outputArtifact"],
             bucket=oss_bucket_input,
             endpoint=oss_endpoint_input,

@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import itertools
 import re
 from decimal import Decimal
 
@@ -228,3 +229,6 @@ def create_pipeline_parameter(name, typ, kind, desc=None, required=False, value=
 
     return PipelineParameter(name=name, typ=typ, kind=kind, desc=desc, required=required,
                              value=value, from_=from_, parent=parent, validator=validator)
+
+
+PyParameterTypes = tuple(itertools.chain(six.integer_types, six.string_types, [dict, list, bool]))
