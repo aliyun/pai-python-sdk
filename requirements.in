@@ -3,6 +3,7 @@ six
 PyYAML
 aliyun-python-sdk-core>=2.13.23
 aliyun-python-sdk-sts
+oss2
 graphviz
 pyodps
 

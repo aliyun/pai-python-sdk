@@ -6,6 +6,7 @@ import six
 import yaml
 from aliyunsdkcore.client import AcsClient
 from odps import ODPS
+import oss2
 
 from pai.api.client_factory import ClientFactory
 from pai.utils import run_detail_url
@@ -51,7 +52,11 @@ class Session(object):
         self.odps_client = ODPS(access_id=access_key, secret_access_key=access_secret,
                                 project=odps_project,
                                 endpoint=odps_endpoint)
+        self._oss_auth = oss2.Auth(access_key_id=access_key, access_key_secret=access_secret)
         self._init_account()
+
+    def get_oss_bucket(self, endpoint, bucket):
+        return oss2.Bucket(self._oss_auth, endpoint=endpoint, bucket_name=bucket)
 
     @property
     def account_id(self):
@@ -82,8 +87,8 @@ class Session(object):
     def get_pipeline_by_id(self, pipeline_id):
         return self.paiflow_client.get_pipeline(pipeline_id=pipeline_id)["Data"]
 
-    def search_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None,
-                        page_num=1, page_size=50):
+    def list_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None,
+                      page_num=1, page_size=50):
         """List Pipelines
 
         Args:
@@ -143,8 +148,8 @@ class Session(object):
     def list_pipeline_privilege(self, pipeline_id):
         return self.paiflow_client.list_pipeline_privilege(pipeline_id)["Data"]
 
-    def create_pipeline_run(self, name, arguments, env=None, pipeline_id=None, manifest=None,
-                            no_confirm_required=True):
+    def create_run(self, name, arguments, env=None, pipeline_id=None, manifest=None,
+                   no_confirm_required=True):
         arguments = {
             "arguments": arguments,
             "env": env
@@ -162,8 +167,8 @@ class Session(object):
 
         return run_id
 
-    def list_pipeline_run(self, name=None, run_id=None, pipeline_id=None, status=None,
-                          sorted_by=None, sorted_sequences=None, page_num=1, page_size=50):
+    def list_run(self, name=None, run_id=None, pipeline_id=None, status=None,
+                 sorted_by=None, sorted_sequences=None, page_num=1, page_size=50):
         kwargs = locals()
         kwargs.pop("self")
         run_infos = self.paiflow_client.list_run(**kwargs)

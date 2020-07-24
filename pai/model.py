@@ -30,7 +30,8 @@ class XFlowOfflineModel(Model):
         super(XFlowOfflineModel, self).__init__(name=name, session=session, model_data=model_data)
 
     def transformer(self):
-        pass
+        from .xflow.transformer import OfflineModelTransformer
+        return OfflineModelTransformer(session=self.session, model=self.model_data)
 
     # TODO:
     def deploy(self):

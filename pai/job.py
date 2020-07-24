@@ -50,7 +50,7 @@ class RunJob(with_metaclass(ABCMeta, object)):
     def resume(self):
         self.run_instance.resume()
 
-    def attach(self, log_outputs=True, timeout=240):
+    def attach(self, log_outputs=True, timeout=None):
         self.run_instance.wait(log_outputs=log_outputs, timeout=timeout)
 
     def get_status(self):

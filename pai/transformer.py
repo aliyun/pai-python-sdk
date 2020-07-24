@@ -116,5 +116,4 @@ class TransformJob(RunJob):
         Returns:
 
         """
-        outputs = super(TransformJob, self).get_outputs()
-        return {output.name: output for output in outputs}
+        return super(TransformJob, self).get_outputs()

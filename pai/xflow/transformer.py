@@ -36,7 +36,9 @@ class OfflineModelTransformer(XFlowTransformer):
         if isinstance(feature_cols, (list, tuple)):
             feature_cols = ','.join(feature_cols)
         args["featureColNames"] = feature_cols
-        args["appendColNames"] = kwargs.get("append_cols")
+        append_cols = kwargs.get("append_cols")
+        if append_cols:
+            args["appendColNames"] = ','.join(append_cols)
         args["resultColName"] = kwargs.get("result_col")
         args["tableLifecycle"] = kwargs.get("table_lifecycle")
 

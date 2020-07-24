@@ -330,9 +330,9 @@ class Pipeline(object):
             pipeline_id = self.pipeline_id
         else:
             manifest = self.to_dict()
-        run_id = self.session.create_pipeline_run(name, pipeline_args, env,
-                                                  no_confirm_required=True,
-                                                  pipeline_id=pipeline_id, manifest=manifest)
+        run_id = self.session.create_run(name, pipeline_args, env,
+                                         no_confirm_required=True,
+                                         pipeline_id=pipeline_id, manifest=manifest)
 
         run_instance = RunInstance(run_id=run_id, session=self.session)
         if not wait:
@@ -567,12 +567,12 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
         job_name, run_args = self._prepare_run(job_name=job_name, arguments=arguments,
                                                manifest=manifest)
         if self.get_pipeline_id():
-            run_id = self.session.create_pipeline_run(name=job_name, arguments=run_args, env=env,
-                                                      pipeline_id=self.get_pipeline_id(),
-                                                      no_confirm_required=True)
+            run_id = self.session.create_run(name=job_name, arguments=run_args, env=env,
+                                             pipeline_id=self.get_pipeline_id(),
+                                             no_confirm_required=True)
         else:
-            run_id = self.session.create_pipeline_run(name=job_name, arguments=run_args, env=env,
-                                                      manifest=manifest, no_confirm_required=True)
+            run_id = self.session.create_run(name=job_name, arguments=run_args, env=env,
+                                             manifest=manifest, no_confirm_required=True)
         logging.info("PaiFlow CreateRun JobName:%s, RunId :%s" % (job_name, run_id))
         run = RunInstance(run_id=run_id, session=self.session)
         return run
