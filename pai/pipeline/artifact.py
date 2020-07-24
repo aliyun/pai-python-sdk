@@ -167,6 +167,11 @@ class ArtifactValue(object):
                 return cls.from_raw_value(resource_dict, metadata)
         elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
             return MaxComputeResourceArtifact.from_odps_resource(resource)
+        elif isinstance(resource, ArtifactEntity):
+            return resource.value
+        elif isinstance(resource, ArtifactValue):
+            return resource
+
         raise ValueError("Not support artifact resource:%s", type(resource))
 
     @classmethod
