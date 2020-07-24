@@ -5,7 +5,7 @@ from pai.transformer import AlgoBaseTransformer
 
 
 class _XFlowAlgoMixin(object):
-    _enable_sparse_ = False
+    _enable_sparse = False
     XFlowProjectDefault = 'algo_public'
 
     def __init__(self, xflow_execution=None, xflow_project=None, core_num=None,
@@ -36,7 +36,7 @@ class _XFlowAlgoMixin(object):
 
     def _compile_args(self, *inputs, **kwargs):
         args = self.get_xflow_args()
-        if type(self)._enable_sparse_ and kwargs.get("enable_sparse"):
+        if type(self)._enable_sparse and kwargs.get("enable_sparse"):
             args["enableSparse"] = True
             sparse_delimiter = kwargs["sparse_delimiter"]
             item_delimiter, kv_delimiter = sparse_delimiter
@@ -49,16 +49,17 @@ class _XFlowAlgoMixin(object):
 
 
 class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
-    _pmml_model_ = False
+    _pmml_model = False
 
     def __init__(self, session, xflow_project=None, xflow_execution=None, **kwargs):
-        AlgoBaseEstimator.__init__(self, session=session, oss_path=None, oss_endpoint=None,
-                                   rolearn=None, oss_bucket=None, **kwargs)
+        AlgoBaseEstimator.__init__(self, session=session, pmml_gen=False, pmml_oss_path=None,
+                                   pmml_oss_endpoint=None, pmml_oss_rolearn=None,
+                                   pmml_oss_bucket=None, **kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_project=xflow_project, xflow_execution=xflow_execution)
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(XFlowEstimator, self)._compile_args(*inputs, **kwargs)
-        if type(self)._pmml_model_ and kwargs.get("generate_pmml"):
+        if type(self)._pmml_model and kwargs.get("generate_pmml"):
             args["path"] = kwargs.get("oss_path")
             args["endpoint"] = kwargs.get("oss_endpoint")
             args["rolearn"] = kwargs.get("rolearn")
