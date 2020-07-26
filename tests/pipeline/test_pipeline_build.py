@@ -88,9 +88,9 @@ class TestPipelineBuild(BaseTestCase):
         arguments, env = self.args_for_composite_pipeline_1()
 
         pipeline_id = self.session.create_pipeline(p.to_dict())
-        run_id = self.session.create_pipeline_run("pysdk-test-composite-run",
-                                                  pipeline_id=pipeline_id,
-                                                  arguments=arguments, env=env)
+        run_id = self.session.create_run("pysdk-test-composite-run",
+                                         pipeline_id=pipeline_id,
+                                         arguments=arguments, env=env)
         self.assertIsNotNone(run_id)
         time.sleep(1)
         run_instance = RunInstance(run_id=run_id, session=self.session)
@@ -432,7 +432,6 @@ class TestPipelineBuild(BaseTestCase):
         feature_cols_input = p.create_input_parameter("feature_cols", str, required=True)
         label_col_input = p.create_input_parameter("label_col", str, required=True)
         user_project_input = p.create_input_parameter("user_project", str, required=True)
-        pmml_volume_input = p.create_input_parameter("pmml_volume", str, required=True)
 
         pred_feature_col_input = p.create_input_parameter("prediction_feature_col_names", str,
                                                           required=True)

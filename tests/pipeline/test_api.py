@@ -4,6 +4,8 @@ import os
 import unittest
 from pprint import pprint
 
+import yaml
+
 from pai import RunInstance
 from tests import BaseTestCase
 
@@ -14,11 +16,21 @@ _test_root = os.path.dirname(os.path.abspath(__file__))
 
 class TestPaiFlowAPI(BaseTestCase):
 
+    def test_get_pipeline(self):
+        identifier = "evaluate-xflow-maxCompute"
+
+        pipeline_info = self.session.get_pipeline(identifier=identifier,
+                                                  provider=ProviderAlibabaPAI,
+                                                  version="v1")
+        self.assertIsNotNone(pipeline_info["PipelineId"])
+        manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
+        self.assertEqual(identifier, manifest["metadata"]["identifier"])
+
     def test_list_pipeline(self):
-        pipeline_infos, total_count = self.session.search_pipeline(
+        pipeline_infos, total_count = self.session.list_pipeline(
             provider=ProviderAlibabaPAI, page_size=50, page_num=1)
-        if total_count > 0:
-            self.assertTrue(len(pipeline_infos) > 0)
+        self.assertTrue(len(pipeline_infos) > 0)
+        self.assertTrue(total_count > 0)
 
     def test_pipeline_create(self):
         pass
@@ -51,7 +63,7 @@ class TestPaiFlowAPI(BaseTestCase):
         pass
 
     def test_list_pipelines(self):
-        pipelines, count = self.session.search_pipeline(provider=ProviderAlibabaPAI)
+        pipelines, count = self.session.list_pipeline(provider=ProviderAlibabaPAI)
         self.assertTrue(len(pipelines) > 0)
         self.assertTrue(count > 0)
 

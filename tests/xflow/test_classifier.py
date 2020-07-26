@@ -44,10 +44,12 @@ class TestLogisticsRegression(BaseTestCase):
             session=self.session,
             regularized_type="l2",
         )
-        run_job = lr.fit(wait=True, input_data=self.iris_df, job_name="pysdk-test-lr-sync-fit",
-                         model_name=model_name, good_value=1, label_col="category",
-                         feature_cols=['sepal_length', 'sepal_width', 'petal_length',
-                                       'petal_width'])
+
+        iris_dataset_table = 'odps://pai_online_project/tables/iris_data'
+
+        run_job = lr.fit(wait=True, input_data=iris_dataset_table, job_name="pysdk-test-lr-sync-fit",
+                         model_name=model_name, good_value=1, label_col="type",
+                         feature_cols=['f1', 'f2', 'f3', 'f4'])
 
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         # PipelineOutput is not ready while status switch to succeed.
