@@ -81,7 +81,7 @@ class RunInstance(object):
     def get_run_detail(self, node_id):
         return self.session.get_run_detail(self.run_id, node_id=node_id)
 
-    def get_outputs(self, node_id=None, depth=1, typ=None, page_number=1, page_size=200):
+    def get_outputs(self, name=None, node_id=None, depth=1, typ=None, page_number=1, page_size=200):
         if not node_id:
             run_info = self.get_run_info()
             node_id = run_info["NodeId"]
@@ -89,7 +89,7 @@ class RunInstance(object):
         if not node_id:
             return
         outputs = self.session.list_run_outputs(run_id=self.run_id, node_id=node_id, depth=depth,
-                                                typ=typ, page_number=page_number,
+                                                name=name, typ=typ, page_number=page_number,
                                                 page_size=page_size)
 
         logger.info("RunInstance outputs: run_id:%s, node_id:%s, outputs:%s" % (

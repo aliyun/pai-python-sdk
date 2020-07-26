@@ -1,10 +1,13 @@
 from __future__ import absolute_import
 
 import json
+import logging
 
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
 
 from pai.api.exception import ServiceCallException
+
+logger = logging.getLogger(__name__)
 
 
 class BaseClient(object):
@@ -13,6 +16,9 @@ class BaseClient(object):
         self._acs_client = acs_client
 
     def _call_service_with_exception(self, request):
+        logger.debug("PAIFlow Request:%s, uri_params:%s, query_params:%s, body_params:%s",
+                    type(request), request.get_uri_params(), request.get_query_params(),
+                    request.get_body_params())
         try:
             raw_resp = self._acs_client.do_action_with_exception(request)
             resp = self._response_to_dict(raw_resp)

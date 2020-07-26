@@ -14,13 +14,13 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
         self._parameters = parameters
         self._jobs = []
 
-    def transform(self, wait=True, job_name=None, args=None, **kwargs):
+    def transform(self, wait=True, job_name=None, log_outputs=False, args=None, **kwargs):
         run_instance = self._run(job_name=job_name, arguments=args,
                                  **kwargs)
         run_job = TransformJob(transformer=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_job.attach()
+            run_job.attach(log_outputs=log_outputs)
         return run_job
 
     @abstractmethod
@@ -58,7 +58,7 @@ class PipelineTransformer(PaiFlowBase, Transformer):
                                  pipeline_id=pipeline_id)
         return pe
 
-    def transform(self, wait=True, job_name=None, args=None, **kwargs):
+    def transform(self, wait=True, job_name=None, log_outputs=True, args=None, **kwargs):
         args = args or dict()
         if not self._compiled_args:
             run_args = self.parameters.copy()
@@ -66,7 +66,9 @@ class PipelineTransformer(PaiFlowBase, Transformer):
         else:
             run_args = args
         return super(PipelineTransformer, self).transform(wait=wait, job_name=job_name,
-                                                          args=run_args, **kwargs)
+                                                          args=run_args,
+                                                          log_outputs=log_outputs,
+                                                          **kwargs)
 
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
@@ -116,4 +118,5 @@ class TransformJob(RunJob):
         Returns:
 
         """
-        return super(TransformJob, self).get_outputs()
+        outputs = super(TransformJob, self).get_outputs()
+        return {output.name: output for output in outputs}

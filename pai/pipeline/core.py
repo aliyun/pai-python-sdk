@@ -119,26 +119,19 @@ class Pipeline(object):
         self.outputs[name] = af
         return af
 
-    def create_step(self, identifier, name, provider=None, version="v1"):
+    def create_step(self, identifier, name, provider=None, version="v1", arguments=None):
         """
-        identifier + provider => uk
-
-        latest version
-
-        Args:
-            identifier:
-            provider:
-            version:
-            name:
-
-        Returns:
-
         """
+        arguments = arguments or dict()
 
         provider = provider if provider else self.session.account_id
         pipeline_info = self.session.get_pipeline(identifier, provider, version)
         step = PipelineStep.create_from_manifest(pipeline_info["Manifest"], parent=self, name=name)
-        return self._add_step(name, step)
+        step = self._add_step(name, step)
+        if arguments:
+            step.set_arguments(**arguments)
+
+        return step
 
     def create_step_by_pipeline_id(self, pipeline_id):
         pass
@@ -286,7 +279,7 @@ class Pipeline(object):
 
     def translate_arguments(self, args):
         """Transform arguments to pipeline inputs format"""
-        parameters_spec, artifacts_spec = self.input_parameters_spec, self.input_parameters_spec
+        parameters_spec, artifacts_spec = self.input_parameters_spec, self.input_artifacts_spec
         parameters, artifacts = [], []
         if not args:
             return parameters, artifacts

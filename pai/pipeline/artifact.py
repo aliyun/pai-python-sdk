@@ -42,9 +42,9 @@ class PipelineArtifact(PipelineVariable):
 
         name = af_spec.pop("name")
         metadata = ArtifactMetadata.from_dict(af_spec.pop("metadata", None))
-        desc = af_spec.pop("desc")
-        from_ = af_spec.pop("from")
-        required = af_spec.pop("required")
+        desc = af_spec.pop("desc", None)
+        from_ = af_spec.pop("from", None)
+        required = af_spec.pop("required", None)
 
         param = create_artifact(name=name, metadata=metadata, kind=kind, from_=from_,
                                 required=required, desc=desc)

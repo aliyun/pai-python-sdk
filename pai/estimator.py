@@ -26,12 +26,12 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
     def _run(self, job_name, arguments, **kwargs):
         raise NotImplementedError
 
-    def fit(self, wait=True, job_name=None, args=None, **kwargs):
-        run_instance = self._run(job_name=job_name, arguments=args, **kwargs)
+    def fit(self, wait=True, job_name=None, log_outputs=True, arguments=None, **kwargs):
+        run_instance = self._run(job_name=job_name, arguments=arguments, **kwargs)
         run_job = EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_job.attach()
+            run_job.attach(log_outputs=log_outputs)
         return run_job
 
     @property
@@ -61,15 +61,16 @@ class PipelineEstimator(PaiFlowBase, Estimator):
                                pipeline_id=pipeline_id)
         return pe
 
-    def fit(self, wait=True, job_name=None, args=None, **kwargs):
-        args = args or dict()
+    def fit(self, wait=True, job_name=None, log_outputs=True, arguments=None, **kwargs):
+        arguments = arguments or dict()
         if not self._compiled_args:
             run_args = self.parameters.copy()
-            run_args.update(args)
+            run_args.update(arguments)
         else:
-            run_args = args
-        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name, args=run_args,
-                                                  **kwargs)
+            run_args = arguments
+        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name,
+                                                  log_outputs=log_outputs,
+                                                  arguments=run_args, **kwargs)
 
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
@@ -104,7 +105,7 @@ class AlgoBaseEstimator(PipelineEstimator):
         fit_args.update(kwargs)
 
         fit_args = {k: v for k, v in self._compile_args(*inputs, **fit_args).items()}
-        return super(AlgoBaseEstimator, self).fit(wait=wait, job_name=job_name, args=fit_args)
+        return super(AlgoBaseEstimator, self).fit(wait=wait, job_name=job_name, arguments=fit_args)
 
 
 class EstimatorJob(RunJob):
@@ -129,7 +130,7 @@ class EstimatorJob(RunJob):
         outputs = self.get_outputs()
         if not outputs:
             raise ValueError("No model artifact is available to create model")
-        artifact_infos = [output for output in outputs if output.is_model and output.value]
+        artifact_infos = [output for output in outputs.values() if output.is_model and output.value]
 
         if len(artifact_infos) == 0:
             raise ValueError("No model data is available to create model")

@@ -70,7 +70,7 @@ def ensure_unicode(t):
     return six.ensure_text(t)
 
 
-def gen_temp_table_name(prefix="pai_temp_"):
+def gen_temp_table(prefix="pai_temp_"):
     return '{prefix}{identifier}'.format(
         prefix=prefix,
         identifier=uuid.uuid4().hex,

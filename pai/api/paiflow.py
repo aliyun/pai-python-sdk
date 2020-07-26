@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import logging
+
 import six
 import yaml
 
@@ -112,7 +114,7 @@ class PAIFlowClient(BaseClient):
     def create_run(self, name, arguments, pipeline_id=None, manifest=None,
                    no_confirm_required=False):
         if not pipeline_id and not manifest:
-            raise ValueError("Create pipeline run need either pipeline_id or manifest.")
+            raise ValueError("Create pipeline run require either pipeline_id or manifest.")
         if pipeline_id and manifest:
             raise ValueError("Both pipeline_id and manifest are provide, create_run need only one.")
         if not name:

@@ -1,6 +1,6 @@
 from pai import ProviderAlibabaPAI
 from pai.xflow.base import XFlowTransformer
-from pai.utils import gen_temp_table_name
+from pai.utils import gen_temp_table
 
 
 class OfflineModelTransformer(XFlowTransformer):
@@ -30,7 +30,7 @@ class OfflineModelTransformer(XFlowTransformer):
         assert len(inputs) > 0
         args["inputDataSetArtifact"] = inputs[0]
         args["inputModelArtifact"] = kwargs.get("model")
-        args["outputTableName"] = kwargs.get("output_table") or gen_temp_table_name()
+        args["outputTableName"] = kwargs.get("output_table") or gen_temp_table()
         args['outputPartition'] = kwargs.get("partitions")
         feature_cols = kwargs.get("feature_cols")
         if isinstance(feature_cols, (list, tuple)):

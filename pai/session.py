@@ -11,7 +11,7 @@ import oss2
 from pai.api.client_factory import ClientFactory
 from pai.utils import run_detail_url
 
-Logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Session(object):
@@ -76,31 +76,64 @@ class Session(object):
 
     @property
     def odps_project(self):
+        """int: Default MaxCompute project use by session."""
         return self.odps_client.project
 
     def get_pipeline(self, identifier, provider, version):
+        """Get information of pipeline by identifier, provider and version.
+
+        User should has `GetPipeline` privilege to access the pipeline.
+
+        Args:
+            identifier (str): Identifier of pipeline.
+            provider (str): Provider of pipeline, it is supplied as Account UID of the creator
+             of pipeline.
+            version (str): version of the pipeline. default
+
+        Returns:
+            dict: Information of pipeline, including pipeline_id and manifest.
+
+        Raises:
+            ServiceCallException: Raise if the pipeline not exists.
+        """
         pipeline_info = self.paiflow_client.get_pipeline(identifier=identifier,
                                                          provider=provider,
                                                          version=version)["Data"]
         return pipeline_info
 
     def get_pipeline_by_id(self, pipeline_id):
+        """Get information of pipeline by pipelineId.
+
+        User should has `GetPipeline` privilege to access the pipeline.
+
+        Args:
+            pipeline_id: Unique Id of the pipeline.
+
+        Returns:
+            dict: Information of pipeline, including pipeline_id and manifest.
+        Raises:
+            ServiceCallException: Raise if the pipeline not exists.
+
+        """
         return self.paiflow_client.get_pipeline(pipeline_id=pipeline_id)["Data"]
 
     def list_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None,
                       page_num=1, page_size=50):
-        """List Pipelines
+        """List metadata information of pipelines using supplied query filter.
+
+        The query filters (identifier, provider, version) are None by default. Pipeline service
+        return the pipelines where user has been granted with GetPipeline privilege.
 
         Args:
-            identifier: identifier of pipeline.
-            provider: Alibaba Cloud account id of pipeline provider.
-            fuzzy: if use fuzzy match
-            source_type:
-            version:
-            page_num:
-            page_size:
+            identifier (str): Filter by identifier.
+            provider (str): Filter by pipeline provider
+            fuzzy (bool): Use fuzzy match search with provide identifier if been assign as true.
+            version (str): Filter by version
+            page_num (int): Return specific page number of results.
+            page_size (int): Maximum size of return results.
 
         Returns:
+            :obj:`list` of :obj:`dict`: List of pipeline metadata.
 
         """
         resp = self.paiflow_client.list_pipeline(
@@ -116,16 +149,17 @@ class Session(object):
         return pipeline_infos, total_count
 
     def create_pipeline(self, pipeline_def):
-        """
-        create_pipeline submit `pipeline_manifest` to pipeline service and store.
-        Identifier-provider-version is unique key. The same triple combination will
-        result overwrite.
+        """Create new pipeline by push the definition to PAI pipeline service.
+
+        create_pipeline submit pipeline manifest to PAI pipeline service. Identifier-provider-version
+         triple in metadata of manifest is unique identifier of the Pipeline. The same triple
+          combination will result overwrite of original pipeline.
 
         Args:
-            pipeline_def: pipeline definition manifest, support types Pipeline,
+            pipeline_def (dict or str): pipeline definition manifest, support types Pipeline,
 
         Returns:
-            pipeline_id
+            str: pipeline_id: ID of pipeline in pipeline service.
         """
         from pai.pipeline import Pipeline
 
@@ -140,6 +174,15 @@ class Session(object):
         return resp["Data"]["PipelineId"]
 
     def describe_pipeline(self, pipeline_id):
+        """Get detail information of pipeline by pipelineId.
+
+
+        Args:
+            pipeline_id:
+
+        Returns:
+
+        """
         return self.paiflow_client.describe_pipeline(pipeline_id)
 
     def update_pipeline_privilege(self, pipeline_id, user_ids):
