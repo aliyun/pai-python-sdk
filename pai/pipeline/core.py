@@ -22,9 +22,25 @@ logger = logging.getLogger(__name__)
 
 
 class Pipeline(object):
+    """Represents pipeline instance in PAI Machine Learning pipeline.
+
+    Pipeline can be constructed from multiple pipeline steps, or single container implementation.
+    It is shareable and reusable workflow, present as YAML format in backend pipeline service.
+
+    """
 
     def __init__(self, session=None, metadata=None, pipeline_id=None,
                  inputs=None, outputs=None, api_version=DEFAULT_PIPELINE_API_VERSION):
+        """Pipeline initializer.
+
+        Args:
+            session: PAI session instance.
+            metadata: Pipeline metadata, including pipeline identifier, provider and version.
+            pipeline_id: Id of the pipeline in Pipeline Service.
+            inputs: Inputs spec of the pipeline.
+            outputs: Outputs spec of the pipeline.
+            api_version: API version used by the pipeline manifest.
+        """
         self.session = session
         self.metadata = metadata
         self.inputs = inputs or OrderedDict()
@@ -50,14 +66,15 @@ class Pipeline(object):
 
     @classmethod
     def new_pipeline(cls, identifier, version, session):
-        """
+        """Initialize a pipeline template ready to assemble.
+
         Create new pipeline instance without inputs/outputs definition and implementation.
          Pipeline provider is assigned as account id of Alibaba Cloud from session.
 
         Args:
-            identifier: identifier of new pipeline.
-            version: pipeline version.
-            session: session used for communicate with pai pipeline service.
+            identifier (str): identifier of new pipeline.
+            version (str): pipeline version.
+            session (pai.Session): session used for communicate with pai pipeline service.
 
         Returns:
             pipeline instance ready for define inputs, outputs and implementation.
@@ -71,17 +88,17 @@ class Pipeline(object):
         return pipeline
 
     def create_input_parameter(self, name, typ, desc=None, required=False, value=None):
-        """
+        """Create a input parameter in Pipeline manifest.
 
         Args:
-            name: parameter name.
-            typ: type of parameter, either string or primitive python (str, int, ...)
-            desc:
-            required:
-            value:
+            name (str): Name of input parameter.
+            typ (ParameterType or str or type): type of parameter, one of string, primitive python, or ParameterType.
+            desc: Description of the Parameter.
+            required: If the parameter is required while pipeline run.
+            value: Default value for the parameter.
 
         Returns:
-            parameter instance define the pipeline input.
+            PipelineParameter instance define the pipeline input.
 
         Raises:
             ValueError if conflict in inputs dict.
@@ -96,6 +113,21 @@ class Pipeline(object):
 
     def create_input_artifact(self, name, data_type, location_type, model_type=None, desc=None,
                               required=False, value=None):
+        """Add input artifact in Pipeline manifest.
+
+        Args:
+            name (str): Name of input artifact.
+            data_type (ArtifactDataType）: DataType of artifact Metadata.
+            location_type (ArtifactLocationType): LocationType of artifact Metadata.
+            model_type (ArtifactModelType): ModelType of the artifact.
+            desc (str): Description of the input artifact.
+            required (bool): if the artifact is required while pipeline run.
+            value (str): Default value for the artifact.
+
+        Returns:
+            PipelineArtifact: Instance as definition of the artifact.
+
+        """
         metadata = ArtifactMetadata(data_type=data_type, location_type=location_type,
                                     model_type=model_type)
         af = create_artifact(name=name, metadata=metadata, kind="inputs", desc=desc,
@@ -106,6 +138,14 @@ class Pipeline(object):
         return af
 
     def create_output_parameter(self, name, from_, desc=None):
+        """Add output parameter in Pipeline manifest.
+
+        Args:
+            name (str): Name of output artifact.
+            from_ (str or PipelineParameter): Reference of sub-pipeline.
+            desc: Description of the output parameter.
+
+        """
         typ = from_.typ
         param = create_pipeline_parameter(name=name, typ=typ, kind="outputs", desc=desc,
                                           parent=self, from_=from_)
@@ -113,6 +153,14 @@ class Pipeline(object):
         return param
 
     def create_output_artifact(self, name, from_, desc=None):
+        """Add output artifact in Pipeline manifest
+
+        Args:
+            name (str): Name of output artifact.
+            from_ (str or PipelineArtifact): Reference of sub-pipeline.
+            desc: Description of the output artifact.
+
+        """
         metadata = from_.metadata
         af = create_artifact(name=name, metadata=metadata, kind="outputs", desc=desc, parent=self,
                              from_=from_)
@@ -120,7 +168,22 @@ class Pipeline(object):
         return af
 
     def create_step(self, identifier, name, provider=None, version="v1", arguments=None):
-        """
+        """Add new pipeline step in Pipeline implementation.
+
+        create_step add new step into pipelines implementation using the manifest poll
+         from Pipeline Service. Arguments provided may by used to set the default input of
+         the step, or used as indicator of data dependency.
+
+        Args:
+            name (str): Name of pipeline step in the pipelines implementation.
+            identifier (str): Identifier of the specific the pipeline step manifest.
+            provider (str): Provider of pipeline step.
+            version (str): Version of pipeline step.
+            arguments (dict): Inputs arguments for the new pipeline step.
+
+        Returns:
+            PipelineStep: Instance of the node in pipelines.
+
         """
         arguments = arguments or dict()
 
@@ -216,6 +279,17 @@ class Pipeline(object):
 
     @classmethod
     def get_by_identifier(cls, session, identifier, provider, version):
+        """
+
+        Args:
+            session:
+            identifier:
+            provider:
+            version:
+
+        Returns:
+
+        """
         pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
                                              version=version)
         p = cls._load_by_manifest(pipeline_info["Manifest"],
@@ -377,11 +451,23 @@ class Pipeline(object):
 
 
 class PipelineStep(object):
-    """
-    PipelineStep instance is work node in pipeline.
+    """ Represents an execution step in PAI pipeline.
+
+    Pipeline steps can be configured together to construct a Pipeline, which is present as workflow
+    in PAI ML pipeline service.
+
     """
 
     def __init__(self, metadata, inputs=None, outputs=None, parent=None, dependencies=None):
+        """PipelineStep Initializer.
+
+        Args:
+            metadata (dict): Metadata of the Pipeline.
+            inputs:
+            outputs:
+            parent:
+            dependencies:
+        """
         self.metadata = metadata
         self.inputs = inputs or OrderedDict()
         self.outputs = outputs or OrderedDict()

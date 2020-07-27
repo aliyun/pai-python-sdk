@@ -427,6 +427,12 @@ class ArtifactEntity(object):
         self.producer = producer
         self.artifact_id = artifact_id
 
+    def __str__(self):
+        return '%s:name:%s; metadata%s' % (type(self).__name__, self.name, self.metadata)
+
+    def __repr__(self):
+        return self.__str__()
+
     @classmethod
     def from_run_output(cls, output):
         """ Build new ArtifactInfo instance from Run output json.

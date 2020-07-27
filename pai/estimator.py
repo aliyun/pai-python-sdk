@@ -12,8 +12,15 @@ from .pipeline.artifact import ArtifactModelType
 
 
 class Estimator(six.with_metaclass(ABCMeta, object)):
+    """Estimator base class"""
 
     def __init__(self, session, parameters=None):
+        """Estimator Initializer.
+
+        Args:
+            session: PAI session instance.
+            parameters: Initialized parameters.
+        """
         self.session = session
         self._parameters = parameters
         self._jobs = []
@@ -27,6 +34,18 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
         raise NotImplementedError
 
     def fit(self, wait=True, job_name=None, log_outputs=True, arguments=None, **kwargs):
+        """Run Estimator with given arguments.
+
+        Args:
+            wait (bool): Wait util the estimator job finish if true.
+            job_name (str): Job name of the run.
+            log_outputs (bool): Print outputs of the Job if true.
+            arguments (dict): Run arguments for the job.
+
+        Returns:
+            EstimatorJob: Instance handle the run job.
+
+        """
         run_instance = self._run(job_name=job_name, arguments=arguments, **kwargs)
         run_job = EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
@@ -41,9 +60,25 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
 
 
 class PipelineEstimator(PaiFlowBase, Estimator):
+    """Estimator implemented job run with PAIFlow.
+
+    PipelineEstimator is base class of Estimator run on PAIFlow, it could be initialize from
+     pipeline.to_estimator().
+
+    """
 
     def __init__(self, session, parameters=None, manifest=None, _compiled_args=False,
                  pipeline_id=None):
+        """
+
+        Args:
+            session (pai.Session): PAI session instance.
+            parameters (arguments): Parameters for the estimator, it can be override by
+                 arguments provided in fit method.
+            manifest (dict): Json format manifest of pipeline.
+            _compiled_args (bool): if _compile_args is required before fit.
+            pipeline_id (str): Pipeline id.
+        """
         Estimator.__init__(self, session=session, parameters=parameters)
         PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
         self._compiled_args = _compiled_args
@@ -109,6 +144,7 @@ class AlgoBaseEstimator(PipelineEstimator):
 
 
 class EstimatorJob(RunJob):
+    """Job instance handle run job submitted by Estimator """
 
     def __init__(self, estimator, run_instance):
         super(EstimatorJob, self).__init__(run_instance=run_instance)
@@ -119,13 +155,10 @@ class EstimatorJob(RunJob):
         return self.estimator.session
 
     def create_model(self, output_name=None):
-        """Create :class:`~pai.model.Model`
+        """Create Model using job outputs. Return Model instance.
 
         Args:
-            output_name:
-
-        Returns:
-
+            output_name: Specific name of output artifact as Model data.
         """
         outputs = self.get_outputs()
         if not outputs:

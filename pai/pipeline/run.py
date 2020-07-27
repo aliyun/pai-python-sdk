@@ -41,7 +41,7 @@ class RunInstance(object):
                 return
             run_node_detail = self.session.get_run_detail(self.run_id, curr_node_id)
             if parent is None:
-                curr_root_name = self.run_id
+                curr_root_name = self.name
             else:
                 curr_root_name = "{0}.{1}".format(run_node_detail["Metadata"]["Name"], parent)
             node_status_info[curr_root_name] = self._pipeline_node_info(run_node_detail)
@@ -69,7 +69,8 @@ class RunInstance(object):
 
     @cached_property
     def name(self):
-        return self.get_run_info()["Name"]
+        info = self.get_run_info()
+        return info["Name"]
 
     @property
     def run_detail_url(self):
@@ -186,14 +187,14 @@ class RunInstance(object):
         else:
             run_logger = _MockRunLogger(run_instance=self, node_id=node_id)
 
-        run_logger.submit(node_id=node_id, node_name=self.run_id)
+        run_logger.submit(node_id=node_id, node_name=self.name)
         node_status_infos = self.travel_node_status_info(node_id)
 
         for node_fullname, status_info in node_status_infos.items():
             run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
 
         prev_status_infos = node_status_infos
-        root_node_status = prev_status_infos[self.run_id]["status"]
+        root_node_status = prev_status_infos[self.name]["status"]
 
         while root_node_status == RunStatus.Running:
             time.sleep(2)
@@ -206,7 +207,7 @@ class RunInstance(object):
                         status_info["status"] != RunStatus.Skipped:
                     run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
             prev_status_infos = curr_status_infos
-            root_node_status = prev_status_infos[self.run_id]["status"]
+            root_node_status = prev_status_infos[self.name]["status"]
 
         return self
 

@@ -36,7 +36,7 @@ class BaseTestCase(unittest.TestCase):
     def get_test_session(cls):
         configs = cls.get_test_config()
         odps_project = configs["odps"]["project"]
-        return Session(odps_project=odps_project, **configs["client"])
+        return Session(**configs["client"])
 
     @classmethod
     def get_odps_client(cls):

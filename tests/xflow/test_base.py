@@ -155,28 +155,31 @@ class TestXFlowAlgo(BaseTestCase):
             "odpsProject": default_project,
         }
 
-        # sql = """select age, (case sex when 'male' then 1 else 0 end) as sex, (case cp when
-        # 'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps, chol, (case fbs when
-        #  'true' then 1 else 0 end) as fbs, (case restecg when 'norm' then 0  when 'abn' then 1 else
-        #   2 end) as restecg, thalach, (case exang when 'true' then 1 else 0 end) as exang, oldpeak,
-        #    (case slop when 'up' then 0  when 'flat' then 1 else 2 end) as slop, ca, (case thal when
-        #      'norm' then 0  when 'fix' then 1 else 2 end) as thal, (case status  when 'sick' then
-        #       1 else 0 end) as ifHealth from {0};""".format(
-        #     "pai_online_project.heart_disease_prediction")
-        #
-        # # Extract and transform dataset using max_compute sql.
-        # sql_job = Pipeline.get_by_identifier(identifier="sql-xflow-maxCompute",
-        #                                      provider=ProviderAlibabaPAI, version="v1",
-        #                                      session=self.session).to_estimator(
-        #     parameters={"execution": xflow_execution}).fit(wait=True, log_outputs=True, arguments={
-        #     "sql": sql,
-        #     "outputTable": gen_temp_table()
-        # })
-        # output_table_artifact = sql_job.get_outputs()[0]
+        dataset_table = "odps://pai_online_project/tables/heart_disease_prediction"
 
-        output_table_artifact = 'odps://{}/tables/pai_temp_177642_1839855_1'.format(default_project)
+        sql = "select age, (case sex when 'male' then 1 else 0 end) as sex, (case cp when " \
+              "'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps, chol, (case" \
+              " fbs when 'true' then 1 else 0 end) as fbs, (case restecg when 'norm' then 0 " \
+              " when 'abn' then 1 else 2 end) as restecg, thalach, (case exang when 'true' then" \
+              " 1 else 0 end) as exang, oldpeak, (case slop when 'up' then 0  when 'flat' then " \
+              "1 else 2 end) as slop, ca, (case thal when 'norm' then 0  when 'fix' then 1" \
+              " else 2 end) as thal, (case status  when 'sick' then 1 else 0 end) as" \
+              " ifHealth from ${t1};"
 
-        # Transform value to Double
+        # Extract and transform dataset using max_compute sql.
+        sql_job = Pipeline.get_by_identifier(identifier="sql-xflow-maxCompute",
+                                             provider=ProviderAlibabaPAI, version="v1",
+                                             session=self.session).to_estimator(
+            parameters={
+                "execution": xflow_execution,
+                "inputArtifact1": dataset_table,
+                "sql": sql,
+                "outputTable": gen_temp_table(),
+            }).fit(wait=True, log_outputs=True)
+
+        time.sleep(10)
+        output_table_artifact = sql_job.get_outputs()[0]
+
         type_transform_job = Pipeline.get_by_identifier(
             identifier="type-transform-xflow-maxCompute",
             provider=ProviderAlibabaPAI, version="v1",
@@ -279,7 +282,8 @@ class TestXFlowAlgo(BaseTestCase):
         time.sleep(20)
 
         self.assertEqual(JobStatus.Succeeded, evaluate_job.get_status())
-        evaluate_result = evaluate_job.get_outputs()[3]
+        time.sleep(10)
+        evaluate_result = evaluate_job.get_outputs()[2]
         print(evaluate_result)
 
     def test_heart_disease_prediction_pipeline(self):
@@ -297,26 +301,28 @@ class TestXFlowAlgo(BaseTestCase):
                                                          required=True)
             xflow_execution = p.create_input_parameter("xflow_execution", ParameterType.Map,
                                                        required=True)
-            dataset = p.create_input_artifact("dataset-table", data_type=ArtifactDataType.DataSet,
-                                              location_type=ArtifactLocationType.MaxComputeTable,
-                                              required=True)
+            dataset_input = p.create_input_artifact("dataset-table",
+                                                    data_type=ArtifactDataType.DataSet,
+                                                    location_type=ArtifactLocationType.MaxComputeTable,
+                                                    required=True)
 
-            # sql = """select age, (case sex when 'male' then 1 else 0 end) as sex,(case cp when
-            #  'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps,
-            #   chol, (case fbs when 'true' then 1 else 0 end) as fbs, (case restecg when
-            #    'norm' then 0  when 'abn' then 1 else 2 end) as restecg, thalach, (case
-            #     exang when 'true' then 1 else 0 end) as exang, oldpeak, (case slop when
-            #      'up' then 0  when 'flat' then 1 else 2 end) as slop, ca, (case thal when
-            #       'norm' then 0  when 'fix' then 1 else 2 end) as thal, (case status
-            #       when 'sick' then 1 else 0 end) as ifHealth from {0};""".format(
-            #     "pai_online_project.heart_disease_prediction")
-            # sql_step = p.create_step("sql-xflow-maxCompute", name="sql-1",
-            #                          provider=ProviderAlibabaPAI,
-            #                          version="v1",
-            #                          arguments={
-            #                              "sql": sql,
-            #                              "outputTable": gen_temp_table(),
-            #                          })
+            sql = "select age, (case sex when 'male' then 1 else 0 end) as sex,(case cp when" \
+                  " 'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps, chol," \
+                  " (case fbs when 'true' then 1 else 0 end) as fbs, (case restecg when 'norm'" \
+                  " then 0  when 'abn' then 1 else 2 end) as restecg, thalach, (case exang when" \
+                  " 'true' then 1 else 0 end) as exang, oldpeak, (case slop when 'up' then 0  " \
+                  "when 'flat' then 1 else 2 end) as slop, ca, (case thal when 'norm' then 0 " \
+                  " when 'fix' then 1 else 2 end) as thal, (case status when 'sick' then 1 else " \
+                  "0 end) as ifHealth from ${t1};"
+            sql_step = p.create_step("sql-xflow-maxCompute", name="sql-1",
+                                     provider=ProviderAlibabaPAI,
+                                     version="v1",
+                                     arguments={
+                                         "inputArtifact1": dataset_input,
+                                         "execution": xflow_execution,
+                                         "sql": sql,
+                                         "outputTable": gen_temp_table(),
+                                     })
 
             type_transform_step = p.create_step(
                 "type-transform-xflow-maxCompute",
@@ -324,7 +330,7 @@ class TestXFlowAlgo(BaseTestCase):
                 provider=ProviderAlibabaPAI, version="v1",
                 arguments={
                     "execution": xflow_execution,
-                    "inputArtifact": dataset,
+                    "inputArtifact": sql_step.outputs["outputArtifact"],
                     "cols_to_double": 'sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,'
                                       'chol,thalach,oldpeak,ca',
                     "outputTable": gen_temp_table(),
@@ -425,7 +431,7 @@ class TestXFlowAlgo(BaseTestCase):
 
         default_project = "pai_sdk_test"
 
-        dataset_table = 'odps://{}/tables/pai_temp_177642_1839855_1'.format(default_project)
+        dataset_table = 'odps://pai_online_project/tables/heart_disease_prediction'
 
         print(p.to_dict())
 
