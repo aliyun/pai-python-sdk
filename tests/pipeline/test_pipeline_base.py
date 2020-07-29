@@ -14,7 +14,7 @@ class TestPipelineBase(BaseTestCase):
     def init_prediction_pipeline(self, identifier="prediction-xflow-maxCompute",
                                  version="v1", provider=ProviderAlibabaPAI):
         p = Pipeline.get_by_identifier(identifier=identifier,
-                                       provider=ProviderAlibabaPAI,
+                                       provider=provider,
                                        version=version,
                                        session=self.session)
         return p
@@ -89,11 +89,12 @@ class TestPipelineBase(BaseTestCase):
                 "k1": "value",
                 "k2": "value",
             },
-            "project": "algo_Public",
             "outputTableName": "pai_output_test_table",
+            "inputDataSetArtifact": "odps://pai_online_project/tables/iris_data",
+            "inputModelArtifact": "odps://pai_online_project/offlinemodels/test_iris_model",
         }
 
-        parameters, _ = p.translate_arguments(arguments)
+        parameters, artifacts = p.translate_arguments(arguments)
 
         expected_parameters = [
             {
@@ -104,16 +105,25 @@ class TestPipelineBase(BaseTestCase):
                 },
             },
             {
-                "name": "project",
-                "value": "algo_public"
-            },
-            {
                 "name": "outputTableName",
                 "value": "pai_output_test_table",
             }
         ]
 
-        def sort_parameter(param):
-            return param.sort(key=lambda x: x["name"])
+        def sort_arg_by_name(args):
+            return sorted(args, key=lambda x: x["name"])
 
-        self.assertEqual(sort_parameter(expected_parameters), sort_parameter(parameters))
+        self.assertEqual(sort_arg_by_name(expected_parameters), sort_arg_by_name(parameters))
+
+        expected_artifacts = [
+            {
+                'name': 'inputDataSetArtifact',
+                'value': '{"location": {"project": "pai_online_project", "table": "iris_data"}}'
+            },
+            {
+                'name': 'inputModelArtifact',
+                'value': '{"location": {"name": "test_iris_model", "project": "pai_online_project"}, "name": "test_iris_model"}',
+            }
+        ]
+
+        self.assertEqual(expected_artifacts, artifacts)

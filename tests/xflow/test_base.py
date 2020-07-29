@@ -36,7 +36,34 @@ class TestXFlowEstimator(BaseTestCase):
 
         parameters = {k: v for k, v in lr.parameters.items() if v is not None}
 
-        self.assertEqual(parameters, expected_parameters)
+        self.assertEqual(expected_parameters, parameters)
+
+    def test_algo_init_with_pmml(self):
+        lr = LogisticRegression(
+            session=self.session,
+            regularized_level=2.0,
+            regularized_type="l1",
+            max_iter=100,
+            epsilon=1e-5,
+            pmml_gen=True,
+            pmml_oss_rolearn="test_role_arn",
+            pmml_oss_bucket="test_oss_bucket",
+            pmml_oss_path="test_oss_path",
+            pmml_oss_endpoint="cn-hangzhou.oss.aliyuncs.com"
+        )
+        expected_parameters = {
+            "regularized_level": 2.0,
+            "regularized_type": "l1",
+            "max_iter": 100,
+            "epsilon": 1e-5,
+            "pmml_gen": True,
+            "pmml_oss_rolearn": "test_role_arn",
+            "pmml_oss_bucket": "test_oss_bucket",
+            "pmml_oss_path": "test_oss_path",
+            "pmml_oss_endpoint": "cn-hangzhou.oss.aliyuncs.com",
+        }
+        parameters = {k: v for k, v in lr.parameters.items() if v is not None}
+        self.assertEqual(expected_parameters, parameters)
 
     def test_estimator_build(self):
         lr = LogisticRegression(
@@ -65,8 +92,7 @@ class TestXFlowEstimator(BaseTestCase):
             "enableSparse": True,
             "itemDelimiter": ",",
             "kvDelimiter": ":",
-            "project": lr.get_xflow_project(),
-            "execution": lr.get_xflow_execution(),
+            "execution": lr.xflow_execution,
         }
 
         compiled_args = lr._compile_args(
@@ -85,7 +111,7 @@ class TestXFlowEstimator(BaseTestCase):
 class TestXFlowAlgo(BaseTestCase):
 
     def test_algo_chain(self):
-        default_project = "pai_sdk_test"
+        default_project = self.odps_client.project
         xflow_execution = {
             "odpsInfoFile": "/share/base/odpsInfo.ini",
             "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
@@ -99,8 +125,8 @@ class TestXFlowAlgo(BaseTestCase):
 
         job = tf.transform(wait=False, args={
             "inputArtifact": "odps://{0}/tables/{1}".format(default_project, "iris_data"),
-            "output1TableName": "pai_temp_iris_split_1",
-            "output2TableName": "pai_temp_iris_split_2",
+            "output1TableName": gen_temp_table(),
+            "output2TableName": gen_temp_table(),
         })
 
         job.attach(log_outputs=False)
@@ -110,15 +136,16 @@ class TestXFlowAlgo(BaseTestCase):
         dataset1 = job_outputs["outputArtifact1"]
         dataset2 = job_outputs["outputArtifact2"]
 
-        oss_endpoint = "oss-cn-shanghai.aliyuncs.com"
-        oss_path = "/paiflow/model_transfer2oss_test/"
-        oss_bucket = "dataplus-pai-test"
+        oss_endpoint = self.oss_info.endpoint
+        oss_path = "/pai_test/test_algo_chain/"
+        oss_bucket = self.oss_info.bucket
 
         model_name = 'test_iris_model_%d' % (random.randint(0, 999999))
         lr = LogisticRegression(session=self.session, regularized_type="l2",
                                 pmml_gen=True, pmml_oss_bucket=oss_bucket,
                                 pmml_oss_path=oss_path, pmml_oss_endpoint=oss_endpoint,
-                                pmml_oss_rolearn="acs:ram::1557702098194904:role/aliyunodpspaidefaultrole")
+                                pmml_oss_rolearn="acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
+                                xflow_execution=xflow_execution)
 
         feature_cols = ["f1", "f2", "f3", "f4"]
         label_col = "type"

@@ -11,7 +11,7 @@ from tests import BaseTestCase
 class TestOfflineModelPredictionTransformer(BaseTestCase):
 
     def testXFlowOfflineModel(self):
-        project = "pai_sdk_test"
+        project = self.odps_client.project
         model_name = "pai_sdk_test_lr_offlinemodel"
         tf = OfflineModelTransformer(
             session=self.session,
@@ -47,7 +47,13 @@ class TestOfflineModelPredictionTransformer(BaseTestCase):
 class TestODPSDataSource(BaseTestCase):
 
     def test_data_source(self):
-        tf = MaxComputeDataSource(session=self.session)
+        tf = MaxComputeDataSource(session=self.session,
+                                  xflow_execution={
+                                      "odpsInfoFile": "/share/base/odpsInfo.ini",
+                                      "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                                      "logViewHost": "http://logview.odps.aliyun.com",
+                                      "odpsProject": self.odps_client.project,
+                                  })
         job_name = "pysdk-test-data-source"
         run_job = tf.transform(table_name="pai_online_project.wumai_data", wait=False,
                                job_name=job_name)
@@ -56,31 +62,28 @@ class TestODPSDataSource(BaseTestCase):
         run_job.attach(log_outputs=False)
         self.assertEqual(run_job.get_status(), JobStatus.Succeeded)
         # TODO: Pipeline outputs is not ready even enter Succeed status.
-        # time.sleep(10)
-        # self.assertTrue(len(run_job.get_outputs()) > 0)
+        time.sleep(10)
+        self.assertTrue(len(run_job.get_outputs()) > 0)
 
 
 class TestModelTransferToOSS(BaseTestCase):
 
     def test_model_transfer(self):
         tf = ModelTransferToOSS(
-            session=self.session, bucket="dataplus-pai-test",
-            endpoint="oss-cn-shanghai.aliyuncs.com",
-            rolearn="acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
-        )
+            session=self.session, bucket=self.oss_info.bucket,
+            endpoint=self.oss_info.endpoint,
+            rolearn=self.oss_info.rolearn,
+            xflow_execution={
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
+                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                "logViewHost": "http://logview.odps.aliyun.com",
+                "odpsProject": self.odps_client.project,
+            })
 
-        project = "pai_sdk_test"
         model_name = "pai_sdk_test_lr_offlinemodel"
-        offlinemodel = 'odps://{0}/offlinemodels/{1}'.format(project, model_name)
+        offlinemodel = 'odps://{0}/offlinemodels/{1}'.format(self.odps_client.project, model_name)
         job = tf.transform(offlinemodel, path="/paiflow/test/noprefix/",
                            job_name="pysdk-test-modeltransfer2oss",
                            wait=False)
         job.attach(log_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
-
-
-class TestNormalize(BaseTestCase):
-
-    def test_normalize(self):
-        normalize = FeatureNormalize(session=self.session)
-        # normalize.transform()

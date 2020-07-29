@@ -141,4 +141,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-test.conf
+test.ini

@@ -60,7 +60,7 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
 
 
 class PipelineEstimator(PaiFlowBase, Estimator):
-    """Estimator implemented job run with PAIFlow.
+    """Estimator implemented run using PAIFlow.
 
     PipelineEstimator is base class of Estimator run on PAIFlow, it could be initialize from
      pipeline.to_estimator().
@@ -97,6 +97,18 @@ class PipelineEstimator(PaiFlowBase, Estimator):
         return pe
 
     def fit(self, wait=True, job_name=None, log_outputs=True, arguments=None, **kwargs):
+        """Submit run job to PAIFlow backend.
+
+        Args:
+            wait: Wait util job completed if true.
+            job_name: Name of submitted run job.
+            log_outputs: Print log of the run.
+            arguments:
+            **kwargs:
+
+        Returns:
+
+        """
         arguments = arguments or dict()
         if not self._compiled_args:
             run_args = self.parameters.copy()
@@ -163,7 +175,7 @@ class EstimatorJob(RunJob):
         outputs = self.get_outputs()
         if not outputs:
             raise ValueError("No model artifact is available to create model")
-        artifact_infos = [output for output in outputs.values() if output.is_model and output.value]
+        artifact_infos = [output for output in outputs if output.is_model and output.value]
 
         if len(artifact_infos) == 0:
             raise ValueError("No model data is available to create model")

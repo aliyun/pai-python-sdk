@@ -66,7 +66,7 @@ class PipelineArtifact(PipelineVariable):
             else:
                 arguments["from"] = self.from_
         elif self.value is not None:
-            arguments["value"] = json.dumps(self.value.to_dict())
+            arguments["value"] = json.dumps(self.value.to_dict(), sort_keys=True)
         return arguments
 
     def to_dict(self):

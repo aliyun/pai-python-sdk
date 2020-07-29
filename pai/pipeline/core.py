@@ -117,7 +117,7 @@ class Pipeline(object):
 
         Args:
             name (str): Name of input artifact.
-            data_type (ArtifactDataType）: DataType of artifact Metadata.
+            data_type (ArtifactDataType): DataType of artifact Metadata.
             location_type (ArtifactLocationType): LocationType of artifact Metadata.
             model_type (ArtifactModelType): ModelType of the artifact.
             desc (str): Description of the input artifact.

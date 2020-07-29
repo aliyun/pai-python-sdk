@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import time
 import unittest
 
 from pai import ProviderAlibabaPAI
@@ -38,7 +39,7 @@ class TestEstimatorBase(BaseTestCase):
         project = "pai_sdk_test"
         run_args = {
             "inputArtifact": "odps://{project_name}/tables/{table_name}".format(
-                project_name=project, table_name="pai_sdk_test.lr_data_set"),
+                project_name=project, table_name="lr_data_set"),
             "labelColName": "_c2",
             "featureColNames": "pm10,so2,co,no2",
             "modelName": model_name,
@@ -53,15 +54,12 @@ class TestEstimatorBase(BaseTestCase):
         }
 
         job = est.fit(wait=True, job_name="pysdk-test-estimator-pipeline", arguments=run_args)
-
+        time.sleep(5)
         print(job.get_outputs())
-
         # assert odps offlineModel exists
         self.assertTrue(
-            self.session.odps_client.exist_offline_model(name=model_name, project=project))
+            self.odps_client.exist_offline_model(name=model_name, project=project))
 
-        # model = job.create_model(artifact="outputArtifact")
-        # model.deploy()
 
     def test_new_composite_pipeline_to_estimator(self):
         pass

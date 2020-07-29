@@ -39,15 +39,23 @@ class TestLogisticsRegression(BaseTestCase):
             cls.odps_client.delete_table(name, if_exists=True, async_=True)
 
     def test_sync_train(self):
+        project = self.odps_client.project
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             session=self.session,
             regularized_type="l2",
+            xflow_execution={
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
+                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                "logViewHost": "http://logview.odps.aliyun.com",
+                "odpsProject": project,
+            }
         )
 
         iris_dataset_table = 'odps://pai_online_project/tables/iris_data'
 
-        run_job = lr.fit(wait=True, input_data=iris_dataset_table, job_name="pysdk-test-lr-sync-fit",
+        run_job = lr.fit(wait=True, log_outputs=False, input_data=iris_dataset_table,
+                         job_name="pysdk-test-lr-sync-fit",
                          model_name=model_name, good_value=1, label_col="type",
                          feature_cols=['f1', 'f2', 'f3', 'f4'])
 
@@ -62,6 +70,12 @@ class TestLogisticsRegression(BaseTestCase):
         lr = LogisticRegression(
             session=self.session,
             regularized_type="l2",
+            xflow_execution={
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
+                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                "logViewHost": "http://logview.odps.aliyun.com",
+                "odpsProject": self.odps_client.project,
+            }
         )
         run_job = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
                          job_name="pysdk-test-lr-async-fit", model_name=model_name,
@@ -76,14 +90,20 @@ class TestLogisticsRegression(BaseTestCase):
         offline_model = run_job.create_model(output_name="outputArtifact")
         self.assertIsNotNone(offline_model)
 
-        self.assertTrue(self.session.odps_client.exist_offline_model(
-            model_name, project=self.session.odps_client.project))
+        self.assertTrue(self.odps_client.exist_offline_model(
+            model_name, project=self.odps_client.project))
 
     def test_lr_multiple_call_fit(self):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             session=self.session,
             regularized_level=1.0,
+            xflow_execution={
+                "odpsInfoFile": "/share/base/odpsInfo.ini",
+                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
+                "logViewHost": "http://logview.odps.aliyun.com",
+                "odpsProject": self.odps_client.project,
+            }
         )
         job1 = lr.fit(wait=False, input_data=self.iris_df, job_name="pysdk-test-lr-multi-fit-1",
                       label_col="category", model_name=model_name, good_value=1,
@@ -100,16 +120,6 @@ class TestLogisticsRegression(BaseTestCase):
 
     def test_enable_spare(self):
         pass
-
-    # def testArgumentsNotMeetR(self):
-    #     lr = LogisticRegression(
-    #         session=self.session,
-    #         regularized_type="l2",
-    #     )
-    #     with self.assertRaises(ValueError):
-    #         # miss required arguments model_name
-    #         lr.fit(wait=True, input_data=self.iris_df, label_col="category",
-    #                feature_cols=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
 
 
 class TestRandomForestClassifier(BaseTestCase):

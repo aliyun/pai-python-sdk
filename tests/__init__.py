@@ -3,13 +3,22 @@ from __future__ import absolute_import
 import logging
 import os
 import unittest
-
+from collections import namedtuple
 from odps import ODPS
 from six.moves import configparser
+import oss2
 
 from pai.session import Session
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
+
+OSSInfo = namedtuple(
+    "OSSInfo", [
+        "bucket",
+        "endpoint",
+        "rolearn",
+    ]
+)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -26,6 +35,7 @@ class BaseTestCase(unittest.TestCase):
 
         cls.session = cls.get_test_session()
         cls.odps_client = cls.get_odps_client()
+        cls.oss_info = cls.get_oss_info()
         cls.log_config()
 
     @classmethod
@@ -35,7 +45,6 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def get_test_session(cls):
         configs = cls.get_test_config()
-        odps_project = configs["odps"]["project"]
         return Session(**configs["client"])
 
     @classmethod
@@ -51,9 +60,15 @@ class BaseTestCase(unittest.TestCase):
         )
 
     @classmethod
+    def get_oss_info(cls):
+        configs = cls.get_test_config()
+        oss_info = OSSInfo(**configs["oss"])
+        return oss_info
+
+    @classmethod
     def get_test_config(cls):
         cfg_parser = configparser.ConfigParser()
-        cfg_parser.read(os.path.join(_test_root, "test.conf"))
+        cfg_parser.read(os.path.join(_test_root, "test.ini"))
         access_key_id = cfg_parser.get("client", "access_key_id")
         access_key_secret = cfg_parser.get("client", "access_key_secret")
         region_id = cfg_parser.get("client", "region_id")
@@ -69,6 +84,11 @@ class BaseTestCase(unittest.TestCase):
                 "project": odps_project,
                 "access_key_id": access_key_id,
                 "access_key_secret": access_key_secret,
+            },
+            "oss": {
+                "bucket": cfg_parser.get("oss", "bucket"),
+                "endpoint": cfg_parser.get("oss", "endpoint"),
+                "rolearn": cfg_parser.get("oss", "rolearn"),
             }
         }
 
