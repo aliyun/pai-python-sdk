@@ -40,7 +40,6 @@ class PAIFlowClient(BaseClient):
 
     def _get_endpoint(self):
         return "paiflow.{region_id}.aliyuncs.com".format(region_id=self._acs_client.get_region_id())
-        # return "paiflow-share.cn-hangzhou.aliyuncs.com"
 
     def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)

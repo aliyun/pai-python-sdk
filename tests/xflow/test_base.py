@@ -156,7 +156,7 @@ class TestXFlowAlgo(BaseTestCase):
                      feature_cols=feature_cols)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
         time.sleep(20)  # Because of outputs delay.
-        self.assertTrue(self.session.odps_client.exist_offline_model(
+        self.assertTrue(self.odps_client.exist_offline_model(
             model_name, default_project,
         ))
         oss_bucket = self.session.get_oss_bucket(endpoint=oss_endpoint, bucket=oss_bucket)

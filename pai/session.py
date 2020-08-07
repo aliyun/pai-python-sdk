@@ -270,7 +270,7 @@ class Session(object):
 
         Get detail run information, including node status, node start time, finished time.
         If node is implementation as composite pipeline and parameter depth > 1, sub-pipeline
-         information of the node will provided.
+        information of the node will provided.
 
         Args:
             run_id (str): Run instance id.

@@ -10,7 +10,7 @@ from tests import BaseTestCase
 
 class TestOfflineModelPredictionTransformer(BaseTestCase):
 
-    def testXFlowOfflineModel(self):
+    def test_XFlowOfflineModel(self):
         project = self.odps_client.project
         model_name = "pai_sdk_test_lr_offlinemodel"
         tf = OfflineModelTransformer(
