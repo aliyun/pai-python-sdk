@@ -11,7 +11,7 @@ from pai import Pipeline
 from pai.common import ProviderAlibabaPAI
 from pai.estimator import EstimatorJob
 from pai.job import JobStatus
-from pai.pipeline import RunInstance, PipelineStep, RunStatus
+from pai.pipeline import PipelineRun, PipelineStep, PipelineRunStatus
 from pai.transformer import PipelineTransformer
 from pai.xflow.classifier import LogisticRegression
 from tests import BaseTestCase
@@ -477,4 +477,4 @@ class TestXFlowAlgo(BaseTestCase):
         }, wait=False)
         run_instance.wait(log_outputs=False)
 
-        self.assertEqual(RunStatus.Succeeded, run_instance.get_status())
+        self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())

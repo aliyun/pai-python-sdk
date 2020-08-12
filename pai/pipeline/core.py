@@ -13,7 +13,7 @@ from graphviz import Digraph
 
 from pai.pipeline.artifact import create_artifact, ArtifactMetadata, PipelineArtifact
 from pai.pipeline.parameter import create_pipeline_parameter, PipelineParameter
-from pai.pipeline.run import RunInstance
+from pai.pipeline.run import PipelineRun
 from pai.pipeline.variable import PipelineVariable
 
 DEFAULT_PIPELINE_API_VERSION = "core/v1"
@@ -401,7 +401,7 @@ class Pipeline(object):
                                          no_confirm_required=True,
                                          pipeline_id=pipeline_id, manifest=manifest)
 
-        run_instance = RunInstance(run_id=run_id, session=self.session)
+        run_instance = PipelineRun(run_id=run_id, session=self.session)
         if not wait:
             return run_instance
         run_instance.wait()
@@ -653,7 +653,7 @@ class PaiFlowBase(six.with_metaclass(ABCMeta, object)):
             run_id = self.session.create_run(name=job_name, arguments=run_args, env=env,
                                              manifest=manifest, no_confirm_required=True)
         logging.info("PaiFlow CreateRun JobName:%s, RunId :%s" % (job_name, run_id))
-        run = RunInstance(run_id=run_id, session=self.session)
+        run = PipelineRun(run_id=run_id, session=self.session)
         return run
 
     @staticmethod

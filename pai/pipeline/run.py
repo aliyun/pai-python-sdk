@@ -13,7 +13,7 @@ from pai.utils import run_detail_url
 logger = logging.getLogger(__name__)
 
 
-class RunStatus(object):
+class PipelineRunStatus(object):
     Init = "Init"
     Running = "Running"
     Suspended = "Suspended"
@@ -24,7 +24,7 @@ class RunStatus(object):
     Failed = "Failed"
 
 
-class RunInstance(object):
+class PipelineRun(object):
 
     def __init__(self, run_id, session):
         self.run_id = run_id
@@ -131,7 +131,7 @@ class RunInstance(object):
                 raise StopIteration
             else:
                 status = self.get_status()
-                if status == RunStatus.Running:
+                if status == PipelineRunStatus.Running:
                     time.sleep(1)
                 else:
                     raise StopIteration
@@ -144,7 +144,7 @@ class RunInstance(object):
         """
         start_time = datetime.now()
         run_info = self.get_run_info()
-        while run_info["Status"] == RunStatus.Running and not run_info["NodeId"]:
+        while run_info["Status"] == PipelineRunStatus.Running and not run_info["NodeId"]:
             run_info = self.get_run_info()
             time_elapse = datetime.now() - start_time
             if time_elapse.seconds > timeout:
@@ -161,18 +161,18 @@ class RunInstance(object):
         wait_start = datetime.now()
         run_info = self.get_run_info()
         run_status = run_info["Status"]
-        if run_status == RunStatus.Init:
+        if run_status == PipelineRunStatus.Init:
             raise ValueError(
                 'Pipeline run instance is in status "Init", please start the run instance.')
-        elif run_status in (RunStatus.Terminated, RunStatus.Suspended):
+        elif run_status in (PipelineRunStatus.Terminated, PipelineRunStatus.Suspended):
             raise ValueError(
                 "Pipeline run instance is stopped(status:%s), please resume/retry the run."
                 % run_status)
-        elif run_status == RunStatus.Failed:
+        elif run_status == PipelineRunStatus.Failed:
             raise ValueError("Pipeline run is failed.")
-        elif run_status in (RunStatus.Skipped, RunStatus.Unknown):
+        elif run_status in (PipelineRunStatus.Skipped, PipelineRunStatus.Unknown):
             raise ValueError("Pipeline run in unexpected status(%s:%s)" % (self.run_id, run_status))
-        elif run_status == RunStatus.Succeeded:
+        elif run_status == PipelineRunStatus.Succeeded:
             return
 
         # run status is Running.
@@ -196,7 +196,7 @@ class RunInstance(object):
         prev_status_infos = node_status_infos
         root_node_status = prev_status_infos[self.name]["status"]
 
-        while root_node_status == RunStatus.Running:
+        while root_node_status == PipelineRunStatus.Running:
             time.sleep(2)
             curr_time = datetime.now()
             if timeout and (curr_time - wait_start).total_seconds() > timeout:
@@ -204,7 +204,7 @@ class RunInstance(object):
             curr_status_infos = self.travel_node_status_info(node_id)
             for node_fullname, status_info in curr_status_infos.items():
                 if node_fullname not in prev_status_infos and \
-                        status_info["status"] != RunStatus.Skipped:
+                        status_info["status"] != PipelineRunStatus.Skipped:
                     run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
             prev_status_infos = curr_status_infos
             root_node_status = prev_status_infos[self.name]["status"]
@@ -245,7 +245,7 @@ class _RunLogger(object):
                 page_offset += page_size
             else:
                 status = self.run_instance.get_status()
-                if status == RunStatus.Running:
+                if status == PipelineRunStatus.Running:
                     time.sleep(2)
                 else:
                     break

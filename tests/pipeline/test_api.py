@@ -6,7 +6,7 @@ from pprint import pprint
 
 import yaml
 
-from pai import RunInstance
+from pai import PipelineRun
 from tests import BaseTestCase
 
 from pai.common import ProviderAlibabaPAI

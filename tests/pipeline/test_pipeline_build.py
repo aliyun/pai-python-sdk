@@ -8,7 +8,7 @@ from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.parameter import ParameterType
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
-from pai.pipeline.run import RunInstance, RunStatus
+from pai.pipeline.run import PipelineRun, PipelineRunStatus
 from pai.xflow.classifier import LogisticRegression
 from tests import BaseTestCase
 from tests.pipeline import load_local_yaml
@@ -79,9 +79,9 @@ class TestPipelineBuild(BaseTestCase):
         run = p.run("pysdk-test-temp-pl-run", arguments=arguments,
                     wait=False)
         self.assertIsNotNone(run)
-        self.assertEqual(run.get_status(), RunStatus.Running)
+        self.assertEqual(run.get_status(), PipelineRunStatus.Running)
         run.wait(log_outputs=False)
-        self.assertEqual(run.get_status(), RunStatus.Succeeded)
+        self.assertEqual(run.get_status(), PipelineRunStatus.Succeeded)
 
     def test_composite_pipeline_submit(self):
         p = self.create_composite_pipeline_case_1()
@@ -93,10 +93,10 @@ class TestPipelineBuild(BaseTestCase):
                                          arguments=arguments, env=env)
         self.assertIsNotNone(run_id)
         time.sleep(1)
-        run_instance = RunInstance(run_id=run_id, session=self.session)
-        self.assertEqual(run_instance.get_status(), RunStatus.Running)
+        run_instance = PipelineRun(run_id=run_id, session=self.session)
+        self.assertEqual(run_instance.get_status(), PipelineRunStatus.Running)
         run_instance.wait(log_outputs=False)
-        self.assertEqual(run_instance.get_status(), RunStatus.Succeeded)
+        self.assertEqual(run_instance.get_status(), PipelineRunStatus.Succeeded)
 
     @staticmethod
     def add_local_pipeline_step(pipeline, identifier, name=None):
@@ -611,9 +611,9 @@ class TestPipelineBuild(BaseTestCase):
                 "odpsProject": "pai_sdk_test",
             },
         }, wait=False)
-        self.assertEqual(RunStatus.Running, run_instance.get_status())
+        self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
         run_instance.wait(log_outputs=False)
-        self.assertEqual(RunStatus.Succeeded, run_instance.get_status())
+        self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
 
     def test_composite_pipeline_run(self):
         p = self.create_composite_pipeline_to_oss(self.session)
@@ -628,9 +628,9 @@ class TestPipelineBuild(BaseTestCase):
         }
 
         run_instance = p.run(name="pysdk-test-with-oss-model", arguments=arguments, wait=False)
-        self.assertEqual(RunStatus.Running, run_instance.get_status())
+        self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
         run_instance.wait(log_outputs=False)
-        self.assertEqual(RunStatus.Succeeded, run_instance.get_status())
+        self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
 
     @staticmethod
     def create_composite_pipeline_to_oss(session):
