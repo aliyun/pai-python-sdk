@@ -1,21 +1,16 @@
 from __future__ import absolute_import
 
-import logging
-
 import six
 import yaml
 
-from libs.aliyunsdkpaiflow.request.v20200328 import (
+from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
     CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest, ListPipelinesRequest,
     UpdatePipelineRequest, DescribePipelineRequest, UpdatePipelinePrivilegeRequest,
-    GetPipelinePrivilegeRequest
-)
-from libs.aliyunsdkpaiflow.request.v20200328 import (
-    CreateRunRequest, GetRunRequest, TerminateRunRequest, SuspendRunRequest, ResumeRunRequest,
-    RetryRunRequest,
-    StartRunRequest, GetNodeDetailRequest, ListRunsRequest, ListNodeLogsRequest,
+    TerminateRunRequest, SuspendRunRequest, RetryRunRequest, StartRunRequest, ListRunsRequest,
+    ListNodeLogsRequest, ResumeRunRequest, GetRunRequest, GetNodeDetailRequest, CreateRunRequest,
     ListNodeOutputsRequest
 )
+from pai.libs.aliyunsdkpaiflow.request.v20200328 import GetPipelinePrivilegeRequest
 from pai.api import BaseClient, ServiceCallException
 from pai.utils import ensure_str, ensure_unix_time
 

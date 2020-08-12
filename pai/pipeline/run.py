@@ -4,7 +4,7 @@ import logging
 import time
 from datetime import datetime
 
-from libs.futures import ThreadPoolExecutor
+from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.exception import TimeoutException
 from pai.pipeline.artifact import ArtifactEntity
