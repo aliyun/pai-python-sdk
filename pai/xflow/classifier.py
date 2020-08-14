@@ -14,13 +14,13 @@ class LogisticRegression(XFlowEstimator):
 
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, regularized_level=1.0, regularized_type="l1", max_iter=100,
+    def __init__(self, regularized_level=1.0, regularized_type="l1", max_iter=100,
                  epsilon=1e-6, **kwargs):
-        super(LogisticRegression, self).__init__(session=session,
-                                                 regularized_level=regularized_level,
-                                                 regularized_type=regularized_type,
-                                                 max_iter=max_iter,
-                                                 epsilon=epsilon, **kwargs)
+        super(LogisticRegression, self).__init__(
+            regularized_level=regularized_level,
+            regularized_type=regularized_type,
+            max_iter=max_iter,
+            epsilon=epsilon, **kwargs)
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(LogisticRegression, self)._compile_args(*inputs, **kwargs)

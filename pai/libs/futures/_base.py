@@ -57,7 +57,7 @@ class TimeoutError(Error):
     pass
 
 class _Waiter(object):
-    """Provides the event that wait() and as_completed() block on."""
+    """Provides the event that wait_for_completion() and as_completed() block on."""
     def __init__(self):
         self.event = threading.Event()
         self.finished_futures = []
@@ -94,7 +94,7 @@ class _AsCompletedWaiter(_Waiter):
             self.event.set()
 
 class _FirstCompletedWaiter(_Waiter):
-    """Used by wait(return_when=FIRST_COMPLETED)."""
+    """Used by wait_for_completion(return_when=FIRST_COMPLETED)."""
 
     def add_result(self, future):
         super(_FirstCompletedWaiter, self).add_result(future)
@@ -109,7 +109,7 @@ class _FirstCompletedWaiter(_Waiter):
         self.event.set()
 
 class _AllCompletedWaiter(_Waiter):
-    """Used by wait(return_when=FIRST_EXCEPTION and ALL_COMPLETED)."""
+    """Used by wait_for_completion(return_when=FIRST_EXCEPTION and ALL_COMPLETED)."""
 
     def __init__(self, num_pending_calls, stop_on_exception):
         self.num_pending_calls = num_pending_calls
@@ -179,8 +179,8 @@ def as_completed(fs, timeout=None):
     Args:
         fs: The sequence of Futures (possibly created by different Executors) to
             iterate over.
-        timeout: The maximum number of seconds to wait. If None, then there
-            is no limit on the wait time.
+        timeout: The maximum number of seconds to wait_for_completion. If None, then there
+            is no limit on the wait_for_completion time.
 
     Returns:
         An iterator that yields the given Futures as they complete (finished or
@@ -239,9 +239,9 @@ def wait(fs, timeout=None, return_when=ALL_COMPLETED):
 
     Args:
         fs: The sequence of Futures (possibly created by different Executors) to
-            wait upon.
-        timeout: The maximum number of seconds to wait. If None, then there
-            is no limit on the wait time.
+            wait_for_completion upon.
+        timeout: The maximum number of seconds to wait_for_completion. If None, then there
+            is no limit on the wait_for_completion time.
         return_when: Indicates when this function should return. The options
             are:
 
@@ -254,7 +254,7 @@ def wait(fs, timeout=None, return_when=ALL_COMPLETED):
 
     Returns:
         A named 2-tuple of sets. The first set, named 'done', contains the
-        futures that completed (is finished or cancelled) before the wait
+        futures that completed (is finished or cancelled) before the wait_for_completion
         completed. The second set, named 'not_done', contains uncompleted
         futures.
     """
@@ -381,8 +381,8 @@ class Future(object):
         """Return the result of the call that the future represents.
 
         Args:
-            timeout: The number of seconds to wait for the result if the future
-                isn't done. If None, then there is no limit on the wait time.
+            timeout: The number of seconds to wait_for_completion for the result if the future
+                isn't done. If None, then there is no limit on the wait_for_completion time.
 
         Returns:
             The result of the call that the future represents.
@@ -413,8 +413,8 @@ class Future(object):
         future represents.
 
         Args:
-            timeout: The number of seconds to wait for the exception if the
-                future isn't done. If None, then there is no limit on the wait
+            timeout: The number of seconds to wait_for_completion for the exception if the
+                future isn't done. If None, then there is no limit on the wait_for_completion
                 time.
 
         Returns:
@@ -445,8 +445,8 @@ class Future(object):
         """Return the exception raised by the call that the future represents.
 
         Args:
-            timeout: The number of seconds to wait for the exception if the
-                future isn't done. If None, then there is no limit on the wait
+            timeout: The number of seconds to wait_for_completion for the exception if the
+                future isn't done. If None, then there is no limit on the wait_for_completion
                 time.
 
         Returns:
@@ -468,7 +468,7 @@ class Future(object):
 
         If the future has been cancelled (cancel() was called and returned
         True) then any threads waiting on the future completing (though calls
-        to as_completed() or wait()) are notified and False is returned.
+        to as_completed() or wait_for_completion()) are notified and False is returned.
 
         If the future was not cancelled then it is put in the running state
         (future calls to running() will return True) and True is returned.
@@ -556,8 +556,8 @@ class Executor(object):
         Args:
             fn: A callable that will take as many arguments as there are
                 passed iterables.
-            timeout: The maximum number of seconds to wait. If None, then there
-                is no limit on the wait time.
+            timeout: The maximum number of seconds to wait_for_completion. If None, then there
+                is no limit on the wait_for_completion time.
 
         Returns:
             An iterator equivalent to: map(func, *iterables) but the calls may

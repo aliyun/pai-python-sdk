@@ -9,13 +9,13 @@ from odps.df import DataFrame as ODPSDataFrame
 from odps.models import Table as ODPSTable, Partition as ODPSPartition, Volume as ODPSVolume
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 
-from pai.pipeline.variable import PipelineVariable
+from pai.pipeline.types.variable import PipelineVariable
 
 
 class PipelineArtifact(PipelineVariable):
     variable_category = "artifacts"
 
-    def __init__(self, name, metadata=None, desc=None, kind="input", value=None,
+    def __init__(self, name, metadata=None, desc=None, kind="inputs", value=None,
                  from_=None, required=None, parent=None):
         super(PipelineArtifact, self).__init__(name=name, desc=desc, kind=kind,
                                                value=value, from_=from_,
@@ -46,8 +46,8 @@ class PipelineArtifact(PipelineVariable):
         from_ = af_spec.pop("from", None)
         required = af_spec.pop("required", None)
 
-        param = create_artifact(name=name, metadata=metadata, kind=kind, from_=from_,
-                                required=required, desc=desc)
+        param = PipelineArtifact(name=name, metadata=metadata, kind=kind, from_=from_,
+                                 required=required, desc=desc)
         af_value = ArtifactValue.from_resource(val)
         if not param.validate_value(val):
             raise ValueError(
@@ -78,12 +78,6 @@ class PipelineArtifact(PipelineVariable):
             else:
                 d["value"] = self.value
         return d
-
-
-def create_artifact(name, metadata, kind, desc=None, required=None, value=None, from_=None,
-                    parent=None):
-    return PipelineArtifact(name=name, metadata=metadata, kind=kind, desc=desc, required=required,
-                            value=value, parent=parent, from_=from_)
 
 
 class ArtifactMetadata(object):

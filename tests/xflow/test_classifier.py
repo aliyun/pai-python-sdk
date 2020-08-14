@@ -42,7 +42,6 @@ class TestLogisticsRegression(BaseTestCase):
         project = self.odps_client.project
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
-            session=self.session,
             regularized_type="l2",
             xflow_execution={
                 "odpsInfoFile": "/share/base/odpsInfo.ini",
@@ -68,7 +67,6 @@ class TestLogisticsRegression(BaseTestCase):
     def test_async_train(self):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
-            session=self.session,
             regularized_type="l2",
             xflow_execution={
                 "odpsInfoFile": "/share/base/odpsInfo.ini",
@@ -96,7 +94,6 @@ class TestLogisticsRegression(BaseTestCase):
     def test_lr_multiple_call_fit(self):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
-            session=self.session,
             regularized_level=1.0,
             xflow_execution={
                 "odpsInfoFile": "/share/base/odpsInfo.ini",

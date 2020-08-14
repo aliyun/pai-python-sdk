@@ -42,7 +42,6 @@ class PAIFlowClient(BaseClient):
             request.set_PipelineId(pipeline_id)
         else:
             assert identifier is not None
-            assert provider is not None
             assert version is not None
             request.set_PipelineIdentifier(identifier)
             request.set_PipelineVersion(version)

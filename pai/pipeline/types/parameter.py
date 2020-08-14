@@ -7,7 +7,7 @@ from decimal import Decimal
 import six
 from enum import Enum
 
-from pai.pipeline.variable import PipelineVariable
+from pai.pipeline.types.variable import PipelineVariable
 
 StringType = six.string_types
 
@@ -27,8 +27,15 @@ POSITIVE_INFINITY = Decimal("infinity")
 class PipelineParameter(PipelineVariable):
     variable_category = "parameters"
 
-    def __init__(self, name, typ, **kwargs):
-        super(PipelineParameter, self).__init__(name=name, **kwargs)
+    def __init__(self, name, typ, required=False, **kwargs):
+        typ = ParameterType.normalize_typ(typ)
+        validator = None
+        feasible = kwargs.pop("feasible", None)
+        if feasible:
+            validator = ParameterValidator.load(feasible)
+        super(PipelineParameter, self).__init__(name=name, required=required, validator=validator,
+                                                **kwargs)
+
         self.typ = typ
 
     def validate_value(self, val):
@@ -64,9 +71,8 @@ class PipelineParameter(PipelineVariable):
         desc = param_spec.pop("desc", None)
         required = param_spec.pop("required", False)
 
-        param = create_pipeline_parameter(name=name, typ=typ, kind=kind, from_=from_, value=value,
-                                          desc=desc,
-                                          required=required, feasible=feasible)
+        param = PipelineParameter(name=name, typ=typ, kind=kind, from_=from_, value=value,
+                                  desc=desc, required=required, feasible=feasible)
         if not param.validate_value(val):
             raise ValueError(
                 "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
@@ -122,7 +128,7 @@ class Interval(object):
             left="[" if self.min_inclusive else "(",
             min_=self.value_str(self.min_),
             max_=self.value_str(self.max_),
-            right="]" if self.max_inclusive else "[",
+            right="]" if self.max_inclusive else ")",
         )
 
     @staticmethod
@@ -216,19 +222,6 @@ class ParameterType(Enum):
         else:
             raise ValueError("Not Supported PipelineParameter Type: {typ}".format(typ=typ_instance))
         return ParameterType(ParameterTypeMapping[type_name])
-
-
-def create_pipeline_parameter(name, typ, kind, desc=None, required=False, value=None,
-                              parent=None, from_=None, **kwargs):
-    typ = ParameterType.normalize_typ(typ)
-    validator = None
-    feasible = kwargs.get("feasible", None)
-
-    if feasible:
-        validator = ParameterValidator.load(feasible)
-
-    return PipelineParameter(name=name, typ=typ, kind=kind, desc=desc, required=required,
-                             value=value, from_=from_, parent=parent, validator=validator)
 
 
 PyParameterTypes = tuple(itertools.chain(six.integer_types, six.string_types, [dict, list, bool]))

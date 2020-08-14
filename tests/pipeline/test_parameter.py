@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import unittest
 from decimal import Decimal
 
-from pai.pipeline.parameter import Interval, ParameterValidator, create_pipeline_parameter, \
-    ParameterType
+from pai.pipeline.types.parameter import Interval, ParameterValidator, \
+    ParameterType, PipelineParameter
 from tests import BaseTestCase
 
 
@@ -51,7 +51,7 @@ class TestParameter(BaseTestCase):
         ]
 
         for case in cases:
-            param = create_pipeline_parameter(**case["input"])
+            param = PipelineParameter(**case["input"])
             self.assertDictEqual(param.to_dict(), case["expected"])
             self.assertEqual(param.kind, case["input"]["kind"])
 

@@ -14,15 +14,10 @@ class TestOfflineModelPredictionTransformer(BaseTestCase):
         project = self.odps_client.project
         model_name = "pai_sdk_test_lr_offlinemodel"
         tf = OfflineModelTransformer(
-            session=self.session,
             model="odps://{0}/offlinemodels/{1}".format(project,
                                                         model_name),
-            xflow_execution={
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": project,
-            })
+            xflow_execution=self.get_default_xflow_execution(),
+        )
         job = tf.transform(
             "odps://{}/tables/offline_model_test_data_set".format(project),
             wait=False, job_name="pysdk-test-om-algo",
@@ -47,13 +42,9 @@ class TestOfflineModelPredictionTransformer(BaseTestCase):
 class TestODPSDataSource(BaseTestCase):
 
     def test_data_source(self):
-        tf = MaxComputeDataSource(session=self.session,
-                                  xflow_execution={
-                                      "odpsInfoFile": "/share/base/odpsInfo.ini",
-                                      "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                                      "logViewHost": "http://logview.odps.aliyun.com",
-                                      "odpsProject": self.odps_client.project,
-                                  })
+        tf = MaxComputeDataSource(
+            xflow_execution=self.get_default_xflow_execution(),
+        )
         job_name = "pysdk-test-data-source"
         run_job = tf.transform(table_name="pai_online_project.wumai_data", wait=False,
                                job_name=job_name)
@@ -70,15 +61,11 @@ class TestModelTransferToOSS(BaseTestCase):
 
     def test_model_transfer(self):
         tf = ModelTransferToOSS(
-            session=self.session, bucket=self.oss_info.bucket,
+            bucket=self.oss_info.bucket,
             endpoint=self.oss_info.endpoint,
             rolearn=self.oss_info.rolearn,
-            xflow_execution={
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": self.odps_client.project,
-            })
+            xflow_execution=self.get_default_xflow_execution(),
+        )
 
         model_name = "pai_sdk_test_lr_offlinemodel"
         offlinemodel = 'odps://{0}/offlinemodels/{1}'.format(self.odps_client.project, model_name)

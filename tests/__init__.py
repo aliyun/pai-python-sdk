@@ -8,7 +8,7 @@ from odps import ODPS
 from six.moves import configparser
 import oss2
 
-from pai.session import Session
+from pai.session import Session, set_default_pai_session
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,29 +26,43 @@ class BaseTestCase(unittest.TestCase):
     Base class for unittest, any test case class should inherit this.
     """
 
-    session = None
     odps_client = None
+    default_xflow_project = 'algo_public'
+
+    PUBLIC_DATASET_TABLE_HEART_DISEASE_PREDICTION = "odps://pai_online_project/tables/heart_disease_prediction"
+    PUBLIC_DATASET_WUMAI_TABLE_NAME = 'pai_online_project.wumai_data'
 
     @classmethod
     def setUpClass(cls):
         super(BaseTestCase, cls).setUpClass()
-
-        cls.session = cls.get_test_session()
-        cls.odps_client = cls.get_odps_client()
-        cls.oss_info = cls.get_oss_info()
-        cls.log_config()
+        cls._set_test_session()
+        cls.odps_client = cls._get_odps_client()
+        cls.oss_info = cls._get_oss_info()
+        cls._log_config()
 
     @classmethod
     def tearDownClass(cls):
         super(BaseTestCase, cls).tearDownClass()
 
     @classmethod
-    def get_test_session(cls):
-        configs = cls.get_test_config()
-        return Session(**configs["client"])
+    def get_default_xflow_execution(cls, odps_client=None):
+        if not odps_client:
+            odps_client = cls.odps_client
+
+        return {
+            "odpsInfoFile": "/share/base/odpsInfo.ini",
+            "endpoint": odps_client.endpoint,
+            "logViewHost": odps_client.logview_host,
+            "odpsProject": odps_client.project,
+        }
 
     @classmethod
-    def get_odps_client(cls):
+    def _set_test_session(cls):
+        configs = cls.get_test_config()
+        set_default_pai_session(**configs["client"])
+
+    @classmethod
+    def _get_odps_client(cls):
         configs = cls.get_test_config()
         access_key_id = configs["odps"]["access_key_id"]
         access_key_secret = configs["odps"]["access_key_secret"]
@@ -60,7 +74,7 @@ class BaseTestCase(unittest.TestCase):
         )
 
     @classmethod
-    def get_oss_info(cls):
+    def _get_oss_info(cls):
         configs = cls.get_test_config()
         oss_info = OSSInfo(**configs["oss"])
         return oss_info
@@ -93,7 +107,7 @@ class BaseTestCase(unittest.TestCase):
         }
 
     @staticmethod
-    def log_config():
+    def _log_config():
         logging.basicConfig(level=logging.INFO,
                             format='[%(asctime)s] %(pathname)s:%(lineno)d %(levelname)s '
                                    '- %(message)s',

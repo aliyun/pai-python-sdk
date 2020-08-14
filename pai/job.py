@@ -25,7 +25,7 @@ class RunJob(with_metaclass(ABCMeta, object)):
 
     @property
     def session(self):
-        return self.run_instance.session
+        return self.run_instance._session
 
     @property
     def name(self):
@@ -51,7 +51,7 @@ class RunJob(with_metaclass(ABCMeta, object)):
         self.run_instance.resume()
 
     def attach(self, log_outputs=True, timeout=None):
-        self.run_instance.wait(log_outputs=log_outputs, timeout=timeout)
+        self.run_instance.wait_for_completion(log_outputs=log_outputs, timeout=timeout)
 
     def get_status(self):
         return JobStatus(self.run_instance.get_status())

@@ -5,25 +5,34 @@ import logging
 import six
 import yaml
 from aliyunsdkcore.client import AcsClient
-from odps import ODPS
-import oss2
 
 from pai.api.client_factory import ClientFactory
-from pai.utils import run_detail_url
 
 logger = logging.getLogger(__name__)
+
+
+def set_default_pai_session(access_key_id, access_key_secret, region_id, **kwargs):
+    session = Session(access_key_id, access_key_secret, region_id, **kwargs)
+    Session.set_default_session(session)
+    return session
+
+
+def get_current_pai_session():
+    return Session.get_current_session()
 
 
 class Session(object):
     """Wrap functionality provided by Alibaba Cloud PAI services
 
     This class encapsulates convenient methods to access PAI services, currently focus
-    on PAIFlow pipeline service. Other service provided by PAI, such as EAS inference service,
+    on PAI pipeline service(PAIFlow). Other service provided by PAI, such as EAS inference service,
     Model optimize, etc, will be included soon.
 
     """
 
-    def __init__(self, access_key_id, access_key_secret, region_id):
+    _default_session = None
+
+    def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None):
         """ PAI Session Initializer.
 
         Args:
@@ -36,23 +45,40 @@ class Session(object):
             raise ValueError("Please provide access_key, access_secret and region")
 
         self.region_id = region_id
-
-        self._init_clients(access_key_id, access_key_secret, region_id)
-
-    def _init_clients(self, access_key, access_secret, region):
-
-        self._acs_client = AcsClient(ak=access_key, secret=access_secret, region_id=region)
+        self._acs_client = AcsClient(ak=access_key_id, secret=access_key_secret,
+                                     region_id=region_id)
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
 
         self.sts_client = ClientFactory.create_sts_client(self._acs_client)
-        self._oss_auth = oss2.Auth(access_key_id=access_key, access_key_secret=access_secret)
         self._init_account()
 
-    def get_oss_bucket(self, endpoint, bucket):
-        return oss2.Bucket(self._oss_auth, endpoint=endpoint, bucket_name=bucket)
+        if oss_bucket:
+            self._oss_bucket = oss_bucket
+
+    @classmethod
+    def get_current_session(cls):
+        return cls._default_session
+
+    @classmethod
+    def set_default_session(cls, session):
+        cls._default_session = session
+
+    @property
+    def oss_bucket(self):
+        if not self._oss_bucket:
+            raise ValueError("Default OSS bucket not provided")
+        return self._oss_bucket
+
+    @property
+    def console_host(self):
+        return 'https://pai.data.aliyun.com/console'
 
     @property
     def account_id(self):
+        return self._account_id
+
+    @property
+    def provider(self):
         return self._account_id
 
     @property
@@ -70,7 +96,7 @@ class Session(object):
         """int: Default MaxCompute project use by session."""
         return self.odps_client.project
 
-    def get_pipeline(self, identifier, provider, version):
+    def get_pipeline(self, identifier, provider=None, version="v1"):
         """Get information of pipeline by identifier, provider and version.
 
         User should has `GetPipeline` privilege to access the pipeline.
@@ -87,9 +113,12 @@ class Session(object):
         Raises:
             ServiceCallException: Raise if the pipeline not exists.
         """
+
+        provider = provider or self.provider
         pipeline_info = self.paiflow_client.get_pipeline(identifier=identifier,
                                                          provider=provider,
                                                          version=version)["Data"]
+
         return pipeline_info
 
     def get_pipeline_by_id(self, pipeline_id):
@@ -219,7 +248,7 @@ class Session(object):
 
         print("Create pipeline run success (run_id: {run_id}), please visit the link below to view"
               " the run detail.".format(run_id=run_id))
-        print(run_detail_url(run_id, self.region_id))
+        print(self.run_detail_url(run_id))
 
         return run_id
 
@@ -369,3 +398,7 @@ class Session(object):
     def start_run(self, run_id):
         resp = self.paiflow_client.start_run(run_id)
         return resp["Data"]
+
+    def run_detail_url(self, run_id):
+        return "{console_host}?regionId={region_id}#/task-list/detail/{run_id}".format(
+            console_host=self.console_host, region_id=self.region_id, run_id=run_id)

@@ -24,9 +24,6 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             validator: parameter value validator.
             parent:
         """
-
-        assert kind in ("inputs", "outputs")
-
         self.name = name
         self.kind = kind
         self.desc = desc
@@ -35,16 +32,16 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         self.required = required
         self.parent = parent
         self.validator = validator
-        self._is_assigned = False
+
+    # TODO: validate if pipeline variable attribute is legal
+    def _validate_spec(self):
+        pass
 
     @abstractmethod
     def validate_value(self, val):
         pass
 
     def assign(self, arg):
-        if self._is_assigned:
-            raise ValueError("Input:%s has been assigned." % self.name)
-
         if not isinstance(arg, PipelineVariable):
             if not self.validate_value(arg):
                 raise ValueError("Arg:%s is invalid value for %s" % (arg, self))
@@ -53,13 +50,13 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             if not self.validate_value(arg.value):
                 raise ValueError("Value(%s) is invalid value for %s" % (arg.value, self))
             self.value = arg.value
+            self.from_ = arg
         else:
             if not self.validate_from(arg):
                 raise ValueError(
                     "invalid assignment. %s left: %s, right: %s" % (
                         self.fullname, self.typ, arg.typ))
             self.from_ = arg
-        self._is_assigned = True
 
     @property
     def is_assigned(self):
@@ -68,15 +65,17 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
     @property
     def fullname(self):
         """Unique identifier in pipeline manifest for PipelineVariable"""
-        return ".".join(
-            filter(None, [self.parent.ref_name, self.kind, self.variable_category, self.name]))
+        if self.parent:
+            return ".".join(
+                [self.parent.ref_name, self.kind, self.variable_category, self.name])
+        else:
+            return ".".join([self.kind, self.variable_category, self.name])
 
-    def __str__(self):
-        return "{name}:{kind}:{variable_category}:{typ}".format(
+    def __repr__(self):
+        return "{name}:{kind}:{variable_category}".format(
             name=self.name,
             kind=self.kind,
             variable_category=self.variable_category,
-            typ=self.typ
         )
 
     def to_argument(self):

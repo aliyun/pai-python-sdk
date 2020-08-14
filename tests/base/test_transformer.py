@@ -1,41 +1,34 @@
 from __future__ import absolute_import
 
-from pai import ProviderAlibabaPAI
+from pai.common import ProviderAlibabaPAI
 from pai.job import JobStatus
-from pai.pipeline import Pipeline
+from pai.pipeline.template import PipelineTemplate
 from tests import BaseTestCase
 
 
 class TestTransformer(BaseTestCase):
 
-    def init_base_transformer(self):
+    @classmethod
+    def init_base_transformer(cls):
         identifier = "dataSource-xflow-maxCompute"
         version = "v1"
         provider = ProviderAlibabaPAI
 
-        p = Pipeline.get_by_identifier(session=self.session, identifier=identifier,
-                                       provider=provider, version=version)
+        p = PipelineTemplate.get_by_identifier(identifier=identifier,
+                                               provider=provider, version=version)
         parameters = {
-            "project": "algo_public",
-            "execution": {
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": "pai_sdk_test",
-            },
+            "project": cls.default_xflow_project,
+            "execution": cls.get_default_xflow_execution(),
         }
         transformer = p.to_transformer(parameters=parameters)
         return p, transformer
 
-    def init_composite_transformer(self):
-        pass
-
     def test_transformer_init(self):
         p, transformer = self.init_base_transformer()
-        self.assertEqual(p.identifier, transformer.get_identifier())
-        self.assertEqual(p.version, transformer.get_version())
-        self.assertEqual(p.pipeline_id, transformer.get_pipeline_id())
-        self.assertEqual(p.provider, transformer.get_provider())
+        self.assertEqual(p.identifier, transformer.identifier)
+        self.assertEqual(p.version, transformer.version)
+        self.assertEqual(p.pipeline_id, transformer.pipeline_id)
+        self.assertEqual(p.provider, transformer.provider)
 
     def test_base_transformer_sync_run(self):
         _, transformer = self.init_base_transformer()

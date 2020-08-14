@@ -36,10 +36,10 @@ class _XFlowAlgoMixin(object):
 class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
     _pmml_model = False
 
-    def __init__(self, session, xflow_execution=None, pmml_gen=None,
+    def __init__(self, xflow_execution=None, pmml_gen=None,
                  pmml_oss_path=None, pmml_oss_endpoint=None, pmml_oss_rolearn=None,
                  pmml_oss_bucket=None, **kwargs):
-        AlgoBaseEstimator.__init__(self, session=session, pmml_gen=pmml_gen,
+        AlgoBaseEstimator.__init__(self, pmml_gen=pmml_gen,
                                    pmml_oss_path=pmml_oss_path,
                                    pmml_oss_endpoint=pmml_oss_endpoint,
                                    pmml_oss_rolearn=pmml_oss_rolearn,
@@ -60,6 +60,6 @@ class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
 
 class XFlowTransformer(AlgoBaseTransformer, _XFlowAlgoMixin):
 
-    def __init__(self, session, xflow_execution=None, **kwargs):
-        AlgoBaseTransformer.__init__(self, session=session, **kwargs)
+    def __init__(self, xflow_execution=None, **kwargs):
+        AlgoBaseTransformer.__init__(self, **kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_execution=xflow_execution)

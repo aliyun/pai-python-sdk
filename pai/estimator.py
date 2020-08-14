@@ -1,27 +1,29 @@
 from __future__ import absolute_import
 
+import logging
 from abc import ABCMeta, abstractmethod
 
 import six
 import yaml
 
-from .model import XFlowOfflineModel, PmmlModel
-from .pipeline import PaiFlowBase
+from pai.pipeline.types.artifact import ArtifactModelType
 from .job import RunJob
-from .pipeline.artifact import ArtifactModelType
+from .model import XFlowOfflineModel, PmmlModel
+from .pipeline.template import PipelineTemplate
+from .session import get_current_pai_session
+
+logger = logging.getLogger(__name__)
 
 
 class Estimator(six.with_metaclass(ABCMeta, object)):
     """Estimator base class"""
 
-    def __init__(self, session, parameters=None):
+    def __init__(self, parameters=None):
         """Estimator Initializer.
 
         Args:
-            session: PAI session instance.
             parameters: Initialized parameters.
         """
-        self.session = session
         self._parameters = parameters
         self._jobs = []
 
@@ -59,7 +61,7 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
             return self._jobs[-1]
 
 
-class PipelineEstimator(PaiFlowBase, Estimator):
+class PipelineEstimator(Estimator):
     """Estimator implemented run using PAIFlow.
 
     PipelineEstimator is base class of Estimator run on PAIFlow, it could be initialize from
@@ -67,7 +69,7 @@ class PipelineEstimator(PaiFlowBase, Estimator):
 
     """
 
-    def __init__(self, session, parameters=None, manifest=None, _compiled_args=False,
+    def __init__(self, session=None, parameters=None, manifest=None, _compiled_args=False,
                  pipeline_id=None):
         """
 
@@ -79,9 +81,10 @@ class PipelineEstimator(PaiFlowBase, Estimator):
             _compiled_args (bool): if _compile_args is required before fit.
             pipeline_id (str): Pipeline id.
         """
-        Estimator.__init__(self, session=session, parameters=parameters)
-        PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
+        self._session = session or get_current_pai_session()
         self._compiled_args = _compiled_args
+        self._template = PipelineTemplate(manifest=manifest, pipeline_id=pipeline_id)
+        super(PipelineEstimator, self).__init__(parameters=parameters)
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
@@ -119,6 +122,27 @@ class PipelineEstimator(PaiFlowBase, Estimator):
                                                   log_outputs=log_outputs,
                                                   arguments=run_args, **kwargs)
 
+    def _run(self, job_name, arguments, **kwargs):
+        run = self._template.run(job_name=job_name, arguments=arguments, wait=False)
+        logger.info("PaiFlow CreateRun Job, RunId:%s" % run.run_id)
+        return run
+
+    @property
+    def identifier(self):
+        return self._template.identifier
+
+    @property
+    def provider(self):
+        return self._template.provider
+
+    @property
+    def version(self):
+        return self._template.version
+
+    @property
+    def pipeline_id(self):
+        return self._template.pipeline_id
+
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
 class AlgoBaseEstimator(PipelineEstimator):
@@ -128,7 +152,8 @@ class AlgoBaseEstimator(PipelineEstimator):
     _provider_default = None
     _version_default = None
 
-    def __init__(self, session, **kwargs):
+    def __init__(self, **kwargs):
+        session = get_current_pai_session()
         manifest, pipeline_id = self.get_base_info(session)
         super(AlgoBaseEstimator, self).__init__(session=session, parameters=kwargs,
                                                 _compiled_args=True, manifest=manifest,
@@ -145,7 +170,7 @@ class AlgoBaseEstimator(PipelineEstimator):
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
 
     def fit(self, *inputs, **kwargs):
-        wait = kwargs.pop("wait", True)
+        wait = kwargs.pop("wait_for_completion", True)
         job_name = kwargs.pop("job_name", None)
 
         fit_args = self.parameters.copy()
@@ -164,7 +189,7 @@ class EstimatorJob(RunJob):
 
     @property
     def session(self):
-        return self.estimator.session
+        return self.estimator._session
 
     def create_model(self, output_name=None):
         """Create Model using job outputs. Return Model instance.

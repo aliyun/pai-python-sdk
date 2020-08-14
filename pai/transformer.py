@@ -1,16 +1,19 @@
+import logging
 from abc import ABCMeta, abstractmethod
 
 import six
 import yaml
 
-from pai.pipeline import PaiFlowBase
 from pai.job import RunJob
+from pai.pipeline.template import PipelineTemplate
+from pai.session import Session, get_current_pai_session
+
+logger = logging.getLogger(__name__)
 
 
 class Transformer(six.with_metaclass(ABCMeta, object)):
 
-    def __init__(self, session, parameters=None):
-        self.session = session
+    def __init__(self, parameters=None):
         self._parameters = parameters
         self._jobs = []
 
@@ -37,26 +40,14 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
             return self._jobs[-1]
 
 
-class PipelineTransformer(PaiFlowBase, Transformer):
+class PipelineTransformer(Transformer):
 
-    def __init__(self, session, parameters=None, manifest=None, _compiled_args=False,
+    def __init__(self, parameters=None, manifest=None, _compiled_args=False,
                  pipeline_id=None):
-        Transformer.__init__(self, session=session, parameters=parameters)
-        PaiFlowBase.__init__(self, session=session, manifest=manifest, pipeline_id=pipeline_id)
+        self._session = get_current_pai_session()
         self._compiled_args = _compiled_args
-
-    @classmethod
-    def from_manifest(cls, manifest, session, parameters=None):
-        pe = PipelineTransformer(session=session, parameters=parameters, manifest=manifest)
-        return pe
-
-    @classmethod
-    def from_pipeline_id(cls, pipeline_id, session, parameters=None):
-        pipeline_info = session.get_pipeline_by_id(pipeline_id)
-        manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
-        pe = PipelineTransformer(session=session, parameters=parameters, manifest=manifest,
-                                 pipeline_id=pipeline_id)
-        return pe
+        self._template = PipelineTemplate(manifest=manifest, pipeline_id=pipeline_id)
+        super(PipelineTransformer, self).__init__(parameters=parameters)
 
     def transform(self, wait=True, job_name=None, log_outputs=True, args=None, **kwargs):
         args = args or dict()
@@ -70,6 +61,27 @@ class PipelineTransformer(PaiFlowBase, Transformer):
                                                           log_outputs=log_outputs,
                                                           **kwargs)
 
+    def _run(self, job_name=None, arguments=None, **kwargs):
+        run = self._template.run(job_name=job_name, arguments=arguments, wait=False)
+        logger.info("PaiFlow CreateRun Job, RunId:%s" % run.run_id)
+        return run
+
+    @property
+    def identifier(self):
+        return self._template.identifier
+
+    @property
+    def provider(self):
+        return self._template.provider
+
+    @property
+    def version(self):
+        return self._template.version
+
+    @property
+    def pipeline_id(self):
+        return self._template.pipeline_id
+
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer
 class AlgoBaseTransformer(PipelineTransformer):
@@ -79,9 +91,10 @@ class AlgoBaseTransformer(PipelineTransformer):
     _provider_default = None
     _version_default = None
 
-    def __init__(self, session, **kwargs):
+    def __init__(self, **kwargs):
+        session = Session.get_current_session()
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseTransformer, self).__init__(session=session, parameters=kwargs,
+        super(AlgoBaseTransformer, self).__init__(parameters=kwargs,
                                                   _compiled_args=True,
                                                   manifest=manifest, pipeline_id=pipeline_id)
 
@@ -96,7 +109,7 @@ class AlgoBaseTransformer(PipelineTransformer):
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
 
     def transform(self, *inputs, **kwargs):
-        wait = kwargs.pop("wait", True)
+        wait = kwargs.pop("wait_for_completion", True)
         job_name = kwargs.pop("job_name", None)
         fit_args = self.parameters.copy()
         fit_args.update(kwargs)

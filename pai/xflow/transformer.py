@@ -1,4 +1,4 @@
-from pai import ProviderAlibabaPAI
+from pai.common import ProviderAlibabaPAI
 from pai.xflow.base import XFlowTransformer
 from pai.utils import gen_temp_table
 
@@ -12,17 +12,15 @@ class OfflineModelTransformer(XFlowTransformer):
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, model, **kwargs):
+    def __init__(self, model, **kwargs):
         """OfflineModelTransformer constructor.
 
         Args:
-            session: PAI Session instance.
             model (str): OfflineModel data, offlinemodel resource url.
                 Examples:
                     odps://project_name/offlinemodels/offline_model_name.
         """
-        super(OfflineModelTransformer, self).__init__(session=session,
-                                                      model=model,
+        super(OfflineModelTransformer, self).__init__(model=model,
                                                       **kwargs)
 
     def _compile_args(self, *inputs, **kwargs):
@@ -75,11 +73,10 @@ class ModelTransferToOSS(XFlowTransformer):
     _provider_default = ProviderAlibabaPAI
     _version_default = "v1"
 
-    def __init__(self, session, bucket, endpoint, rolearn, overwrite=True, **kwargs):
+    def __init__(self, bucket, endpoint, rolearn, overwrite=True, **kwargs):
         """
 
         Args:
-            session (~pai.session.Session): PAI session object.
             bucket (str): Transfer target oss bucket name.
             endpoint (str): Domain name that the service can use to access OSS.
             model_format (str): Convert to specific Model format  while transfer to target OSS,
@@ -87,7 +84,6 @@ class ModelTransferToOSS(XFlowTransformer):
             rolearn (str): Alibaba Cloud Role ARN, used for access OSS service.
         """
         super(ModelTransferToOSS, self).__init__(
-            session=session,
             bucket=bucket,
             endpoint=endpoint,
             rolearn=rolearn,
@@ -120,7 +116,7 @@ class ModelTransferToOSS(XFlowTransformer):
         Args:
             input_model (str): OfflineModel ready to transfer.
             path (str): Transfer target OSS path, should startswith '/' and endswith '/'.
-            wait: Should transform job wait until complete.
+            wait: Should transform job wait_for_completion until complete.
             job_name: Transform job name.
             **kwargs:
         Returns:
@@ -141,8 +137,8 @@ class FeatureNormalize(XFlowTransformer):
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, **kwargs):
-        super(FeatureNormalize, self).__init__(session=session, **kwargs)
+    def __init__(self, **kwargs):
+        super(FeatureNormalize, self).__init__(**kwargs)
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(FeatureNormalize, self)._compile_args(*inputs, **kwargs)
@@ -168,8 +164,8 @@ class MaxComputeDataSource(XFlowTransformer):
 
     :Example:
 
-    >> tf = Transformer(session=session)
-    >> job = tf.transform(table_name='pai_online_project.wumai_data', wait=True,
+    >> tf = Transformer()
+    >> job = tf.transform(table_name='pai_online_project.wumai_data', wait_for_completion=True,
      job_name='data_source_example_job')
     >> job.get_status()
 
@@ -179,8 +175,8 @@ class MaxComputeDataSource(XFlowTransformer):
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, session, **kwargs):
-        super(MaxComputeDataSource, self).__init__(session=session, **kwargs)
+    def __init__(self, **kwargs):
+        super(MaxComputeDataSource, self).__init__(**kwargs)
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(MaxComputeDataSource, self)._compile_args(*inputs, **kwargs)
@@ -196,7 +192,7 @@ class MaxComputeDataSource(XFlowTransformer):
             table_name (str): Input MaxCompute table name.
             partition (str): MaxCompute table partition identifier, for example,
                              "seller=19283/dt=20200304", Default None.
-            wait (bool):    Whether transform method wait until the run job finished.
+            wait (bool):    Whether transform method wait_for_completion until the run job finished.
             job_name (str): Name of invoke transform job. If not specified, the estimator
                             generates a default job name based on the identifier and current
                             timestamp.

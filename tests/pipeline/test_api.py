@@ -2,23 +2,31 @@ from __future__ import absolute_import
 
 import os
 import unittest
-from pprint import pprint
 
 import yaml
 
-from pai import PipelineRun
-from tests import BaseTestCase
-
 from pai.common import ProviderAlibabaPAI
+from pai.session import Session
+from tests import BaseTestCase
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestPaiFlowAPI(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(TestPaiFlowAPI, cls).setUpClass()
+        session = Session.get_current_session()
+        cls.session = session
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestPaiFlowAPI, cls).tearDownClass()
+        if cls.session:
+            del cls.session
 
     def test_get_pipeline(self):
         identifier = "evaluate-xflow-maxCompute"
-
         pipeline_info = self.session.get_pipeline(identifier=identifier,
                                                   provider=ProviderAlibabaPAI,
                                                   version="v1")

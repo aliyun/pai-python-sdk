@@ -17,11 +17,6 @@ def md5_digest(raw_data):
     return hashlib.md5(raw_data).hexdigest()
 
 
-def run_detail_url(run_id, region_id):
-    return "https://pai.data.aliyun.com/console?regionId={region_id}#/" \
-           "task-list/detail/{run_id}".format(region_id=region_id, run_id=run_id)
-
-
 def ensure_str(val):
     if isinstance(val, six.string_types):
         return val
@@ -52,7 +47,7 @@ def extract_odps_table_info(data):
     elif isinstance(data, six.string_types):
         return _extract_odps_table_info_from_url(data)
     else:
-        raise ValueError("Not support ODPSTable input(type:s)" % type(data))
+        raise ValueError("Not support ODPSTable input(type:%s)" % type(data))
 
 
 def _extract_odps_table_info_from_url(resource):

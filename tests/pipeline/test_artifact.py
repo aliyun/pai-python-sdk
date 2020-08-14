@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from pai.pipeline.artifact import MaxComputeResourceArtifact
+from pai.pipeline.types.artifact import MaxComputeResourceArtifact
 from tests import BaseTestCase
 
 

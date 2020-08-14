@@ -3,16 +3,15 @@ from __future__ import absolute_import
 import random
 import time
 
-from pai.pipeline.artifact import ArtifactDataType, ArtifactLocationType
-from pai.pipeline.parameter import ParameterType
+from pai.pipeline.template import PipelineTemplate
+from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType
+from pai.pipeline.types.parameter import ParameterType
 from pai.utils import gen_temp_table
 
-from pai import Pipeline
+from pai.pipeline.core import Pipeline
 from pai.common import ProviderAlibabaPAI
-from pai.estimator import EstimatorJob
 from pai.job import JobStatus
-from pai.pipeline import PipelineRun, PipelineStep, PipelineRunStatus
-from pai.transformer import PipelineTransformer
+from pai.pipeline import PipelineRunStatus
 from pai.xflow.classifier import LogisticRegression
 from tests import BaseTestCase
 
@@ -21,7 +20,6 @@ class TestXFlowEstimator(BaseTestCase):
 
     def test_algo_init(self):
         lr = LogisticRegression(
-            session=self.session,
             regularized_level=1.0,
             regularized_type="l2",
             max_iter=200,
@@ -40,7 +38,6 @@ class TestXFlowEstimator(BaseTestCase):
 
     def test_algo_init_with_pmml(self):
         lr = LogisticRegression(
-            session=self.session,
             regularized_level=2.0,
             regularized_type="l1",
             max_iter=100,
@@ -67,7 +64,6 @@ class TestXFlowEstimator(BaseTestCase):
 
     def test_estimator_build(self):
         lr = LogisticRegression(
-            session=self.session
         )
 
         args = {
@@ -119,11 +115,12 @@ class TestXFlowAlgo(BaseTestCase):
             "odpsProject": default_project,
         }
 
-        tf = Pipeline.get_by_identifier(session=self.session, identifier="split-xflow-maxCompute",
-                                        provider=ProviderAlibabaPAI, version="v1").to_transformer(
+        tf = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
+                                                provider=ProviderAlibabaPAI,
+                                                version="v1").to_estimator(
             parameters={"execution": xflow_execution, "fraction": 0.7, })
 
-        job = tf.transform(wait=False, args={
+        job = tf.fit(wait=False, arguments={
             "inputArtifact": "odps://{0}/tables/{1}".format(default_project, "iris_data"),
             "output1TableName": gen_temp_table(),
             "output2TableName": gen_temp_table(),
@@ -133,18 +130,17 @@ class TestXFlowAlgo(BaseTestCase):
         self.assertEqual(JobStatus.Succeeded, job.get_status())
         time.sleep(20)  # Because of outputs delay.
         job_outputs = job.get_outputs()
-        dataset1 = job_outputs["outputArtifact1"]
-        dataset2 = job_outputs["outputArtifact2"]
+        dataset1 = job_outputs[0]
 
         oss_endpoint = self.oss_info.endpoint
         oss_path = "/pai_test/test_algo_chain/"
         oss_bucket = self.oss_info.bucket
 
         model_name = 'test_iris_model_%d' % (random.randint(0, 999999))
-        lr = LogisticRegression(session=self.session, regularized_type="l2",
+        lr = LogisticRegression(regularized_type="l2",
                                 pmml_gen=True, pmml_oss_bucket=oss_bucket,
                                 pmml_oss_path=oss_path, pmml_oss_endpoint=oss_endpoint,
-                                pmml_oss_rolearn="acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
+                                pmml_oss_rolearn=self.oss_info.rolearn,
                                 xflow_execution=xflow_execution)
 
         feature_cols = ["f1", "f2", "f3", "f4"]
@@ -159,7 +155,7 @@ class TestXFlowAlgo(BaseTestCase):
         self.assertTrue(self.odps_client.exist_offline_model(
             model_name, default_project,
         ))
-        oss_bucket = self.session.get_oss_bucket(endpoint=oss_endpoint, bucket=oss_bucket)
+        oss_bucket = self.oss_info.bucket
         object_key = oss_path + model_name + ".xml"
         self.assertTrue(oss_bucket.object_exists(object_key))
         model = job.create_model(output_name="outputArtifact")
@@ -171,18 +167,16 @@ class TestXFlowAlgo(BaseTestCase):
             label_col="type")
         job.attach(log_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
-        # TODO: multi-class-evaluate pipeline is required
 
     def test_heart_disease_step_by_step(self):
-        default_project = "pai_sdk_test"
         xflow_execution = {
             "odpsInfoFile": "/share/base/odpsInfo.ini",
             "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
             "logViewHost": "http://logview.odps.aliyun.com",
-            "odpsProject": default_project,
+            "odpsProject": self.odps_client.project,
         }
 
-        dataset_table = "odps://pai_online_project/tables/heart_disease_prediction"
+        dataset_table = self.PUBLIC_DATASET_TABLE_HEART_DISEASE_PREDICTION
 
         sql = "select age, (case sex when 'male' then 1 else 0 end) as sex, (case cp when " \
               "'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps, chol, (case" \
@@ -194,9 +188,9 @@ class TestXFlowAlgo(BaseTestCase):
               " ifHealth from ${t1};"
 
         # Extract and transform dataset using max_compute sql.
-        sql_job = Pipeline.get_by_identifier(identifier="sql-xflow-maxCompute",
-                                             provider=ProviderAlibabaPAI, version="v1",
-                                             session=self.session).to_estimator(
+        sql_job = PipelineTemplate.get_by_identifier(identifier="sql-xflow-maxCompute",
+                                                     provider=ProviderAlibabaPAI,
+                                                     version="v1").to_estimator(
             parameters={
                 "execution": xflow_execution,
                 "inputArtifact1": dataset_table,
@@ -207,10 +201,9 @@ class TestXFlowAlgo(BaseTestCase):
         time.sleep(10)
         output_table_artifact = sql_job.get_outputs()[0]
 
-        type_transform_job = Pipeline.get_by_identifier(
+        type_transform_job = PipelineTemplate.get_by_identifier(
             identifier="type-transform-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1",
-            session=self.session).to_estimator(
+            provider=ProviderAlibabaPAI, version="v1").to_estimator(
             parameters={
                 "execution": xflow_execution,
                 "inputArtifact": output_table_artifact,
@@ -223,9 +216,9 @@ class TestXFlowAlgo(BaseTestCase):
         type_transform_result = type_transform_job.get_outputs()[0]
 
         # Normalize Feature
-        normalize_job = Pipeline.get_by_identifier(identifier="normalize-xflow-maxCompute",
-                                                   provider=ProviderAlibabaPAI, version="v1",
-                                                   session=self.session).to_estimator(
+        normalize_job = PipelineTemplate.get_by_identifier(identifier="normalize-xflow-maxCompute",
+                                                           provider=ProviderAlibabaPAI,
+                                                           version="v1").to_estimator(
             parameters={
                 "execution": xflow_execution,
                 "inputArtifact": type_transform_result,
@@ -239,10 +232,9 @@ class TestXFlowAlgo(BaseTestCase):
         time.sleep(20)
         normalized_dataset = normalize_job.get_outputs()[0]
 
-        split_job = Pipeline.get_by_identifier(
+        split_job = PipelineTemplate.get_by_identifier(
             identifier="split-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1",
-            session=self.session).to_estimator(
+            provider=ProviderAlibabaPAI, version="v1").to_estimator(
             parameters={
                 "inputArtifact": normalized_dataset,
                 "execution": xflow_execution,
@@ -259,7 +251,7 @@ class TestXFlowAlgo(BaseTestCase):
         oss_path = "/paiflow/model_transfer2oss_test/"
         oss_bucket = "dataplus-pai-test"
         lr_job = LogisticRegression(
-            session=self.session, regularized_type="l2", xflow_execution=xflow_execution,
+            regularized_type="l2", xflow_execution=xflow_execution,
             pmml_gen=True, pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path, pmml_oss_endpoint=oss_endpoint,
             pmml_oss_rolearn="acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
@@ -272,10 +264,9 @@ class TestXFlowAlgo(BaseTestCase):
 
         time.sleep(20)
         offlinemodel_artifact, pmml_output = lr_job.get_outputs()
-        transform_job = Pipeline.get_by_identifier(
+        transform_job = PipelineTemplate.get_by_identifier(
             identifier="prediction-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1",
-            session=self.session).to_estimator(
+            provider=ProviderAlibabaPAI, version="v1").to_estimator(
             parameters={
                 "inputModelArtifact": offlinemodel_artifact,
                 "inputDataSetArtifact": split_output_2,
@@ -289,10 +280,9 @@ class TestXFlowAlgo(BaseTestCase):
         time.sleep(20)
         transform_result = transform_job.get_outputs()[0]
 
-        evaluate_job = Pipeline.get_by_identifier(
+        evaluate_job = PipelineTemplate.get_by_identifier(
             identifier="evaluate-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1",
-            session=self.session).to_estimator(
+            provider=ProviderAlibabaPAI, version="v1").to_estimator(
             parameters={
                 "execution": xflow_execution,
                 "inputArtifact": transform_result,
@@ -462,7 +452,7 @@ class TestXFlowAlgo(BaseTestCase):
 
         print(p.to_dict())
 
-        run_instance = p.run(name="test_run", arguments={
+        run_instance = p.run(job_name="test_run", arguments={
             "xflow_execution": {
                 "odpsInfoFile": "/share/base/odpsInfo.ini",
                 "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
@@ -475,6 +465,6 @@ class TestXFlowAlgo(BaseTestCase):
             "pmml_oss_endpoint": pmml_oss_endpoint,
             "dataset-table": dataset_table,
         }, wait=False)
-        run_instance.wait(log_outputs=False)
+        run_instance.wait_for_completion(log_outputs=False)
 
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
