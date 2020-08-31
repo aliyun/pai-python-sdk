@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import unittest
 from decimal import Decimal
+from pprint import pprint
 
 from pai.pipeline.types.parameter import Interval, ParameterValidator, \
     ParameterType, PipelineParameter
@@ -18,7 +19,7 @@ class TestParameter(BaseTestCase):
                     "name": "treeNum",
                     "kind": "inputs",
                     "typ": int,
-                    "value": 100,
+                    "default": 100,
                     "feasible": {
                         "range": "[1, 1000]"
                     },
@@ -38,7 +39,7 @@ class TestParameter(BaseTestCase):
                     "name": "outputTableName",
                     "kind": "inputs",
                     "typ": str,
-                    "value": "pai_temp_18090911",
+                    "default": "pai_temp_18090911",
                 },
                 "expected": {
                     "name": "outputTableName",

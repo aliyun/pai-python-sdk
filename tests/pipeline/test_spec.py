@@ -15,9 +15,9 @@ class TestInputOutputSpec(BaseTestCase):
 
     def test_spec_getitem(self):
         items = [
-            PipelineParameter(name="A", typ=int, value=10),
-            PipelineParameter(name="B", typ=str, value="result"),
-            PipelineParameter(name="C", typ=bool, value=True),
+            PipelineParameter(name="A", typ=int, default=10),
+            PipelineParameter(name="B", typ=str, default="result"),
+            PipelineParameter(name="C", typ=bool, default=True),
             PipelineArtifact(name="D",
                              metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
                                                        location_type=ArtifactLocationType.MaxComputeTable)),
@@ -33,11 +33,11 @@ class TestInputOutputSpec(BaseTestCase):
         self.assertTrue([item.name for item in specs[::2]] == ["A", "C", "E"])
 
     def test_spec_order(self):
-        param_a = PipelineParameter(name="A", typ=int, value=10)
-        param_b = PipelineParameter(name="B", typ=str, value="result")
-        param_c = PipelineParameter(name="C", typ=bool, value=True)
+        param_a = PipelineParameter(name="A", typ=int, default=10)
+        param_b = PipelineParameter(name="B", typ=str, default="result")
+        param_c = PipelineParameter(name="C", typ=bool, default=True)
 
-        param_a_2 = PipelineParameter(name="A", typ=bool, value=True)
+        param_a_2 = PipelineParameter(name="A", typ=bool, default=True)
 
         af_d = PipelineArtifact(name="D",
                                 metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,

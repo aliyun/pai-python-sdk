@@ -16,14 +16,14 @@ from pai.utils import ensure_str, ensure_unix_time
 
 class PAIFlowClient(BaseClient):
 
-    def __init__(self, acs_client, is_inner=False):
+    def __init__(self, acs_client, _is_inner=False):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
         Args:
             acs_client: Alibaba Cloud Service client.
         """
         super(PAIFlowClient, self).__init__(acs_client=acs_client)
-        self._inner = is_inner
+        self._inner = _is_inner
 
     def _call_service_with_exception(self, request):
         resp = super(PAIFlowClient, self)._call_service_with_exception(request)

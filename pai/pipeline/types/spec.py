@@ -122,8 +122,8 @@ def _load_parameter_spec(p, param_spec, kind):
     desc = param_spec.pop("desc", None)
     required = param_spec.pop("required", False)
 
-    param = PipelineParameter(name=name, typ=typ, kind=kind, parent=p, from_=from_,
-                              feasible=feasible, value=value, desc=desc, required=required)
+    param = PipelineParameter(name=name, typ=typ, default=value, desc=desc, kind=kind, from_=from_,
+                              parent=p, feasible=feasible)
     return param
 
 
@@ -137,5 +137,5 @@ def _load_artifact_spec(p, artifact_spec, kind):
     required = artifact_spec.get("required", False)
 
     af = PipelineArtifact(name=name, metadata=metadata, kind=kind, parent=p, from_=from_,
-                          value=value, desc=desc, required=required)
+                          default=value, desc=desc, required=required)
     return af

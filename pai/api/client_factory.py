@@ -13,8 +13,8 @@ class ClientFactory(object):
         return False
 
     @classmethod
-    def create_paiflow_client(cls, acs_client):
-        return PAIFlowClient(acs_client, cls._is_inner_client(acs_client))
+    def create_paiflow_client(cls, acs_client, _is_inner):
+        return PAIFlowClient(acs_client, _is_inner=_is_inner)
 
     @classmethod
     def create_sts_client(cls, acs_client):

@@ -228,11 +228,7 @@ class Pipeline(PipelineBase):
                     metadata=item.metadata,
                 ))
             elif isinstance(item, PipelineParameter):
-                results.append(PipelineParameter(
-                    name=name,
-                    from_=item,
-                    typ=item.typ,
-                ))
+                results.append(PipelineParameter(name=name, typ=item.typ, from_=item))
             else:
                 raise ValueError("Unexpected output type: %s", type(item))
         return results

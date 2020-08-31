@@ -32,6 +32,7 @@ class Session(object):
     """
 
     _default_session = None
+    _inner_region_ids = ["center"]
 
     def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None,
                  odps_client=None, **kwargs):
@@ -46,10 +47,11 @@ class Session(object):
         if not access_key_id or not access_key_secret or not region_id:
             raise ValueError("Please provide access_key, access_secret and region")
 
-        self.region_id = region_id
+        self._region_id = region_id
         self._acs_client = AcsClient(ak=access_key_id, secret=access_key_secret,
                                      region_id=region_id)
-        self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
+        self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client,
+                                                                  _is_inner=self._is_inner)
         if oss_bucket:
             self._oss_bucket = oss_bucket
         if odps_client:
@@ -62,6 +64,14 @@ class Session(object):
     @classmethod
     def set_default_session(cls, session):
         cls._default_session = session
+
+    @property
+    def region_id(self):
+        return self._region_id
+
+    @property
+    def _is_inner(self):
+        return self._region_id in self._inner_region_ids
 
     @property
     def oss_bucket(self):

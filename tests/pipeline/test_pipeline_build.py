@@ -24,9 +24,9 @@ class TestSimpleCompositePipeline(BaseTestCase):
     @classmethod
     def create_composite_pipeline(cls):
         """Composite data_source and type_transform pipeline"""
-        execution_input = PipelineParameter(name="execution", typ="map", required=True)
-        cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str, required=True)
-        table_input = PipelineParameter(name="table_name", typ=str, required=True)
+        execution_input = PipelineParameter(name="execution", typ="map")
+        cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str)
+        table_input = PipelineParameter(name="table_name", typ=str)
 
         data_source_step = PipelineStep(
             identifier="dataSource-xflow-maxCompute", provider=ProviderAlibabaPAI,
@@ -111,7 +111,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
         self.assertEqual(len(pipeline.steps), 3)
 
     def test_conflict_step_names(self):
-        execution_input = PipelineParameter(name="execution", typ="map", required=True)
+        execution_input = PipelineParameter(name="execution", typ="map")
         dataset_input = PipelineArtifact(name="dataset_table", metadata=ArtifactMetadata(
             data_type=ArtifactDataType.DataSet,
             location_type=ArtifactLocationType.MaxComputeTable))
@@ -147,7 +147,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
             _ = Pipeline(steps=[split_step_1, split_step_2])
 
     def test_auto_step_name(self):
-        execution_input = PipelineParameter(name="execution", typ="map", required=True)
+        execution_input = PipelineParameter(name="execution", typ="map")
         dataset_input = PipelineArtifact(name="dataset_table", metadata=ArtifactMetadata(
             data_type=ArtifactDataType.DataSet,
             location_type=ArtifactLocationType.MaxComputeTable))
@@ -177,9 +177,9 @@ class TestSimpleCompositePipeline(BaseTestCase):
         self.assertIsNotNone(split_step_2.name)
 
     def test_pipeline_cycle_detect(self):
-        execution_input = PipelineParameter(name="execution", typ="map", required=True)
-        cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str, required=True)
-        table_input = PipelineParameter(name="table_name", typ=str, required=True)
+        execution_input = PipelineParameter(name="execution", typ="map")
+        cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str)
+        table_input = PipelineParameter(name="table_name", typ=str)
 
         data_source_step = PipelineStep(
             identifier="dataSource-xflow-maxCompute",
@@ -223,7 +223,7 @@ class TestPipelineBuild(BaseTestCase):
 
     def test_nested_pipeline(self):
         def create_saved_base_pipeline():
-            execution_input = PipelineParameter(name="xflow_execution", typ="map", required=True)
+            execution_input = PipelineParameter(name="xflow_execution", typ="map")
 
             data_source_step = PipelineStep(
                 identifier="dataSource-xflow-maxCompute",
@@ -277,8 +277,7 @@ class TestPipelineBuild(BaseTestCase):
 
         prev_pipeline = pipeline
         for idx in range(1, 10):
-            xflow_execution_input = PipelineParameter(name="xflow_execution", typ="map",
-                                                      required=True)
+            xflow_execution_input = PipelineParameter(name="xflow_execution", typ="map")
             inner_step = PipelineStep(
                 identifier=prev_pipeline.identifier,
                 version=prev_pipeline.version,
@@ -317,9 +316,9 @@ class TestContainerComponent(BaseTestCase):
     @skip("Only admin has privilege to create container-execution pipeline")
     def test_component_base(self):
         inputs = [
-            PipelineParameter(name="xflow_name", typ=str, required=True),
-            PipelineParameter(name="execution", typ=dict, required=False,
-                              value=self.get_default_xflow_execution())
+            PipelineParameter(name="xflow_name", typ=str),
+            PipelineParameter(name="execution", typ=dict,
+                              default=self.get_default_xflow_execution())
 
         ]
         outputs = [

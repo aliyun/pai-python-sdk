@@ -27,16 +27,26 @@ POSITIVE_INFINITY = Decimal("infinity")
 class PipelineParameter(PipelineVariable):
     variable_category = "parameters"
 
-    def __init__(self, name, typ=str, required=False, **kwargs):
+    def __init__(self, name, typ=str, default=None, desc=None, kind="inputs", from_=None,
+                 parent=None, feasible=None):
         typ = ParameterType.normalize_typ(typ)
         validator = None
-        feasible = kwargs.pop("feasible", None)
         if feasible:
             validator = ParameterValidator.load(feasible)
-        super(PipelineParameter, self).__init__(name=name, required=required, validator=validator,
-                                                **kwargs)
 
+        if default is not None:
+            required = False
+        else:
+            required = True
+
+        super(PipelineParameter, self).__init__(
+            name=name, value=default, desc=desc, kind=kind, from_=from_, required=required,
+            parent=parent, validator=validator)
         self.typ = typ
+
+    @property
+    def default(self):
+        return self.value
 
     def validate_value(self, val):
         if self.typ in _PRIMITIVE_TYPE_MAP:
@@ -69,10 +79,9 @@ class PipelineParameter(PipelineVariable):
         feasible = param_spec.pop("feasible", None)
         value = param_spec.pop("value", None)
         desc = param_spec.pop("desc", None)
-        required = param_spec.pop("required", False)
 
-        param = PipelineParameter(name=name, typ=typ, kind=kind, from_=from_, value=value,
-                                  desc=desc, required=required, feasible=feasible)
+        param = PipelineParameter(name=name, typ=typ, default=value, desc=desc, kind=kind,
+                                  from_=from_, feasible=feasible)
         if not param.validate_value(val):
             raise ValueError(
                 "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
@@ -84,6 +93,10 @@ class PipelineParameter(PipelineVariable):
         d["type"] = self.typ.value
         if self.value is not None:
             d["value"] = self.value
+
+        # if self.required:
+        #     d["required"] = self.required
+
         return d
 
 

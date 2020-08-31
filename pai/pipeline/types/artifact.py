@@ -15,10 +15,10 @@ from pai.pipeline.types.variable import PipelineVariable
 class PipelineArtifact(PipelineVariable):
     variable_category = "artifacts"
 
-    def __init__(self, name, metadata=None, path=None, desc=None, kind="inputs", value=None,
+    def __init__(self, name, metadata=None, path=None, desc=None, kind="inputs", default=None,
                  from_=None, required=None, parent=None):
         super(PipelineArtifact, self).__init__(name=name, desc=desc, kind=kind,
-                                               value=value, from_=from_,
+                                               value=default, from_=from_,
                                                required=required, parent=parent)
         self.metadata = metadata
         self.path = path
