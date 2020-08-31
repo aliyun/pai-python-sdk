@@ -21,15 +21,8 @@ class TestLogisticsRegression(BaseTestCase):
     def setUpClass(cls):
         super(TestLogisticsRegression, cls).setUpClass()
         # prepare DataSet table
-        iris_data = load_iris()
-        columns = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'category']
-        pddf = pd.DataFrame(dict(
-            list(zip(columns, list(iris_data.data.T) + [iris_data.target]))), columns=columns)
-
-        cls.iris_table_name = 'test_iris_table_%d' % random.randint(0, 999999)
-        cls.temp_tables.append(cls.iris_table_name)
-        cls.iris_df = odps.DataFrame(pddf).persist(
-            cls.iris_table_name, odps=cls.odps_client, lifecycle=1)
+        table_name = cls.TestDataSetTables["iris_origin"]
+        cls.iris_df = odps.DataFrame(cls.odps_client.get_table(table_name))
 
     @classmethod
     def tearDownClass(cls):
@@ -39,24 +32,19 @@ class TestLogisticsRegression(BaseTestCase):
             cls.odps_client.delete_table(name, if_exists=True, async_=True)
 
     def test_sync_train(self):
-        project = self.odps_client.project
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             regularized_type="l2",
-            xflow_execution={
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": project,
-            }
+            xflow_execution=self.get_default_xflow_execution(),
         )
 
-        iris_dataset_table = 'odps://pai_online_project/tables/iris_data'
+        iris_dataset_table = self.odps_client.get_table(self.TestDataSetTables["iris_origin"])
 
         run_job = lr.fit(wait=True, log_outputs=False, input_data=iris_dataset_table,
                          job_name="pysdk-test-lr-sync-fit",
-                         model_name=model_name, good_value=1, label_col="type",
-                         feature_cols=['f1', 'f2', 'f3', 'f4'])
+                         model_name=model_name, good_value=1, label_col="category",
+                         feature_cols=['sepal_length', 'sepal_width', 'petal_length',
+                                       'petal_width'])
 
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         # PipelineOutput is not ready while status switch to succeed.
@@ -68,16 +56,10 @@ class TestLogisticsRegression(BaseTestCase):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             regularized_type="l2",
-            xflow_execution={
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": self.odps_client.project,
-            }
+            xflow_execution=self.get_default_xflow_execution(),
         )
-        run_job = lr.fit(wait=False, input_data=self.iris_df, label_col="category",
+        run_job = lr.fit(wait=False, input_data=self.iris_df, label_col="category", good_value=1,
                          job_name="pysdk-test-lr-async-fit", model_name=model_name,
-                         good_value=1,
                          feature_cols=['sepal_length', 'sepal_width', 'petal_length',
                                        'petal_width'])
 
@@ -95,12 +77,7 @@ class TestLogisticsRegression(BaseTestCase):
         model_name = 'test_iris_model_%d' % random.randint(0, 999999)
         lr = LogisticRegression(
             regularized_level=1.0,
-            xflow_execution={
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": self.odps_client.project,
-            }
+            xflow_execution=self.get_default_xflow_execution(),
         )
         job1 = lr.fit(wait=False, input_data=self.iris_df, job_name="pysdk-test-lr-multi-fit-1",
                       label_col="category", model_name=model_name, good_value=1,
@@ -114,10 +91,3 @@ class TestLogisticsRegression(BaseTestCase):
                       model_name=model_name)
         self.assertEqual(lr.last_job, job2)
         self.assertNotEqual(job1.run_id, job2.run_id)
-
-    def test_enable_spare(self):
-        pass
-
-
-class TestRandomForestClassifier(BaseTestCase):
-    pass

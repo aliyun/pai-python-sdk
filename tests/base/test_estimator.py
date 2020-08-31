@@ -48,8 +48,6 @@ class TestEstimatorBase(BaseTestCase):
 
         _ = est.fit(wait=False, job_name="pysdk-test-estimator-pipeline", arguments=run_args)
         # assert odps offlineModel exists
-        print(model_name, type(model_name))
-        print(project, type(project))
         self.assertTrue(
             self.odps_client.exist_offline_model(name=model_name, project=project))
 

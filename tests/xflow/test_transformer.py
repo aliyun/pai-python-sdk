@@ -39,24 +39,6 @@ class TestOfflineModelPredictionTransformer(BaseTestCase):
         # self.assertTrue("outputArtifact" in outputs)
 
 
-class TestODPSDataSource(BaseTestCase):
-
-    def test_data_source(self):
-        tf = MaxComputeDataSource(
-            xflow_execution=self.get_default_xflow_execution(),
-        )
-        job_name = "pysdk-test-data-source"
-        run_job = tf.transform(table_name="pai_online_project.wumai_data", wait=False,
-                               job_name=job_name)
-        self.assertEqual(run_job.get_status(), JobStatus.Running)
-        self.assertEqual(run_job.name, job_name)
-        run_job.attach(log_outputs=False)
-        self.assertEqual(run_job.get_status(), JobStatus.Succeeded)
-        # TODO: Pipeline outputs is not ready even enter Succeed status.
-        time.sleep(10)
-        self.assertTrue(len(run_job.get_outputs()) > 0)
-
-
 class TestModelTransferToOSS(BaseTestCase):
 
     def test_model_transfer(self):

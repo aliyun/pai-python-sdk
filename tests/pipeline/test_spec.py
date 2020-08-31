@@ -84,7 +84,6 @@ class TestInputOutputSpec(BaseTestCase):
         ]
 
         for case in success_cases:
-            print(case["inputs"])
             _ = validate_spec(case["inputs"])
 
         error_cases = [

@@ -218,11 +218,17 @@ class PipelineTemplate(object):
         if identifier is None and version is None and self.pipeline_id:
             raise ValueError("Pipeline Manifest has been saved.")
 
+        if not self.identifier and not identifier:
+            raise ValueError("Required pipeline identifier.")
+
+        if not self.version and not version:
+            raise ValueError("Required pipeline version")
+
         self._manifest["metadata"]["provider"] = provider
         if identifier is not None:
-            self._manifest["metadata"]["identifier"] = identifier
+            self._manifest["metadata"]["identifier"] = identifier or self.identifier
         if version is not None:
-            self._manifest["metadata"]["version"] = version
+            self._manifest["metadata"]["version"] = version or self.version
         if "uuid" in self._manifest["metadata"]:
             del self._manifest["metadata"]["uuid"]
 

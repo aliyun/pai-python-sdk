@@ -22,14 +22,16 @@ class TestPipelineBase(BaseTestCase):
     def test_args_translate(self):
         p = self.init_prediction_pipeline()
 
+        table_name = self.TestDataSetTables["iris_data"]
         arguments = {
             "execution": {
                 "k1": "value",
                 "k2": "value",
             },
             "outputTableName": "pai_output_test_table",
-            "inputDataSetArtifact": "odps://pai_online_project/tables/iris_data",
-            "inputModelArtifact": "odps://pai_online_project/offlinemodels/test_iris_model",
+            "inputDataSetArtifact": self.odps_client.get_table(table_name),
+            "inputModelArtifact": "odps://%s/offlinemodels/test_iris_model" %
+                                  self.odps_client.project,
         }
 
         parameters, artifacts = p.translate_arguments(arguments)
@@ -56,11 +58,13 @@ class TestPipelineBase(BaseTestCase):
         expected_artifacts = [
             {
                 'name': 'inputDataSetArtifact',
-                'value': '{"location": {"project": "pai_online_project", "table": "iris_data"}}'
+                'value': '{"location": {"project": "%s", "table": "%s"}}' % (
+                    self.odps_client.project, table_name),
             },
             {
                 'name': 'inputModelArtifact',
-                'value': '{"location": {"name": "test_iris_model", "project": "pai_online_project"}, "name": "test_iris_model"}',
+                'value': '{"location": {"name": "test_iris_model", "project":'
+                         ' "%s"}, "name": "test_iris_model"}' % self.odps_client.project,
             }
         ]
 

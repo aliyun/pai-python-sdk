@@ -2,13 +2,19 @@ from __future__ import absolute_import
 
 import time
 import unittest
+from unittest import skip
+
+import yaml
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline, PipelineStep
+from pai.pipeline.core import ContainerComponent
+from pai.pipeline.template import load_pipeline_from_yaml
 from pai.pipeline.run import PipelineRunStatus
 from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, ArtifactMetadata, \
     PipelineArtifact
 from pai.pipeline.types.parameter import PipelineParameter
+from pai.session import get_current_pai_session
 from pai.utils import gen_temp_table
 from tests import BaseTestCase
 
@@ -38,6 +44,8 @@ class TestSimpleCompositePipeline(BaseTestCase):
                 "execution": execution_input,
                 "outputTable": gen_temp_table(),
                 "cols_to_double": cols_to_double_input,
+                "coreNum": 2,
+                "memSizePerCore": 1024,
             }
         )
         split_step = PipelineStep(
@@ -48,12 +56,15 @@ class TestSimpleCompositePipeline(BaseTestCase):
                 "output1TableName": gen_temp_table(),
                 "fraction": 0.5,
                 "output2TableName": gen_temp_table(),
+                "coreNum": 2,
+                "memSizePerCore": 1024,
+                "lifecycle": 28,
             }
         )
 
         p = Pipeline(
             inputs=[execution_input, cols_to_double_input, table_input],
-            steps=[data_source_step, type_transform_step],
+            steps=[data_source_step, type_transform_step, split_step],
             outputs=split_step.outputs[:1] + data_source_step.outputs[:1] + split_step.outputs[-1:],
         )
 
@@ -79,13 +90,25 @@ class TestSimpleCompositePipeline(BaseTestCase):
         pipeline_run = p.run(job_name="job_name", arguments={
             "execution": self.get_default_xflow_execution(),
             "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
-            "table_name": "pai_online_project.wumai_data",
+            "table_name": self.TestDataSetTables["wumai_data"],
         }, wait=True, log_outputs=True)
 
         self.assertEqual(pipeline_run.get_status(), PipelineRunStatus.Succeeded)
 
-    def test_run_tmp_pipeline(self):
-        pass
+    def test_composite_pipeline_save_and_load(self):
+        p, data_source_step, type_transform_step, split_step = self.create_composite_pipeline()
+        self.assertIsNone(p.pipeline_id)
+
+        new_version = "%s" % int(time.time())
+        _ = p.save(identifier="test-composite-pipeline", version=new_version)
+        self.assertIsNotNone(p.pipeline_id)
+        self.assertEqual(p.version, new_version)
+
+        sess = get_current_pai_session()
+        pipeline_info = sess.describe_pipeline(p.pipeline_id)
+        manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
+        pipeline = load_pipeline_from_yaml(manifest)
+        self.assertEqual(len(pipeline.steps), 3)
 
     def test_conflict_step_names(self):
         execution_input = PipelineParameter(name="execution", typ="map", required=True)
@@ -209,7 +232,7 @@ class TestPipelineBuild(BaseTestCase):
                 name="dataSource",
                 inputs={
                     "execution": execution_input,
-                    "tableName": "pai_online_project.iris_data",
+                    "tableName": self.TestDataSetTables["iris_data"],
                     "partition": "",
                 }
             )
@@ -287,6 +310,42 @@ class TestPipelineBuild(BaseTestCase):
         self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
         run_instance.wait_for_completion(log_outputs=False)
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
+
+
+class TestContainerComponent(BaseTestCase):
+
+    @skip("Only admin has privilege to create container-execution pipeline")
+    def test_component_base(self):
+        inputs = [
+            PipelineParameter(name="xflow_name", typ=str, required=True),
+            PipelineParameter(name="execution", typ=dict, required=False,
+                              value=self.get_default_xflow_execution())
+
+        ]
+        outputs = [
+            PipelineArtifact(name="output1", metadata=ArtifactMetadata(
+                data_type=ArtifactDataType.DataSet,
+                location_type=ArtifactLocationType.OSS))
+        ]
+
+        comp = ContainerComponent(
+            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1",
+            inputs=inputs,
+            outputs=outputs,
+            command=[
+                "python",
+                "-m",
+                "train",
+                "--parameter={{inputs.parameters}}"
+            ])
+        p = comp.save(identifier="test-comp", version=str(time.time()))
+
+        session = get_current_pai_session()
+
+        run_id = session.create_run(
+            pipeline_id=p.pipeline_id, name="test",
+            arguments={
+            })
 
 
 if __name__ == "__main__":

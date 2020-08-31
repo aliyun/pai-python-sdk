@@ -34,7 +34,7 @@ class TestTransformer(BaseTestCase):
         _, transformer = self.init_base_transformer()
 
         run_args = {
-            "tableName": "pai_online_project.wumai_data",
+            "tableName": self.TestDataSetTables["wumai_data"]
         }
 
         job = transformer.transform(wait=True, job_name="test_transform_job", args=run_args)
@@ -43,7 +43,7 @@ class TestTransformer(BaseTestCase):
     def test_base_transformer_async_run(self):
         _, transformer = self.init_base_transformer()
         run_args = {
-            "tableName": "pai_online_project.wumai_data",
+            "tableName": self.TestDataSetTables["wumai_data"]
         }
         job = transformer.transform(wait=False, job_name="test_transform_job", args=run_args)
         self.assertEqual(JobStatus.Running, job.get_status())
@@ -53,7 +53,7 @@ class TestTransformer(BaseTestCase):
     def test_multiple_call_transform(self):
         _, transformer = self.init_base_transformer()
         run_args = {
-            "tableName": "pai_online_project.wumai_data",
+            "tableName": self.TestDataSetTables["wumai_data"]
         }
         job1 = transformer.transform(wait=False, job_name="test_transform_job", args=run_args)
         self.assertEqual(transformer.last_job, job1)

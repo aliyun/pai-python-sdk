@@ -2,16 +2,17 @@ from __future__ import absolute_import
 
 import random
 import time
+import unittest
 
-from pai.pipeline.template import PipelineTemplate
-from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType
-from pai.pipeline.types.parameter import ParameterType
-from pai.utils import gen_temp_table
-
-from pai.pipeline.core import Pipeline
 from pai.common import ProviderAlibabaPAI
 from pai.job import JobStatus
-from pai.pipeline import PipelineRunStatus
+from pai.pipeline import PipelineRunStatus, PipelineStep
+from pai.pipeline.core import Pipeline
+from pai.pipeline.template import PipelineTemplate
+from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, ArtifactMetadata, \
+    PipelineArtifact
+from pai.pipeline.types.parameter import ParameterType, PipelineParameter
+from pai.utils import gen_temp_table
 from pai.xflow.classifier import LogisticRegression
 from tests import BaseTestCase
 
@@ -108,12 +109,8 @@ class TestXFlowAlgo(BaseTestCase):
 
     def test_algo_chain(self):
         default_project = self.odps_client.project
-        xflow_execution = {
-            "odpsInfoFile": "/share/base/odpsInfo.ini",
-            "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-            "logViewHost": "http://logview.odps.aliyun.com",
-            "odpsProject": default_project,
-        }
+        xflow_execution = self.get_default_xflow_execution()
+        data_set = self.odps_client.get_table(self.TestDataSetTables["iris_data"])
 
         tf = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
                                                 provider=ProviderAlibabaPAI,
@@ -121,7 +118,7 @@ class TestXFlowAlgo(BaseTestCase):
             parameters={"execution": xflow_execution, "fraction": 0.7, })
 
         job = tf.fit(wait=False, arguments={
-            "inputArtifact": "odps://{0}/tables/{1}".format(default_project, "iris_data"),
+            "inputArtifact": data_set,
             "output1TableName": gen_temp_table(),
             "output2TableName": gen_temp_table(),
         })
@@ -131,6 +128,7 @@ class TestXFlowAlgo(BaseTestCase):
         time.sleep(20)  # Because of outputs delay.
         job_outputs = job.get_outputs()
         dataset1 = job_outputs[0]
+        dataset2 = job_outputs[1]
 
         oss_endpoint = self.oss_info.endpoint
         oss_path = "/pai_test/test_algo_chain/"
@@ -155,28 +153,28 @@ class TestXFlowAlgo(BaseTestCase):
         self.assertTrue(self.odps_client.exist_offline_model(
             model_name, default_project,
         ))
-        oss_bucket = self.oss_info.bucket
         object_key = oss_path + model_name + ".xml"
-        self.assertTrue(oss_bucket.object_exists(object_key))
+        self.assertTrue(self.oss_bucket.object_exists(object_key))
         model = job.create_model(output_name="outputArtifact")
         tf = model.transformer()
         job = tf.transform(
-            input_data="odps://{0}/tables/{1}".format(default_project, "pai_temp_iris_split_2"),
+            input_data=dataset2,
             wait=False, feature_cols=["f1", "f2", "f3", "f4"],
             append_cols=["f1", "f2", "f3", "f4", "type"],
             label_col="type")
         job.attach(log_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
-    def test_heart_disease_step_by_step(self):
-        xflow_execution = {
-            "odpsInfoFile": "/share/base/odpsInfo.ini",
-            "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-            "logViewHost": "http://logview.odps.aliyun.com",
-            "odpsProject": self.odps_client.project,
-        }
+        evaluate = PipelineTemplate.get_by_identifier(
+            identifier="evaluate-xflow-maxCompute",
+            provider=ProviderAlibabaPAI,
+            version="v1").to_estimator().fit()
 
-        dataset_table = self.PUBLIC_DATASET_TABLE_HEART_DISEASE_PREDICTION
+    def test_heart_disease_step_by_step(self):
+        xflow_execution = self.get_default_xflow_execution()
+
+        dataset_table = self.odps_client.get_table(
+            self.TestDataSetTables["heart_disease_prediction"])
 
         sql = "select age, (case sex when 'male' then 1 else 0 end) as sex, (case cp when " \
               "'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps, chol, (case" \
@@ -247,14 +245,14 @@ class TestXFlowAlgo(BaseTestCase):
         time.sleep(20)
         split_output_1, split_output_2 = split_job.get_outputs()
 
-        oss_endpoint = "oss-cn-shanghai.aliyuncs.com"
+        oss_endpoint = self.oss_info.endpoint
         oss_path = "/paiflow/model_transfer2oss_test/"
-        oss_bucket = "dataplus-pai-test"
+        oss_bucket = self.oss_info.bucket
         lr_job = LogisticRegression(
             regularized_type="l2", xflow_execution=xflow_execution,
             pmml_gen=True, pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path, pmml_oss_endpoint=oss_endpoint,
-            pmml_oss_rolearn="acs:ram::1557702098194904:role/aliyunodpspaidefaultrole",
+            pmml_oss_rolearn=self.oss_info.rolearn,
         ).fit(split_output_1,
               wait=True,
               feature_cols='sex,cp,fbs,restecg,exang,slop,thal,age,trestbps,chol,thalach,oldpeak,ca',
@@ -300,28 +298,20 @@ class TestXFlowAlgo(BaseTestCase):
 
         self.assertEqual(JobStatus.Succeeded, evaluate_job.get_status())
         time.sleep(10)
-        evaluate_result = evaluate_job.get_outputs()[2]
-        print(evaluate_result)
 
     def test_heart_disease_prediction_pipeline(self):
         def create_pipeline():
-            p = Pipeline.new_pipeline("test-heart-prediction", version="v1",
-                                      session=self.session)
-
-            pmml_oss_bucket = p.create_input_parameter("pmml_oss_bucket", ParameterType.String,
-                                                       required=True)
-            pmml_oss_rolearn = p.create_input_parameter("pmml_oss_rolearn", ParameterType.String,
-                                                        required=True)
-            pmml_oss_path = p.create_input_parameter("pmml_oss_path", ParameterType.String,
-                                                     required=True)
-            pmml_oss_endpoint = p.create_input_parameter("pmml_oss_endpoint", ParameterType.String,
-                                                         required=True)
-            xflow_execution = p.create_input_parameter("xflow_execution", ParameterType.Map,
-                                                       required=True)
-            dataset_input = p.create_input_artifact("dataset-table",
-                                                    data_type=ArtifactDataType.DataSet,
-                                                    location_type=ArtifactLocationType.MaxComputeTable,
-                                                    required=True)
+            pmml_oss_bucket = PipelineParameter("pmml_oss_bucket")
+            pmml_oss_rolearn = PipelineParameter("pmml_oss_rolearn")
+            pmml_oss_path = PipelineParameter("pmml_oss_path")
+            pmml_oss_endpoint = PipelineParameter("pmml_oss_endpoint")
+            xflow_execution = PipelineParameter("xflow_execution", ParameterType.Map)
+            dataset_input = PipelineArtifact("dataset-table",
+                                             metadata=ArtifactMetadata(
+                                                 data_type=ArtifactDataType.DataSet,
+                                                 location_type=ArtifactLocationType.MaxComputeTable,
+                                             ),
+                                             required=True)
 
             sql = "select age, (case sex when 'male' then 1 else 0 end) as sex,(case cp when" \
                   " 'angina' then 0  when 'notang' then 1 else 2 end) as cp, trestbps, chol," \
@@ -331,21 +321,21 @@ class TestXFlowAlgo(BaseTestCase):
                   "when 'flat' then 1 else 2 end) as slop, ca, (case thal when 'norm' then 0 " \
                   " when 'fix' then 1 else 2 end) as thal, (case status when 'sick' then 1 else " \
                   "0 end) as ifHealth from ${t1};"
-            sql_step = p.create_step("sql-xflow-maxCompute", name="sql-1",
-                                     provider=ProviderAlibabaPAI,
-                                     version="v1",
-                                     arguments={
-                                         "inputArtifact1": dataset_input,
-                                         "execution": xflow_execution,
-                                         "sql": sql,
-                                         "outputTable": gen_temp_table(),
-                                     })
+            sql_step = PipelineStep("sql-xflow-maxCompute", name="sql-1",
+                                    provider=ProviderAlibabaPAI,
+                                    version="v1",
+                                    inputs={
+                                        "inputArtifact1": dataset_input,
+                                        "execution": xflow_execution,
+                                        "sql": sql,
+                                        "outputTable": gen_temp_table(),
+                                    })
 
-            type_transform_step = p.create_step(
+            type_transform_step = PipelineStep(
                 "type-transform-xflow-maxCompute",
                 name="type-transform-1",
                 provider=ProviderAlibabaPAI, version="v1",
-                arguments={
+                inputs={
                     "execution": xflow_execution,
                     "inputArtifact": sql_step.outputs["outputArtifact"],
                     "cols_to_double": 'sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,'
@@ -354,11 +344,11 @@ class TestXFlowAlgo(BaseTestCase):
 
                 })
 
-            normalize_step = p.create_step(
+            normalize_step = PipelineStep(
                 "normalize-xflow-maxCompute",
                 name="normalize-1",
                 provider=ProviderAlibabaPAI,
-                version="v1", arguments={
+                version="v1", inputs={
                     "execution": xflow_execution,
                     "inputArtifact": type_transform_step.outputs["outputArtifact"],
                     "selectedColNames": 'sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,'
@@ -369,10 +359,10 @@ class TestXFlowAlgo(BaseTestCase):
 
                 })
 
-            split_step = p.create_step(
+            split_step = PipelineStep(
                 identifier="split-xflow-maxCompute",
                 name='split-1',
-                provider=ProviderAlibabaPAI, version="v1", arguments={
+                provider=ProviderAlibabaPAI, version="v1", inputs={
                     "inputArtifact": normalize_step.outputs["outputArtifact"],
                     "execution": xflow_execution,
                     "fraction": 0.8,
@@ -384,10 +374,10 @@ class TestXFlowAlgo(BaseTestCase):
 
             model_name = 'test_health_prediction_by_pipeline_%s' % (random.randint(0, 999999))
 
-            lr_step = p.create_step(
+            lr_step = PipelineStep(
                 identifier="logisticregression-binary-xflow-maxCompute",
                 name="logisticregression-1",
-                provider=ProviderAlibabaPAI, version="v1", arguments={
+                provider=ProviderAlibabaPAI, version="v1", inputs={
                     "inputArtifact": split_step.outputs["outputArtifact1"],
                     "execution": xflow_execution,
                     "generatePmml": True,
@@ -403,10 +393,10 @@ class TestXFlowAlgo(BaseTestCase):
                 }
             )
 
-            offline_model_pred_step = p.create_step(
+            offline_model_pred_step = PipelineStep(
                 identifier="prediction-xflow-maxCompute",
                 name="offlinemodel-pred",
-                provider=ProviderAlibabaPAI, version="v1", arguments={
+                provider=ProviderAlibabaPAI, version="v1", inputs={
                     "inputModelArtifact": lr_step.outputs["outputArtifact"],
                     "inputDataSetArtifact": split_step.outputs["outputArtifact2"],
                     "execution": xflow_execution,
@@ -416,11 +406,11 @@ class TestXFlowAlgo(BaseTestCase):
                 }
             )
 
-            evaluate_step = p.create_step(
+            evaluate_step = PipelineStep(
                 identifier="evaluate-xflow-maxCompute",
                 name="evaluate-1",
                 provider=ProviderAlibabaPAI, version="v1",
-                arguments={
+                inputs={
                     "execution": xflow_execution,
                     "inputArtifact": offline_model_pred_step.outputs["outputArtifact"],
                     "outputDetailTableName": gen_temp_table(),
@@ -433,32 +423,26 @@ class TestXFlowAlgo(BaseTestCase):
                 }
             )
 
-            p.create_output_artifact("pmmlModel", from_=lr_step.outputs["outputArtifact"])
-            p.create_output_artifact("evaluateResult",
-                                     from_=evaluate_step.outputs["outputMetricsArtifact"])
-
+            p = Pipeline(
+                steps=[evaluate_step, offline_model_pred_step],
+                outputs={"pmmlModel": lr_step.outputs["outputArtifact"],
+                         "evaluateResult": evaluate_step.outputs["outputMetricsArtifact"]
+                         }
+            )
             return p
 
         p = create_pipeline()
 
-        pmml_oss_endpoint = "oss-cn-shanghai.aliyuncs.com"
+        pmml_oss_endpoint = self.oss_info.endpoint
         pmml_oss_path = "/paiflow/model_transfer2oss_test/"
-        pmml_oss_bucket = "dataplus-pai-test"
-        pmml_oss_rolearn = "acs:ram::1557702098194904:role/aliyunodpspaidefaultrole"
+        pmml_oss_bucket = self.oss_info.bucket
+        pmml_oss_rolearn = self.oss_info.rolearn
 
-        default_project = "pai_sdk_test"
-
-        dataset_table = 'odps://pai_online_project/tables/heart_disease_prediction'
-
-        print(p.to_dict())
+        dataset_table = self.odps_client.get_table(
+            self.TestDataSetTables["heart_disease_prediction"])
 
         run_instance = p.run(job_name="test_run", arguments={
-            "xflow_execution": {
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": default_project,
-            },
+            "xflow_execution": self.get_default_xflow_execution(),
             "pmml_oss_rolearn": pmml_oss_rolearn,
             "pmml_oss_path": pmml_oss_path,
             "pmml_oss_bucket": pmml_oss_bucket,

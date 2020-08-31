@@ -6,6 +6,7 @@ import unittest
 import yaml
 
 from pai.common import ProviderAlibabaPAI
+from pai.pipeline import PipelineRun
 from pai.session import Session
 from tests import BaseTestCase
 
@@ -39,6 +40,9 @@ class TestPaiFlowAPI(BaseTestCase):
             provider=ProviderAlibabaPAI, page_size=50, page_num=1)
         self.assertTrue(len(pipeline_infos) > 0)
         self.assertTrue(total_count > 0)
+
+    def test_provider(self):
+        assert self.session.provider is not None
 
     def test_pipeline_create(self):
         pass

@@ -38,14 +38,12 @@ class TestParameter(BaseTestCase):
                     "name": "outputTableName",
                     "kind": "inputs",
                     "typ": str,
-                    "required": True,
                     "value": "pai_temp_18090911",
                 },
                 "expected": {
                     "name": "outputTableName",
                     "type": "String",
                     "value": "pai_temp_18090911",
-                    "required": True,
                 },
             },
         ]

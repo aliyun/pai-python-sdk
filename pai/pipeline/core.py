@@ -211,9 +211,10 @@ class Pipeline(PipelineBase):
 
     @classmethod
     def _build_outputs(cls, outputs):
+        outputs = outputs or []
         if isinstance(outputs, dict):
             items = outputs.items()
-        elif isinstance(outputs, list):
+        elif isinstance(outputs, (list,OutputsSpec)):
             items = [(item.name, item) for item in outputs]
         else:
             raise ValueError("Require list or dict, unexpect type:%s" % type(outputs))
