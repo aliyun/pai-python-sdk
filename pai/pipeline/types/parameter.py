@@ -27,7 +27,7 @@ POSITIVE_INFINITY = Decimal("infinity")
 class PipelineParameter(PipelineVariable):
     variable_category = "parameters"
 
-    def __init__(self, name, typ, required=False, **kwargs):
+    def __init__(self, name, typ=str, required=False, **kwargs):
         typ = ParameterType.normalize_typ(typ)
         validator = None
         feasible = kwargs.pop("feasible", None)

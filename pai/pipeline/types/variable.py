@@ -71,8 +71,13 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         else:
             return ".".join([self.kind, self.variable_category, self.name])
 
+    @property
+    def enclosed_fullname(self):
+        return "{{%s}}" % self.fullname
+
     def __repr__(self):
-        return "{name}:{kind}:{variable_category}".format(
+        return "{cls}:{name}:{kind}:{variable_category}".format(
+            cls=type(self),
             name=self.name,
             kind=self.kind,
             variable_category=self.variable_category,
@@ -85,7 +90,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
         if self.from_ is not None:
             if isinstance(self.from_, PipelineVariable):
-                arguments["from"] = "{{%s}}" % self.from_.fullname
+                arguments["from"] = self.enclosed_fullname
             else:
                 arguments["from"] = self.from_
         elif self.value is not None:
@@ -97,8 +102,6 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             "name": self.name,
         }
 
-        if self.required:
-            d["required"] = self.required
         if self.validator:
             d["feasible"] = self.validator.to_dict()
 

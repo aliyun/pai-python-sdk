@@ -48,6 +48,9 @@ class SpecBase(object):
     def __iter__(self):
         return iter(self._items)
 
+    def __len__(self):
+        return len(self._items)
+
     def to_dict(self):
         af_pos = next(
             (idx for idx, item in enumerate(self._items) if item.variable_category == "artifacts"),
@@ -71,16 +74,19 @@ class InputsSpec(SpecBase):
         Args:
             inputs_args:
         """
+        assign_items = []
         if isinstance(inputs_args, list):
             for idx, arg in enumerate(inputs_args):
                 self._items[idx].assign(arg)
+                assign_items.append(self.items[idx])
         elif isinstance(inputs_args, dict):
             for k, v in inputs_args.items():
                 self._items[self._indexer[k]].assign(v)
+                assign_items.append(self._items[self._indexer[k]])
         else:
             raise ValueError(
                 "Unexpected input_args type:%s, required list or dict" % type(inputs_args))
-        return self
+        return assign_items
 
 
 class OutputsSpec(SpecBase):

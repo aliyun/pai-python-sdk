@@ -1,11 +1,8 @@
 import copy
-import uuid
-from collections import OrderedDict
 
 import six
-import yaml
 
-from .types.spec import load_input_output_spec
+from .types.spec import load_input_output_spec, InputsSpec, OutputsSpec
 from .store import PAIFlowPipelineStore
 from .types.variable import PipelineVariable
 
@@ -21,6 +18,7 @@ class PipelineStep(object):
     def __init__(self, identifier, provider=None, version="v1", inputs=None, name=None,
                  depends=None):
         self._depends = depends or set()
+        self._assigned = set()
         manifest = self.get_manifest(identifier=identifier, provider=provider, version=version)
         self._metadata = copy.copy(manifest["metadata"])
         self._metadata["name"] = name
@@ -47,10 +45,11 @@ class PipelineStep(object):
     def assign_inputs(self, inputs):
         if not inputs:
             return
-        self.inputs.assign(inputs)
+        assign_items = self.inputs.assign(inputs)
+        self._assigned = self._assigned.union(set(item.name for item in assign_items))
+
         if isinstance(inputs, dict):
             inputs = inputs.values()
-
         steps = set(
             [ipt.parent for ipt in inputs if isinstance(ipt, PipelineVariable) and ipt.parent])
         self._depends = steps.union(self._depends)
@@ -97,7 +96,12 @@ class PipelineStep(object):
 
     def _convert_spec_to_json(self):
         spec = {
-            "arguments": self.inputs.to_dict(),
+            "arguments": {
+                "parameters": [ipt.to_dict() for ipt in self.inputs if
+                               ipt.name in self._assigned and ipt.variable_category == "parameters"],
+                "artifacts": [ipt.to_dict() for ipt in self.inputs if
+                              ipt.name in self._assigned and ipt.variable_category == "artifacts"],
+            }
         }
 
         if self._depends:

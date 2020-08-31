@@ -1,12 +1,13 @@
 from __future__ import absolute_import
 
 import logging
-import uuid
+from abc import abstractmethod, ABCMeta
 from collections import defaultdict, Counter
 
+import six
 from graphviz import Digraph
 
-from pai.session import Session
+from pai.session import get_current_pai_session
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import OutputsSpec, InputsSpec
@@ -16,29 +17,16 @@ DEFAULT_PIPELINE_API_VERSION = "core/v1"
 logger = logging.getLogger(__name__)
 
 
-class Pipeline(object):
-    """Represents pipeline instance in PAI Machine Learning pipeline.
+class PipelineBase(six.with_metaclass(ABCMeta, object)):
 
-    Pipeline can be constructed from multiple pipeline steps, or single container implementation.
-    It is shareable and reusable workflow, present as YAML format in backend pipeline service.
-
-    """
-
-    def __init__(self, steps=None, inputs=None, outputs=None, identifier=None, version=None):
-        """Pipeline initializer.
-
-        """
-
-        if not steps and not outputs:
-            raise ValueError("Required steps or outputs to build the pipeline graph.")
-
-        self._session = Session.get_current_session()
-        self._steps, self._inputs, self._outputs = self._build_pipeline(steps, inputs, outputs)
-        self._metadata = self._make_metadata(identifier, version, session=self._session)
-
-    @property
-    def steps(self):
-        return self._steps
+    def __init__(self, inputs, outputs, identifier=None, provider=None, version=None,
+                 pipeline_id=None):
+        self._identifier = identifier
+        self._provider = provider
+        self._version = version
+        self._pipeline_id = pipeline_id
+        self._inputs = inputs if isinstance(inputs, InputsSpec) else InputsSpec(inputs)
+        self._outputs = outputs if isinstance(outputs, OutputsSpec) else OutputsSpec(outputs)
 
     @property
     def inputs(self):
@@ -48,42 +36,123 @@ class Pipeline(object):
     def outputs(self):
         return self._outputs
 
-    @classmethod
-    def _make_metadata(cls, identifier, version, session):
-        metadata = {
-            "identifier": identifier or 'tmp-%s' % uuid.uuid4().hex,
-            "provider": session.provider,
-            "version": version or "v1",
-        }
-        return metadata
-
     @property
     def metadata(self):
-        return self._metadata
+        return {
+            "identifier": self._identifier,
+            "provider": self._provider,
+            "version": self._version,
+        }
 
     @property
     def identifier(self):
-        return self._metadata["identifier"]
+        return self._identifier
 
     @property
     def provider(self):
-        return self._metadata["provider"]
+        return self._provider
 
     @property
     def version(self):
-        return self._metadata["version"]
+        return self._version
 
     @property
-    def template(self):
+    def _template(self):
         from .template import PipelineTemplate
-        if hasattr(self, "_template"):
-            return self._template
         manifest = self.to_dict()
-        return PipelineTemplate(manifest=manifest)
+        return PipelineTemplate(manifest=manifest, pipeline_id=self.pipeline_id)
 
     @property
     def pipeline_id(self):
-        return self._metadata.get("pipelineId")
+        return self._pipeline_id
+
+    @property
+    def is_saved(self):
+        return bool(self.pipeline_id)
+
+    def save(self, identifier=None, version=None):
+        templ = self._template.save(identifier=identifier, version=version)
+        self._identifier = templ.identifier
+        self._version = templ.version
+        self._provider = templ.provider
+        self._pipeline_id = templ.pipeline_id
+        return self
+
+    def to_estimator(self, parameters):
+        from pai.estimator import PipelineEstimator
+        return PipelineEstimator(pipeline_id=self._template.pipeline_id,
+                                 manifest=self._template.manifest,
+                                 parameters=parameters)
+
+    def to_transformer(self, parameters=None):
+        from pai.transformer import PipelineTransformer
+        return PipelineTransformer(pipeline_id=self._template.pipeline_id,
+                                   manifest=self._template.manifest,
+                                   parameters=parameters)
+
+    def run(self, job_name, arguments, wait=True, log_outputs=True):
+        return self._template.run(job_name=job_name, arguments=arguments,
+                                  wait=wait, log_outputs=log_outputs)
+
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+
+class ContainerComponent(PipelineBase):
+
+    def __init__(self, image_uri, inputs, outputs, command, image_pull_config=None,
+                 identifier=None, provider=None, version=None, pipeline_id=None):
+        self.image_uri = image_uri
+        self.image_pull_config = image_pull_config
+        self.command = command or []
+        super(ContainerComponent, self).__init__(inputs=inputs, outputs=outputs, provider=provider,
+                                                 version=version, identifier=identifier,
+                                                 pipeline_id=pipeline_id)
+
+    def to_dict(self):
+        d = {
+            "apiVersion": DEFAULT_PIPELINE_API_VERSION,
+            "metadata": self.metadata,
+            "spec":
+                {
+                    "inputs": self.inputs.to_dict(),
+                    "outputs": self.outputs.to_dict(),
+                    "execution": {
+                        "image": self.image_uri,
+                        "command": self.command,
+                    }
+                }
+        }
+        return d
+
+
+class Pipeline(PipelineBase):
+    """Represents pipeline instance in PAI Machine Learning pipeline.
+
+    Pipeline can be constructed from multiple pipeline steps, or single container implementation.
+    It is shareable and reusable workflow, present as YAML format in backend pipeline service.
+
+    """
+
+    def __init__(self, steps=None, inputs=None, outputs=None, identifier=None, version=None,
+                 provider=None):
+        """Pipeline initializer.
+
+        """
+
+        self._steps, inputs, outputs = self._build_pipeline(steps, inputs, outputs)
+
+        self._session = get_current_pai_session()
+        super(Pipeline, self).__init__(inputs=inputs,
+                                       outputs=outputs,
+                                       identifier=identifier,
+                                       provider=provider,
+                                       version=version)
+
+    @property
+    def steps(self):
+        return self._steps
 
     def _build_pipeline(self, steps, inputs, outputs):
         """
@@ -96,8 +165,8 @@ class Pipeline(object):
         Returns:
 
         """
-        steps, inputs, outputs = self._infer_pipeline(steps, inputs, outputs)
-        inputs_spec = InputsSpec(inputs)
+        steps, inputs, _ = self._infer_pipeline(steps, inputs, outputs)
+        inputs_spec = InputsSpec(inputs) if isinstance(inputs, list) else inputs
         outputs_spec = OutputsSpec(self._build_outputs(outputs))
 
         self._update_steps(steps)
@@ -107,10 +176,13 @@ class Pipeline(object):
     @classmethod
     def _infer_pipeline(cls, steps, inputs, outputs):
         inputs = inputs or []
-        outputs = outputs or []
-        steps = steps or []
 
-        visited_steps = set(steps + [output.parent for output in outputs])
+        outputs = outputs or []
+        if isinstance(outputs, dict):
+            outputs = outputs.values()
+
+        steps = steps or []
+        visited_steps = set(steps + [output.parent for output in outputs if output.parent])
         infer_inputs = set()
         cur_steps = visited_steps.copy()
         while cur_steps:
@@ -227,18 +299,6 @@ class Pipeline(object):
                 return candidate
         raise ValueError("No available name for the step")
 
-    def to_estimator(self, parameters):
-        from pai.estimator import PipelineEstimator
-        return PipelineEstimator(pipeline_id=self.template.pipeline_id,
-                                 manifest=self.template.manifest,
-                                 parameters=parameters)
-
-    def to_transformer(self, parameters=None):
-        from pai.transformer import PipelineTransformer
-        return PipelineTransformer(pipeline_id=self.template.pipeline_id,
-                                   manifest=self.template.manifest,
-                                   parameters=parameters)
-
     @property
     def ref_name(self):
         return ""
@@ -258,21 +318,10 @@ class Pipeline(object):
         return {ipt.name: ipt.to_dict() for ipt in self.inputs if
                 ipt.variable_category == "artifacts"}
 
-    def run(self, job_name, arguments, wait=True, log_outputs=True):
-        return self.template.run(job_name=job_name, arguments=arguments,
-                                 wait=wait, log_outputs=log_outputs)
-
     def _convert_spec_to_json(self):
         spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict(),
                 "pipelines": [step.to_dict() for step in self.steps]}
         return spec
-
-    @property
-    def is_saved(self):
-        return bool(self.pipeline_id)
-
-    def save(self, identifier=None, version=None):
-        return self.template.save(identifier=identifier, version=version)
 
     def dot(self):
         graph = Digraph()

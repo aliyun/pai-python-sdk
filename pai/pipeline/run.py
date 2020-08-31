@@ -18,6 +18,7 @@ class PipelineRunStatus(object):
     Running = "Running"
     Suspended = "Suspended"
     Succeeded = "Succeeded"
+    Completed = "Succeeded"
     Terminated = "Terminated"
     Unknown = "Unknown"
     Skipped = "Skipped"
@@ -82,8 +83,8 @@ class PipelineRun(object):
     def get_run_info(self):
         return self._session.get_run(self.run_id)
 
-    def get_run_detail(self, node_id):
-        return self._session.get_run_detail(self.run_id, node_id=node_id)
+    def get_run_detail(self, node_id, depth=2):
+        return self._session.get_run_detail(self.run_id, node_id=node_id, depth=depth)
 
     def get_outputs(self, name=None, node_id=None, depth=1, typ=None, page_number=1, page_size=200):
         if not node_id:
@@ -187,17 +188,9 @@ class PipelineRun(object):
         else:
             run_logger = _MockRunLogger(run_instance=self, node_id=node_id)
 
-        run_logger.submit(node_id=node_id, node_name=self.name)
-        node_status_infos = self.travel_node_status_info(node_id)
-
-        for node_fullname, status_info in node_status_infos.items():
-            run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
-
-        prev_status_infos = node_status_infos
-        root_node_status = prev_status_infos[self.name]["status"]
-
+        prev_status_infos = {}
+        root_node_status = run_status
         while root_node_status == PipelineRunStatus.Running:
-            time.sleep(2)
             curr_time = datetime.now()
             if timeout and (curr_time - start_at).total_seconds() > timeout:
                 raise TimeoutException("RunInstance wait_for_completion timeout.")
@@ -207,7 +200,9 @@ class PipelineRun(object):
                         status_info["status"] != PipelineRunStatus.Skipped:
                     run_logger.submit(node_id=status_info["nodeId"], node_name=node_fullname)
             prev_status_infos = curr_status_infos
-            root_node_status = prev_status_infos[self.name]["status"]
+            root_node_status = prev_status_infos[self.name][
+                "status"] if self.name in prev_status_infos else root_node_status
+            time.sleep(2)
 
         return self
 
