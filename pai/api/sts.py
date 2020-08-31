@@ -10,8 +10,8 @@ class StsClient(BaseClient):
     def __init__(self, acs_client=None):
         super(StsClient, self).__init__(acs_client=acs_client)
 
-    # def _get_endpoint(self):
-    #     return "sts.aliyuncs.com"
+    def _get_endpoint(self):
+        return "sts.aliyuncs.com"
 
     def get_caller_identity(self):
         request = self._construct_request(GetCallerIdentityRequest.GetCallerIdentityRequest)

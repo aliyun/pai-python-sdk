@@ -160,9 +160,6 @@ class AlgoBaseEstimator(PipelineEstimator):
                                                 pipeline_id=pipeline_id)
 
     def get_base_info(self, session):
-        assert self._identifier_default is not None
-        assert self._provider_default is not None
-        assert self._version_default is not None
         pipeline_info = session.get_pipeline(identifier=self._identifier_default,
                                              provider=self._provider_default,
                                              version=self._version_default)
@@ -170,7 +167,7 @@ class AlgoBaseEstimator(PipelineEstimator):
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
 
     def fit(self, *inputs, **kwargs):
-        wait = kwargs.pop("wait_for_completion", True)
+        wait = kwargs.pop("wait", True)
         job_name = kwargs.pop("job_name", None)
 
         fit_args = self.parameters.copy()

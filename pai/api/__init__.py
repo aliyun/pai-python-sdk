@@ -16,9 +16,9 @@ class BaseClient(object):
         self._acs_client = acs_client
 
     def _call_service_with_exception(self, request):
-        logger.debug("PAIFlow Request:%s, uri_params:%s, query_params:%s, body_params:%s",
-                    type(request), request.get_uri_params(), request.get_query_params(),
-                    request.get_body_params())
+        logger.debug("Request:%s, path_params:%s, uri_params:%s, query_params:%s, body_params:%s",
+                     type(request), request.get_path_params(), request.get_uri_params(),
+                     request.get_query_params(), request.get_body_params())
         try:
             raw_resp = self._acs_client.do_action_with_exception(request)
             resp = self._response_to_dict(raw_resp)
@@ -26,7 +26,14 @@ class BaseClient(object):
             raise ServiceCallException(e.__str__())
         return resp
 
+    @property
+    def region_id(self):
+        return self._acs_client.get_region_id()
+
     def _get_endpoint(self):
+        pass
+
+    def _get_product(self):
         pass
 
     @classmethod
@@ -45,5 +52,9 @@ class BaseClient(object):
 
         if self._get_endpoint():
             req.set_endpoint(self._get_endpoint())
+
+        if self._get_product():
+            req.set_product(self._get_product())
+
         req.set_protocol_type("https")
         return req

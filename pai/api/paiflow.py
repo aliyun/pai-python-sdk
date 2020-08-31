@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-
 import six
 import yaml
 
@@ -8,7 +7,7 @@ from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
     UpdatePipelineRequest, DescribePipelineRequest, UpdatePipelinePrivilegeRequest,
     TerminateRunRequest, SuspendRunRequest, RetryRunRequest, StartRunRequest, ListRunsRequest,
     ListNodeLogsRequest, ResumeRunRequest, GetRunRequest, GetNodeDetailRequest, CreateRunRequest,
-    ListNodeOutputsRequest
+    ListNodeOutputsRequest, GetMyProviderRequest
 )
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import GetPipelinePrivilegeRequest
 from pai.api import BaseClient, ServiceCallException
@@ -17,13 +16,14 @@ from pai.utils import ensure_str, ensure_unix_time
 
 class PAIFlowClient(BaseClient):
 
-    def __init__(self, acs_client):
+    def __init__(self, acs_client, is_inner=False):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
         Args:
             acs_client: Alibaba Cloud Service client.
         """
         super(PAIFlowClient, self).__init__(acs_client=acs_client)
+        self._inner = is_inner
 
     def _call_service_with_exception(self, request):
         resp = super(PAIFlowClient, self)._call_service_with_exception(request)
@@ -34,15 +34,22 @@ class PAIFlowClient(BaseClient):
         return resp
 
     def _get_endpoint(self):
-        return "paiflow.{region_id}.aliyuncs.com".format(region_id=self._acs_client.get_region_id())
+        if self._inner:
+            return "paiflowinner-share.aliyuncs.com"
+        else:
+            return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
+
+    def _get_product(self):
+        if self._inner:
+            return 'PAIFlowInner'
+        else:
+            return 'PAIFlow'
 
     def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
         if pipeline_id is not None:
             request.set_PipelineId(pipeline_id)
         else:
-            assert identifier is not None
-            assert version is not None
             request.set_PipelineIdentifier(identifier)
             request.set_PipelineVersion(version)
             request.set_PipelineProvider(provider)
@@ -50,8 +57,6 @@ class PAIFlowClient(BaseClient):
 
     def list_pipeline(self, identifier=None, provider=None, fuzzy=None,
                       version="", page_num=1, page_size=50):
-        assert fuzzy is None or isinstance(fuzzy, bool), "Fuzzy should be type bool"
-
         request = self._construct_request(ListPipelinesRequest.ListPipelinesRequest)
         request.set_PageNumber(page_num)
         request.set_PageSize(page_size)
@@ -231,4 +236,8 @@ class PAIFlowClient(BaseClient):
             request.set_sortedSequence(sorted_sequence)
         if typ is not None:
             request.set_Type(typ)
+        return self._call_service_with_exception(request)
+
+    def get_my_provider(self):
+        request = self._construct_request(GetMyProviderRequest.GetMyProviderRequest)
         return self._call_service_with_exception(request)

@@ -7,6 +7,7 @@ import yaml
 from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
+from pai.decorator import cached_property
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,8 @@ class Session(object):
 
     _default_session = None
 
-    def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None):
+    def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None,
+                 odps_client=None, **kwargs):
         """ PAI Session Initializer.
 
         Args:
@@ -48,12 +50,10 @@ class Session(object):
         self._acs_client = AcsClient(ak=access_key_id, secret=access_key_secret,
                                      region_id=region_id)
         self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client)
-
-        self.sts_client = ClientFactory.create_sts_client(self._acs_client)
-        self._init_account()
-
         if oss_bucket:
             self._oss_bucket = oss_bucket
+        if odps_client:
+            self._odps_client = odps_client
 
     @classmethod
     def get_current_session(cls):
@@ -70,31 +70,18 @@ class Session(object):
         return self._oss_bucket
 
     @property
+    def odps_client(self):
+        if not self._odps_client:
+            raise ValueError("Default MaxCompute(ODPS) client not provided")
+        return self._odps_client
+
+    @property
     def console_host(self):
         return 'https://pai.data.aliyun.com/console'
 
-    @property
-    def account_id(self):
-        return self._account_id
-
-    @property
+    @cached_property
     def provider(self):
-        return self._account_id
-
-    @property
-    def user_id(self):
-        return self._user_id
-
-    def _init_account(self):
-        caller_identity = self.sts_client.get_caller_identity()
-        self._account_id = int(caller_identity["AccountId"])
-        self._user_id = int(caller_identity["UserId"])
-        self._arn = caller_identity["Arn"]
-
-    @property
-    def odps_project(self):
-        """int: Default MaxCompute project use by session."""
-        return self.odps_client.project
+        return self.paiflow_client.get_my_provider()["Data"]["Provider"]
 
     def get_pipeline(self, identifier, provider=None, version="v1"):
         """Get information of pipeline by identifier, provider and version.
@@ -207,7 +194,7 @@ class Session(object):
             dict: Including metadata and full manifest of the pipeline.
 
         """
-        return self.paiflow_client.describe_pipeline(pipeline_id)
+        return self.paiflow_client.describe_pipeline(pipeline_id)["Data"]
 
     def update_pipeline_privilege(self, pipeline_id, user_ids):
         return self.paiflow_client.update_pipeline_privilege(pipeline_id, user_ids)["Data"]
@@ -217,9 +204,9 @@ class Session(object):
 
     def create_run(self, name, arguments, env=None, pipeline_id=None, manifest=None,
                    no_confirm_required=True):
-        """Submit a pipeline run with pipeline template and run arguments.
+        """Submit a pipeline run with pipeline _template and run arguments.
 
-        If pipeline_id is supplied, remote pipeline manifest is used as workflow template.
+        If pipeline_id is supplied, remote pipeline manifest is used as workflow _template.
 
 
         Args:

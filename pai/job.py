@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 
 from abc import ABCMeta
-
 from enum import Enum
+
 from six import with_metaclass
 
 from pai.pipeline import PipelineRunStatus
