@@ -129,6 +129,10 @@ class PipelineTemplate(object):
         self._pipeline_id = pipeline_id
         self._inputs, self._outputs, = load_input_output_spec(self, manifest["spec"])
 
+    def __repr__(self):
+        return "%s: {PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}" % (
+            type(self).__name__, self._pipeline_id, self.identifier, self.provider, self.version)
+
     @property
     def inputs(self):
         return self._inputs
@@ -165,11 +169,56 @@ class PipelineTemplate(object):
         return cls(manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"])
 
     @classmethod
-    def load_by_identifier(cls, identifier, provider=None, version="v1"):
-        pass
+    def list_templates(cls, identifier, provider=None, fuzzy=None, version=None, page_num=1,
+                       page_size=50):
+        session = get_current_pai_session()
+        pipeline_infos, total_count = session.list_pipeline(identifier=identifier,
+                                                            provider=provider,
+                                                            fuzzy=fuzzy,
+                                                            version=version,
+                                                            page_num=page_num,
+                                                            page_size=page_size)
+        templates = [cls(pipeline_id=info["PipelineId"]) for info in pipeline_infos]
+        return templates, total_count
 
-    def load(self):
-        return
+    @classmethod
+    def load_by_identifier(cls, identifier, provider=None, version="v1"):
+        session = get_current_pai_session()
+        pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
+                                             version=version)
+        component = load_pipeline_from_yaml(pipeline_info["Manifest"])
+        component._pipeline_id = pipeline_info["PipelineId"]
+        return component
+
+    def _have_impl(self):
+        if "spec" not in self._manifest:
+            return False
+        spec = self._manifest["spec"]
+        if "pipelines" not in spec and "execution" not in spec:
+            return False
+        return True
+
+    def load(self, with_impl=True):
+        if not self._have_impl() and with_impl:
+            if not self._pipeline_id:
+                raise ValueError("Pipeline Template do not have implementation and is not saved.")
+            session = get_current_pai_session()
+            self._manifest = yaml.load(session.describe_pipeline(self._pipeline_id)["Manifest"],
+                                       yaml.FullLoader)
+
+        component = load_pipeline_from_yaml(self._manifest)
+        if self._pipeline_id:
+            component._pipeline_id = self._pipeline_id
+        return component
+
+    def as_step(self, inputs=None, name=None):
+        if not self.pipeline_id:
+            raise ValueError("Require saved pipeline/component to use as pipeline step.")
+        return PipelineStep(identifier=self.identifier,
+                            provider=self.provider,
+                            version=self.version,
+                            inputs=inputs,
+                            name=name)
 
     @classmethod
     def get(cls, pipeline_id):
@@ -212,6 +261,9 @@ class PipelineTemplate(object):
         return parameters, artifacts
 
     def save(self, identifier=None, version=None):
+        if self.pipeline_id:
+            raise ValueError("Pipeline template has been saved")
+
         session = get_current_pai_session()
         provider = session.provider
 
@@ -232,10 +284,11 @@ class PipelineTemplate(object):
         if "uuid" in self._manifest["metadata"]:
             del self._manifest["metadata"]["uuid"]
 
-        self._pipeline_id = self._session.create_pipeline(self._manifest)
+        self._pipeline_id = session.create_pipeline(self._manifest)
         return self
 
     def run(self, job_name, arguments, wait=True, log_outputs=True):
+        session = get_current_pai_session()
         if job_name is None:
             job_name = "tmp-{0}".format(int(time.time() * 1000))
         parameters, artifacts = self.translate_arguments(arguments)
@@ -252,11 +305,11 @@ class PipelineTemplate(object):
             if not self.identifier:
                 manifest["metadata"]["identifier"] = 'tmp-%s' % uuid.uuid4().hex
                 manifest["metadata"]["version"] = "v0"
-        run_id = self._session.create_run(job_name, pipeline_args,
-                                          no_confirm_required=True,
-                                          pipeline_id=pipeline_id, manifest=manifest)
+        run_id = session.create_run(job_name, pipeline_args,
+                                    no_confirm_required=True,
+                                    pipeline_id=pipeline_id, manifest=manifest)
 
-        run_instance = PipelineRun(run_id=run_id, session=self._session)
+        run_instance = PipelineRun(run_id=run_id, session=session)
         if not wait:
             return run_instance
         run_instance.wait_for_completion(log_outputs=log_outputs)
