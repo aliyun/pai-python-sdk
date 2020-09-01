@@ -1,25 +1,30 @@
 from __future__ import absolute_import
 
-import time
-
 from pai.job import JobStatus
-from pai.xflow.transformer import OfflineModelTransformer, MaxComputeDataSource, ModelTransferToOSS, \
-    FeatureNormalize
+from pai.xflow.transformer import OfflineModelTransformer, ModelTransferToOSS
 from tests import BaseTestCase
 
 
-class TestOfflineModelPredictionTransformer(BaseTestCase):
+class TestOfflineModelTransformer(BaseTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestOfflineModelTransformer, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestOfflineModelTransformer, cls).tearDownClass()
 
     def test_XFlowOfflineModel(self):
         project = self.odps_client.project
-        model_name = "pai_sdk_test_lr_offlinemodel"
+        model_name = self.TestModels["wumai_model"]
         tf = OfflineModelTransformer(
             model="odps://{0}/offlinemodels/{1}".format(project,
                                                         model_name),
             xflow_execution=self.get_default_xflow_execution(),
         )
         job = tf.transform(
-            "odps://{}/tables/offline_model_test_data_set".format(project),
+            "odps://{}/tables/{}".format(project, self.TestDataSetTables["processed_wumai_data_2"]),
             wait=False, job_name="pysdk-test-om-algo",
             feature_cols=["pm10", "so2", "co", "no2"],
             label_col="_c2",
@@ -33,14 +38,6 @@ class TestOfflineModelPredictionTransformer(BaseTestCase):
 
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
-        # outputs = job.get_outputs()
-        # time.sleep(20)
-        # self.assertTrue(len(job.get_outputs()) > 0)
-        # self.assertTrue("outputArtifact" in outputs)
-
-
-class TestModelTransferToOSS(BaseTestCase):
-
     def test_model_transfer(self):
         tf = ModelTransferToOSS(
             bucket=self.oss_info.bucket,
@@ -49,7 +46,7 @@ class TestModelTransferToOSS(BaseTestCase):
             xflow_execution=self.get_default_xflow_execution(),
         )
 
-        model_name = "pai_sdk_test_lr_offlinemodel"
+        model_name = self.TestModels["wumai_model"]
         offlinemodel = 'odps://{0}/offlinemodels/{1}'.format(self.odps_client.project, model_name)
         job = tf.transform(offlinemodel, path="/paiflow/test/noprefix/",
                            job_name="pysdk-test-modeltransfer2oss",

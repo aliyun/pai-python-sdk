@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import random
 import time
-import unittest
 
 from pai.common import ProviderAlibabaPAI
 from pai.job import JobStatus
@@ -110,7 +109,7 @@ class TestXFlowAlgo(BaseTestCase):
     def test_algo_chain(self):
         default_project = self.odps_client.project
         xflow_execution = self.get_default_xflow_execution()
-        data_set = self.odps_client.get_table(self.TestDataSetTables["iris_data"])
+        data_set = self.odps_client.get_table(self.TestDataSetTables["processed_wumai_data_1"])
 
         tf = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
                                                 provider=ProviderAlibabaPAI,
@@ -141,8 +140,8 @@ class TestXFlowAlgo(BaseTestCase):
                                 pmml_oss_rolearn=self.oss_info.rolearn,
                                 xflow_execution=xflow_execution)
 
-        feature_cols = ["f1", "f2", "f3", "f4"]
-        label_col = "type"
+        feature_cols = ["pm10", "so2", "co", "no2"]
+        label_col = "_c2"
 
         job = lr.fit(wait=True, input_data=dataset1,
                      job_name="pysdk-test-lr-sync-fit",
@@ -159,16 +158,16 @@ class TestXFlowAlgo(BaseTestCase):
         tf = model.transformer()
         job = tf.transform(
             input_data=dataset2,
-            wait=False, feature_cols=["f1", "f2", "f3", "f4"],
-            append_cols=["f1", "f2", "f3", "f4", "type"],
-            label_col="type")
+            wait=False, feature_cols=feature_cols,
+            append_cols=feature_cols + [label_col],
+            label_col=label_col)
         job.attach(log_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
-        evaluate = PipelineTemplate.get_by_identifier(
-            identifier="evaluate-xflow-maxCompute",
-            provider=ProviderAlibabaPAI,
-            version="v1").to_estimator().fit()
+        # evaluate = PipelineTemplate.get_by_identifier(
+        #     identifier="evaluate-xflow-maxCompute",
+        #     provider=ProviderAlibabaPAI,
+        #     version="v1").to_estimator().fit()
 
     def test_heart_disease_step_by_step(self):
         xflow_execution = self.get_default_xflow_execution()
@@ -205,7 +204,8 @@ class TestXFlowAlgo(BaseTestCase):
             parameters={
                 "execution": xflow_execution,
                 "inputArtifact": output_table_artifact,
-                "cols_to_double": 'sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,chol,thalach,oldpeak,ca',
+                "cols_to_double": 'sex,cp,fbs,restecg,exang,slop,thal,'
+                                  'ifhealth,age,trestbps,chol,thalach,oldpeak,ca',
                 "outputTable": gen_temp_table(),
             }
         ).fit()
@@ -255,7 +255,8 @@ class TestXFlowAlgo(BaseTestCase):
             pmml_oss_rolearn=self.oss_info.rolearn,
         ).fit(split_output_1,
               wait=True,
-              feature_cols='sex,cp,fbs,restecg,exang,slop,thal,age,trestbps,chol,thalach,oldpeak,ca',
+              feature_cols='sex,cp,fbs,restecg,exang,slop,'
+                           'thal,age,trestbps,chol,thalach,oldpeak,ca',
               label_col="ifhealth",
               good_value=1,
               model_name="test_health_prediction")
@@ -270,7 +271,8 @@ class TestXFlowAlgo(BaseTestCase):
                 "inputDataSetArtifact": split_output_2,
                 "execution": xflow_execution,
                 "outputTableName": gen_temp_table(),
-                "featureColNames": 'sex,cp,fbs,restecg,exang,slop,thal,age,trestbps,chol,thalach,oldpeak,ca',
+                "featureColNames": 'sex,cp,fbs,restecg,exang,slop,thal,'
+                                   'age,trestbps,chol,thalach,oldpeak,ca',
                 "appendColNames": "ifhealth",
             }
         ).fit()
@@ -388,7 +390,8 @@ class TestXFlowAlgo(BaseTestCase):
                     # "regulizedType": "l2",
                     "modelName": model_name,
                     "goodValue": 1,
-                    "featureColNames": "sex,cp,fbs,restecg,exang,slop,thal,age,trestbps,chol,thalach,oldpeak,ca",
+                    "featureColNames": "sex,cp,fbs,restecg,exang,slop,"
+                                       "thal,age,trestbps,chol,thalach,oldpeak,ca",
                     "labelColName": "ifhealth",
                 }
             )
@@ -401,7 +404,8 @@ class TestXFlowAlgo(BaseTestCase):
                     "inputDataSetArtifact": split_step.outputs["outputArtifact2"],
                     "execution": xflow_execution,
                     "outputTableName": gen_temp_table(),
-                    "featureColNames": 'sex,cp,fbs,restecg,exang,slop,thal,age,trestbps,chol,thalach,oldpeak,ca',
+                    "featureColNames": 'sex,cp,fbs,restecg,exang,slop,'
+                                       'thal,age,trestbps,chol,thalach,oldpeak,ca',
                     "appendColNames": "ifhealth",
                 }
             )
@@ -432,7 +436,7 @@ class TestXFlowAlgo(BaseTestCase):
             return p
 
         p = create_pipeline()
-
+        p.dot()
         pmml_oss_endpoint = self.oss_info.endpoint
         pmml_oss_path = "/paiflow/model_transfer2oss_test/"
         pmml_oss_bucket = self.oss_info.bucket

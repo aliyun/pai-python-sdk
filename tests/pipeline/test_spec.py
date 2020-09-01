@@ -19,11 +19,13 @@ class TestInputOutputSpec(BaseTestCase):
             PipelineParameter(name="B", typ=str, default="result"),
             PipelineParameter(name="C", typ=bool, default=True),
             PipelineArtifact(name="D",
-                             metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
-                                                       location_type=ArtifactLocationType.MaxComputeTable)),
+                             metadata=ArtifactMetadata(
+                                 data_type=ArtifactDataType.DataSet,
+                                 location_type=ArtifactLocationType.MaxComputeTable)),
             PipelineArtifact(name="E",
-                             metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
-                                                       location_type=ArtifactLocationType.MaxComputeTable))
+                             metadata=ArtifactMetadata(
+                                 data_type=ArtifactDataType.DataSet,
+                                 location_type=ArtifactLocationType.MaxComputeTable))
         ]
 
         specs = InputsSpec(items)
@@ -40,17 +42,21 @@ class TestInputOutputSpec(BaseTestCase):
         param_a_2 = PipelineParameter(name="A", typ=bool, default=True)
 
         af_d = PipelineArtifact(name="D",
-                                metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
-                                                          location_type=ArtifactLocationType.MaxComputeTable))
+                                metadata=ArtifactMetadata(
+                                    data_type=ArtifactDataType.DataSet,
+                                    location_type=ArtifactLocationType.MaxComputeTable))
         af_e = PipelineArtifact(name="E",
-                                metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
-                                                          location_type=ArtifactLocationType.MaxComputeTable))
+                                metadata=ArtifactMetadata(
+                                    data_type=ArtifactDataType.DataSet,
+                                    location_type=ArtifactLocationType.MaxComputeTable))
         af_f = PipelineArtifact(name="F",
-                                metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
-                                                          location_type=ArtifactLocationType.MaxComputeTable))
+                                metadata=ArtifactMetadata(
+                                    data_type=ArtifactDataType.DataSet,
+                                    location_type=ArtifactLocationType.MaxComputeTable))
         af_a = PipelineArtifact(name="A",
-                                metadata=ArtifactMetadata(data_type=ArtifactDataType.DataSet,
-                                                          location_type=ArtifactLocationType.MaxComputeTable))
+                                metadata=ArtifactMetadata(
+                                    data_type=ArtifactDataType.DataSet,
+                                    location_type=ArtifactLocationType.MaxComputeTable))
 
         success_cases = [
             {

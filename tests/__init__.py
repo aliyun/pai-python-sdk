@@ -6,8 +6,7 @@ import unittest
 from collections import namedtuple
 
 import oss2
-import pandas
-from odps import ODPS, DataFrame
+from odps import ODPS
 from six.moves import configparser
 
 from pai.session import set_default_pai_session
@@ -31,7 +30,17 @@ class BaseTestCase(unittest.TestCase):
     odps_client = None
     default_xflow_project = 'algo_public'
 
-    TestDataSetTables = {}
+    TestDataSetTables = {
+        "heart_disease_prediction": "heart_disease_prediction",
+        "wumai_data": "wumai_data",
+        "iris_data": "iris_data",
+        "processed_wumai_data_1": "sdk_test_wumai_dataset_1",
+        "processed_wumai_data_2": "sdk_test_wumai_dataset_2",
+    }
+
+    TestModels = {
+        "wumai_model": "wumai_model"
+    }
 
     @classmethod
     def setUpClass(cls):
@@ -41,7 +50,6 @@ class BaseTestCase(unittest.TestCase):
         cls._set_test_session()
         cls.odps_client = cls._get_odps_client()
         cls.oss_info, cls.oss_bucket = cls._get_oss_info()
-        cls._create_table()
 
     @classmethod
     def tearDownClass(cls):
@@ -58,12 +66,6 @@ class BaseTestCase(unittest.TestCase):
             "logViewHost": odps_client.logview_host,
             "odpsProject": odps_client.project,
         }
-
-    @classmethod
-    def _create_table(cls):
-        data_sets = ["heart_disease_prediction", "wumai_data", "iris_data", "iris_origin"]
-        for data_set in data_sets:
-            cls.TestDataSetTables[data_set] = data_set
 
     @classmethod
     def _set_test_session(cls):

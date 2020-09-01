@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import unittest
 from decimal import Decimal
-from pprint import pprint
 
 from pai.pipeline.types.parameter import Interval, ParameterValidator, \
     ParameterType, PipelineParameter

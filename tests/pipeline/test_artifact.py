@@ -54,12 +54,12 @@ class TestArtifact(BaseTestCase):
             },
             {
                 "name": "volume_case2",
-                "input": "odps://prj_volume/volumes/data_store/vpartition/i_am_file.csv?hello=world",
+                "input": "odps://prj_volume/volumes/data_store/vpart/i_am_file.csv?hello=world",
                 "expected": {
                     "location": {
                         "project": "prj_volume",
                         "volume": "data_store",
-                        "volumePartition": "vpartition",
+                        "volumePartition": "vpart",
                         "file": "i_am_file.csv",
                     }
                 }
@@ -82,14 +82,6 @@ class TestArtifact(BaseTestCase):
                              "case:%s, expected: %s, result:%s" % (
                                  case["name"], case["expected"], max_compute_af.to_dict(),
                              ))
-
-    # TODO: add OSS url parse case
-    def test_oss_resource(self):
-        cases = [
-            {
-                "name": "case_1",
-            }
-        ]
 
     def test_to_argument_by_spec(self):
         pass

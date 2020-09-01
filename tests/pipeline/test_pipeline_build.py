@@ -9,8 +9,8 @@ import yaml
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.core import ContainerComponent
-from pai.pipeline.template import load_pipeline_from_yaml
 from pai.pipeline.run import PipelineRunStatus
+from pai.pipeline.template import load_pipeline_from_yaml
 from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, ArtifactMetadata, \
     PipelineArtifact
 from pai.pipeline.types.parameter import PipelineParameter
@@ -143,7 +143,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
             }
         )
 
-        with self.assertRaisesRegexp(ValueError, "name conflict") as ctx:
+        with self.assertRaisesRegexp(ValueError, "name conflict") as _:
             _ = Pipeline(steps=[split_step_1, split_step_2])
 
     def test_auto_step_name(self):
@@ -207,7 +207,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
         )
         data_source_step.after(type_transform_step)
 
-        with self.assertRaisesRegexp(ValueError, 'Cycle dependency detected') as ctx:
+        with self.assertRaisesRegexp(ValueError, 'Cycle dependency detected') as _:
             _ = Pipeline(
                 identifier="test-pipeline",
                 version="v1",
@@ -232,7 +232,7 @@ class TestPipelineBuild(BaseTestCase):
                 name="dataSource",
                 inputs={
                     "execution": execution_input,
-                    "tableName": self.TestDataSetTables["iris_data"],
+                    "tableName": self.TestDataSetTables["wumai_data"],
                     "partition": "",
                 }
             )
@@ -246,7 +246,7 @@ class TestPipelineBuild(BaseTestCase):
                     "inputArtifact": data_source_step.outputs["outputArtifact"],
                     "execution": execution_input,
                     "outputTable": gen_temp_table(),
-                    "cols_to_double": "f1,f2,f3,f4",
+                    "cols_to_double": "pm10,so2,co,no2",
                 }
             )
             split_step = PipelineStep(
@@ -299,12 +299,7 @@ class TestPipelineBuild(BaseTestCase):
             prev_pipeline = p
 
         run_instance = prev_pipeline.run(job_name="pysdk-test-nested-pipeline-run", arguments={
-            "xflow_execution": {
-                "odpsInfoFile": "/share/base/odpsInfo.ini",
-                "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
-                "logViewHost": "http://logview.odps.aliyun.com",
-                "odpsProject": self.odps_client.project,
-            },
+            "xflow_execution": self.get_default_xflow_execution(),
         }, wait=False)
         self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
         run_instance.wait_for_completion(log_outputs=False)
@@ -341,7 +336,7 @@ class TestContainerComponent(BaseTestCase):
 
         session = get_current_pai_session()
 
-        run_id = session.create_run(
+        _ = session.create_run(
             pipeline_id=p.pipeline_id, name="test",
             arguments={
             })
