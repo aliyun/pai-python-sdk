@@ -28,6 +28,10 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
         self._inputs = inputs if isinstance(inputs, InputsSpec) else InputsSpec(inputs)
         self._outputs = outputs if isinstance(outputs, OutputsSpec) else OutputsSpec(outputs)
 
+    def __repr__(self):
+        return '%s:{PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}' % (
+            type(self).__name__, self._pipeline_id, self.identifier, self.provider, self.version)
+
     @property
     def inputs(self):
         return self._inputs
@@ -214,7 +218,7 @@ class Pipeline(PipelineBase):
         outputs = outputs or []
         if isinstance(outputs, dict):
             items = outputs.items()
-        elif isinstance(outputs, (list,OutputsSpec)):
+        elif isinstance(outputs, (list, OutputsSpec)):
             items = [(item.name, item) for item in outputs]
         else:
             raise ValueError("Require list or dict, unexpect type:%s" % type(outputs))
@@ -324,8 +328,8 @@ class Pipeline(PipelineBase):
         graph = Digraph()
         for step in self.steps:
             graph.node(step.name)
-            for head in step.dependencies.keys():
-                graph.edge(head, step.name)
+            for head in step.depends:
+                graph.edge(head.name, step.name)
         return graph
 
     def to_dict(self):

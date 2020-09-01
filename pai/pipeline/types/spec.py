@@ -37,6 +37,13 @@ class SpecBase(object):
     def items(self):
         return self._items
 
+    def __repr__(self):
+        return '%s:\n%s' % (
+            type(self).__name__, '\n'.join(['\t' + str(item) for item in self._items]))
+
+    def _repr_html(self):
+        pass
+
     def __getitem__(self, key):
         if isinstance(key, six.integer_types):
             return self._items[key]
@@ -120,7 +127,6 @@ def _load_parameter_spec(p, param_spec, kind):
     feasible = param_spec.pop("feasible", None)
     value = param_spec.pop("value", None)
     desc = param_spec.pop("desc", None)
-    required = param_spec.pop("required", False)
 
     param = PipelineParameter(name=name, typ=typ, default=value, desc=desc, kind=kind, from_=from_,
                               parent=p, feasible=feasible)

@@ -76,11 +76,13 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         return "{{%s}}" % self.fullname
 
     def __repr__(self):
-        return "{cls}:{name}:{kind}:{variable_category}".format(
-            cls=type(self),
-            name=self.name,
-            kind=self.kind,
-            variable_category=self.variable_category,
+        return "%s:{Name:%s, Kind:%s, Required:%s, Value:%s, Desc:%s}" % (
+            type(self).__name__,
+            self.name,
+            self.kind,
+            self.required,
+            self.value,
+            self.desc,
         )
 
     def to_argument(self):

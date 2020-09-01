@@ -159,7 +159,7 @@ class ArtifactValue(object):
             else:
                 try:
                     resource_dict = json.loads(resource)
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError as _:
                     raise ValueError("Not support artifact url schema:%s", resource)
                 return cls.from_raw_value(resource_dict, metadata)
         elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
@@ -424,11 +424,8 @@ class ArtifactEntity(object):
         self.producer = producer
         self.artifact_id = artifact_id
 
-    def __str__(self):
-        return '%s:name:%s; metadata%s' % (type(self).__name__, self.name, self.metadata)
-
     def __repr__(self):
-        return self.__str__()
+        return '%s: {Name:%s, Metadata:%s}' % (type(self).__name__, self.name, self.metadata)
 
     @classmethod
     def from_run_output(cls, output):

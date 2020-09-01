@@ -36,8 +36,9 @@ class RunJob(with_metaclass(ABCMeta, object)):
         return self.run_instance.run_id
 
     def get_outputs(self, output_name=None):
-        if self.run_instance.get_status() != PipelineRunStatus.Succeeded:
-            raise ValueError("Succeeded Run job is required!")
+        job_status = self.run_instance.get_status()
+        if job_status != PipelineRunStatus.Succeeded:
+            raise ValueError("Succeeded Run job is required, Current job status:%s" % job_status)
         run_outputs = self.run_instance.get_outputs(name=output_name)
         return run_outputs
 

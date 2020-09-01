@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import itertools
 import re
 from decimal import Decimal
 
@@ -9,19 +8,17 @@ from enum import Enum
 
 from pai.pipeline.types.variable import PipelineVariable
 
-StringType = six.string_types
-
-int_float_types = tuple(list(six.integer_types) + list([float]))
+_int_float_types = tuple(list(six.integer_types) + list([float]))
 
 _PRIMITIVE_TYPE_MAP = {
     "Int": six.integer_types,
-    "Double": int_float_types,
+    "Double": _int_float_types,
     "Bool": bool,
     "Str": six.string_types
 }
 
-NEGATIVE_INFINITY = Decimal("-infinity")
-POSITIVE_INFINITY = Decimal("infinity")
+_NEGATIVE_INFINITY = Decimal("-infinity")
+_POSITIVE_INFINITY = Decimal("infinity")
 
 
 class PipelineParameter(PipelineVariable):
@@ -146,9 +143,9 @@ class Interval(object):
 
     @staticmethod
     def value_str(val):
-        if val == POSITIVE_INFINITY:
+        if val == _POSITIVE_INFINITY:
             return "INF"
-        elif val == NEGATIVE_INFINITY:
+        elif val == _NEGATIVE_INFINITY:
             return "-INF"
         else:
             return str(val)
@@ -199,7 +196,7 @@ class Interval(object):
         return False
 
 
-ParameterTypeMapping = {
+_ParameterTypeMapping = {
     "long": "Int",
     "integer": "Int",
     "int": "Int",
@@ -234,7 +231,4 @@ class ParameterType(Enum):
             return typ_instance
         else:
             raise ValueError("Not Supported PipelineParameter Type: {typ}".format(typ=typ_instance))
-        return ParameterType(ParameterTypeMapping[type_name])
-
-
-PyParameterTypes = tuple(itertools.chain(six.integer_types, six.string_types, [dict, list, bool]))
+        return ParameterType(_ParameterTypeMapping[type_name])

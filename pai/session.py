@@ -168,9 +168,9 @@ class Session(object):
     def create_pipeline(self, pipeline_def):
         """Create new pipeline instance.
 
-        Create_pipeline submit pipeline manifest to PAI pipeline service. Identifier-provider-version
-         triple in metadata of manifest is unique identifier of the Pipeline. The same triple
-          combination will result overwrite of original pipeline.
+        Create_pipeline submit pipeline manifest to PAI pipeline service. Identifier-
+        provider-version triple in metadata of manifest is unique identifier of the
+         Pipeline. The same triple combination will result overwrite of original pipeline.
 
         Args:
             pipeline_def (dict or str): pipeline definition manifest, support types Pipeline,

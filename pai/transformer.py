@@ -109,7 +109,7 @@ class AlgoBaseTransformer(PipelineTransformer):
         return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
 
     def transform(self, *inputs, **kwargs):
-        wait = kwargs.pop("wait_for_completion", True)
+        wait = kwargs.pop("wait", True)
         job_name = kwargs.pop("job_name", None)
         fit_args = self.parameters.copy()
         fit_args.update(kwargs)
