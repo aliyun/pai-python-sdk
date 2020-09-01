@@ -6,7 +6,7 @@ Pipeline
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: pai.pipeline.core.PipelineStep
+.. autoclass:: pai.pipeline.step.PipelineStep
    :members:
    :undoc-members:
    :show-inheritance:
