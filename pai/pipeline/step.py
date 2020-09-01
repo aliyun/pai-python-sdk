@@ -2,8 +2,7 @@ import copy
 
 import six
 
-from .types.spec import load_input_output_spec, InputsSpec, OutputsSpec
-from .store import PAIFlowPipelineStore
+from .types.spec import load_input_output_spec
 from .types.variable import PipelineVariable
 
 
@@ -19,11 +18,11 @@ class PipelineStep(object):
                  depends=None):
         self._depends = depends or set()
         self._assigned = set()
-        manifest = self.get_manifest(identifier=identifier, provider=provider, version=version)
-        self._metadata = copy.copy(manifest["metadata"])
-        self._metadata["name"] = name
+        template = self.get_template(identifier=identifier, provider=provider, version=version)
+        self._metadata = copy.copy(template.manifest["metadata"])
+        self._name = name
 
-        inputs_spec, outputs_spec, = load_input_output_spec(self, manifest["spec"])
+        inputs_spec, outputs_spec, = load_input_output_spec(self, template.manifest["spec"])
         self.parent = None
         self.inputs = inputs_spec
         self.outputs = outputs_spec
@@ -72,16 +71,18 @@ class PipelineStep(object):
 
     @property
     def name(self):
-        return self._metadata.get("name")
+        return self._name
 
     @name.setter
     def name(self, value):
-        self._metadata["name"] = value
+        self._name = value
 
     @classmethod
-    def get_manifest(cls, identifier, provider, version):
-        manifest_store = PAIFlowPipelineStore()
-        return manifest_store.get(identifier=identifier, provider=provider, version=version)
+    def get_template(cls, identifier, provider, version):
+        from .template import PipelineTemplate
+        template = PipelineTemplate.get_by_identifier(identifier=identifier, provider=provider,
+                                                      version=version)
+        return template
 
     def after(self, *steps):
         if self.parent or any(step for step in steps if step.parent):
@@ -95,12 +96,14 @@ class PipelineStep(object):
         return "pipelines.{}".format(self.name)
 
     def _convert_spec_to_json(self):
+        assigned_inputs = [ipt for ipt in self.inputs if ipt.name in self._assigned]
+
         spec = {
             "arguments": {
-                "parameters": [ipt.to_dict() for ipt in self.inputs if
-                               ipt.name in self._assigned and ipt.variable_category == "parameters"],
-                "artifacts": [ipt.to_dict() for ipt in self.inputs if
-                              ipt.name in self._assigned and ipt.variable_category == "artifacts"],
+                "parameters": [ipt.to_dict() for ipt in assigned_inputs if
+                               ipt.variable_category == "parameters"],
+                "artifacts": [ipt.to_dict() for ipt in assigned_inputs if
+                              ipt.variable_category == "artifacts"],
             }
         }
 
@@ -109,8 +112,10 @@ class PipelineStep(object):
         return spec
 
     def to_dict(self):
+        metadata = copy.copy(self._metadata)
+        metadata["name"] = self.name
         d = {
-            "metadata": self.metadata,
+            "metadata": metadata,
             "spec": self._convert_spec_to_json(),
         }
         return d
