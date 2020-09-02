@@ -169,7 +169,7 @@ class PipelineTemplate(object):
         return cls(manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"])
 
     @classmethod
-    def list_templates(cls, identifier, provider=None, fuzzy=None, version=None, page_num=1,
+    def list_templates(cls, identifier, provider=None, fuzzy=True, version=None, page_num=1,
                        page_size=50):
         session = get_current_pai_session()
         pipeline_infos, total_count = session.list_pipeline(identifier=identifier,

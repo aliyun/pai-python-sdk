@@ -12,14 +12,33 @@ from pai.decorator import cached_property
 logger = logging.getLogger(__name__)
 
 
-def set_default_pai_session(access_key_id, access_key_secret, region_id, **kwargs):
-    session = Session(access_key_id, access_key_secret, region_id, **kwargs)
+def set_default_pai_session(access_key_id, access_key_secret, region_id, odps_client=None,
+                            oss_bucket=None, **kwargs):
+    session = Session(access_key_id, access_key_secret, region_id, odps_client=odps_client,
+                      oss_bucket=oss_bucket, **kwargs)
     Session.set_default_session(session)
     return session
 
 
 def get_current_pai_session():
     return Session.get_current_session()
+
+
+def get_default_xflow_execution():
+    session = get_current_pai_session()
+    if not session:
+        raise ValueError("Default session is not initialized, please use pai.session"
+                         ".set_default_pai_session to initialized default session")
+    odps_client = session.odps_client
+    if not odps_client:
+        raise ValueError("Default ODPS client is not provided.")
+
+    return {
+        "odpsInfoFile": "/share/base/odpsInfo.ini",
+        "endpoint": odps_client.endpoint,
+        "logViewHost": odps_client.logview_host,
+        "odpsProject": odps_client.project,
+    }
 
 
 class Session(object):
