@@ -243,9 +243,13 @@ class Session(object):
 
         run_id = resp["Data"]["RunId"]
 
-        print("Create pipeline run success (run_id: {run_id}), please visit the link below to view"
-              " the run detail.".format(run_id=run_id))
-        print(self.run_detail_url(run_id))
+        if not self._is_inner:
+            print(
+                "Create pipeline run success (run_id: {run_id}), please visit the link below to view"
+                " the run detail.".format(run_id=run_id))
+            print(self.run_detail_url(run_id))
+        else:
+            print("Create pipeline run success (run_id: {run_id})".format(run_id=run_id))
 
         return run_id
 
