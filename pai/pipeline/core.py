@@ -98,9 +98,17 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
         return self._template.run(job_name=job_name, arguments=arguments,
                                   wait=wait, log_outputs=log_outputs)
 
-    @abstractmethod
+    def _spec_to_dict(self):
+        spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict()}
+        return spec
+
     def to_dict(self):
-        pass
+        manifest = {
+            "apiVersion": DEFAULT_PIPELINE_API_VERSION,
+            "metadata": self.metadata,
+            "spec": self._spec_to_dict()
+        }
+        return manifest
 
 
 class ContainerComponent(PipelineBase):
@@ -115,19 +123,15 @@ class ContainerComponent(PipelineBase):
                                                  pipeline_id=pipeline_id)
 
     def to_dict(self):
-        d = {
-            "apiVersion": DEFAULT_PIPELINE_API_VERSION,
-            "metadata": self.metadata,
-            "spec":
-                {
-                    "inputs": self.inputs.to_dict(),
-                    "outputs": self.outputs.to_dict(),
-                    "execution": {
-                        "image": self.image_uri,
-                        "command": self.command,
-                    }
-                }
+        d = super(ContainerComponent, self).to_dict()
+        d["spec"]["execution"] = {
+            "image": self.image_uri,
+            "command": self.command,
         }
+
+        if self.image_pull_config:
+            d["spec"]["execution"]["imagePullConfig"] = self.image_pull_config
+
         return d
 
 
@@ -319,11 +323,6 @@ class Pipeline(PipelineBase):
         return {ipt.name: ipt.to_dict() for ipt in self.inputs if
                 ipt.variable_category == "artifacts"}
 
-    def _convert_spec_to_json(self):
-        spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict(),
-                "pipelines": [step.to_dict() for step in self.steps]}
-        return spec
-
     def dot(self):
         graph = Digraph()
         for step in self.steps:
@@ -333,9 +332,6 @@ class Pipeline(PipelineBase):
         return graph
 
     def to_dict(self):
-        manifest = {
-            "apiVersion": DEFAULT_PIPELINE_API_VERSION,
-            "metadata": self.metadata,
-            "spec": self._convert_spec_to_json()
-        }
-        return manifest
+        d = super(Pipeline, self).to_dict()
+        d["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
+        return d

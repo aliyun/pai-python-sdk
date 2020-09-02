@@ -8,11 +8,13 @@ import uuid
 import six
 import yaml
 
-from pai.pipeline import PipelineParameter, PipelineRun, PipelineStep, Pipeline
-from pai.pipeline.core import ContainerComponent
-from pai.pipeline.types.artifact import PipelineArtifact
-from pai.pipeline.types.spec import load_input_output_spec
-from pai.session import get_current_pai_session
+from .core import Pipeline, ContainerComponent, PipelineBase
+from .run import PipelineRun
+from .step import PipelineStep
+from .types.artifact import PipelineArtifact
+from .types.parameter import PipelineParameter
+from .types.spec import load_input_output_spec
+from ..session import get_current_pai_session
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +110,13 @@ def load_pipeline_from_yaml(manifest):
             outputs=outputs,
         )
     else:
-        raise ValueError("Unknown manifest implementation.")
+        p = PipelineBase(
+            identifier=metadata.get("identifier", None),
+            provider=metadata.get("provider", None),
+            version=metadata.get("version", None),
+            inputs=inputs,
+            outputs=outputs,
+        )
     return p
 
 
@@ -182,12 +190,31 @@ class PipelineTemplate(object):
         return templates, total_count
 
     @classmethod
-    def load_by_identifier(cls, identifier, provider=None, version="v1"):
+    def load_by_identifier(cls, identifier, provider=None, version="v1", with_impl=False):
         session = get_current_pai_session()
         pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
                                              version=version)
-        component = load_pipeline_from_yaml(pipeline_info["Manifest"])
+        if with_impl:
+            pipeline_id = pipeline_info["PipelineId"]
+            manifest = yaml.load(session.describe_pipeline(pipeline_id)["Manifest"],
+                                 yaml.FullLoader)
+        else:
+            manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
+        component = load_pipeline_from_yaml(manifest)
         component._pipeline_id = pipeline_info["PipelineId"]
+        return component
+
+    @classmethod
+    def load(cls, pipeline_id, with_impl=False):
+        session = get_current_pai_session()
+        if with_impl:
+            manifest = yaml.load(session.describe_pipeline(pipeline_id)["Manifest"],
+                                 yaml.FullLoader)
+        else:
+            manifest = yaml.load(session.get_pipeline_by_id(pipeline_id)["Manifest"],
+                                 yaml.FullLoader)
+        component = load_pipeline_from_yaml(manifest)
+        component._pipeline_id = pipeline_id
         return component
 
     def _have_impl(self):
@@ -198,7 +225,7 @@ class PipelineTemplate(object):
             return False
         return True
 
-    def load(self, with_impl=True):
+    def to_pipeline(self, with_impl=True):
         if not self._have_impl() and with_impl:
             if not self._pipeline_id:
                 raise ValueError("Pipeline Template do not have implementation and is not saved.")
