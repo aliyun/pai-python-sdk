@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import os
 import unittest
-from pprint import pprint
 
 import yaml
 
@@ -40,15 +39,8 @@ class TestPaiFlowAPI(BaseTestCase):
         pipeline_infos, total_count = self.session.list_pipeline(
             provider=ProviderAlibabaPAI, page_size=50, page_num=1)
 
-        pprint(pipeline_infos[0])
         self.assertTrue(len(pipeline_infos) > 0)
         self.assertTrue(total_count > 0)
-
-    def test_list_templates(self):
-        templates, count = PipelineTemplate.list_templates("xflow", fuzzy=True,
-                                                           provider=ProviderAlibabaPAI)
-        print(count)
-        print(templates[0].inputs.__repr__())
 
     def test_provider(self):
         assert self.session.provider is not None

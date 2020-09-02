@@ -10,68 +10,19 @@ from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.core import ContainerComponent
 from pai.pipeline.run import PipelineRunStatus
-from pai.pipeline.template import load_pipeline_from_yaml
 from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, ArtifactMetadata, \
     PipelineArtifact
 from pai.pipeline.types.parameter import PipelineParameter
 from pai.session import get_current_pai_session
 from pai.utils import gen_temp_table
 from tests import BaseTestCase
+from . import create_simple_composite_pipeline
 
 
 class TestSimpleCompositePipeline(BaseTestCase):
 
-    @classmethod
-    def create_composite_pipeline(cls):
-        """Composite data_source and type_transform pipeline"""
-        execution_input = PipelineParameter(name="execution", typ="map")
-        cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str)
-        table_input = PipelineParameter(name="table_name", typ=str)
-
-        data_source_step = PipelineStep(
-            identifier="dataSource-xflow-maxCompute", provider=ProviderAlibabaPAI,
-            version="v1", name="dataSource", inputs={
-                "execution": execution_input,
-                "tableName": table_input,
-                "partition": "",
-            }
-        )
-
-        type_transform_step = PipelineStep(
-            identifier="type-transform-xflow-maxCompute", provider=ProviderAlibabaPAI,
-            version="v1", name="typeTransform", inputs={
-                "inputArtifact": data_source_step.outputs["outputArtifact"],
-                "execution": execution_input,
-                "outputTable": gen_temp_table(),
-                "cols_to_double": cols_to_double_input,
-                "coreNum": 2,
-                "memSizePerCore": 1024,
-            }
-        )
-        split_step = PipelineStep(
-            identifier="split-xflow-maxCompute", provider=ProviderAlibabaPAI,
-            version="v1", inputs={
-                "inputArtifact": type_transform_step.outputs[0],
-                "execution": execution_input,
-                "output1TableName": gen_temp_table(),
-                "fraction": 0.5,
-                "output2TableName": gen_temp_table(),
-                "coreNum": 2,
-                "memSizePerCore": 1024,
-                "lifecycle": 28,
-            }
-        )
-
-        p = Pipeline(
-            inputs=[execution_input, cols_to_double_input, table_input],
-            steps=[data_source_step, type_transform_step, split_step],
-            outputs=split_step.outputs[:1] + data_source_step.outputs[:1] + split_step.outputs[-1:],
-        )
-
-        return p, data_source_step, type_transform_step, split_step
-
     def test_run_composite_pipeline(self):
-        p, data_source_step, type_transform_step, split_step = self.create_composite_pipeline()
+        p, data_source_step, type_transform_step, split_step = create_simple_composite_pipeline()
         self.assertEqual(len(p.steps), 3)
         self.assertTrue(all(step for step in p.steps if step.name))
 
@@ -95,20 +46,14 @@ class TestSimpleCompositePipeline(BaseTestCase):
 
         self.assertEqual(pipeline_run.get_status(), PipelineRunStatus.Succeeded)
 
-    def test_composite_pipeline_save_and_load(self):
-        p, data_source_step, type_transform_step, split_step = self.create_composite_pipeline()
+    def test_composite_pipeline_save(self):
+        p, data_source_step, type_transform_step, split_step = create_simple_composite_pipeline()
         self.assertIsNone(p.pipeline_id)
 
         new_version = "%s" % int(time.time())
         _ = p.save(identifier="test-composite-pipeline", version=new_version)
         self.assertIsNotNone(p.pipeline_id)
         self.assertEqual(p.version, new_version)
-
-        sess = get_current_pai_session()
-        pipeline_info = sess.describe_pipeline(p.pipeline_id)
-        manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
-        pipeline = load_pipeline_from_yaml(manifest)
-        self.assertEqual(len(pipeline.steps), 3)
 
     def test_conflict_step_names(self):
         execution_input = PipelineParameter(name="execution", typ="map")
