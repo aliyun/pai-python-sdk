@@ -2,7 +2,7 @@
 
 PAI Python SDK is provided by team *Alibaba Cloud PAI*. It provide convenience for user to access [PAI service in Alibaba Cloud](https://www.aliyun.com/product/bigdata/product/learn).
 
-Currently, SDK support PAI pipeline service (PAIFlow), more ability, such as EAS, Blade service support will be included in future.
+Currently, SDK support PAI pipeline service (PAIFlow), more ability, such as EAS, Blade service support will be included soon.
 
 ## Installation
 

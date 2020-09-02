@@ -28,7 +28,7 @@ if os.path.exists('README.rst'):
         long_description = f.read()
 
 setup(
-    name="aliyunpai",
+    name="alipai",
     python_requires=">=2.7",
     version=_load_version_info(),
     description="Alibaba Cloud PAI Python SDK",
