@@ -314,15 +314,3 @@ class PipelineTemplate(object):
             return run_instance
         run_instance.wait_for_completion(log_outputs=log_outputs)
         return run_instance
-
-    def to_estimator(self, parameters):
-        from pai.estimator import PipelineEstimator
-        return PipelineEstimator(pipeline_id=self.pipeline_id,
-                                 manifest=self.manifest,
-                                 parameters=parameters)
-
-    def to_transformer(self, parameters):
-        from pai.transformer import PipelineTransformer
-        return PipelineTransformer(pipeline_id=self.pipeline_id,
-                                   manifest=self.manifest,
-                                   parameters=parameters)

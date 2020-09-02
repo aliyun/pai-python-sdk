@@ -111,21 +111,19 @@ class TestXFlowAlgo(BaseTestCase):
         xflow_execution = self.get_default_xflow_execution()
         data_set = self.odps_client.get_table(self.TestDataSetTables["processed_wumai_data_1"])
 
-        tf = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
+        split_job = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
                                                 provider=ProviderAlibabaPAI,
-                                                version="v1").to_estimator(
-            parameters={"execution": xflow_execution, "fraction": 0.7, })
+                                                version="v1").run(
+            job_name="split-job",
+            arguments={"execution": xflow_execution, "fraction": 0.7,
+                       "inputArtifact": data_set,
+                       "output1TableName": gen_temp_table(),
+                       "output2TableName": gen_temp_table(),
+                       })
 
-        job = tf.fit(wait=False, arguments={
-            "inputArtifact": data_set,
-            "output1TableName": gen_temp_table(),
-            "output2TableName": gen_temp_table(),
-        })
-
-        job.attach(log_outputs=False)
-        self.assertEqual(JobStatus.Succeeded, job.get_status())
+        self.assertEqual(PipelineRunStatus.Succeeded, split_job.get_status())
         time.sleep(20)  # Because of outputs delay.
-        job_outputs = job.get_outputs()
+        job_outputs = split_job.get_outputs()
         dataset1 = job_outputs[0]
         dataset2 = job_outputs[1]
 
@@ -164,11 +162,6 @@ class TestXFlowAlgo(BaseTestCase):
         job.attach(log_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
-        # evaluate = PipelineTemplate.get_by_identifier(
-        #     identifier="evaluate-xflow-maxCompute",
-        #     provider=ProviderAlibabaPAI,
-        #     version="v1").to_estimator().fit()
-
     def test_heart_disease_step_by_step(self):
         xflow_execution = self.get_default_xflow_execution()
 
@@ -187,28 +180,30 @@ class TestXFlowAlgo(BaseTestCase):
         # Extract and transform dataset using max_compute sql.
         sql_job = PipelineTemplate.get_by_identifier(identifier="sql-xflow-maxCompute",
                                                      provider=ProviderAlibabaPAI,
-                                                     version="v1").to_estimator(
-            parameters={
+                                                     version="v1").run(
+            job_name="sql-job",
+            arguments={
                 "execution": xflow_execution,
                 "inputArtifact1": dataset_table,
                 "sql": sql,
                 "outputTable": gen_temp_table(),
-            }).fit(wait=True, log_outputs=True)
+            })
 
         time.sleep(10)
         output_table_artifact = sql_job.get_outputs()[0]
 
         type_transform_job = PipelineTemplate.get_by_identifier(
             identifier="type-transform-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1").to_estimator(
-            parameters={
+            provider=ProviderAlibabaPAI, version="v1").run(
+            job_name="transform-job",
+            arguments={
                 "execution": xflow_execution,
                 "inputArtifact": output_table_artifact,
                 "cols_to_double": 'sex,cp,fbs,restecg,exang,slop,thal,'
                                   'ifhealth,age,trestbps,chol,thalach,oldpeak,ca',
                 "outputTable": gen_temp_table(),
             }
-        ).fit()
+        )
 
         time.sleep(20)
         type_transform_result = type_transform_job.get_outputs()[0]
@@ -216,8 +211,9 @@ class TestXFlowAlgo(BaseTestCase):
         # Normalize Feature
         normalize_job = PipelineTemplate.get_by_identifier(identifier="normalize-xflow-maxCompute",
                                                            provider=ProviderAlibabaPAI,
-                                                           version="v1").to_estimator(
-            parameters={
+                                                           version="v1").run(
+            job_name="normalize-job",
+            arguments={
                 "execution": xflow_execution,
                 "inputArtifact": type_transform_result,
                 "selectedColNames": 'sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,'
@@ -226,21 +222,22 @@ class TestXFlowAlgo(BaseTestCase):
                 "outputTableName": gen_temp_table(),
                 "outputParaTableName": gen_temp_table(),
             }
-        ).fit()
+        )
         time.sleep(20)
         normalized_dataset = normalize_job.get_outputs()[0]
 
         split_job = PipelineTemplate.get_by_identifier(
             identifier="split-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1").to_estimator(
-            parameters={
+            provider=ProviderAlibabaPAI, version="v1").run(
+            job_name="split-job",
+            arguments={
                 "inputArtifact": normalized_dataset,
                 "execution": xflow_execution,
                 "fraction": 0.8,
                 "output1TableName": gen_temp_table(),
                 "output2TableName": gen_temp_table(),
             }
-        ).fit()
+        )
 
         time.sleep(20)
         split_output_1, split_output_2 = split_job.get_outputs()
@@ -265,8 +262,9 @@ class TestXFlowAlgo(BaseTestCase):
         offlinemodel_artifact, pmml_output = lr_job.get_outputs()
         transform_job = PipelineTemplate.get_by_identifier(
             identifier="prediction-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1").to_estimator(
-            parameters={
+            provider=ProviderAlibabaPAI, version="v1").run(
+            job_name="pred-job",
+            arguments={
                 "inputModelArtifact": offlinemodel_artifact,
                 "inputDataSetArtifact": split_output_2,
                 "execution": xflow_execution,
@@ -275,15 +273,16 @@ class TestXFlowAlgo(BaseTestCase):
                                    'age,trestbps,chol,thalach,oldpeak,ca',
                 "appendColNames": "ifhealth",
             }
-        ).fit()
+        )
 
         time.sleep(20)
         transform_result = transform_job.get_outputs()[0]
 
         evaluate_job = PipelineTemplate.get_by_identifier(
             identifier="evaluate-xflow-maxCompute",
-            provider=ProviderAlibabaPAI, version="v1").to_estimator(
-            parameters={
+            provider=ProviderAlibabaPAI, version="v1").run(
+            job_name="evaluate-job",
+            arguments={
                 "execution": xflow_execution,
                 "inputArtifact": transform_result,
                 "outputDetailTableName": gen_temp_table(),
@@ -294,7 +293,7 @@ class TestXFlowAlgo(BaseTestCase):
                 "coreNum": 2,
                 "memSizePerCore": 512,
             }
-        ).fit()
+        )
 
         time.sleep(20)
 
