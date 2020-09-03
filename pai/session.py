@@ -12,33 +12,16 @@ from pai.decorator import cached_property
 logger = logging.getLogger(__name__)
 
 
-def set_default_pai_session(access_key_id, access_key_secret, region_id, odps_client=None,
-                            oss_bucket=None, **kwargs):
-    session = Session(access_key_id, access_key_secret, region_id, odps_client=odps_client,
-                      oss_bucket=oss_bucket, **kwargs)
+def set_default_pai_session(access_key_id, access_key_secret, region_id, oss_bucket=None,
+                            **kwargs):
+    session = Session(access_key_id, access_key_secret, region_id, oss_bucket=oss_bucket,
+                      **kwargs)
     Session.set_default_session(session)
     return session
 
 
 def get_current_pai_session():
     return Session.get_current_session()
-
-
-def get_default_xflow_execution():
-    session = get_current_pai_session()
-    if not session:
-        raise ValueError("Default session is not initialized, please use pai.session"
-                         ".set_default_pai_session to initialized default session")
-    odps_client = session.odps_client
-    if not odps_client:
-        raise ValueError("Default ODPS client is not provided.")
-
-    return {
-        "odpsInfoFile": "/share/base/odpsInfo.ini",
-        "endpoint": odps_client.endpoint,
-        "logViewHost": odps_client.logview_host,
-        "odpsProject": odps_client.project,
-    }
 
 
 class Session(object):
@@ -53,8 +36,7 @@ class Session(object):
     _default_session = None
     _inner_region_ids = ["center"]
 
-    def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None,
-                 odps_client=None, **kwargs):
+    def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None, **kwargs):
         """ PAI Session Initializer.
 
         Args:
@@ -73,8 +55,6 @@ class Session(object):
                                                                   _is_inner=self._is_inner)
         if oss_bucket:
             self._oss_bucket = oss_bucket
-        if odps_client:
-            self._odps_client = odps_client
 
     @classmethod
     def get_current_session(cls):
@@ -97,12 +77,6 @@ class Session(object):
         if not self._oss_bucket:
             raise ValueError("Default OSS bucket not provided")
         return self._oss_bucket
-
-    @property
-    def odps_client(self):
-        if not self._odps_client:
-            raise ValueError("Default MaxCompute(ODPS) client not provided")
-        return self._odps_client
 
     @property
     def console_host(self):

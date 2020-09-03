@@ -20,7 +20,7 @@ Before access PAI service, user should initialize default PAI session.
 
 from pai.session import set_default_pai_session
 
-session = set_default_pai_session(access_key_id="your_access_key", access_key_secret="your_access_secret", region_id="your_region_id", odps_client=odps_client, oss_bucket=oss_bucket)
+session = set_default_pai_session(access_key_id="your_access_key", access_key_secret="your_access_secret", region_id="your_region_id", oss_bucket=oss_bucket)
 
 ```
 
