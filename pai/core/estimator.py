@@ -1,16 +1,16 @@
 from __future__ import absolute_import
 
-import logging
 from abc import ABCMeta, abstractmethod
 
+import logging
 import six
 import yaml
 
-from pai.pipeline.types.artifact import ArtifactModelType
 from .job import RunJob
 from .model import XFlowOfflineModel, PmmlModel
-from .pipeline.template import PipelineTemplate
 from .session import get_current_pai_session
+from ..pipeline.template import PipelineTemplate
+from ..pipeline.types.artifact import ArtifactModelType
 
 logger = logging.getLogger(__name__)
 

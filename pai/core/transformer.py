@@ -1,12 +1,14 @@
-import logging
+from __future__ import absolute_import
+
 from abc import ABCMeta, abstractmethod
 
+import logging
 import six
 import yaml
 
-from pai.job import RunJob
-from pai.pipeline.template import PipelineTemplate
-from pai.session import Session, get_current_pai_session
+from .job import RunJob
+from .session import Session, get_current_pai_session
+from ..pipeline.template import PipelineTemplate
 
 logger = logging.getLogger(__name__)
 

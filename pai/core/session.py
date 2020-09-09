@@ -6,9 +6,9 @@ import six
 import yaml
 from aliyunsdkcore.client import AcsClient
 
-from .api.client_factory import ClientFactory
-from .decorator import cached_property
-from .workspace import Workspace
+from pai.api.client_factory import ClientFactory
+from pai.decorator import cached_property
+from pai.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 

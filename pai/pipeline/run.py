@@ -6,10 +6,10 @@ from datetime import datetime
 
 from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
-from pai.exception import TimeoutException
+from pai.core.exception import TimeoutException
 from pai.pipeline.types.artifact import ArtifactEntity
-from pai.session import get_current_pai_session
-from pai.workspace import Workspace
+from pai.core.session import get_current_pai_session
+from pai.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 

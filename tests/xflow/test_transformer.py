@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from pai.job import JobStatus
+from pai.core.job import JobStatus
 from pai.xflow.transformer import OfflineModelTransformer, ModelTransferToOSS
 from tests import BaseTestCase
 

@@ -48,11 +48,10 @@ class PAIFlowClient(BaseClient):
         return resp
 
     def _get_endpoint(self):
-        # if self._inner:
-        #     return "paiflowinner-inner.aliyuncs.com"
-        # else:
-        #     return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
-        return "paiflow-share.cn-hangzhou.aliyuncs.com"
+        if self._inner:
+            return "paiflowinner-inner.aliyuncs.com"
+        else:
+            return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
 
     def _get_product(self):
         if self._inner:

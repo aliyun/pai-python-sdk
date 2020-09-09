@@ -5,7 +5,7 @@ from enum import Enum
 
 from six import with_metaclass
 
-from pai.pipeline import PipelineRunStatus
+from ..pipeline.run import PipelineRunStatus
 
 
 class JobStatus(Enum):

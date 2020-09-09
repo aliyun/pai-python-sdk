@@ -6,7 +6,7 @@ import time
 
 import odps
 
-from pai.job import JobStatus
+from pai.core.job import JobStatus
 from pai.xflow.classifier import LogisticRegression
 from tests import BaseTestCase
 

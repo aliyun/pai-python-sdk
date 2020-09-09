@@ -5,7 +5,7 @@ import random
 import time
 
 from pai.common import ProviderAlibabaPAI
-from pai.job import JobStatus
+from pai.core.job import JobStatus
 from pai.pipeline import PipelineRunStatus, PipelineStep
 from pai.pipeline.core import Pipeline
 from pai.pipeline.template import PipelineTemplate

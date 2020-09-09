@@ -7,7 +7,7 @@ import yaml
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import PipelineRun, PipelineTemplate
-from pai.session import Session
+from pai.core.session import Session
 from pai.utils import iter_with_limit
 from tests import BaseTestCase
 

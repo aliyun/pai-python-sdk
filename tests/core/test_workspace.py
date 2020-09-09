@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import random
 
-from pai.workspace import Workspace, WorkspaceRole
+from pai.core.workspace import Workspace, WorkspaceRole
 from tests import BaseTestCase
 
 

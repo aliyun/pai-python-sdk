@@ -43,7 +43,7 @@ class Workspace(object):
 
     @classmethod
     def _get_workspace_client(cls):
-        from pai.session import get_current_pai_session
+        from pai.core.session import get_current_pai_session
         session = get_current_pai_session()
         return session.ws_client
 

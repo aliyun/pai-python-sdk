@@ -11,7 +11,7 @@ from pai.pipeline.run import PipelineRunStatus
 from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, ArtifactMetadata, \
     PipelineArtifact
 from pai.pipeline.types.parameter import PipelineParameter
-from pai.session import get_current_pai_session
+from pai.core.session import get_current_pai_session
 from pai.utils import gen_temp_table
 from tests import BaseTestCase
 from . import create_simple_composite_pipeline

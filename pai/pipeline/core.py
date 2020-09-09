@@ -7,7 +7,7 @@ from collections import defaultdict, Counter
 import six
 from graphviz import Digraph
 
-from pai.session import get_current_pai_session
+from ..core.session import get_current_pai_session
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import OutputsSpec, InputsSpec
@@ -83,13 +83,13 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
         return self
 
     def to_estimator(self, parameters):
-        from pai.estimator import PipelineEstimator
+        from pai.core.estimator import PipelineEstimator
         return PipelineEstimator(pipeline_id=self._template.pipeline_id,
                                  manifest=self._template.manifest,
                                  parameters=parameters)
 
     def to_transformer(self, parameters=None):
-        from pai.transformer import PipelineTransformer
+        from pai.core.transformer import PipelineTransformer
         return PipelineTransformer(pipeline_id=self._template.pipeline_id,
                                    manifest=self._template.manifest,
                                    parameters=parameters)

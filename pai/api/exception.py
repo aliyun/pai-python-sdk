@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from pai.exception import PAIException
+from pai.core.exception import PAIException
 
 
 class ServiceCallException(PAIException):

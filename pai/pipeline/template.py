@@ -15,8 +15,8 @@ from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import load_input_output_spec
 from ..decorator import cached_property
-from ..session import get_current_pai_session
-from ..workspace import Workspace
+from ..core.session import get_current_pai_session
+from ..core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
-from pai.estimator import AlgoBaseEstimator
-from pai.transformer import AlgoBaseTransformer
+from pai.core.estimator import AlgoBaseEstimator
+from pai.core.transformer import AlgoBaseTransformer
 
 
 class _XFlowAlgoMixin(object):

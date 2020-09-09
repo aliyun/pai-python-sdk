@@ -10,8 +10,8 @@ from odps import ODPS
 from six.moves import configparser
 from six.moves.configparser import DEFAULTSECT
 
-from pai.session import setup_default_pai_session
-from pai.workspace import Workspace
+from pai.core.session import setup_default_pai_session
+from pai.core.workspace import Workspace
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
