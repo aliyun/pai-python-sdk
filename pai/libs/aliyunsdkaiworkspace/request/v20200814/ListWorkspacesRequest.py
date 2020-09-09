@@ -19,12 +19,18 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class ListPipelinesRequest(RoaRequest):
+class ListWorkspacesRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'ListPipelines')
-		self.set_uri_pattern('/api/core/v1.0/pipelines')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListWorkspaces')
+		self.set_uri_pattern('/api/core/v1.0/workspaces')
 		self.set_method('GET')
+
+	def get_SortedField(self):
+		return self.get_query_params().get('SortedField')
+
+	def set_SortedField(self,SortedField):
+		self.add_query_param('SortedField',SortedField)
 
 	def get_PageSize(self):
 		return self.get_query_params().get('PageSize')
@@ -32,29 +38,17 @@ class ListPipelinesRequest(RoaRequest):
 	def set_PageSize(self,PageSize):
 		self.add_query_param('PageSize',PageSize)
 
-	def get_PipelineProvider(self):
-		return self.get_query_params().get('PipelineProvider')
+	def get_WorkspaceName(self):
+		return self.get_query_params().get('WorkspaceName')
 
-	def set_PipelineProvider(self,PipelineProvider):
-		self.add_query_param('PipelineProvider',PipelineProvider)
+	def set_WorkspaceName(self,WorkspaceName):
+		self.add_query_param('WorkspaceName',WorkspaceName)
 
-	def get_FuzzyMatching(self):
-		return self.get_query_params().get('FuzzyMatching')
+	def get_SortedSequence(self):
+		return self.get_query_params().get('SortedSequence')
 
-	def set_FuzzyMatching(self,FuzzyMatching):
-		self.add_query_param('FuzzyMatching',FuzzyMatching)
-
-	def get_PipelineVersion(self):
-		return self.get_query_params().get('PipelineVersion')
-
-	def set_PipelineVersion(self,PipelineVersion):
-		self.add_query_param('PipelineVersion',PipelineVersion)
-
-	def get_PipelineIdentifier(self):
-		return self.get_query_params().get('PipelineIdentifier')
-
-	def set_PipelineIdentifier(self,PipelineIdentifier):
-		self.add_query_param('PipelineIdentifier',PipelineIdentifier)
+	def set_SortedSequence(self,SortedSequence):
+		self.add_query_param('SortedSequence',SortedSequence)
 
 	def get_PageNumber(self):
 		return self.get_query_params().get('PageNumber')

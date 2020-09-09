@@ -19,11 +19,11 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class ListPipelinesRequest(RoaRequest):
+class ListAdminWorkspacesRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'ListPipelines')
-		self.set_uri_pattern('/api/core/v1.0/pipelines')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListAdminWorkspaces')
+		self.set_uri_pattern('/api/admin/v1.0/workspaces')
 		self.set_method('GET')
 
 	def get_PageSize(self):
@@ -32,35 +32,35 @@ class ListPipelinesRequest(RoaRequest):
 	def set_PageSize(self,PageSize):
 		self.add_query_param('PageSize',PageSize)
 
-	def get_PipelineProvider(self):
-		return self.get_query_params().get('PipelineProvider')
+	def get_WorkspaceName(self):
+		return self.get_query_params().get('WorkspaceName')
 
-	def set_PipelineProvider(self,PipelineProvider):
-		self.add_query_param('PipelineProvider',PipelineProvider)
+	def set_WorkspaceName(self,WorkspaceName):
+		self.add_query_param('WorkspaceName',WorkspaceName)
 
-	def get_FuzzyMatching(self):
-		return self.get_query_params().get('FuzzyMatching')
+	def get_OrderSequence(self):
+		return self.get_query_params().get('OrderSequence')
 
-	def set_FuzzyMatching(self,FuzzyMatching):
-		self.add_query_param('FuzzyMatching',FuzzyMatching)
+	def set_OrderSequence(self,OrderSequence):
+		self.add_query_param('OrderSequence',OrderSequence)
 
-	def get_PipelineVersion(self):
-		return self.get_query_params().get('PipelineVersion')
+	def get_UserId(self):
+		return self.get_query_params().get('UserId')
 
-	def set_PipelineVersion(self,PipelineVersion):
-		self.add_query_param('PipelineVersion',PipelineVersion)
-
-	def get_PipelineIdentifier(self):
-		return self.get_query_params().get('PipelineIdentifier')
-
-	def set_PipelineIdentifier(self,PipelineIdentifier):
-		self.add_query_param('PipelineIdentifier',PipelineIdentifier)
+	def set_UserId(self,UserId):
+		self.add_query_param('UserId',UserId)
 
 	def get_PageNumber(self):
 		return self.get_query_params().get('PageNumber')
 
 	def set_PageNumber(self,PageNumber):
 		self.add_query_param('PageNumber',PageNumber)
+
+	def get_OrderField(self):
+		return self.get_query_params().get('OrderField')
+
+	def set_OrderField(self,OrderField):
+		self.add_query_param('OrderField',OrderField)
 
 	def get_WorkspaceId(self):
 		return self.get_query_params().get('WorkspaceId')

@@ -19,21 +19,21 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class CreatePipelineRequest(RoaRequest):
+class CreateWorkspaceRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'CreatePipeline')
-		self.set_uri_pattern('/api/core/v1.0/pipelines')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'CreateWorkspace')
+		self.set_uri_pattern('/api/core/v1.0/workspaces')
 		self.set_method('POST')
 
-	def get_Manifest(self):
-		return self.get_body_params().get('Manifest')
+	def get_WorkspaceName(self):
+		return self.get_body_params().get('WorkspaceName')
 
-	def set_Manifest(self,Manifest):
-		self.add_body_params('Manifest', Manifest)
+	def set_WorkspaceName(self,WorkspaceName):
+		self.add_body_params('WorkspaceName', WorkspaceName)
 
-	def get_WorkspaceId(self):
-		return self.get_body_params().get('WorkspaceId')
+	def get_Description(self):
+		return self.get_body_params().get('Description')
 
-	def set_WorkspaceId(self,WorkspaceId):
-		self.add_body_params('WorkspaceId', WorkspaceId)
+	def set_Description(self,Description):
+		self.add_body_params('Description', Description)

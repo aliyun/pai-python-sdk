@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from pai.api.paiflow import PAIFlowClient
 from pai.api.sts import StsClient
+from pai.api.workspace import WorkspaceClient
 
 
 class ClientFactory(object):
@@ -19,3 +20,7 @@ class ClientFactory(object):
     @classmethod
     def create_sts_client(cls, acs_client):
         return StsClient(acs_client)
+
+    @classmethod
+    def create_workspace_client(cls, acs_client):
+        return WorkspaceClient(acs_client)

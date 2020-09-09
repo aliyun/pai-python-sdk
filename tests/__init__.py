@@ -8,8 +8,10 @@ from collections import namedtuple
 import oss2
 from odps import ODPS
 from six.moves import configparser
+from six.moves.configparser import DEFAULTSECT
 
-from pai.session import set_default_pai_session
+from pai.session import setup_default_pai_session
+from pai.workspace import Workspace
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -69,8 +71,18 @@ class BaseTestCase(unittest.TestCase):
 
     @classmethod
     def _set_test_session(cls):
-        configs = cls.get_test_config()
-        return set_default_pai_session(**configs["client"])
+        client_config = cls.get_test_config()["client"]
+        workspace_name = client_config.pop("workspace_name")
+
+        default_session = setup_default_pai_session(**client_config)
+
+        if not workspace_name:
+            return default_session
+        ws = Workspace.get_by_name(workspace_name)
+        if not ws:
+            ws = Workspace.create(name=workspace_name)
+        default_session.set_workspace(ws)
+        return default_session
 
     @classmethod
     def _get_odps_client(cls):
@@ -102,9 +114,12 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def get_test_config(cls):
         cfg_parser = configparser.ConfigParser()
+
+        cfg_parser.set(section=DEFAULTSECT, option="workspace_name", value="")
         cfg_parser.read(os.path.join(_test_root, "test.ini"))
         access_key_id = cfg_parser.get("client", "access_key_id")
         access_key_secret = cfg_parser.get("client", "access_key_secret")
+        workspace_name = cfg_parser.get("client", "workspace_name")
         region_id = cfg_parser.get("client", "region_id")
         odps_project = cfg_parser.get("odps", "project")
         odps_endpoint = cfg_parser.get("odps", "endpoint")
@@ -114,7 +129,8 @@ class BaseTestCase(unittest.TestCase):
             "client": {
                 "region_id": region_id,
                 "access_key_id": access_key_id,
-                "access_key_secret": access_key_secret
+                "access_key_secret": access_key_secret,
+                "workspace_name": workspace_name,
             },
             "odps": {
                 "project": odps_project,

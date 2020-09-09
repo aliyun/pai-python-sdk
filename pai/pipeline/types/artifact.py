@@ -159,7 +159,7 @@ class ArtifactValue(object):
             else:
                 try:
                     resource_dict = json.loads(resource)
-                except json.JSONDecodeError as _:
+                except json.JSONDecodeError:
                     raise ValueError("Not support artifact url schema:%s", resource)
                 return cls.from_raw_value(resource_dict, metadata)
         elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):

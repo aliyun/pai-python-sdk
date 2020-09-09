@@ -19,21 +19,27 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class CreatePipelineRequest(RoaRequest):
+class ListSubUsersRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'CreatePipeline')
-		self.set_uri_pattern('/api/core/v1.0/pipelines')
-		self.set_method('POST')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListSubUsers')
+		self.set_uri_pattern('/api/core/v1.0/subUsers')
+		self.set_method('GET')
 
-	def get_Manifest(self):
-		return self.get_body_params().get('Manifest')
+	def get_PageSize(self):
+		return self.get_query_params().get('PageSize')
 
-	def set_Manifest(self,Manifest):
-		self.add_body_params('Manifest', Manifest)
+	def set_PageSize(self,PageSize):
+		self.add_query_param('PageSize',PageSize)
 
-	def get_WorkspaceId(self):
-		return self.get_body_params().get('WorkspaceId')
+	def get_PageNumber(self):
+		return self.get_query_params().get('PageNumber')
 
-	def set_WorkspaceId(self,WorkspaceId):
-		self.add_body_params('WorkspaceId', WorkspaceId)
+	def set_PageNumber(self,PageNumber):
+		self.add_query_param('PageNumber',PageNumber)
+
+	def get_ExcludeWorkspaceId(self):
+		return self.get_query_params().get('ExcludeWorkspaceId')
+
+	def set_ExcludeWorkspaceId(self,ExcludeWorkspaceId):
+		self.add_query_param('ExcludeWorkspaceId',ExcludeWorkspaceId)

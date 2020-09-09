@@ -4,8 +4,6 @@ import time
 import unittest
 from unittest import skip
 
-import yaml
-
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.core import ContainerComponent

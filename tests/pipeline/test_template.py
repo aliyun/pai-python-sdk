@@ -6,12 +6,13 @@ from pai.common import ProviderAlibabaPAI
 from pai.pipeline.template import PipelineTemplate
 from tests import BaseTestCase
 from . import create_simple_composite_pipeline
+from pai.utils import iter_with_limit
 
 
 class TestTemplate(BaseTestCase):
 
     def test_list_templates(self):
-        templates, count = PipelineTemplate.list_templates(identifier="xflow", fuzzy=True)
+        templates = list(iter_with_limit(PipelineTemplate.list(identifier="xflow", fuzzy=True), 10))
         self.assertTrue(len(templates) != 0)
 
     def test_load_template(self):

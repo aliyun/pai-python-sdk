@@ -8,7 +8,8 @@ from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.exception import TimeoutException
 from pai.pipeline.types.artifact import ArtifactEntity
-from pai.session import Session
+from pai.session import get_current_pai_session
+from pai.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +28,51 @@ class PipelineRunStatus(object):
 
 class PipelineRun(object):
 
-    def __init__(self, run_id, session=None):
-        self.run_id = run_id
-        self._session = session or Session.get_current_session()
+    def __init__(self, run_id, name, workspace_id=None, pipeline_id=None, session=None):
+        self._run_id = run_id
+        self._name = name
+        self._pipeline_id = pipeline_id
+        self._workspace_id = workspace_id
+        self._session = session or get_current_pai_session()
+
+    @property
+    def run_id(self):
+        return self._run_id
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def pipeline_id(self):
+        return self._pipeline_id
+
+    @classmethod
+    def _get_pipeline_client(cls):
+        session = get_current_pai_session()
+        return session.paiflow_client
+
+    @cached_property
+    def workspace(self):
+        return Workspace.get(self._workspace_id) if self._workspace_id else None
+
+    @classmethod
+    def list(cls, name=None, run_id=None, pipeline_id=None, status=None, sorted_by=None,
+             sorted_sequence=None):
+        generator = cls._get_pipeline_client().list_run(name=name, run_id=run_id,
+                                                        pipeline_id=pipeline_id,
+                                                        status=status, sorted_by=sorted_by,
+                                                        sorted_sequence=sorted_sequence)
+        for info in generator:
+            yield cls(
+                run_id=info["RunId"],
+                name=info["Name"],
+                pipeline_id=info["PipelineId"],
+                workspace_id=info.get("WorkspaceId", None),
+            )
 
     def __repr__(self):
-        return "RunInstance:%s" % self.run_id
+        return "PipelineRun:%s" % self.run_id
 
     def travel_node_status_info(self, node_id, depth=10):
         node_status_info = dict()
@@ -70,11 +110,6 @@ class PipelineRun(object):
             "startedAt": pipeline_info["StatusInfo"]["StartedAt"],
             "finishedAt": pipeline_info["StatusInfo"]["FinishedAt"],
         }
-
-    @cached_property
-    def name(self):
-        info = self.get_run_info()
-        return info["Name"]
 
     @property
     def run_detail_url(self):

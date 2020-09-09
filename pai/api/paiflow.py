@@ -1,7 +1,11 @@
 from __future__ import absolute_import
+
+from functools import wraps
+
 import six
 import yaml
 
+from pai.api import BaseClient, ServiceCallException, paginate_service_call
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
     CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest, ListPipelinesRequest,
     UpdatePipelineRequest, DescribePipelineRequest, UpdatePipelinePrivilegeRequest,
@@ -10,8 +14,18 @@ from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
     ListNodeOutputsRequest, GetMyProviderRequest
 )
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import GetPipelinePrivilegeRequest
-from pai.api import BaseClient, ServiceCallException
 from pai.utils import ensure_str, ensure_unix_time
+
+
+def require_workspace(f):
+    @wraps(f)
+    def _(self, *args, **kwargs):
+        if not kwargs.get("workspace_id", None) and self.is_workspace_required:
+            raise ValueError("Please provide WorkspaceId")
+
+        return f(self, *args, **kwargs)
+
+    return _
 
 
 class PAIFlowClient(BaseClient):
@@ -34,10 +48,11 @@ class PAIFlowClient(BaseClient):
         return resp
 
     def _get_endpoint(self):
-        if self._inner:
-            return "paiflowinner-share.aliyuncs.com"
-        else:
-            return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
+        # if self._inner:
+        #     return "paiflowinner-inner.aliyuncs.com"
+        # else:
+        #     return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
+        return "paiflow-share.cn-hangzhou.aliyuncs.com"
 
     def _get_product(self):
         if self._inner:
@@ -45,22 +60,32 @@ class PAIFlowClient(BaseClient):
         else:
             return 'PAIFlow'
 
+    @property
+    def is_workspace_required(self):
+        if not self._inner:
+            return True
+        return False
+
     def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
         if pipeline_id is not None:
             request.set_PipelineId(pipeline_id)
-        else:
+        elif identifier and provider and version:
             request.set_PipelineIdentifier(identifier)
             request.set_PipelineVersion(version)
             request.set_PipelineProvider(provider)
+        else:
+            raise ValueError("Please provider pipeline_id or identifier-provider-version to fetch"
+                             " the specific Pipeline")
         return self._call_service_with_exception(request)
 
-    def list_pipeline(self, identifier=None, provider=None, fuzzy=None,
-                      version="", page_num=1, page_size=50):
+    @paginate_service_call
+    def list_pipeline(self, identifier=None, provider=None, fuzzy=None, workspace_id=None,
+                      version=""):
         request = self._construct_request(ListPipelinesRequest.ListPipelinesRequest)
-        request.set_PageNumber(page_num)
-        request.set_PageSize(page_size)
 
+        if workspace_id is not None:
+            request.set_WorkspaceId(workspace_id)
         if provider is not None:
             request.set_PipelineProvider(provider)
         if identifier is not None:
@@ -70,11 +95,15 @@ class PAIFlowClient(BaseClient):
         if version is not None:
             request.set_PipelineVersion(version)
 
-        return self._call_service_with_exception(request)
+        return request
 
-    def create_pipeline(self, manifest):
+    @require_workspace
+    def create_pipeline(self, manifest, workspace_id=None):
         request = self._construct_request(CreatePipelineRequest.CreatePipelineRequest)
         request.set_Manifest(manifest)
+        if workspace_id:
+            request.set_WorkspaceId(workspace_id)
+
         response = self._call_service_with_exception(request)
         return response
 
@@ -110,8 +139,9 @@ class PAIFlowClient(BaseClient):
         request.set_PipelineId(pipeline_id)
         return self._call_service_with_exception(request)
 
+    @require_workspace
     def create_run(self, name, arguments, pipeline_id=None, manifest=None,
-                   no_confirm_required=False):
+                   no_confirm_required=False, workspace_id=None):
         if not pipeline_id and not manifest:
             raise ValueError("Create pipeline run require either pipeline_id or manifest.")
         if pipeline_id and manifest:
@@ -130,14 +160,18 @@ class PAIFlowClient(BaseClient):
 
         if isinstance(arguments, dict):
             arguments = yaml.dump(arguments)
-        request.set_Arguments(arguments)
 
+        if workspace_id is not None:
+            request.set_WorkspaceId(workspace_id)
+
+        request.set_Arguments(arguments)
         request.set_Name(name)
         request.set_NoConfirmRequired(no_confirm_required)
         return self._call_service_with_exception(request)
 
+    @paginate_service_call
     def list_run(self, name=None, run_id=None, pipeline_id=None, status=None, sorted_by=None,
-                 sorted_sequences=None, page_num=1, page_size=50):
+                 sorted_sequence=None, workspace_id=None):
         request = self._construct_request(ListRunsRequest.ListRunsRequest)
         if name is not None:
             request.set_Name(name)
@@ -154,11 +188,13 @@ class PAIFlowClient(BaseClient):
         if sorted_by is not None:
             request.set_SortedBy(sorted_by)
 
-        if sorted_sequences is not None:
-            request.set_sortedSequence(sorted_sequences)
-        request.set_PageSize(page_size)
-        request.set_PageNumber(page_num)
-        return self._call_service_with_exception(request)
+        if sorted_sequence is not None:
+            request.set_sortedSequence(sorted_sequence)
+
+        if workspace_id is not None:
+            request.set_WorkspaceId(workspace_id)
+
+        return request
 
     def get_run(self, run_id):
         request = self._construct_request(GetRunRequest.GetRunRequest)

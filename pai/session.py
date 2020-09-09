@@ -6,17 +6,39 @@ import six
 import yaml
 from aliyunsdkcore.client import AcsClient
 
-from pai.api.client_factory import ClientFactory
-from pai.decorator import cached_property
+from .api.client_factory import ClientFactory
+from .decorator import cached_property
+from .workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
 
-def set_default_pai_session(access_key_id, access_key_secret, region_id, oss_bucket=None,
-                            **kwargs):
+def setup_default_pai_session(access_key_id=None, access_key_secret=None, region_id=None,
+                              oss_bucket=None, auth=None, workspace_name=None, **kwargs):
+    """
+
+    Args:
+        access_key_id:
+        access_key_secret:
+        region_id:
+        oss_bucket:
+        auth:
+        workspace_name:
+        **kwargs:
+
+    Returns:
+
+    """
+
     session = Session(access_key_id, access_key_secret, region_id, oss_bucket=oss_bucket,
                       **kwargs)
     Session.set_default_session(session)
+
+    if workspace_name:
+        workspace = Workspace.get_by_name(name=workspace_name)
+        if not workspace:
+            raise ValueError("Workspace not found:%s" % workspace_name)
+        session.set_workspace(workspace=workspace)
     return session
 
 
@@ -36,7 +58,8 @@ class Session(object):
     _default_session = None
     _inner_region_ids = ["center"]
 
-    def __init__(self, access_key_id, access_key_secret, region_id, oss_bucket=None, **kwargs):
+    def __init__(self, access_key_id=None, access_key_secret=None, region_id=None, oss_bucket=None,
+                 workspace=None, **kwargs):
         """ PAI Session Initializer.
 
         Args:
@@ -48,13 +71,18 @@ class Session(object):
         if not access_key_id or not access_key_secret or not region_id:
             raise ValueError("Please provide access_key, access_secret and region")
 
+        self._init_clients(access_key_id, access_key_secret, region_id)
+
         self._region_id = region_id
-        self._acs_client = AcsClient(ak=access_key_id, secret=access_key_secret,
-                                     region_id=region_id)
-        self.paiflow_client = ClientFactory.create_paiflow_client(self._acs_client,
-                                                                  _is_inner=self._is_inner)
-        if oss_bucket:
-            self._oss_bucket = oss_bucket
+        self._oss_bucket = oss_bucket
+        self._workspace = workspace
+
+    def _init_clients(self, ak, ak_secret, region_id):
+        _acs_client = AcsClient(ak=ak, secret=ak_secret,
+                                region_id=region_id)
+        self.paiflow_client = ClientFactory.create_paiflow_client(
+            _acs_client, _is_inner=self._is_inner_region(region_id))
+        self.ws_client = ClientFactory.create_workspace_client(_acs_client)
 
     @classmethod
     def get_current_session(cls):
@@ -64,13 +92,36 @@ class Session(object):
     def set_default_session(cls, session):
         cls._default_session = session
 
+    @classmethod
+    def _is_workspace_required(cls, region_id):
+        return not cls._inner_region_ids(region_id)
+
     @property
     def region_id(self):
         return self._region_id
 
+    @classmethod
+    def _is_inner_region(cls, region_id):
+        return region_id in cls._inner_region_ids
+
     @property
     def _is_inner(self):
         return self._region_id in self._inner_region_ids
+
+    @property
+    def workspace(self):
+        return self._workspace
+
+    @property
+    def workspace_name(self):
+        return self._workspace.name
+
+    def set_workspace(self, workspace):
+        if isinstance(workspace, six.string_types):
+            workspace = Workspace.get_by_name(workspace)
+        if not isinstance(workspace, Workspace):
+            raise ValueError("Parameter workspace should be Workspace instance or workspace name")
+        self._workspace = workspace
 
     @property
     def oss_bucket(self):
@@ -84,7 +135,7 @@ class Session(object):
 
     @cached_property
     def provider(self):
-        return self.paiflow_client.get_my_provider()["Data"]["Provider"]
+        return six.ensure_str(self.paiflow_client.get_my_provider()["Data"]["Provider"])
 
     def get_pipeline(self, identifier, provider=None, version="v1"):
         """Get information of pipeline by identifier, provider and version.
@@ -127,8 +178,7 @@ class Session(object):
         """
         return self.paiflow_client.get_pipeline(pipeline_id=pipeline_id)["Data"]
 
-    def list_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None,
-                      page_num=1, page_size=50):
+    def list_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None):
         """List metadata information of pipelines using supplied query filter.
 
         The query filters (identifier, provider, version) are None by default. Pipeline service
@@ -146,19 +196,14 @@ class Session(object):
             :obj:`list` of :obj:`dict`: List of pipeline metadata.
 
         """
-        resp = self.paiflow_client.list_pipeline(
+        return self.paiflow_client.list_pipeline(
             identifier=identifier,
             provider=provider,
             fuzzy=fuzzy,
             version=version,
-            page_num=page_num,
-            page_size=page_size,
         )
-        total_count = resp["TotalCount"]
-        pipeline_infos = resp["Data"]
-        return pipeline_infos, total_count
 
-    def create_pipeline(self, pipeline_def):
+    def create_pipeline(self, pipeline_def, workspace=None):
         """Create new pipeline instance.
 
         Create_pipeline submit pipeline manifest to PAI pipeline service. Identifier-
@@ -167,6 +212,7 @@ class Session(object):
 
         Args:
             pipeline_def (dict or str): pipeline definition manifest, support types Pipeline,
+            workspace:
 
         Returns:
             str: pipeline_id, ID of pipeline in pipeline service.
@@ -177,11 +223,14 @@ class Session(object):
             manifest = yaml.dump(pipeline_def)
         elif isinstance(pipeline_def, Pipeline):
             manifest = yaml.dump(pipeline_def.to_dict())
-        elif not isinstance(pipeline_def, six.string_types):
+        elif isinstance(pipeline_def, six.string_types):
+            manifest = pipeline_def
+        else:
             raise ValueError(
                 "Not support argument `pipeline_def` type %s, expected dict, Pipeline or str.")
 
-        resp = self.paiflow_client.create_pipeline(manifest=manifest)
+        resp = self.paiflow_client.create_pipeline(manifest=manifest,
+                                                   workspace_id=workspace.id if workspace else None)
         return resp["Data"]["PipelineId"]
 
     def describe_pipeline(self, pipeline_id):
@@ -206,7 +255,7 @@ class Session(object):
         return self.paiflow_client.list_pipeline_privilege(pipeline_id)["Data"]
 
     def create_run(self, name, arguments, env=None, pipeline_id=None, manifest=None,
-                   no_confirm_required=True):
+                   no_confirm_required=True, workspace=None):
         """Submit a pipeline run with pipeline _template and run arguments.
 
         If pipeline_id is supplied, remote pipeline manifest is used as workflow _template.
@@ -232,14 +281,15 @@ class Session(object):
 
         resp = self.paiflow_client.create_run(name, run_args, pipeline_id=pipeline_id,
                                               manifest=manifest,
-                                              no_confirm_required=no_confirm_required)
+                                              no_confirm_required=no_confirm_required,
+                                              workspace_id=workspace.id if workspace else None)
 
         run_id = resp["Data"]["RunId"]
 
         if not self._is_inner:
             print(
-                "Create pipeline run success (run_id: {run_id}), please visit the link below to view"
-                " the run detail.".format(run_id=run_id))
+                "Create pipeline run success (run_id: {run_id}), please visit the link below to"
+                " view the run detail.".format(run_id=run_id))
             print(self.run_detail_url(run_id))
         else:
             print("Create pipeline run success (run_id: {run_id})".format(run_id=run_id))
@@ -247,7 +297,7 @@ class Session(object):
         return run_id
 
     def list_run(self, name=None, run_id=None, pipeline_id=None, status=None,
-                 sorted_by=None, sorted_sequences=None, page_num=1, page_size=50):
+                 sorted_by=None, sorted_sequence=None, page_num=1, page_size=50):
         """List submit pipeline run infos.
 
         List run infos by specific filter, return the outline information of the run, the detail
@@ -261,22 +311,21 @@ class Session(object):
                 Terminated, Unknown, Skipped, Failed.
             sorted_by (str): Order key of the run_infos, could by one of pipelineId, userId,
                 parentUserId, startedAt, finishedAt, workflowServiceId.
-            sorted_sequences (str): Order sequence by order key, either asc or desc.
+            sorted_sequence (str): Order sequence by order key, either asc or desc.
             page_num (int): Return specific page number of results.
             page_size (int): Maximum size of return results.
 
         Returns:
             List of Dict:  Run Information as dict.
         """
-        run_infos = self.paiflow_client.list_run(name=name,
-                                                 run_id=run_id,
-                                                 pipeline_id=pipeline_id,
-                                                 status=status,
-                                                 sorted_by=sorted_by,
-                                                 sorted_sequences=sorted_sequences,
-                                                 page_num=page_num,
-                                                 page_size=page_size)
-        return run_infos
+        return self.paiflow_client.list_run(name=name,
+                                            run_id=run_id,
+                                            pipeline_id=pipeline_id,
+                                            status=status,
+                                            sorted_by=sorted_by,
+                                            sorted_sequence=sorted_sequence,
+                                            page_num=page_num,
+                                            page_size=page_size)
 
     def delete_pipeline(self, pipeline_id):
         """Delete the pipeline using pipeline_id, return True if success.
@@ -394,5 +443,5 @@ class Session(object):
         return resp["Data"]
 
     def run_detail_url(self, run_id):
-        return "{console_host}?regionId={region_id}#/task-list/detail/{run_id}".format(
+        return "{console_host}?regionId={region_id}#/studio2/task/detail/{run_id}".format(
             console_host=self.console_host, region_id=self.region_id, run_id=run_id)

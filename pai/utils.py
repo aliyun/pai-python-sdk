@@ -70,3 +70,14 @@ def gen_temp_table(prefix="pai_temp_"):
         prefix=prefix,
         identifier=uuid.uuid4().hex,
     )
+
+
+def iter_with_limit(iterator, limit):
+    if not isinstance(limit, six.integer_types) or limit <= 0:
+        raise ValueError("'limit' should be positive integer")
+    idx = 0
+    for item in iterator:
+        yield item
+        idx += 1
+        if idx >= limit:
+            return

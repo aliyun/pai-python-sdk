@@ -19,21 +19,27 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class CreatePipelineRequest(RoaRequest):
+class GetAdminPermissionRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'CreatePipeline')
-		self.set_uri_pattern('/api/core/v1.0/pipelines')
-		self.set_method('POST')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetAdminPermission')
+		self.set_uri_pattern('/api/admin/v1.0/permissions/[PermissionCode]')
+		self.set_method('GET')
 
-	def get_Manifest(self):
-		return self.get_body_params().get('Manifest')
+	def get_PermissionCode(self):
+		return self.get_path_params().get('PermissionCode')
 
-	def set_Manifest(self,Manifest):
-		self.add_body_params('Manifest', Manifest)
+	def set_PermissionCode(self,PermissionCode):
+		self.add_path_param('PermissionCode',PermissionCode)
+
+	def get_UserId(self):
+		return self.get_query_params().get('UserId')
+
+	def set_UserId(self,UserId):
+		self.add_query_param('UserId',UserId)
 
 	def get_WorkspaceId(self):
-		return self.get_body_params().get('WorkspaceId')
+		return self.get_query_params().get('WorkspaceId')
 
 	def set_WorkspaceId(self,WorkspaceId):
-		self.add_body_params('WorkspaceId', WorkspaceId)
+		self.add_query_param('WorkspaceId',WorkspaceId)

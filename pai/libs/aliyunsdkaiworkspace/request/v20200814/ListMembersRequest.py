@@ -19,12 +19,18 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class ListPipelinesRequest(RoaRequest):
+class ListMembersRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'PAIFlow', '2020-03-28', 'ListPipelines')
-		self.set_uri_pattern('/api/core/v1.0/pipelines')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListMembers')
+		self.set_uri_pattern('/api/core/v1.0/workspaces/[WorkspaceId]/members')
 		self.set_method('GET')
+
+	def get_Roles(self):
+		return self.get_query_params().get('Roles')
+
+	def set_Roles(self,Roles):
+		self.add_query_param('Roles',Roles)
 
 	def get_PageSize(self):
 		return self.get_query_params().get('PageSize')
@@ -32,38 +38,20 @@ class ListPipelinesRequest(RoaRequest):
 	def set_PageSize(self,PageSize):
 		self.add_query_param('PageSize',PageSize)
 
-	def get_PipelineProvider(self):
-		return self.get_query_params().get('PipelineProvider')
-
-	def set_PipelineProvider(self,PipelineProvider):
-		self.add_query_param('PipelineProvider',PipelineProvider)
-
-	def get_FuzzyMatching(self):
-		return self.get_query_params().get('FuzzyMatching')
-
-	def set_FuzzyMatching(self,FuzzyMatching):
-		self.add_query_param('FuzzyMatching',FuzzyMatching)
-
-	def get_PipelineVersion(self):
-		return self.get_query_params().get('PipelineVersion')
-
-	def set_PipelineVersion(self,PipelineVersion):
-		self.add_query_param('PipelineVersion',PipelineVersion)
-
-	def get_PipelineIdentifier(self):
-		return self.get_query_params().get('PipelineIdentifier')
-
-	def set_PipelineIdentifier(self,PipelineIdentifier):
-		self.add_query_param('PipelineIdentifier',PipelineIdentifier)
-
 	def get_PageNumber(self):
 		return self.get_query_params().get('PageNumber')
 
 	def set_PageNumber(self,PageNumber):
 		self.add_query_param('PageNumber',PageNumber)
 
+	def get_MemberName(self):
+		return self.get_query_params().get('MemberName')
+
+	def set_MemberName(self,MemberName):
+		self.add_query_param('MemberName',MemberName)
+
 	def get_WorkspaceId(self):
-		return self.get_query_params().get('WorkspaceId')
+		return self.get_path_params().get('WorkspaceId')
 
 	def set_WorkspaceId(self,WorkspaceId):
-		self.add_query_param('WorkspaceId',WorkspaceId)
+		self.add_path_param('WorkspaceId',WorkspaceId)

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import logging
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta
 from collections import defaultdict, Counter
 
 import six

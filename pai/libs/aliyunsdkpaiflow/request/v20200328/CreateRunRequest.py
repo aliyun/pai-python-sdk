@@ -55,3 +55,9 @@ class CreateRunRequest(RoaRequest):
 
 	def set_PipelineId(self,PipelineId):
 		self.add_body_params('PipelineId', PipelineId)
+
+	def get_WorkspaceId(self):
+		return self.get_body_params().get('WorkspaceId')
+
+	def set_WorkspaceId(self,WorkspaceId):
+		self.add_body_params('WorkspaceId', WorkspaceId)

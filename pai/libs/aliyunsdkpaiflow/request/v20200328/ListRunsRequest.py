@@ -44,23 +44,11 @@ class ListRunsRequest(RoaRequest):
 	def set_Name(self,Name):
 		self.add_query_param('Name',Name)
 
-	def get_finishDate(self):
-		return self.get_query_params().get('finishDate')
-
-	def set_finishDate(self,finishDate):
-		self.add_query_param('finishDate',finishDate)
-
 	def get_RunId(self):
 		return self.get_query_params().get('RunId')
 
 	def set_RunId(self,RunId):
 		self.add_query_param('RunId',RunId)
-
-	def get_startDate(self):
-		return self.get_query_params().get('startDate')
-
-	def set_startDate(self,startDate):
-		self.add_query_param('startDate',startDate)
 
 	def get_SortedSequence(self):
 		return self.get_query_params().get('SortedSequence')
@@ -85,3 +73,9 @@ class ListRunsRequest(RoaRequest):
 
 	def set_Status(self,Status):
 		self.add_query_param('Status',Status)
+
+	def get_WorkspaceId(self):
+		return self.get_query_params().get('WorkspaceId')
+
+	def set_WorkspaceId(self,WorkspaceId):
+		self.add_query_param('WorkspaceId',WorkspaceId)

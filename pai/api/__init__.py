@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import json
+from functools import wraps
 import logging
 
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
@@ -8,6 +9,17 @@ from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerExcept
 from pai.api.exception import ServiceCallException
 
 logger = logging.getLogger(__name__)
+
+DefaultPageSize = 50
+
+
+def paginate_service_call(f):
+    @wraps(f)
+    def _(self, *args, **kwargs):
+        request = f(self, *args, **kwargs)
+        return self._call_paginate_service_with_exception(request)
+
+    return _
 
 
 class BaseClient(object):
@@ -21,10 +33,27 @@ class BaseClient(object):
                      request.get_query_params(), request.get_body_params())
         try:
             raw_resp = self._acs_client.do_action_with_exception(request)
+            logger.debug("Response:%s", raw_resp)
             resp = self._response_to_dict(raw_resp)
         except (ClientException, ServerException) as e:
             raise ServiceCallException(e.__str__())
         return resp
+
+    def _call_paginate_service_with_exception(self, request, page_size=DefaultPageSize):
+        page_num = 1
+        is_end = False
+        while not is_end:
+            request.set_PageNumber(page_num)
+            request.set_PageSize(page_size)
+            logger.debug("Paginate Request:%s:page_size:%s, page_number:%s", type(self).__name__,
+                         page_size, page_num)
+            resp = self._call_service_with_exception(request)
+            total_count = resp["TotalCount"]
+            for resource in resp["Data"]:
+                yield resource
+            if page_num * page_size >= total_count:
+                is_end = True
+            page_num += 1
 
     @property
     def region_id(self):

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import random
+
 import time
 
 from pai.common import ProviderAlibabaPAI
@@ -112,8 +113,8 @@ class TestXFlowAlgo(BaseTestCase):
         data_set = self.odps_client.get_table(self.TestDataSetTables["processed_wumai_data_1"])
 
         split_job = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
-                                                provider=ProviderAlibabaPAI,
-                                                version="v1").run(
+                                                       provider=ProviderAlibabaPAI,
+                                                       version="v1").run(
             job_name="split-job",
             arguments={"execution": xflow_execution, "fraction": 0.7,
                        "inputArtifact": data_set,
