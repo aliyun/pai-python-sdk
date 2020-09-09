@@ -7,7 +7,7 @@ import six
 import yaml
 
 from .job import RunJob
-from .session import Session, get_current_pai_session
+from .session import get_default_session
 from ..pipeline.template import PipelineTemplate
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class PipelineTransformer(Transformer):
 
     def __init__(self, parameters=None, manifest=None, _compiled_args=False,
                  pipeline_id=None):
-        self._session = get_current_pai_session()
+        self._session = get_default_session()
         self._compiled_args = _compiled_args
         self._template = PipelineTemplate(manifest=manifest, pipeline_id=pipeline_id)
         super(PipelineTransformer, self).__init__(parameters=parameters)
@@ -94,7 +94,7 @@ class AlgoBaseTransformer(PipelineTransformer):
     _version_default = None
 
     def __init__(self, **kwargs):
-        session = Session.get_current_session()
+        session = get_default_session()
         manifest, pipeline_id = self.get_base_info(session)
         super(AlgoBaseTransformer, self).__init__(parameters=kwargs,
                                                   _compiled_args=True,

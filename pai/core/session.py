@@ -13,37 +13,58 @@ from pai.core.workspace import Workspace
 logger = logging.getLogger(__name__)
 
 
-def setup_default_pai_session(access_key_id=None, access_key_secret=None, region_id=None,
-                              oss_bucket=None, auth=None, workspace_name=None, **kwargs):
-    """
+def setup_default_session(access_key_id=None, access_key_secret=None, region_id=None,
+                          oss_bucket=None, workspace_name=None, create_workspace=False,
+                          **kwargs):
+    """Setup the default session used by the program.
+
+    The function setup the default region of PAI service, workspace, and credentials of
+     default the session.
 
     Args:
-        access_key_id:
-        access_key_secret:
-        region_id:
-        oss_bucket:
-        auth:
-        workspace_name:
+        access_key_id (str): Alibaba Cloud access key id.
+        access_key_secret (str): Alibaba Cloud access key secret.
+        region_id (str): Alibaba Cloud region id, Please visit below url to explore the detail:
+             https://help.aliyun.com/document_detail/40654.html
+        oss_bucket (oss2.Bucket): oss2.Bucket object.
+        workspace_name (str): Workspace name bind with the default session.
+        create_workspace (bool): Create new workspace if the workspace with specific name not
+            exists.
         **kwargs:
 
     Returns:
+        pai.core.session.Session: Initialized default session.
 
     """
 
     session = Session(access_key_id, access_key_secret, region_id, oss_bucket=oss_bucket,
                       **kwargs)
-    Session.set_default_session(session)
+    Session._default_session = session
 
-    if workspace_name:
-        workspace = Workspace.get_by_name(name=workspace_name)
-        if not workspace:
-            raise ValueError("Workspace not found:%s" % workspace_name)
-        session.set_workspace(workspace=workspace)
+    if not workspace_name:
+        return session
+
+    workspace = Workspace.get_by_name(name=workspace_name)
+    if not workspace:
+        if create_workspace:
+            workspace = Workspace.create(name=workspace_name)
+            if not workspace:
+                raise ValueError("Create new workspace failed.")
+        else:
+            raise ValueError("Workspace(name:%s) not found." % workspace_name)
+
+    session.set_workspace(workspace=workspace)
     return session
 
 
-def get_current_pai_session():
-    return Session.get_current_session()
+def get_default_session():
+    """Get the default session.
+
+    Returns:
+        pai.core.session.Session: Default session used by program.
+
+    """
+    return Session.get_default_session()
 
 
 class Session(object):
@@ -65,7 +86,8 @@ class Session(object):
         Args:
             access_key_id (str): Alibaba Cloud access key id.
             access_key_secret (str): Alibaba Cloud access key secret.
-            region_id (str): Alibaba Cloud region id
+            region_id (str): Alibaba Cloud region id, Please visit below url to explore the detail:
+                 https://help.aliyun.com/document_detail/40654.html
         """
 
         if not access_key_id or not access_key_secret or not region_id:
@@ -85,16 +107,12 @@ class Session(object):
         self.ws_client = ClientFactory.create_workspace_client(_acs_client)
 
     @classmethod
-    def get_current_session(cls):
-        return cls._default_session
-
-    @classmethod
     def set_default_session(cls, session):
         cls._default_session = session
 
     @classmethod
-    def _is_workspace_required(cls, region_id):
-        return not cls._inner_region_ids(region_id)
+    def get_default_session(cls):
+        return cls._default_session
 
     @property
     def region_id(self):
@@ -297,7 +315,7 @@ class Session(object):
         return run_id
 
     def list_run(self, name=None, run_id=None, pipeline_id=None, status=None,
-                 sorted_by=None, sorted_sequence=None, page_num=1, page_size=50):
+                 sorted_by=None, sorted_sequence=None, workspace=None):
         """List submit pipeline run infos.
 
         List run infos by specific filter, return the outline information of the run, the detail
@@ -307,13 +325,12 @@ class Session(object):
             name (str): List run infos with the specific name.
             run_id (str): List run of specific run_id.
             pipeline_id (str): Filter the run infos using pipeline_id.
-            status (str): Status of the run, could by one of Init, Running, Suspended, Succeeded,
+            status (str): Status of the run, could be one of Init, Running, Suspended, Succeeded,
                 Terminated, Unknown, Skipped, Failed.
-            sorted_by (str): Order key of the run_infos, could by one of pipelineId, userId,
-                parentUserId, startedAt, finishedAt, workflowServiceId.
+            sorted_by (str): Order key of the run_infos, could be one of 'pipelineId', 'userId',
+                'parentUserId', 'startedAt', 'finishedAt', 'workflowServiceId'.
             sorted_sequence (str): Order sequence by order key, either asc or desc.
-            page_num (int): Return specific page number of results.
-            page_size (int): Maximum size of return results.
+            workspace:
 
         Returns:
             List of Dict:  Run Information as dict.
@@ -324,8 +341,7 @@ class Session(object):
                                             status=status,
                                             sorted_by=sorted_by,
                                             sorted_sequence=sorted_sequence,
-                                            page_num=page_num,
-                                            page_size=page_size)
+                                            workspace_id=workspace.id if workspace else None)
 
     def delete_pipeline(self, pipeline_id):
         """Delete the pipeline using pipeline_id, return True if success.

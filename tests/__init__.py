@@ -10,7 +10,7 @@ from odps import ODPS
 from six.moves import configparser
 from six.moves.configparser import DEFAULTSECT
 
-from pai.core.session import setup_default_pai_session
+from pai.core.session import setup_default_session
 from pai.core.workspace import Workspace
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
@@ -74,7 +74,7 @@ class BaseTestCase(unittest.TestCase):
         client_config = cls.get_test_config()["client"]
         workspace_name = client_config.pop("workspace_name")
 
-        default_session = setup_default_pai_session(**client_config)
+        default_session = setup_default_session(**client_config)
 
         if not workspace_name:
             return default_session

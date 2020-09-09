@@ -15,7 +15,7 @@ from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import load_input_output_spec
 from ..decorator import cached_property
-from ..core.session import get_current_pai_session
+from ..core.session import get_default_session
 from ..core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -123,12 +123,16 @@ def _load_pipeline_from_yaml(manifest):
 
 
 class PipelineTemplate(object):
+    """PipelineTemplate use
+
+
+    """
 
     def __init__(self, manifest=None, pipeline_id=None, workspace_id=None):
         if not pipeline_id and not manifest:
             raise ValueError("Neither pipeline_id and manifest are given.")
 
-        self._session = get_current_pai_session()
+        self._session = get_default_session()
         if not manifest:
             pipeline_info = self._session.get_pipeline_by_id(pipeline_id)
             manifest = pipeline_info["Manifest"]
@@ -178,11 +182,11 @@ class PipelineTemplate(object):
 
     @classmethod
     def _get_pipeline_client(cls):
-        return get_current_pai_session().paiflow_client
+        return get_default_session().paiflow_client
 
     @classmethod
     def get_by_identifier(cls, identifier, provider=None, version="v1"):
-        session = get_current_pai_session()
+        session = get_default_session()
         pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
                                              version=version)
         return cls(manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"],
@@ -202,7 +206,7 @@ class PipelineTemplate(object):
 
     @classmethod
     def load_by_identifier(cls, identifier, provider=None, version="v1", with_impl=False):
-        session = get_current_pai_session()
+        session = get_default_session()
         pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
                                              version=version)
         if with_impl:
@@ -304,7 +308,7 @@ class PipelineTemplate(object):
         if self.pipeline_id:
             raise ValueError("Pipeline template has been saved")
 
-        session = get_current_pai_session()
+        session = get_default_session()
         provider = session.provider
 
         if identifier is None and version is None and self.pipeline_id:
@@ -328,7 +332,7 @@ class PipelineTemplate(object):
         return self
 
     def run(self, job_name, arguments, wait=True, log_outputs=True):
-        session = get_current_pai_session()
+        session = get_default_session()
         if job_name is None:
             job_name = "tmp-{0}".format(int(time.time() * 1000))
         parameters, artifacts = self.translate_arguments(arguments)

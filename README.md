@@ -12,15 +12,19 @@ pip install alipai --user
 
 ## Usage
 
-### Setup PAI Session
+
+
+### Setup PAI Session and Workspace
 
 Before access PAI service, user should initialize default PAI session.
 
 ```python
 
-from pai.session import set_default_pai_session
+from pai.core.session import setup_default_session
+session = setup_default_session(access_key_id="your_access_key", access_key_secret="your_access_secret", region_id="your_region_id",
+     oss_bucket=oss_bucket)
 
-session = set_default_pai_session(access_key_id="your_access_key", access_key_secret="your_access_secret", region_id="your_region_id", oss_bucket=oss_bucket)
+
 
 ```
 
@@ -38,12 +42,12 @@ from pai.pipeline import PipelineTemplate
 from pai.common import ProviderAlibabaPAI
 
 # search PipelineTemplate which provide by `PAI` and include `xflow` in identifier.
-templates, count = PipelineTemplate.list_templates(identifie="xflow", provider=ProviderAlibabaPAI)
+template = next(PipelineTemplate.list(identifie="xflow", provider=ProviderAlibabaPAI))
 
 # view template inputs/outputs (print the property to view the inputs/outputs spec if run in script mode).
-templates[0]
-templates[0].inputs
-templates[0].outputs
+template
+template.inputs
+template.outputs
 
 # Get specific template by Identifier-Provider-Version
 template = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute", provider=ProviderAlibabaPAI, version="v1")
@@ -66,7 +70,7 @@ PAI Pipeline Service support user-defined workflow. Saved pipeline template (Loc
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import PipelineStep, Pipeline, PipelineTemplate
 from pai.pipeline.types import PipelineParameter
-from pai.session import get_default_xflow_execution
+from pai.core.session import get_default_session
 from pai.utils import gen_temp_table
 
 # Definite the inputs parameters
@@ -111,9 +115,13 @@ p.dot()
 # Pipeline Manifest in Json
 p.to_dict()
 
+xflow_execution = {
+
+}
+
 # Run pipeline
 pipeline_run = p.run(job_name="demo-composite-pipeline-run", arguments={
-            "execution": get_default_xflow_execution(),
+            "execution": 
             "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
             "table_name": "wumai_data",
         }, wait=True, log_outputs=True)

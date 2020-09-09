@@ -7,7 +7,7 @@ from collections import defaultdict, Counter
 import six
 from graphviz import Digraph
 
-from ..core.session import get_current_pai_session
+from ..core.session import get_default_session
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import OutputsSpec, InputsSpec
@@ -151,7 +151,7 @@ class Pipeline(PipelineBase):
 
         self._steps, inputs, outputs = self._build_pipeline(steps, inputs, outputs)
 
-        self._session = get_current_pai_session()
+        self._session = get_default_session()
         super(Pipeline, self).__init__(inputs=inputs,
                                        outputs=outputs,
                                        identifier=identifier,

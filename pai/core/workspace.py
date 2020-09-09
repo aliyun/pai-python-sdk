@@ -15,11 +15,24 @@ class WorkspaceRole(object):
 
 
 class Workspace(object):
+    """Workspace manage a group of resource in PAI service.
 
-    def __init__(self, id, name, creator, desc=None):
+    setup_default_session(workspace_name="example_workspace_name")
+
+    """
+
+    def __init__(self, id, name, creator_id, desc=None):
+        """Workspace constructor.
+
+        Args:
+            id (str): Unique Identifier of the workspace.
+            name (str): Unique name of workspace.
+            creator_id (str): User id of workspace creator.
+            desc:
+        """
         self._id = id
         self._name = name
-        self._creator = creator
+        self._creator_id = creator_id
         self._desc = desc
 
     @property
@@ -31,8 +44,8 @@ class Workspace(object):
         return self._name
 
     @property
-    def creator(self):
-        return self._creator
+    def creator_id(self):
+        return self._creator_id
 
     @property
     def desc(self):
@@ -43,8 +56,8 @@ class Workspace(object):
 
     @classmethod
     def _get_workspace_client(cls):
-        from pai.core.session import get_current_pai_session
-        session = get_current_pai_session()
+        from pai.core.session import get_default_session
+        session = get_default_session()
         return session.ws_client
 
     @classmethod
@@ -52,7 +65,7 @@ class Workspace(object):
         return cls(id=d["WorkspaceId"],
                    name=d["WorkspaceName"],
                    desc=d["Description"],
-                   creator=d["Creator"])
+                   creator_id=d["Creator"])
 
     def list_excluded_user_info(self):
         for sub_user_info in self._get_workspace_client().list_sub_users(

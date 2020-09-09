@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import six
 
-from pai.api import BaseClient, paginate_service_call
+from pai.api.base import paginate_service_call, BaseClient
 from pai.libs.aliyunsdkaiworkspace.request.v20200814 import ListWorkspacesRequest, \
     GetWorkspaceRequest, CreateWorkspaceRequest, UpdateWorkspaceRequest, \
     ListSubUsersRequest, ListMembersRequest, CreateMemberRequest, ListPermissionsRequest, \
@@ -11,11 +11,15 @@ from pai.libs.aliyunsdkaiworkspace.request.v20200814 import ListWorkspacesReques
 
 class WorkspaceClient(BaseClient):
 
+    _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_WORKSPACE_ENDPOINT'
+
     def __init__(self, acs_client):
         super(WorkspaceClient, self).__init__(acs_client=acs_client)
 
     def _get_endpoint(self):
-        return "aiworkspace-share.cn-hangzhou.aliyuncs.com"
+        if self._endpoint:
+            return self._endpoint
+        return "aiworkspace.aliyuncs.com"
 
     def _get_product(self):
         return "AIWorkSpace"

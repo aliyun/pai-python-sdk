@@ -5,7 +5,8 @@ from functools import wraps
 import six
 import yaml
 
-from pai.api import BaseClient, ServiceCallException, paginate_service_call
+from pai.api.base import paginate_service_call, BaseClient
+from pai.core.exception import ServiceCallException
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
     CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest, ListPipelinesRequest,
     UpdatePipelineRequest, DescribePipelineRequest, UpdatePipelinePrivilegeRequest,
@@ -30,6 +31,8 @@ def require_workspace(f):
 
 class PAIFlowClient(BaseClient):
 
+    _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_PAIFLOW_ENDPOINT'
+
     def __init__(self, acs_client, _is_inner=False):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
@@ -48,6 +51,8 @@ class PAIFlowClient(BaseClient):
         return resp
 
     def _get_endpoint(self):
+        if self._endpoint:
+            return self._endpoint
         if self._inner:
             return "paiflowinner-inner.aliyuncs.com"
         else:

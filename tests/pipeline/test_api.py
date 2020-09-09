@@ -7,7 +7,7 @@ import yaml
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import PipelineRun, PipelineTemplate
-from pai.core.session import Session
+from pai.core.session import get_default_session
 from pai.utils import iter_with_limit
 from tests import BaseTestCase
 
@@ -18,7 +18,7 @@ class TestPaiFlowAPI(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPaiFlowAPI, cls).setUpClass()
-        session = Session.get_current_session()
+        session = get_default_session()
         cls.session = session
 
     @classmethod

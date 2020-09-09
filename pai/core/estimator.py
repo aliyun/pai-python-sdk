@@ -8,7 +8,7 @@ import yaml
 
 from .job import RunJob
 from .model import XFlowOfflineModel, PmmlModel
-from .session import get_current_pai_session
+from .session import get_default_session
 from ..pipeline.template import PipelineTemplate
 from ..pipeline.types.artifact import ArtifactModelType
 
@@ -81,7 +81,7 @@ class PipelineEstimator(Estimator):
             _compiled_args (bool): if _compile_args is required before fit.
             pipeline_id (str): Pipeline id.
         """
-        self._session = session or get_current_pai_session()
+        self._session = session or get_default_session()
         self._compiled_args = _compiled_args
         self._template = PipelineTemplate(manifest=manifest, pipeline_id=pipeline_id)
         super(PipelineEstimator, self).__init__(parameters=parameters)
@@ -153,7 +153,7 @@ class AlgoBaseEstimator(PipelineEstimator):
     _version_default = None
 
     def __init__(self, **kwargs):
-        session = get_current_pai_session()
+        session = get_default_session()
         manifest, pipeline_id = self.get_base_info(session)
         super(AlgoBaseEstimator, self).__init__(session=session, parameters=kwargs,
                                                 _compiled_args=True, manifest=manifest,

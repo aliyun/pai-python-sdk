@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from pai.api import BaseClient
+from pai.api.base import BaseClient
 
 from aliyunsdksts.request.v20150401 import GetCallerIdentityRequest
 

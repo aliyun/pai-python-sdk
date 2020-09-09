@@ -8,7 +8,7 @@ from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.core.exception import TimeoutException
 from pai.pipeline.types.artifact import ArtifactEntity
-from pai.core.session import get_current_pai_session
+from pai.core.session import get_default_session
 from pai.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class PipelineRun(object):
         self._name = name
         self._pipeline_id = pipeline_id
         self._workspace_id = workspace_id
-        self._session = session or get_current_pai_session()
+        self._session = session or get_default_session()
 
     @property
     def run_id(self):
@@ -49,7 +49,7 @@ class PipelineRun(object):
 
     @classmethod
     def _get_pipeline_client(cls):
-        session = get_current_pai_session()
+        session = get_default_session()
         return session.paiflow_client
 
     @cached_property
@@ -58,11 +58,12 @@ class PipelineRun(object):
 
     @classmethod
     def list(cls, name=None, run_id=None, pipeline_id=None, status=None, sorted_by=None,
-             sorted_sequence=None):
+             sorted_sequence=None, workspace=None):
         generator = cls._get_pipeline_client().list_run(name=name, run_id=run_id,
                                                         pipeline_id=pipeline_id,
                                                         status=status, sorted_by=sorted_by,
-                                                        sorted_sequence=sorted_sequence)
+                                                        sorted_sequence=sorted_sequence,
+                                                        workspace_id=workspace.id if workspace else None)
         for info in generator:
             yield cls(
                 run_id=info["RunId"],

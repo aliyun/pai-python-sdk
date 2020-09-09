@@ -3,19 +3,19 @@ Estimator
 ---------
 
 
-.. autoclass:: pai.estimator.Estimator
+.. autoclass:: pai.core.estimator.Estimator
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. autoclass:: pai.estimator.PipelineEstimator
+.. autoclass:: pai.core.estimator.PipelineEstimator
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. autoclass:: pai.estimator.EstimatorJob
+.. autoclass:: pai.core.estimator.EstimatorJob
    :members:
    :undoc-members:
    :show-inheritance:
