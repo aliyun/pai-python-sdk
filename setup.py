@@ -23,8 +23,8 @@ requirements = []
 with open('requirements.txt') as f:
     requirements.extend(f.read().splitlines())
 long_description = None
-if os.path.exists('README.rst'):
-    with open('README.rst') as f:
+if os.path.exists('README.md'):
+    with open('README.md') as f:
         long_description = f.read()
 
 setup(
@@ -33,7 +33,8 @@ setup(
     version=_load_version_info(),
     description="Alibaba Cloud PAI Python SDK",
     long_description=long_description,
-    packages=find_packages(exclude=["tests"]),
+    long_description_content_type="text/markdown",
+    packages=find_packages(exclude=["tests", "tests.*", "examples"]),
     install_requires=requirements,
     author="Alibaba PAI team",
     keywords="ML Alibaba Cloud PAI Training Inference Pipeline",

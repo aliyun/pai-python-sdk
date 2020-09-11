@@ -28,11 +28,6 @@ class TestWorkspace(BaseTestCase):
         cls.workspace = cls.create_workspace()
         cls.sub_users = cls.get_sub_users(cls.workspace)
 
-    def test(self):
-        ws = self.workspace
-        print(ws.creator)
-        pass
-
     def test_list_workspace(self):
         self.create_workspace()
         self.create_workspace()
