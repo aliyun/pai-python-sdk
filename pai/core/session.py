@@ -7,8 +7,8 @@ import yaml
 from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
-from pai.decorator import cached_property
 from pai.core.workspace import Workspace
+from pai.decorator import cached_property
 
 logger = logging.getLogger(__name__)
 
@@ -207,8 +207,8 @@ class Session(object):
         """Create new pipeline instance.
 
         Create_pipeline submit pipeline manifest to PAI pipeline service. Identifier-
-        provider-version triple in metadata of manifest is unique identifier of the
-         Pipeline. The same triple combination will result overwrite of original pipeline.
+        provider-version triple in metadata of manifest is unique identifier of the Pipeline.
+         The same triple combination will result overwrite of original pipeline.
 
         Args:
             pipeline_def (dict or str): pipeline definition manifest, support types Pipeline,

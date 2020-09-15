@@ -438,14 +438,14 @@ class PipelineTemplate(object):
         self._pipeline_id = session.create_pipeline(self._manifest, workspace=session.workspace)
         return self
 
-    def run(self, job_name, arguments, wait=True, log_outputs=True):
+    def run(self, job_name, arguments, wait=True, show_outputs=True):
         """Run the workflow using the workflow definition in PipelineTemplate and given arguments.
 
         Args:
             job_name (str): Name of the submit pipeline run job.
             arguments (dict): Inputs arguments used in the run workflow.
             wait (bool): Wait util the job stop(succeed or failed or terminated).
-            log_outputs (bool): Show the outputs of the job.
+            show_outputs (bool): Show the outputs of the job.
 
         Returns:
             pai.pipeline.run.PipelineRun: PipelineRun instance of the submit job.
@@ -477,5 +477,5 @@ class PipelineTemplate(object):
                                    workspace_id=session.workspace.id if session.workspace else None)
         if not wait:
             return run_instance
-        run_instance.wait_for_completion(log_outputs=log_outputs)
+        run_instance.wait_for_completion(show_outputs=show_outputs)
         return run_instance

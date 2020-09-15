@@ -35,13 +35,13 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
     def _run(self, job_name, arguments, **kwargs):
         raise NotImplementedError
 
-    def fit(self, wait=True, job_name=None, log_outputs=True, arguments=None, **kwargs):
+    def fit(self, wait=True, job_name=None, show_outputs=True, arguments=None, **kwargs):
         """Run Estimator with given arguments.
 
         Args:
             wait (bool): Wait util the estimator job finish if true.
             job_name (str): Job name of the run.
-            log_outputs (bool): Print outputs of the Job if true.
+            show_outputs (bool): Print outputs of the Job if true.
             arguments (dict): Run arguments for the job.
 
         Returns:
@@ -52,7 +52,7 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
         run_job = EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_job.attach(log_outputs=log_outputs)
+            run_job.attach(show_outputs=show_outputs)
         return run_job
 
     @property
@@ -99,13 +99,13 @@ class PipelineEstimator(Estimator):
                                pipeline_id=pipeline_id)
         return pe
 
-    def fit(self, wait=True, job_name=None, log_outputs=True, arguments=None, **kwargs):
+    def fit(self, wait=True, job_name=None, show_outputs=True, arguments=None, **kwargs):
         """Submit run job to PAIFlow backend.
 
         Args:
             wait: Wait util job completed if true.
             job_name: Name of submitted run job.
-            log_outputs: Print log of the run.
+            show_outputs: Print log of the run.
             arguments:
             **kwargs:
 
@@ -119,7 +119,7 @@ class PipelineEstimator(Estimator):
         else:
             run_args = arguments
         return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name,
-                                                  log_outputs=log_outputs,
+                                                  show_outputs=show_outputs,
                                                   arguments=run_args, **kwargs)
 
     def _run(self, job_name, arguments, **kwargs):

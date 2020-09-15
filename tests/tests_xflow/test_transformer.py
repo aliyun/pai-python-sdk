@@ -34,7 +34,7 @@ class TestOfflineModelTransformer(BaseTestCase):
             append_cols="time,hour,_c2,pm10,so2,co,no2",
         )
 
-        job.attach(log_outputs=False, timeout=None)
+        job.attach(show_outputs=False, timeout=None)
 
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
@@ -51,5 +51,5 @@ class TestOfflineModelTransformer(BaseTestCase):
         job = tf.transform(offlinemodel, path="/paiflow/test/noprefix/",
                            job_name="pysdk-test-modeltransfer2oss",
                            wait=False)
-        job.attach(log_outputs=False)
+        job.attach(show_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())

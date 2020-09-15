@@ -94,9 +94,9 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
                                    manifest=self._template.manifest,
                                    parameters=parameters)
 
-    def run(self, job_name, arguments, wait=True, log_outputs=True):
+    def run(self, job_name, arguments, **kwargs):
         return self._template.run(job_name=job_name, arguments=arguments,
-                                  wait=wait, log_outputs=log_outputs)
+                                  **kwargs)
 
     def _spec_to_dict(self):
         spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict()}

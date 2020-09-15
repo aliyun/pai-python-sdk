@@ -41,7 +41,7 @@ class TestLogisticsRegression(BaseTestCase):
         iris_dataset_table = self.odps_client.get_table(
             self.TestDataSetTables["processed_wumai_data_1"])
 
-        run_job = lr.fit(wait=True, log_outputs=False, input_data=iris_dataset_table,
+        run_job = lr.fit(wait=True, show_outputs=False, input_data=iris_dataset_table,
                          job_name="pysdk-test-lr-sync-fit",
                          model_name=model_name, good_value=1, label_col="_c2",
                          feature_cols=["pm10", "so2", "co", "no2"])

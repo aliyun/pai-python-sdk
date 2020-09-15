@@ -21,5 +21,5 @@ class PipelineBase(object):
         pass
 
     @abstractmethod
-    def run(self, job_name, arguments, wait=True, log_outputs=True):
+    def run(self, job_name, arguments, **kwargs):
         pass

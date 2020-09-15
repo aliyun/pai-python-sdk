@@ -196,7 +196,7 @@ class PipelineRun(object):
         else:
             raise ValueError("Failed in acquire root node_id of pipeline run.")
 
-    def wait_for_completion(self, log_outputs=True, timeout=None):
+    def wait_for_completion(self, show_outputs=True, timeout=None):
         """Wait until the pipeline run stop."""
         start_at = datetime.now()
         run_info = self.get_run_info()
@@ -219,7 +219,7 @@ class PipelineRun(object):
         print("Wait for run workflow init")
         node_id = self._wait_for_init()
 
-        if log_outputs:
+        if show_outputs:
             run_logger = _RunLogger(run_instance=self, node_id=node_id)
         else:
             run_logger = _MockRunLogger(run_instance=self, node_id=node_id)

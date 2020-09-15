@@ -160,7 +160,7 @@ class TestXFlowAlgo(BaseTestCase):
             wait=False, feature_cols=feature_cols,
             append_cols=feature_cols + [label_col],
             label_col=label_col)
-        job.attach(log_outputs=False)
+        job.attach(show_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
     def test_heart_disease_step_by_step(self):
@@ -453,6 +453,6 @@ class TestXFlowAlgo(BaseTestCase):
             "pmml_oss_endpoint": pmml_oss_endpoint,
             "dataset-table": dataset_table,
         }, wait=False)
-        run_instance.wait_for_completion(log_outputs=False)
+        run_instance.wait_for_completion(show_outputs=False)
 
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())

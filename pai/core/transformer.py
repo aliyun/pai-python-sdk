@@ -19,13 +19,13 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
         self._parameters = parameters
         self._jobs = []
 
-    def transform(self, wait=True, job_name=None, log_outputs=False, args=None, **kwargs):
+    def transform(self, wait=True, job_name=None, show_outputs=False, args=None, **kwargs):
         run_instance = self._run(job_name=job_name, arguments=args,
                                  **kwargs)
         run_job = TransformJob(transformer=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_job.attach(log_outputs=log_outputs)
+            run_job.attach(show_outputs=show_outputs)
         return run_job
 
     @abstractmethod
@@ -51,7 +51,7 @@ class PipelineTransformer(Transformer):
         self._template = PipelineTemplate(manifest=manifest, pipeline_id=pipeline_id)
         super(PipelineTransformer, self).__init__(parameters=parameters)
 
-    def transform(self, wait=True, job_name=None, log_outputs=True, args=None, **kwargs):
+    def transform(self, wait=True, job_name=None, show_outputs=True, args=None, **kwargs):
         args = args or dict()
         if not self._compiled_args:
             run_args = self.parameters.copy()
@@ -60,7 +60,7 @@ class PipelineTransformer(Transformer):
             run_args = args
         return super(PipelineTransformer, self).transform(wait=wait, job_name=job_name,
                                                           args=run_args,
-                                                          log_outputs=log_outputs,
+                                                          show_outputs=show_outputs,
                                                           **kwargs)
 
     def _run(self, job_name=None, arguments=None, **kwargs):

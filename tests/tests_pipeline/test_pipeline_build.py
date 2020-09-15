@@ -40,7 +40,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
             "execution": self.get_default_xflow_execution(),
             "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
             "table_name": self.TestDataSetTables["wumai_data"],
-        }, wait=True, log_outputs=True)
+        }, wait=True, show_outputs=True)
 
         self.assertEqual(pipeline_run.get_status(), PipelineRunStatus.Succeeded)
 
@@ -245,7 +245,7 @@ class TestPipelineBuild(BaseTestCase):
             "xflow_execution": self.get_default_xflow_execution(),
         }, wait=False)
         self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
-        run_instance.wait_for_completion(log_outputs=False)
+        run_instance.wait_for_completion(show_outputs=False)
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
 
 

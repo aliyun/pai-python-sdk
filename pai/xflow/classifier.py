@@ -46,7 +46,7 @@ class LogisticRegression(XFlowEstimator):
         return args
 
     def fit(self, input_data, model_name, label_col, good_value, job_name=None, wait=True,
-            log_outputs=True, feature_cols=None, enable_sparse=None, sparse_delimiter=None):
+            show_outputs=True, feature_cols=None, enable_sparse=None, sparse_delimiter=None):
         """
 
         Args:
@@ -67,7 +67,7 @@ class LogisticRegression(XFlowEstimator):
         return super(LogisticRegression, self).fit(input_data,
                                                    job_name=job_name,
                                                    wait=wait,
-                                                   log_outputs=log_outputs,
+                                                   show_outputs=show_outputs,
                                                    model_name=model_name,
                                                    feature_cols=feature_cols,
                                                    label_col=label_col,
