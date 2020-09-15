@@ -37,8 +37,9 @@ def setup_default_session(access_key_id=None, access_key_secret=None, region_id=
                       **kwargs)
     Session._default_session = session
 
-    workspace = Workspace.get_or_create_default_workspace()
-    session.set_workspace(workspace=workspace)
+    if not session._is_inner:
+        workspace = Workspace.get_or_create_default_workspace()
+        session.set_workspace(workspace=workspace)
     return session
 
 
