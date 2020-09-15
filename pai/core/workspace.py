@@ -61,6 +61,11 @@ class Workspace(object):
         return session.ws_client
 
     @classmethod
+    def get_or_create_default_workspace(cls):
+        data = cls._get_workspace_client().get_default_workspace()
+        return cls._load_from_dict(data["Data"])
+
+    @classmethod
     def _load_from_dict(cls, d):
         return cls(id=d["WorkspaceId"],
                    name=d["WorkspaceName"],

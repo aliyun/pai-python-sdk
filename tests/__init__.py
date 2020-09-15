@@ -72,16 +72,7 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def _set_test_session(cls):
         client_config = cls.get_test_config()["client"]
-        workspace_name = client_config.pop("workspace_name")
-
         default_session = setup_default_session(**client_config)
-
-        if not workspace_name:
-            return default_session
-        ws = Workspace.get_by_name(workspace_name)
-        if not ws:
-            ws = Workspace.create(name=workspace_name)
-        default_session.set_workspace(ws)
         return default_session
 
     @classmethod
@@ -119,7 +110,6 @@ class BaseTestCase(unittest.TestCase):
         cfg_parser.read(os.path.join(_test_root, "test.ini"))
         access_key_id = cfg_parser.get("client", "access_key_id")
         access_key_secret = cfg_parser.get("client", "access_key_secret")
-        workspace_name = cfg_parser.get("client", "workspace_name")
         region_id = cfg_parser.get("client", "region_id")
         odps_project = cfg_parser.get("odps", "project")
         odps_endpoint = cfg_parser.get("odps", "endpoint")
@@ -130,7 +120,6 @@ class BaseTestCase(unittest.TestCase):
                 "region_id": region_id,
                 "access_key_id": access_key_id,
                 "access_key_secret": access_key_secret,
-                "workspace_name": workspace_name,
             },
             "odps": {
                 "project": odps_project,

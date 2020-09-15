@@ -14,9 +14,9 @@ from .step import PipelineStep
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import load_input_output_spec
-from ..decorator import cached_property
 from ..core.session import get_default_session
 from ..core.workspace import Workspace
+from ..decorator import cached_property
 
 logger = logging.getLogger(__name__)
 
@@ -123,8 +123,13 @@ def _load_pipeline_from_yaml(manifest):
 
 
 class PipelineTemplate(object):
-    """PipelineTemplate use
+    """PipelineTemplate represent the pipeline schema build by user or fetched from PAI service.
 
+    PipelineTemplate
+
+    PipelineTemplate is used as runnable pipeline template communicate with PAI service.
+    PipelineTemplate instance may be fetched from PAI service or extract from user build
+    Pipeline, either is runnable with required arguments.
 
     """
 
@@ -267,7 +272,7 @@ class PipelineTemplate(object):
     @classmethod
     def get(cls, pipeline_id):
         client = cls._get_pipeline_client()
-        pipeline_info = client.get_pipeline(pipeline_id)["Data"]
+        pipeline_info = client.get_pipeline(pipeline_id=pipeline_id)["Data"]
         return cls(manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"])
 
     def translate_arguments(self, args):
@@ -354,7 +359,8 @@ class PipelineTemplate(object):
                                     pipeline_id=pipeline_id, manifest=manifest,
                                     workspace=session.workspace)
 
-        run_instance = PipelineRun(run_id=run_id, name=job_name)
+        run_instance = PipelineRun(run_id=run_id, name=job_name,
+                                   workspace_id=session.workspace.id if session.workspace else None)
         if not wait:
             return run_instance
         run_instance.wait_for_completion(log_outputs=log_outputs)

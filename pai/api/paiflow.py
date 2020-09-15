@@ -70,7 +70,7 @@ class PAIFlowClient(BaseClient):
             return True
         return False
 
-    def get_pipeline(self, identifier=None, version=None, provider=None, pipeline_id=None):
+    def get_pipeline(self, pipeline_id=None, identifier=None, version=None, provider=None):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
         if pipeline_id is not None:
             request.set_PipelineId(pipeline_id)

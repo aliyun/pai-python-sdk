@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_default_session(access_key_id=None, access_key_secret=None, region_id=None,
-                          oss_bucket=None, workspace_name=None, create_workspace=False,
-                          **kwargs):
+                          oss_bucket=None, **kwargs):
     """Setup the default session used by the program.
 
     The function setup the default region of PAI service, workspace, and credentials of
@@ -24,12 +23,9 @@ def setup_default_session(access_key_id=None, access_key_secret=None, region_id=
     Args:
         access_key_id (str): Alibaba Cloud access key id.
         access_key_secret (str): Alibaba Cloud access key secret.
-        region_id (str): Alibaba Cloud region id, Please visit below url to explore the detail:
+        region_id (str): Alibaba Cloud region id, Please visit below url to view the detail:
              https://help.aliyun.com/document_detail/40654.html
         oss_bucket (oss2.Bucket): oss2.Bucket object.
-        workspace_name (str): Workspace name bind with the default session.
-        create_workspace (bool): Create new workspace if the workspace with specific name not
-            exists.
         **kwargs:
 
     Returns:
@@ -41,18 +37,7 @@ def setup_default_session(access_key_id=None, access_key_secret=None, region_id=
                       **kwargs)
     Session._default_session = session
 
-    if not workspace_name:
-        return session
-
-    workspace = Workspace.get_by_name(name=workspace_name)
-    if not workspace:
-        if create_workspace:
-            workspace = Workspace.create(name=workspace_name)
-            if not workspace:
-                raise ValueError("Create new workspace failed.")
-        else:
-            raise ValueError("Workspace(name:%s) not found." % workspace_name)
-
+    workspace = Workspace.get_or_create_default_workspace()
     session.set_workspace(workspace=workspace)
     return session
 
@@ -105,10 +90,6 @@ class Session(object):
         self.paiflow_client = ClientFactory.create_paiflow_client(
             _acs_client, _is_inner=self._is_inner_region(region_id))
         self.ws_client = ClientFactory.create_workspace_client(_acs_client)
-
-    @classmethod
-    def set_default_session(cls, session):
-        cls._default_session = session
 
     @classmethod
     def get_default_session(cls):

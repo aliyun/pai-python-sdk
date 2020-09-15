@@ -4,14 +4,14 @@ import six
 
 from pai.api.base import paginate_service_call, BaseClient
 from pai.libs.aliyunsdkaiworkspace.request.v20200814 import ListWorkspacesRequest, \
-    GetWorkspaceRequest, CreateWorkspaceRequest, UpdateWorkspaceRequest, \
+    GetWorkspaceRequest, UpdateWorkspaceRequest, \
     ListSubUsersRequest, ListMembersRequest, CreateMemberRequest, ListPermissionsRequest, \
-    GetPermissionRequest
+    GetPermissionRequest, GetDefaultWorkspaceRequest
 
 
 class WorkspaceClient(BaseClient):
 
-    _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_WORKSPACE_ENDPOINT'
+    _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_AIWORKSPACE_ENDPOINT'
 
     def __init__(self, acs_client):
         super(WorkspaceClient, self).__init__(acs_client=acs_client)
@@ -34,15 +34,6 @@ class WorkspaceClient(BaseClient):
         if sorted_sequence is not None:
             request.set_SortedSequence(sorted_sequence)
         return request
-
-    def create(self, name, description):
-        request = self._construct_request(CreateWorkspaceRequest.CreateWorkspaceRequest)
-        if not name:
-            raise ValueError("Please given validate workspace name.")
-        request.set_WorkspaceName(name)
-        request.set_Description(description)
-
-        return self._call_service_with_exception(request)
 
     def get(self, workspace_id):
         request = self._construct_request(GetWorkspaceRequest.GetWorkspaceRequest)
@@ -108,4 +99,8 @@ class WorkspaceClient(BaseClient):
         request = self._construct_request(GetPermissionRequest.GetPermissionRequest)
         request.set_WorkspaceId(workspace_id)
         request.set_PermissionCode(permission_code)
+        return self._call_service_with_exception(request)
+
+    def get_default_workspace(self):
+        request = self._construct_request(GetDefaultWorkspaceRequest.GetDefaultWorkspaceRequest)
         return self._call_service_with_exception(request)
