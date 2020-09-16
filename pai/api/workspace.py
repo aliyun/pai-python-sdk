@@ -19,7 +19,7 @@ class WorkspaceClient(BaseClient):
     def _get_endpoint(self):
         if self._endpoint:
             return self._endpoint
-        return "aiworkspace.aliyuncs.com"
+        return "aiworkspace.cn-shanghai.aliyuncs.com"
 
     def _get_product(self):
         return "AIWorkSpace"
