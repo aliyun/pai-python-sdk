@@ -94,7 +94,7 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
                                    manifest=self._template.manifest,
                                    parameters=parameters)
 
-    def run(self, job_name, arguments, **kwargs):
+    def run(self, job_name, arguments=None, **kwargs):
         return self._template.run(job_name=job_name, arguments=arguments,
                                   **kwargs)
 

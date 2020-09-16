@@ -451,7 +451,7 @@ class PipelineTemplate(object):
         self._pipeline_id = session.create_pipeline(self._manifest, workspace=session.workspace)
         return self
 
-    def run(self, job_name, arguments, wait=True, show_outputs=True):
+    def run(self, job_name, arguments=None, wait=True, show_outputs=True):
         """Run the workflow using the workflow definition in PipelineTemplate and given arguments.
 
         Args:
