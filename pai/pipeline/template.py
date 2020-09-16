@@ -99,14 +99,14 @@ def _load_pipeline_from_yaml(manifest):
     elif "execution" in manifest["spec"]:
         image_uri = manifest["spec"]["execution"]["image"]
         command = manifest["spec"]["execution"]["command"]
-        image_pull_config = manifest["spec"]["execution"].get("imagePullConfig")
+        image_pull_config = manifest["spec"]["execution"].get("imageRegistryConfig")
         p = ContainerComponent(
             identifier=metadata.get("identifier", None),
             provider=metadata.get("provider", None),
             version=metadata.get("version", None),
             image_uri=image_uri,
             command=command,
-            image_pull_config=image_pull_config,
+            image_registry_config=image_pull_config,
             inputs=inputs,
             outputs=outputs,
         )
@@ -195,6 +195,15 @@ class PipelineTemplate(object):
             dict: Pipeline manifest schema in dict.
         """
         return self._manifest
+
+    @property
+    def raw_manifest(self):
+        """Pipeline manifest in YAML format
+
+        Returns:
+            str: Pipeline manifest.
+        """
+        return yaml.dump(self._manifest)
 
     @property
     def identifier(self):
@@ -316,10 +325,14 @@ class PipelineTemplate(object):
         component._pipeline_id = pipeline_id
         return component
 
-    def _have_impl(self):
-        if "spec" not in self._manifest:
+    @classmethod
+    def _has_impl(cls, manifest):
+        if isinstance(manifest, six.string_types):
+            manifest = yaml.load(manifest, yaml.FullLoader)
+
+        if "spec" not in manifest:
             return False
-        spec = self._manifest["spec"]
+        spec = manifest["spec"]
         if "pipelines" not in spec and "execution" not in spec:
             return False
         return True

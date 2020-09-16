@@ -113,10 +113,10 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
 
 class ContainerComponent(PipelineBase):
 
-    def __init__(self, image_uri, inputs, outputs, command, image_pull_config=None,
+    def __init__(self, image_uri, inputs, outputs, command, image_registry_config=None,
                  identifier=None, provider=None, version=None, pipeline_id=None):
         self.image_uri = image_uri
-        self.image_pull_config = image_pull_config
+        self.image_registry_config = image_registry_config
         self.command = command or []
         super(ContainerComponent, self).__init__(inputs=inputs, outputs=outputs, provider=provider,
                                                  version=version, identifier=identifier,
@@ -129,8 +129,8 @@ class ContainerComponent(PipelineBase):
             "command": self.command,
         }
 
-        if self.image_pull_config:
-            d["spec"]["execution"]["imagePullConfig"] = self.image_pull_config
+        if self.image_registry_config:
+            d["spec"]["execution"]["imageRegistryConfig"] = self.image_registry_config
 
         return d
 
