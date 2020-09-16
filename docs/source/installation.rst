@@ -8,7 +8,7 @@ Alibaba PAI SDK package is Python2-3 compatible (requires >= Python2.7 or >= Pyt
 
 .. parsed-literal::
 
-    pip install  https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai/dist/alipai-|release|-py2.py3-none-any.whl
+    python -m pip install alipai
 
 
 .. 如果需要可视化Pipeline的拓扑图，需要安装graphviz. ::
