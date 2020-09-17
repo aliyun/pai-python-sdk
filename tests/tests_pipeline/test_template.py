@@ -6,7 +6,7 @@ from pai.common import ProviderAlibabaPAI
 from pai.pipeline.template import PipelineTemplate
 from tests import BaseTestCase
 from . import create_simple_composite_pipeline
-from pai.utils import iter_with_limit
+from pai.common.utils import iter_with_limit
 
 
 class TestTemplate(BaseTestCase):

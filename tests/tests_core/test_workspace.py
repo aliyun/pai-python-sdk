@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from pai.core.workspace import Workspace
-from pai.utils import iter_with_limit
+from pai.common.utils import iter_with_limit
 from tests import BaseTestCase
 
 

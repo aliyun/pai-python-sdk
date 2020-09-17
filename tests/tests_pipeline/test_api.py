@@ -8,7 +8,7 @@ import yaml
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import PipelineRun, PipelineTemplate
 from pai.core.session import get_default_session
-from pai.utils import iter_with_limit
+from pai.common.utils import iter_with_limit
 from tests import BaseTestCase
 
 _test_root = os.path.dirname(os.path.abspath(__file__))

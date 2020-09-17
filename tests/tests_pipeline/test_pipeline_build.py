@@ -12,7 +12,7 @@ from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, 
     PipelineArtifact
 from pai.pipeline.types.parameter import PipelineParameter
 from pai.core.session import get_default_session
-from pai.utils import gen_temp_table
+from pai.common.utils import gen_temp_table
 from tests import BaseTestCase
 from . import create_simple_composite_pipeline
 

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import PipelineParameter, PipelineStep, Pipeline
-from pai.utils import gen_temp_table
+from pai.common.utils import gen_temp_table
 
 
 def create_simple_composite_pipeline():

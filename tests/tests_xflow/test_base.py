@@ -12,7 +12,7 @@ from pai.pipeline.template import PipelineTemplate
 from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, ArtifactMetadata, \
     PipelineArtifact
 from pai.pipeline.types.parameter import ParameterType, PipelineParameter
-from pai.utils import gen_temp_table
+from pai.common.utils import gen_temp_table
 from pai.xflow.classifier import LogisticRegression
 from tests import BaseTestCase
 

@@ -1,6 +1,6 @@
 from pai.common import ProviderAlibabaPAI
 from pai.xflow.base import XFlowTransformer
-from pai.utils import gen_temp_table
+from pai.common.utils import gen_temp_table
 
 
 class OfflineModelTransformer(XFlowTransformer):

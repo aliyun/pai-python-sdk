@@ -15,7 +15,7 @@ from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
     ListNodeOutputsRequest, GetMyProviderRequest
 )
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import GetPipelinePrivilegeRequest
-from pai.utils import ensure_str, ensure_unix_time
+from pai.common.utils import ensure_str, ensure_unix_time
 
 
 def require_workspace(f):
