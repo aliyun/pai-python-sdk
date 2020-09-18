@@ -1,0 +1,13 @@
+[flake8]
+max-line-length = 100
+max-doc-length = 100
+exclude =
+    .git,
+    .tox,
+    __pycache__,
+    docs/source/conf.py,
+    old,
+    build,
+    libs,
+    setup.py
+
