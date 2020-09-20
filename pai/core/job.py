@@ -51,7 +51,7 @@ class RunJob(with_metaclass(ABCMeta, object)):
     def resume(self):
         self.run_instance.resume()
 
-    def attach(self, show_outputs=True, timeout=None):
+    def wait_for_completion(self, show_outputs=True, timeout=None):
         self.run_instance.wait_for_completion(show_outputs=show_outputs, timeout=timeout)
 
     def get_status(self):

@@ -31,7 +31,7 @@ SDK支持Pipeline作为一个Estimator调用fit接口, 向服务端提交一个�
     })
 
     # 等待任务结束返回
-    job.attach(log_outputs=False, timeout=240)
+    job.wait_for_completion(show_outputs=False, timeout=240)
     print(job.get_status())
     print(job.get_outputs())
 
@@ -67,5 +67,5 @@ pipeline.to_estimator获得PipelineEstimator不同，封装的算法模块的参
                     model_name=model_name, good_value=1, label_col="type",
                     feature_cols=["f1", "f2", "f3", "f4"])
 
-    run_job.attach()
-    offline_model = run_job.create_model(output_name="outputArtifact")
+    job.wait_for_completion()
+    offline_model = job.create_model(output_name="outputArtifact")

@@ -160,7 +160,7 @@ class TestXFlowAlgo(BaseTestCase):
             wait=False, feature_cols=feature_cols,
             append_cols=feature_cols + [label_col],
             label_col=label_col)
-        job.attach(show_outputs=False)
+        job.wait_for_completion(show_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
     def test_heart_disease_step_by_step(self):

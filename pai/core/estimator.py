@@ -52,7 +52,7 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
         run_job = EstimatorJob(estimator=self, run_instance=run_instance)
         self._jobs.append(run_job)
         if wait:
-            run_job.attach(show_outputs=show_outputs)
+            run_job.wait_for_completion(show_outputs=show_outputs)
         return run_job
 
     @property

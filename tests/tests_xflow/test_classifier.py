@@ -65,7 +65,7 @@ class TestLogisticsRegression(BaseTestCase):
                          feature_cols=["pm10", "so2", "co", "no2"])
 
         self.assertEqual(JobStatus.Running, run_job.get_status())
-        run_job.attach()
+        run_job.wait_for_completion()
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         time.sleep(20)
         offline_model = run_job.create_model(output_name="outputArtifact")
@@ -96,5 +96,5 @@ class TestLogisticsRegression(BaseTestCase):
                       model_name=model_name2)
         self.assertEqual(lr.last_job, job2)
         self.assertNotEqual(job1.run_id, job2.run_id)
-        job1.attach()
-        job2.attach()
+        job1.wait_for_completion()
+        job2.wait_for_completion()
