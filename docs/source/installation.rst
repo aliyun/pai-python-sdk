@@ -1,19 +1,14 @@
 
-Installation
+安装
 ===========================================
 
-.. libaba PAI SDK兼容Python2(>=Python2.7)和Python3(Python3.5), 可以通过pip安装开发版本的SDK. ::
-
-Alibaba PAI SDK package is Python2-3 compatible (requires >= Python2.7 or >= Python3.5). Install development version with pip.
+PAI SDK兼容Python2(>=Python2.7)和Python3(Python3.5), 可以通过pip直接安装。
 
 .. parsed-literal::
 
     python -m pip install alipai
 
-
-.. 如果需要可视化Pipeline的拓扑图，需要安装graphviz. ::
-
-To display topology diagram of pipeline in Jupyter Notebook, **graphviz** binary installation is required. ::
+如果在Jupyter Notebook需要可视化Pipeline的拓扑图，需要安装graphviz. ::
 
     # Mac OS install with brew
     brew install graphviz

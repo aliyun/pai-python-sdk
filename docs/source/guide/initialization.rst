@@ -15,16 +15,16 @@ setup_default_session方法会初始化一个全局默认的session对象, Pipel
 
 .. code-block:: python
 
-    from pai.core.session import Session
+    from pai.core.session import setup_default_session
     from pai.pipeline.run import PipelineRun
     from pai.common import ProviderAlibabaPAI
 
 
     session = setup_default_session(access_key_id="your_access_key_id", access_key_secret="your_access_key_secret",
-     region_id="cn-shanghai")
+        region_id="cn-shanghai")
 
     for pipeline_info in session.list_pipeline(provider=ProviderAlibabaPAI):
-        print(pipeline_info["PipelineId])
+        print(pipeline_info["PipelineId"])
 
     for run_instance in PipelineRun.list():
         print(run_instance)

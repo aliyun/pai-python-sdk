@@ -9,11 +9,10 @@
 
 Welcome to Alibaba PAI SDK documentation!
 ===========================================
-**Alibaba PAI SDK** is provide by Alibaba Cloud PAI(Platform of Artificial Intelligence, PAI). Users are supposed to use the package to interact with services provided by PAI in DSW or any other Python environment.
 
-SDK is in development stage currently, in version *v1*, SDK provide support on PAIFLow(ML Pipeline service developed by PAI).
+**Alibaba PAI SDK** 是由阿里云计算平台的PAI团队开发，用户能够在阿里云的Data Science Workshop(DSW)/或是其他Python环境使用SDK访问PAI提供的服务。
 
-.. **PAI Python SDK** 由阿里云PAI(Platform of Artificial Intelligence)团队提供，在v1版本提供PAIFlow, PAI的ML Pipeline Service， 的任务运行管控能力。
+SDK目前处于Preview阶段，用户可以通过SDK访问PAI提供的PAIFlow (PAI提供的ML Pipeline Service)，SDK对于PAI EAS (Elastic Algorithm Service, 算法在线服务)，以及PAI Blade (模型优化服务)的支持目前正在开发中。
 
 
 
@@ -23,5 +22,3 @@ SDK is in development stage currently, in version *v1*, SDK provide support on P
    installation
    user-guide
    pai
-
-

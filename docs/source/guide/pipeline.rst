@@ -36,6 +36,10 @@ PAI提供了一些公共可读的算法组件，在PipelineTemplate.list方法�
 
 
 .. code-block:: python
+    from pai.common.utils import gen_temp_table
+
+    templ = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute", provider=ProviderAlibabaPAI, version="v1")
+    print(templ.inputs)
 
     # split-xflow-maxCompute 运行在MaxCompute中，需要指定运行的MaxCompute项目以及执行环境。
     # xflow_execution 作为算法组件的一个输入，标识算法组件的执行MaxCompute引擎。
@@ -43,7 +47,7 @@ PAI提供了一些公共可读的算法组件，在PipelineTemplate.list方法�
         "odpsInfoFile": "/share/base/odpsInfo.ini",
         "endpoint": "http://service.cn-shanghai.maxcompute.aliyun.com/api",
         "logViewHost": "http://logview.odps.aliyun.com",
-        "odpsProject": "your_max_compute_project",
+        "odpsProject": "YOUR_MAX_COMPUTE_PROJECT",
     }
 
     pipeline_run = templ.run(
@@ -83,16 +87,18 @@ PAIFlow支持将多个算法组件拼接成为一个一个新的Pipeline，新�
 
 
 .. code-block:: python
+    from pai.pipeline.types import PipelineParameter, PipelineArtifact, ArtifactMetadata, ArtifactDataType, ArtifactLocationType
+    from pai.pipeline import PipelineStep, Pipeline, PipelineTemplate
 
     def create_composite_pipeline():
-        # Define the inputs parameters/artifacts in pipeline
+        # 定义当前的Pipeline的Inputs
         execution_input = PipelineParameter(name="execution", typ=dict)
         cols_to_double_input = PipelineParameter(name="cols_to_double")
-        table_input = PipelineArtifact(name="data_source", metadata=ArtifactMetadata(
+        table_input = PipelineArtifact(name="dataSource", metadata=ArtifactMetadata(
                 data_type=ArtifactDataType.DataSet,
                 location_type=ArtifactLocationType.MaxComputeTable))
 
-        # Pipeline step from remote PAI service.
+        # 指定identifier-provider-version, 使用一个已经保存的组件，作为Pipeline的一个Step
         type_transform_step = PipelineStep(
             identifier="type-transform-xflow-maxCompute", provider=ProviderAlibabaPAI,
             version="v1", name="typeTransform", inputs={
@@ -101,6 +107,7 @@ PAIFlow支持将多个算法组件拼接成为一个一个新的Pipeline，新�
             }
         )
 
+        # PipelineTemplate也可以作为一个Step构建Pipeline
         split_template = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
          provider=ProviderAlibabaPAI, version="v1")
 
@@ -122,26 +129,28 @@ PAIFlow支持将多个算法组件拼接成为一个一个新的Pipeline，新�
 .. code-block:: python
 
     p = create_composite_pipeline()
-    # Run pipeline
+    # 输入Pipeline运行所需参数(arguments）后，提交到PAI Service运行
     pipeline_run = p.run(job_name="demo-composite-pipeline-run", arguments={
                 "execution": xflow_execution,
                 "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
                 "data_source": "odps://pai_online_project/tables/wumai_data",
             }, wait=True)
 
-    # Save Pipeline
+    # 指定identifier和版本保存Pipeline
     p = p.save(identifier="demo-composite-pipeline", version="v1")
     print(p.pipeline_id, p.identifier, p.version, p.provider)
 
 
-User Defined Component (Beta)
+User-defined Component (Beta)
 -------------------------------------
 
 PAIFlow支持用户创建自定义运行模板，用户需要提供模板的输入输出信息, 对应的镜像和配置，以及Component执行镜像的Command，构建一个基于镜像的算法组件。
 
 .. code-block:: python
 
+    import time
     from pai.pipeline.core import ContainerComponent
+
 
     inputs = [
         PipelineParameter(name="xflow_name", typ=str),
@@ -158,9 +167,12 @@ PAIFlow支持用户创建自定义运行模板，用户需要提供模板的输�
             "password": "registry_password",
     }
 
+    # 集团内不支持外部镜像，请使用集团内的镜像仓库
+    # img_uri = "reg.docker.alibaba-inc.com/paiflow/max-compute-executor:1.0.1"
+
     comp = ContainerComponent(
         image_uri=img_uri,
-        image_registry_config=img_registry_config,
+    #     image_registry_config=img_registry_config,
         inputs=inputs,
         outputs=outputs,
         command=[
@@ -170,4 +182,8 @@ PAIFlow支持用户创建自定义运行模板，用户需要提供模板的输�
         ])
 
     p = comp.save(identifier="test-comp", version=str(time.time()))
+    print(p)
 
+    comp.run(job_name="demo-container-run", arguments={
+        "xflow_name": "xflow_test"
+    }, show_outputs=True)
