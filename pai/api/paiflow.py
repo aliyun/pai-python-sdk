@@ -54,7 +54,7 @@ class PAIFlowClient(BaseClient):
         if self._endpoint:
             return self._endpoint
         if self._inner:
-            return "paiflowinner-inner.aliyuncs.com"
+            return "paiflowinner-share.aliyuncs.com"
         else:
             return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
 

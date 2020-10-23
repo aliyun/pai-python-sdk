@@ -37,9 +37,8 @@ def setup_default_session(access_key_id=None, access_key_secret=None, region_id=
                       **kwargs)
     Session._default_session = session
 
-    if not session._is_inner:
-        workspace = Workspace.get_or_create_default_workspace()
-        session.set_workspace(workspace=workspace)
+    workspace = Workspace.get_or_create_default_workspace()
+    session.set_workspace(workspace=workspace)
     return session
 
 
@@ -88,9 +87,11 @@ class Session(object):
     def _init_clients(self, ak, ak_secret, region_id):
         _acs_client = AcsClient(ak=ak, secret=ak_secret,
                                 region_id=region_id)
+
+        is_inner = self._is_inner_region(region_id)
         self.paiflow_client = ClientFactory.create_paiflow_client(
-            _acs_client, _is_inner=self._is_inner_region(region_id))
-        self.ws_client = ClientFactory.create_workspace_client(_acs_client)
+            _acs_client, _is_inner=is_inner)
+        self.ws_client = ClientFactory.create_workspace_client(_acs_client, _is_inner=is_inner)
 
     @classmethod
     def get_default_session(cls):

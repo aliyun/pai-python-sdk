@@ -22,5 +22,5 @@ class ClientFactory(object):
         return StsClient(acs_client)
 
     @classmethod
-    def create_workspace_client(cls, acs_client):
-        return WorkspaceClient(acs_client)
+    def create_workspace_client(cls, acs_client, _is_inner):
+        return WorkspaceClient(acs_client, _is_inner=_is_inner)

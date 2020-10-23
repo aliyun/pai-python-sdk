@@ -13,13 +13,17 @@ class WorkspaceClient(BaseClient):
 
     _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_AIWORKSPACE_ENDPOINT'
 
-    def __init__(self, acs_client):
+    def __init__(self, acs_client, _is_inner=False):
         super(WorkspaceClient, self).__init__(acs_client=acs_client)
+        self._inner = _is_inner
 
     def _get_endpoint(self):
         if self._endpoint:
             return self._endpoint
-        return "aiworkspace.cn-shanghai.aliyuncs.com"
+        elif self._inner:
+            return "aiworkspaceinner-share.aliyuncs.com"
+        else:
+            return "aiworkspace.cn-shanghai.aliyuncs.com"
 
     def _get_product(self):
         return "AIWorkSpace"
