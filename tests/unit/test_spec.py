@@ -6,12 +6,12 @@ from pai.pipeline.types.artifact import ArtifactDataType, ArtifactMetadata, \
     PipelineArtifact, ArtifactLocationType
 from pai.pipeline.types.parameter import PipelineParameter
 from pai.pipeline.types.spec import InputsSpec, validate_spec
-from tests import BaseTestCase
+from tests.unit import BaseUnitTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-class TestInputOutputSpec(BaseTestCase):
+class TestInputOutputSpec(BaseUnitTestCase):
 
     def test_spec_getitem(self):
         items = [

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import random
+import unittest
 
 import time
 
@@ -14,10 +15,10 @@ from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, 
 from pai.pipeline.types.parameter import ParameterType, PipelineParameter
 from pai.common.utils import gen_temp_table
 from pai.xflow.classifier import LogisticRegression
-from tests import BaseTestCase
+from tests.integration import BaseIntegTestCase
 
 
-class TestXFlowEstimator(BaseTestCase):
+class TestXFlowEstimator(BaseIntegTestCase):
 
     def test_algo_init(self):
         lr = LogisticRegression(
@@ -105,8 +106,10 @@ class TestXFlowEstimator(BaseTestCase):
         pass
 
 
-class TestXFlowAlgo(BaseTestCase):
+class TestXFlowAlgo(BaseIntegTestCase):
 
+    # TODO: Simplify the test case
+    @unittest.skip("Simplify the test case")
     def test_algo_chain(self):
         default_project = self.odps_client.project
         xflow_execution = self.get_default_xflow_execution()
@@ -123,7 +126,7 @@ class TestXFlowAlgo(BaseTestCase):
                        })
 
         self.assertEqual(PipelineRunStatus.Succeeded, split_job.get_status())
-        time.sleep(20)  # Because of outputs delay.
+        time.sleep(10)  # Because of outputs delay.
         job_outputs = split_job.get_outputs()
         dataset1 = job_outputs[0]
         dataset2 = job_outputs[1]
@@ -147,14 +150,12 @@ class TestXFlowAlgo(BaseTestCase):
                      model_name=model_name, good_value=1, label_col=label_col,
                      feature_cols=feature_cols)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
-        time.sleep(20)  # Because of outputs delay.
+        time.sleep(10)  # Because of outputs delay.
         self.assertTrue(self.odps_client.exist_offline_model(
             model_name, default_project,
         ))
-        object_key = oss_path + model_name + ".xml"
-        self.assertTrue(self.oss_bucket.object_exists(object_key))
         model = job.create_model(output_name="outputArtifact")
-        tf = model.transformer()
+        tf = model.transformer(xflow_execution=xflow_execution)
         job = tf.transform(
             input_data=dataset2,
             wait=False, feature_cols=feature_cols,
@@ -163,6 +164,8 @@ class TestXFlowAlgo(BaseTestCase):
         job.wait_for_completion(show_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
+    # TODO: Simplify the test case
+    @unittest.skip("Simplify the test case")
     def test_heart_disease_step_by_step(self):
         xflow_execution = self.get_default_xflow_execution()
 
@@ -387,7 +390,8 @@ class TestXFlowAlgo(BaseTestCase):
                     "bucket": pmml_oss_bucket,
                     "path": pmml_oss_path,
                     "rolearn": pmml_oss_rolearn,
-                    # "regulizedType": "l2",
+                    "regularizedLevel": 1.0,
+                    # "regularizedType": "l2",
                     "modelName": model_name,
                     "goodValue": 1,
                     "featureColNames": "sex,cp,fbs,restecg,exang,slop,"
@@ -453,6 +457,6 @@ class TestXFlowAlgo(BaseTestCase):
             "pmml_oss_endpoint": pmml_oss_endpoint,
             "dataset-table": dataset_table,
         }, wait=False)
-        run_instance.wait_for_completion(show_outputs=False)
+        run_instance.wait_for_completion(show_outputs=True)
 
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())

@@ -3,10 +3,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from pai.common.utils import extract_odps_table_info
-from tests import BaseTestCase
+from tests.unit import BaseUnitTestCase
 
 
-class TestUtils(BaseTestCase):
+class TestUtils(BaseUnitTestCase):
 
     def test_extract_odps_table_from_url(self):
         cases = [

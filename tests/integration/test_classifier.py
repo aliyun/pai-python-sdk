@@ -8,10 +8,10 @@ import odps
 
 from pai.core.job import JobStatus
 from pai.xflow.classifier import LogisticRegression
-from tests import BaseTestCase
+from tests.integration import BaseIntegTestCase
 
 
-class TestLogisticsRegression(BaseTestCase):
+class TestLogisticsRegression(BaseIntegTestCase):
     temp_tables = []
     temp_models = []
 
@@ -73,28 +73,3 @@ class TestLogisticsRegression(BaseTestCase):
 
         self.assertTrue(self.odps_client.exist_offline_model(
             model_name, project=self.odps_client.project))
-
-    def test_lr_multiple_call_fit(self):
-        model_name1 = 'test_iris_model_%d' % random.randint(0, 999999)
-        model_name2 = 'test_iris_model_%d' % random.randint(0, 999999)
-        self.temp_models.append(model_name1)
-        self.temp_models.append(model_name2)
-
-        lr = LogisticRegression(
-            regularized_level=1.0,
-            xflow_execution=self.get_default_xflow_execution(),
-        )
-        job1 = lr.fit(wait=False, input_data=self.iris_df, job_name="pysdk-test-lr-multi-fit-1",
-                      label_col="_c2", model_name=model_name1, good_value=1,
-                      feature_cols=["pm10", "so2", "co", "no2"])
-
-        self.assertEqual(lr.last_job, job1)
-
-        job2 = lr.fit(wait=False, input_data=self.iris_df, label_col="_c2",
-                      job_name="pysdk-test-lr-multi-fit-2", good_value=1,
-                      feature_cols=["pm10", "so2", "co", "no2"],
-                      model_name=model_name2)
-        self.assertEqual(lr.last_job, job2)
-        self.assertNotEqual(job1.run_id, job2.run_id)
-        job1.wait_for_completion()
-        job2.wait_for_completion()

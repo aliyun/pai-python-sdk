@@ -29,9 +29,10 @@ class XFlowOfflineModel(Model):
     def __init__(self, session, name, model_data):
         super(XFlowOfflineModel, self).__init__(name=name, session=session, model_data=model_data)
 
-    def transformer(self):
-        from .xflow.transformer import OfflineModelTransformer
-        return OfflineModelTransformer(session=self.session, model=self.model_data)
+    def transformer(self, xflow_execution=None):
+        from pai.xflow.transformer import OfflineModelTransformer
+        return OfflineModelTransformer(session=self.session, model=self.model_data,
+                                       xflow_execution=xflow_execution)
 
     # TODO:
     def deploy(self):

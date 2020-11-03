@@ -18,7 +18,6 @@ from os.path import dirname
 doc_root_dir = dirname(dirname(os.path.abspath(__file__)))
 sys.path.insert(0, dirname(doc_root_dir))
 
-from pai._version import __version__
 import pai
 
 
@@ -30,7 +29,7 @@ copyright = '2020, Alibaba Cloud'
 author = 'Alibaba Cloud'
 
 # The full version, including alpha/beta/rc tags
-release = __version__
+release = pai.__version__
 
 
 # -- General configuration ---------------------------------------------------

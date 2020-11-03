@@ -5,10 +5,10 @@ from decimal import Decimal
 
 from pai.pipeline.types.parameter import Interval, ParameterValidator, \
     ParameterType, PipelineParameter
-from tests import BaseTestCase
+from tests.unit import BaseUnitTestCase
 
 
-class TestParameter(BaseTestCase):
+class TestParameter(BaseUnitTestCase):
 
     def testParameter(self):
         cases = [

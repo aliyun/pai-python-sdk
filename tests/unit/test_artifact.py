@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 
 from pai.pipeline.types.artifact import MaxComputeResourceArtifact
-from tests import BaseTestCase
+from tests.unit import BaseUnitTestCase
 
 
-class TestArtifact(BaseTestCase):
+class TestArtifact(BaseUnitTestCase):
 
     def test_max_compute_artifact(self):
         cases = [

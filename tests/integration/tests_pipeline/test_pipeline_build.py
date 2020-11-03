@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import uuid
+
 import time
 import unittest
 from unittest import skip
@@ -13,11 +15,11 @@ from pai.pipeline.types.artifact import ArtifactDataType, ArtifactLocationType, 
 from pai.pipeline.types.parameter import PipelineParameter
 from pai.core.session import get_default_session
 from pai.common.utils import gen_temp_table
-from tests import BaseTestCase
-from . import create_simple_composite_pipeline
+from tests.integration import BaseIntegTestCase
+from tests.integration.tests_pipeline import create_simple_composite_pipeline
 
 
-class TestSimpleCompositePipeline(BaseTestCase):
+class TestSimpleCompositePipeline(BaseIntegTestCase):
 
     def test_run_composite_pipeline(self):
         p, data_source_step, type_transform_step, split_step = create_simple_composite_pipeline()
@@ -48,7 +50,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
         p, data_source_step, type_transform_step, split_step = create_simple_composite_pipeline()
         self.assertIsNone(p.pipeline_id)
 
-        new_version = "%s" % int(time.time())
+        new_version = uuid.uuid4().hex[:30]
         _ = p.save(identifier="test-composite-pipeline", version=new_version)
         self.assertIsNotNone(p.pipeline_id)
         self.assertEqual(p.version, new_version)
@@ -158,7 +160,7 @@ class TestSimpleCompositePipeline(BaseTestCase):
             )
 
 
-class TestPipelineBuild(BaseTestCase):
+class TestPipelineBuild(BaseIntegTestCase):
 
     def setUp(self):
         super(TestPipelineBuild, self).setUp()
@@ -249,7 +251,7 @@ class TestPipelineBuild(BaseTestCase):
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
 
 
-class TestContainerComponent(BaseTestCase):
+class TestContainerComponent(BaseIntegTestCase):
 
     @skip("Only admin has privilege to create container-execution pipeline")
     def test_component_base(self):

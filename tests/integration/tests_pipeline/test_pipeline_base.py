@@ -4,12 +4,12 @@ import os
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline.template import PipelineTemplate
-from tests import BaseTestCase
+from tests.integration import BaseIntegTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-class TestPipelineBase(BaseTestCase):
+class TestPipelineBase(BaseIntegTestCase):
 
     @classmethod
     def init_prediction_pipeline(cls, identifier="prediction-xflow-maxCompute",
@@ -50,10 +50,10 @@ class TestPipelineBase(BaseTestCase):
             }
         ]
 
-        def sort_arg_by_name(args):
+        def sort_item_by_name(args):
             return sorted(args, key=lambda x: x["name"])
 
-        self.assertEqual(sort_arg_by_name(expected_parameters), sort_arg_by_name(parameters))
+        self.assertEqual(sort_item_by_name(expected_parameters), sort_item_by_name(parameters))
 
         expected_artifacts = [
             {
@@ -68,4 +68,4 @@ class TestPipelineBase(BaseTestCase):
             }
         ]
 
-        self.assertEqual(expected_artifacts, artifacts)
+        self.assertEqual(sort_item_by_name(expected_artifacts), sort_item_by_name(artifacts))

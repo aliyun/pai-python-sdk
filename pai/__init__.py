@@ -1,6 +1,5 @@
 from __future__ import absolute_import
-from pai._version import __version__
+import importlib_metadata
 
-__all__ = [
-    "__version__"
-]
+_DISTRIBUTE_NAME = "alipai"
+__version__ = importlib_metadata.version(_DISTRIBUTE_NAME)

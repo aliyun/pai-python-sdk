@@ -2,10 +2,10 @@ from __future__ import absolute_import
 
 from pai.core.job import JobStatus
 from pai.xflow.transformer import OfflineModelTransformer, ModelTransferToOSS
-from tests import BaseTestCase
+from tests.integration import BaseIntegTestCase
 
 
-class TestOfflineModelTransformer(BaseTestCase):
+class TestOfflineModelTransformer(BaseIntegTestCase):
 
     @classmethod
     def setUpClass(cls):

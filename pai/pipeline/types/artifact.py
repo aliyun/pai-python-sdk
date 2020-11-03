@@ -119,8 +119,8 @@ class ArtifactMetadata(object):
     def __eq__(self, other):
         if isinstance(other, ArtifactMetadata):
             return self.data_type == other.data_type \
-                   and self.location_type == other.location_type \
-                   and self.model_type == other.model_type
+                and self.location_type == other.location_type \
+                and self.model_type == other.model_type
         elif isinstance(other, dict):
             other = self.from_dict(other)
             return self.__eq__(other)

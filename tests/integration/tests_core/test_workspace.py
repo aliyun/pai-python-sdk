@@ -2,10 +2,10 @@ from __future__ import absolute_import
 
 from pai.core.workspace import Workspace
 from pai.common.utils import iter_with_limit
-from tests import BaseTestCase
+from tests.integration import BaseIntegTestCase
 
 
-class TestWorkspace(BaseTestCase):
+class TestWorkspace(BaseIntegTestCase):
 
     @classmethod
     def get_ws_member_count(cls, ws):

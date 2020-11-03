@@ -4,12 +4,12 @@ import time
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline.template import PipelineTemplate
-from tests import BaseTestCase
-from . import create_simple_composite_pipeline
+from tests.integration import BaseIntegTestCase
+from tests.integration.tests_pipeline import create_simple_composite_pipeline
 from pai.common.utils import iter_with_limit
 
 
-class TestTemplate(BaseTestCase):
+class TestTemplate(BaseIntegTestCase):
 
     def test_list_templates(self):
         templates = list(iter_with_limit(PipelineTemplate.list(identifier="xflow", fuzzy=True), 10))
