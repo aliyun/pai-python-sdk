@@ -7,11 +7,11 @@ from setuptools import setup, find_packages
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
 requirements = []
-with open('requirements.txt') as f:
+with open("requirements.txt") as f:
     requirements.extend(f.read().splitlines())
 long_description = None
-if os.path.exists('README.md'):
-    with open('README.md') as f:
+if os.path.exists("README.md"):
+    with open("README.md") as f:
         long_description = f.read()
 
 setup(
@@ -32,5 +32,5 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Development Status :: 4 - Beta",
-    ]
+    ],
 )

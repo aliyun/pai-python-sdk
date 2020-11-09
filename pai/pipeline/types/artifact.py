@@ -6,7 +6,11 @@ import re
 import six
 from enum import Enum
 from odps.df import DataFrame as ODPSDataFrame
-from odps.models import Table as ODPSTable, Partition as ODPSPartition, Volume as ODPSVolume
+from odps.models import (
+    Table as ODPSTable,
+    Partition as ODPSPartition,
+    Volume as ODPSVolume,
+)
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 
 from pai.pipeline.types.variable import PipelineVariable
@@ -15,20 +19,42 @@ from pai.pipeline.types.variable import PipelineVariable
 class PipelineArtifact(PipelineVariable):
     variable_category = "artifacts"
 
-    def __init__(self, name, metadata=None, path=None, desc=None, kind="inputs", default=None,
-                 from_=None, required=None, parent=None):
-        super(PipelineArtifact, self).__init__(name=name, desc=desc, kind=kind,
-                                               value=default, from_=from_,
-                                               required=required, parent=parent)
+    def __init__(
+        self,
+        name,
+        metadata=None,
+        path=None,
+        desc=None,
+        kind="inputs",
+        default=None,
+        from_=None,
+        required=None,
+        parent=None,
+    ):
+        super(PipelineArtifact, self).__init__(
+            name=name,
+            desc=desc,
+            kind=kind,
+            value=default,
+            from_=from_,
+            required=required,
+            parent=parent,
+        )
         self.metadata = metadata
         self.path = path
 
     def validate_from(self, arg):
         if not isinstance(arg, PipelineArtifact):
-            raise ValueError("arg is expected to be type of 'PipelineParameter' "
-                             "but was actually of type '%s'" % type(arg))
+            raise ValueError(
+                "arg is expected to be type of 'PipelineParameter' "
+                "but was actually of type '%s'" % type(arg)
+            )
 
-        if arg.metadata is not None and self.metadata is not None and arg.metadata != self.metadata:
+        if (
+            arg.metadata is not None
+            and self.metadata is not None
+            and arg.metadata != self.metadata
+        ):
             return False
 
         return True
@@ -47,19 +73,25 @@ class PipelineArtifact(PipelineVariable):
         from_ = af_spec.pop("from", None)
         required = af_spec.pop("required", None)
 
-        param = PipelineArtifact(name=name, metadata=metadata, kind=kind, from_=from_,
-                                 required=required, desc=desc)
+        param = PipelineArtifact(
+            name=name,
+            metadata=metadata,
+            kind=kind,
+            from_=from_,
+            required=required,
+            desc=desc,
+        )
         af_value = ArtifactValue.from_resource(val)
         if not param.validate_value(val):
             raise ValueError(
-                "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
+                "Not Validate value for Parameter %s, value(%s:%s)"
+                % (name, type(val), val)
+            )
         param.value = af_value
         return param.to_argument()
 
     def to_argument(self):
-        arguments = {
-            "name": self.name
-        }
+        arguments = {"name": self.name}
 
         if self.from_ is not None:
             if isinstance(self.from_, PipelineArtifact):
@@ -84,7 +116,6 @@ class PipelineArtifact(PipelineVariable):
 
 
 class ArtifactMetadata(object):
-
     def __init__(self, data_type, location_type, model_type=None, path=None):
         self.data_type = data_type
         self.location_type = location_type
@@ -92,9 +123,11 @@ class ArtifactMetadata(object):
         self.path = path
 
     def __str__(self):
-        return '{%s}:{locationType:%s, modelType:%s}' % (self.data_type,
-                                                         self.location_type,
-                                                         self.model_type)
+        return "{%s}:{locationType:%s, modelType:%s}" % (
+            self.data_type,
+            self.location_type,
+            self.model_type,
+        )
 
     def to_dict(self):
         d = {
@@ -118,9 +151,11 @@ class ArtifactMetadata(object):
 
     def __eq__(self, other):
         if isinstance(other, ArtifactMetadata):
-            return self.data_type == other.data_type \
-                and self.location_type == other.location_type \
+            return (
+                self.data_type == other.data_type
+                and self.location_type == other.location_type
                 and self.model_type == other.model_type
+            )
         elif isinstance(other, dict):
             other = self.from_dict(other)
             return self.__eq__(other)
@@ -140,12 +175,15 @@ class ArtifactMetadata(object):
             model_type = ArtifactModelType(af_typ[data_type.value]["modelType"])
         path = d.get("path")
 
-        return cls(data_type=data_type, location_type=location_type,
-                   model_type=model_type, path=path)
+        return cls(
+            data_type=data_type,
+            location_type=location_type,
+            model_type=model_type,
+            path=path,
+        )
 
 
 class ArtifactValue(object):
-
     def __init__(self):
         pass
 
@@ -162,7 +200,9 @@ class ArtifactValue(object):
                 except json.JSONDecodeError:
                     raise ValueError("Not support artifact url schema:%s", resource)
                 return cls.from_raw_value(resource_dict, metadata)
-        elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
+        elif isinstance(
+            resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)
+        ):
             return MaxComputeResourceArtifact.from_odps_resource(resource)
         elif isinstance(resource, ArtifactEntity):
             return resource.value
@@ -175,7 +215,9 @@ class ArtifactValue(object):
     def from_raw_value(cls, value, metadata):
         if metadata is None:
             raise ValueError(
-                400, "ArtifactMetadata should provide while parse artifact value from dict data.")
+                400,
+                "ArtifactMetadata should provide while parse artifact value from dict data.",
+            )
         if metadata.location_type == ArtifactLocationType.OSS:
             return OSSArtifact.from_dict(value)
         elif metadata.location_type == ArtifactLocationType.MaxComputeTable:
@@ -185,13 +227,16 @@ class ArtifactValue(object):
         elif metadata.location_type == ArtifactLocationType.MaxComputeVolume:
             return MaxComputeVolumeArtifact.from_dict(value)
         else:
-            raise ValueError("Not support artifact location_type: %s", metadata.location_type)
+            raise ValueError(
+                "Not support artifact location_type: %s", metadata.location_type
+            )
 
 
 class MaxComputeResourceArtifact(ArtifactValue):
     MaxComputeResourceUrlPattern = re.compile(
         r"odps://(?P<project>[^/]+)/(?P<resource_type>(?:tables)|(?:volumes)|(?:offlinemodels))/"
-        r"(?P<resource_name>[^/]+)/?(?P<sub_resource>[^\?]+)?(?P<arguments>[.*])?")
+        r"(?P<resource_name>[^/]+)/?(?P<sub_resource>[^\?]+)?(?P<arguments>[.*])?"
+    )
 
     def __init__(self, project, endpoint=None):
         super(MaxComputeResourceArtifact, self).__init__()
@@ -216,7 +261,7 @@ class MaxComputeResourceArtifact(ArtifactValue):
         resource_type = matches.group("resource_type")
         project = matches.group("project")
         if resource_type == "tables":
-            table = matches.group('resource_name')
+            table = matches.group("resource_name")
             partition = matches.group("sub_resource")
             return MaxComputeTableArtifact(
                 project=project,
@@ -228,7 +273,7 @@ class MaxComputeResourceArtifact(ArtifactValue):
             sub_resource = matches.group("sub_resource").strip("/")
             idx = sub_resource.find("/")
             partition = sub_resource[:idx]
-            file_name = sub_resource[idx + 1:]
+            file_name = sub_resource[idx + 1 :]
             return MaxComputeVolumeArtifact(
                 project=project,
                 volume=volume,
@@ -247,7 +292,9 @@ class MaxComputeResourceArtifact(ArtifactValue):
 
     @classmethod
     def from_odps_resource(cls, resource):
-        if not isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)):
+        if not isinstance(
+            resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)
+        ):
             raise ValueError("Not support resource type:%s" % type(resource))
 
         if isinstance(resource, ODPSDataFrame):
@@ -263,18 +310,17 @@ class MaxComputeResourceArtifact(ArtifactValue):
         elif isinstance(resource, ODPSPartition):
             table = resource.table.name
             project = resource.table.project.name
-            partition = ','.join(["%s=%s" % (k, v) for k, v in resource.partition_spec.kv.items()])
+            partition = ",".join(
+                ["%s=%s" % (k, v) for k, v in resource.partition_spec.kv.items()]
+            )
             return MaxComputeTableArtifact(
-                project=project,
-                partition=partition,
-                table=table
+                project=project, partition=partition, table=table
             )
         elif isinstance(resource, ODPSOfflineModel):
             project = resource.project.name
             offlinemodel = resource.name
             return MaxComputeOfflineModelArtifact(
-                project=project,
-                offline_model=offlinemodel
+                project=project, offline_model=offlinemodel
             )
         # TODO: ODPSVolume Support
         elif isinstance(resource, ODPSVolume):
@@ -282,9 +328,10 @@ class MaxComputeResourceArtifact(ArtifactValue):
 
 
 class MaxComputeTableArtifact(MaxComputeResourceArtifact):
-
     def __init__(self, table, project, endpoint=None, partition=None):
-        super(MaxComputeTableArtifact, self).__init__(project=project, endpoint=endpoint)
+        super(MaxComputeTableArtifact, self).__init__(
+            project=project, endpoint=endpoint
+        )
         self.table = table
         self.partition = partition
 
@@ -305,9 +352,10 @@ class MaxComputeTableArtifact(MaxComputeResourceArtifact):
 
 
 class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
-
     def __init__(self, offline_model, project, endpoint=None):
-        super(MaxComputeOfflineModelArtifact, self).__init__(project=project, endpoint=endpoint)
+        super(MaxComputeOfflineModelArtifact, self).__init__(
+            project=project, endpoint=endpoint
+        )
         self.offline_model = offline_model
 
     def to_dict(self):
@@ -325,9 +373,10 @@ class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
 
 
 class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
-
     def __init__(self, volume, project, file_name, endpoint=None, partition=None):
-        super(MaxComputeVolumeArtifact, self).__init__(project=project, endpoint=endpoint)
+        super(MaxComputeVolumeArtifact, self).__init__(
+            project=project, endpoint=endpoint
+        )
         self.volume = volume
         self.partition = partition
         self.file_name = file_name
@@ -346,12 +395,16 @@ class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
         volume = d["location"]["volume"]
         partition = d["location"].get("volumePartition", None)
         file = d["location"].get("file", None)
-        return cls(volume=volume, project=project, file_name=file, endpoint=endpoint,
-                   partition=partition)
+        return cls(
+            volume=volume,
+            project=project,
+            file_name=file,
+            endpoint=endpoint,
+            partition=partition,
+        )
 
 
 class OSSArtifact(ArtifactValue):
-
     def __init__(self, bucket, key, endpoint, rolearn):
         super(OSSArtifact, self).__init__()
         self.bucket = bucket
@@ -425,11 +478,15 @@ class ArtifactEntity(object):
         self.artifact_id = artifact_id
 
     def __repr__(self):
-        return '%s: {Name:%s, Metadata:%s}' % (type(self).__name__, self.name, self.metadata)
+        return "%s: {Name:%s, Metadata:%s}" % (
+            type(self).__name__,
+            self.name,
+            self.metadata,
+        )
 
     @classmethod
     def from_run_output(cls, output):
-        """ Build new ArtifactInfo instance from Run output json.
+        """Build new ArtifactInfo instance from Run output json.
 
         Output Example:
 
@@ -456,8 +513,13 @@ class ArtifactEntity(object):
         value = ArtifactValue.from_resource(output["Info"]["value"], metadata=metadata)
         producer = output["Producer"]
         artifact_id = output["Id"]
-        return ArtifactEntity(metadata=metadata, value=value, name=name, producer=producer,
-                              artifact_id=artifact_id)
+        return ArtifactEntity(
+            metadata=metadata,
+            value=value,
+            name=name,
+            producer=producer,
+            artifact_id=artifact_id,
+        )
 
     @property
     def is_model(self):

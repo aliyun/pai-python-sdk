@@ -32,19 +32,26 @@ class TestLogisticsRegression(BaseIntegTestCase):
             cls.odps_client.delete_offline_model(model_name, if_exists=True)
 
     def test_sync_train(self):
-        model_name = 'test_iris_model_%d' % random.randint(0, 999999)
+        model_name = "test_iris_model_%d" % random.randint(0, 999999)
         lr = LogisticRegression(
             regularized_type="l2",
             xflow_execution=self.get_default_xflow_execution(),
         )
 
         iris_dataset_table = self.odps_client.get_table(
-            self.TestDataSetTables["processed_wumai_data_1"])
+            self.TestDataSetTables["processed_wumai_data_1"]
+        )
 
-        run_job = lr.fit(wait=True, show_outputs=False, input_data=iris_dataset_table,
-                         job_name="pysdk-test-lr-sync-fit",
-                         model_name=model_name, good_value=1, label_col="_c2",
-                         feature_cols=["pm10", "so2", "co", "no2"])
+        run_job = lr.fit(
+            wait=True,
+            show_outputs=False,
+            input_data=iris_dataset_table,
+            job_name="pysdk-test-lr-sync-fit",
+            model_name=model_name,
+            good_value=1,
+            label_col="_c2",
+            feature_cols=["pm10", "so2", "co", "no2"],
+        )
 
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         # PipelineOutput is not ready while status switch to succeed.
@@ -53,16 +60,22 @@ class TestLogisticsRegression(BaseIntegTestCase):
         self.assertIsNotNone(offline_model)
 
     def test_async_train(self):
-        model_name = 'test_wumai_model_%d' % random.randint(0, 999999)
+        model_name = "test_wumai_model_%d" % random.randint(0, 999999)
         self.temp_models.append(model_name)
 
         lr = LogisticRegression(
             regularized_type="l2",
             xflow_execution=self.get_default_xflow_execution(),
         )
-        run_job = lr.fit(wait=False, input_data=self.iris_df, label_col="_c2", good_value=1,
-                         job_name="pysdk-test-lr-async-fit", model_name=model_name,
-                         feature_cols=["pm10", "so2", "co", "no2"])
+        run_job = lr.fit(
+            wait=False,
+            input_data=self.iris_df,
+            label_col="_c2",
+            good_value=1,
+            job_name="pysdk-test-lr-async-fit",
+            model_name=model_name,
+            feature_cols=["pm10", "so2", "co", "no2"],
+        )
 
         self.assertEqual(JobStatus.Running, run_job.get_status())
         run_job.wait_for_completion()
@@ -71,5 +84,8 @@ class TestLogisticsRegression(BaseIntegTestCase):
         offline_model = run_job.create_model(output_name="outputArtifact")
         self.assertIsNotNone(offline_model)
 
-        self.assertTrue(self.odps_client.exist_offline_model(
-            model_name, project=self.odps_client.project))
+        self.assertTrue(
+            self.odps_client.exist_offline_model(
+                model_name, project=self.odps_client.project
+            )
+        )

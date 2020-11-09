@@ -10,15 +10,19 @@ from pai.common.utils import iter_with_limit
 
 
 class TestTemplate(BaseIntegTestCase):
-
     def test_list_templates(self):
-        templates = list(iter_with_limit(PipelineTemplate.list(identifier="xflow", fuzzy=True), 10))
+        templates = list(
+            iter_with_limit(PipelineTemplate.list(identifier="xflow", fuzzy=True), 10)
+        )
         self.assertTrue(len(templates) != 0)
 
     def test_load_template(self):
-        component = PipelineTemplate.load_by_identifier("split-xflow-maxCompute",
-                                                        provider=ProviderAlibabaPAI, version="v1",
-                                                        with_impl=False)
+        component = PipelineTemplate.load_by_identifier(
+            "split-xflow-maxCompute",
+            provider=ProviderAlibabaPAI,
+            version="v1",
+            with_impl=False,
+        )
         self.assertIsNotNone(component.pipeline_id)
 
     def test_composite_pipeline_load(self):
@@ -37,6 +41,7 @@ class TestTemplate(BaseIntegTestCase):
         self.assertEqual(outputs_names, saved_outputs_names)
 
         step_depends = {s.name: sorted([i.name for i in s.depends]) for s in p.steps}
-        saved_step_depends = {s.name: sorted([i.name for i in s.depends]) for s in
-                              saved_pipeline.steps}
+        saved_step_depends = {
+            s.name: sorted([i.name for i in s.depends]) for s in saved_pipeline.steps
+        }
         self.assertEqual(step_depends, saved_step_depends)

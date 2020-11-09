@@ -6,7 +6,6 @@ from aliyunsdksts.request.v20150401 import GetCallerIdentityRequest
 
 
 class StsClient(BaseClient):
-
     def __init__(self, acs_client=None):
         super(StsClient, self).__init__(acs_client=acs_client)
 
@@ -14,5 +13,7 @@ class StsClient(BaseClient):
         return "sts.aliyuncs.com"
 
     def get_caller_identity(self):
-        request = self._construct_request(GetCallerIdentityRequest.GetCallerIdentityRequest)
+        request = self._construct_request(
+            GetCallerIdentityRequest.GetCallerIdentityRequest
+        )
         return self._call_service_with_exception(request)

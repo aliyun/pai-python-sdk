@@ -3,15 +3,22 @@ from __future__ import absolute_import
 import six
 
 from pai.api.base import paginate_service_call, BaseClient
-from pai.libs.aliyunsdkaiworkspace.request.v20200814 import ListWorkspacesRequest, \
-    GetWorkspaceRequest, UpdateWorkspaceRequest, \
-    ListSubUsersRequest, ListMembersRequest, CreateMemberRequest, ListPermissionsRequest, \
-    GetPermissionRequest, GetDefaultWorkspaceRequest
+from pai.libs.aliyunsdkaiworkspace.request.v20200814 import (
+    ListWorkspacesRequest,
+    GetWorkspaceRequest,
+    UpdateWorkspaceRequest,
+    ListSubUsersRequest,
+    ListMembersRequest,
+    CreateMemberRequest,
+    ListPermissionsRequest,
+    GetPermissionRequest,
+    GetDefaultWorkspaceRequest,
+)
 
 
 class WorkspaceClient(BaseClient):
 
-    _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_AIWORKSPACE_ENDPOINT'
+    _ENV_SERVICE_ENDPOINT_KEY = "ALIPAI_AIWORKSPACE_ENDPOINT"
 
     def __init__(self, acs_client, _is_inner=False):
         super(WorkspaceClient, self).__init__(acs_client=acs_client)
@@ -81,7 +88,7 @@ class WorkspaceClient(BaseClient):
 
         if role is not None and role:
             if isinstance(role, (list, tuple)):
-                role = ','.join(role)
+                role = ",".join(role)
             elif not isinstance(role, six.string_types):
                 raise ValueError("Required comma split roles list")
             request.set_Roles(role)
@@ -106,5 +113,7 @@ class WorkspaceClient(BaseClient):
         return self._call_service_with_exception(request)
 
     def get_default_workspace(self):
-        request = self._construct_request(GetDefaultWorkspaceRequest.GetDefaultWorkspaceRequest)
+        request = self._construct_request(
+            GetDefaultWorkspaceRequest.GetDefaultWorkspaceRequest
+        )
         return self._call_service_with_exception(request)

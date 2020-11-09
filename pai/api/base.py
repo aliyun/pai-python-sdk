@@ -31,16 +31,23 @@ class BaseClient(object):
 
         if endpoint:
             self._endpoint = endpoint
-        elif self._ENV_SERVICE_ENDPOINT_KEY is not None and \
-                self._ENV_SERVICE_ENDPOINT_KEY in os.environ:
+        elif (
+            self._ENV_SERVICE_ENDPOINT_KEY is not None
+            and self._ENV_SERVICE_ENDPOINT_KEY in os.environ
+        ):
             self._endpoint = os.environ[self._ENV_SERVICE_ENDPOINT_KEY]
         else:
             self._endpoint = None
 
     def _call_service_with_exception(self, request):
-        logger.debug("Request:%s, path_params:%s, uri_params:%s, query_params:%s, body_params:%s",
-                     type(request), request.get_path_params(), request.get_uri_params(),
-                     request.get_query_params(), request.get_body_params())
+        logger.debug(
+            "Request:%s, path_params:%s, uri_params:%s, query_params:%s, body_params:%s",
+            type(request),
+            request.get_path_params(),
+            request.get_uri_params(),
+            request.get_query_params(),
+            request.get_body_params(),
+        )
         try:
             raw_resp = self._acs_client.do_action_with_exception(request)
             logger.debug("Response:%s", raw_resp)
@@ -55,8 +62,12 @@ class BaseClient(object):
         while not is_end:
             request.set_PageNumber(page_num)
             request.set_PageSize(page_size)
-            logger.debug("Paginate Request:%s:page_size:%s, page_number:%s", type(self).__name__,
-                         page_size, page_num)
+            logger.debug(
+                "Paginate Request:%s:page_size:%s, page_number:%s",
+                type(self).__name__,
+                page_size,
+                page_num,
+            )
             resp = self._call_service_with_exception(request)
             total_count = resp["TotalCount"]
             for resource in resp["Data"]:

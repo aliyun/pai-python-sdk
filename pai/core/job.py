@@ -38,7 +38,9 @@ class RunJob(with_metaclass(ABCMeta, object)):
     def get_outputs(self, output_name=None):
         job_status = self.run_instance.get_status()
         if job_status != PipelineRunStatus.Succeeded:
-            raise ValueError("Succeeded Run job is required, Current job status:%s" % job_status)
+            raise ValueError(
+                "Succeeded Run job is required, Current job status:%s" % job_status
+            )
         run_outputs = self.run_instance.get_outputs(name=output_name)
         return run_outputs
 
@@ -52,7 +54,9 @@ class RunJob(with_metaclass(ABCMeta, object)):
         self.run_instance.resume()
 
     def wait_for_completion(self, show_outputs=True, timeout=None):
-        self.run_instance.wait_for_completion(show_outputs=show_outputs, timeout=timeout)
+        self.run_instance.wait_for_completion(
+            show_outputs=show_outputs, timeout=timeout
+        )
 
     def get_status(self):
         return JobStatus(self.run_instance.get_status())

@@ -18,19 +18,32 @@ logger = logging.getLogger(__name__)
 
 
 class PipelineBase(six.with_metaclass(ABCMeta, object)):
-
-    def __init__(self, inputs, outputs, identifier=None, provider=None, version=None,
-                 pipeline_id=None):
+    def __init__(
+        self,
+        inputs,
+        outputs,
+        identifier=None,
+        provider=None,
+        version=None,
+        pipeline_id=None,
+    ):
         self._identifier = identifier
         self._provider = provider
         self._version = version
         self._pipeline_id = pipeline_id
         self._inputs = inputs if isinstance(inputs, InputsSpec) else InputsSpec(inputs)
-        self._outputs = outputs if isinstance(outputs, OutputsSpec) else OutputsSpec(outputs)
+        self._outputs = (
+            outputs if isinstance(outputs, OutputsSpec) else OutputsSpec(outputs)
+        )
 
     def __repr__(self):
-        return '%s:{PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}' % (
-            type(self).__name__, self._pipeline_id, self.identifier, self.provider, self.version)
+        return "%s:{PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}" % (
+            type(self).__name__,
+            self._pipeline_id,
+            self.identifier,
+            self.provider,
+            self.version,
+        )
 
     @property
     def inputs(self):
@@ -63,6 +76,7 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
     @property
     def _template(self):
         from .template import PipelineTemplate
+
         manifest = self.to_dict()
         return PipelineTemplate(manifest=manifest, pipeline_id=self.pipeline_id)
 
@@ -84,19 +98,24 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
 
     def to_estimator(self, parameters):
         from pai.core.estimator import PipelineEstimator
-        return PipelineEstimator(pipeline_id=self._template.pipeline_id,
-                                 manifest=self._template.manifest,
-                                 parameters=parameters)
+
+        return PipelineEstimator(
+            pipeline_id=self._template.pipeline_id,
+            manifest=self._template.manifest,
+            parameters=parameters,
+        )
 
     def to_transformer(self, parameters=None):
         from pai.core.transformer import PipelineTransformer
-        return PipelineTransformer(pipeline_id=self._template.pipeline_id,
-                                   manifest=self._template.manifest,
-                                   parameters=parameters)
+
+        return PipelineTransformer(
+            pipeline_id=self._template.pipeline_id,
+            manifest=self._template.manifest,
+            parameters=parameters,
+        )
 
     def run(self, job_name, arguments=None, **kwargs):
-        return self._template.run(job_name=job_name, arguments=arguments,
-                                  **kwargs)
+        return self._template.run(job_name=job_name, arguments=arguments, **kwargs)
 
     def _spec_to_dict(self):
         spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict()}
@@ -106,21 +125,35 @@ class PipelineBase(six.with_metaclass(ABCMeta, object)):
         manifest = {
             "apiVersion": DEFAULT_PIPELINE_API_VERSION,
             "metadata": self.metadata,
-            "spec": self._spec_to_dict()
+            "spec": self._spec_to_dict(),
         }
         return manifest
 
 
 class ContainerComponent(PipelineBase):
-
-    def __init__(self, image_uri, inputs, outputs, command, image_registry_config=None,
-                 identifier=None, provider=None, version=None, pipeline_id=None):
+    def __init__(
+        self,
+        image_uri,
+        inputs,
+        outputs,
+        command,
+        image_registry_config=None,
+        identifier=None,
+        provider=None,
+        version=None,
+        pipeline_id=None,
+    ):
         self.image_uri = image_uri
         self.image_registry_config = image_registry_config
         self.command = command or []
-        super(ContainerComponent, self).__init__(inputs=inputs, outputs=outputs, provider=provider,
-                                                 version=version, identifier=identifier,
-                                                 pipeline_id=pipeline_id)
+        super(ContainerComponent, self).__init__(
+            inputs=inputs,
+            outputs=outputs,
+            provider=provider,
+            version=version,
+            identifier=identifier,
+            pipeline_id=pipeline_id,
+        )
 
     def to_dict(self):
         d = super(ContainerComponent, self).to_dict()
@@ -143,20 +176,27 @@ class Pipeline(PipelineBase):
 
     """
 
-    def __init__(self, steps=None, inputs=None, outputs=None, identifier=None, version=None,
-                 provider=None):
-        """Pipeline initializer.
-
-        """
+    def __init__(
+        self,
+        steps=None,
+        inputs=None,
+        outputs=None,
+        identifier=None,
+        version=None,
+        provider=None,
+    ):
+        """Pipeline initializer."""
 
         self._steps, inputs, outputs = self._build_pipeline(steps, inputs, outputs)
 
         self._session = get_default_session()
-        super(Pipeline, self).__init__(inputs=inputs,
-                                       outputs=outputs,
-                                       identifier=identifier,
-                                       provider=provider,
-                                       version=version)
+        super(Pipeline, self).__init__(
+            inputs=inputs,
+            outputs=outputs,
+            identifier=identifier,
+            provider=provider,
+            version=version,
+        )
 
     @property
     def steps(self):
@@ -190,7 +230,9 @@ class Pipeline(PipelineBase):
             outputs = outputs.values()
 
         steps = steps or []
-        visited_steps = set(steps + [output.parent for output in outputs if output.parent])
+        visited_steps = set(
+            steps + [output.parent for output in outputs if output.parent]
+        )
         infer_inputs = set()
         cur_steps = visited_steps.copy()
         while cur_steps:
@@ -207,11 +249,14 @@ class Pipeline(PipelineBase):
 
         if inputs:
             if len(infer_inputs) != len(inputs) or any(
-                    ipt for ipt in inputs if ipt not in infer_inputs):
+                ipt for ipt in inputs if ipt not in infer_inputs
+            ):
                 raise ValueError("Require complete pipeline inputs list")
         else:
-            inputs = sorted(list(infer_inputs),
-                            key=lambda x: 0 if x.variable_category == "parameters" else 1)
+            inputs = sorted(
+                list(infer_inputs),
+                key=lambda x: 0 if x.variable_category == "parameters" else 1,
+            )
         sorted_steps = cls._topo_sort(visited_steps)
         cls._check_steps(steps)
 
@@ -230,11 +275,13 @@ class Pipeline(PipelineBase):
         results = []
         for name, item in items:
             if isinstance(item, PipelineArtifact):
-                results.append(PipelineArtifact(
-                    name=name,
-                    from_=item,
-                    metadata=item.metadata,
-                ))
+                results.append(
+                    PipelineArtifact(
+                        name=name,
+                        from_=item,
+                        metadata=item.metadata,
+                    )
+                )
             elif isinstance(item, PipelineParameter):
                 results.append(PipelineParameter(name=name, typ=item.typ, from_=item))
             else:
@@ -284,7 +331,9 @@ class Pipeline(PipelineBase):
         step_names = [step.name for step in steps if step.name]
         conflicts = [k for k, v in Counter(step_names).items() if v > 1]
         if conflicts:
-            raise ValueError("Given pipeline step name conflict:%s" % ','.join(conflicts))
+            raise ValueError(
+                "Given pipeline step name conflict:%s" % ",".join(conflicts)
+            )
 
     def _update_steps(self, steps):
         used_names = set([s.name for s in steps])
@@ -292,14 +341,15 @@ class Pipeline(PipelineBase):
         for step in steps:
             step.parent = self
             if not step.name:
-                step.name = self._make_step_name(step, used_names=used_names,
-                                                 search_limit=len(steps))
+                step.name = self._make_step_name(
+                    step, used_names=used_names, search_limit=len(steps)
+                )
                 used_names.add(step.name)
 
     @classmethod
     def _make_step_name(cls, step, used_names, search_limit=100):
         for i in range(search_limit):
-            candidate = '%s-%s' % (step.identifier, i)
+            candidate = "%s-%s" % (step.identifier, i)
             if candidate not in used_names:
                 return candidate
         raise ValueError("No available name for the step")
@@ -315,13 +365,19 @@ class Pipeline(PipelineBase):
 
     @property
     def input_parameters_spec(self):
-        return {ipt.name: ipt.to_dict() for ipt in self.inputs if
-                ipt.variable_category == "parameters"}
+        return {
+            ipt.name: ipt.to_dict()
+            for ipt in self.inputs
+            if ipt.variable_category == "parameters"
+        }
 
     @property
     def input_artifacts_spec(self):
-        return {ipt.name: ipt.to_dict() for ipt in self.inputs if
-                ipt.variable_category == "artifacts"}
+        return {
+            ipt.name: ipt.to_dict()
+            for ipt in self.inputs
+            if ipt.variable_category == "artifacts"
+        }
 
     def dot(self):
         graph = Digraph()

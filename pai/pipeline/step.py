@@ -7,22 +7,34 @@ from .types.variable import PipelineVariable
 
 
 class PipelineStep(object):
-    """ Represents an execution step in PAI pipeline.
+    """Represents an execution step in PAI pipeline.
 
     Pipeline steps can be configured together to construct a Pipeline, which is present as workflow
     in PAI ML pipeline service.
 
     """
 
-    def __init__(self, identifier, provider=None, version="v1", inputs=None, name=None,
-                 depends=None):
+    def __init__(
+        self,
+        identifier,
+        provider=None,
+        version="v1",
+        inputs=None,
+        name=None,
+        depends=None,
+    ):
         self._depends = depends or set()
         self._assigned = set()
-        template = self.get_template(identifier=identifier, provider=provider, version=version)
+        template = self.get_template(
+            identifier=identifier, provider=provider, version=version
+        )
         self._metadata = copy.copy(template.manifest["metadata"])
         self._name = name
 
-        inputs_spec, outputs_spec, = load_input_output_spec(self, template.manifest["spec"])
+        (
+            inputs_spec,
+            outputs_spec,
+        ) = load_input_output_spec(self, template.manifest["spec"])
         self.parent = None
         self.inputs = inputs_spec
         self.outputs = outputs_spec
@@ -50,7 +62,12 @@ class PipelineStep(object):
         if isinstance(inputs, dict):
             inputs = inputs.values()
         steps = set(
-            [ipt.parent for ipt in inputs if isinstance(ipt, PipelineVariable) and ipt.parent])
+            [
+                ipt.parent
+                for ipt in inputs
+                if isinstance(ipt, PipelineVariable) and ipt.parent
+            ]
+        )
         self._depends = steps.union(self._depends)
 
     @property
@@ -80,13 +97,17 @@ class PipelineStep(object):
     @classmethod
     def get_template(cls, identifier, provider, version):
         from .template import PipelineTemplate
-        template = PipelineTemplate.get_by_identifier(identifier=identifier, provider=provider,
-                                                      version=version)
+
+        template = PipelineTemplate.get_by_identifier(
+            identifier=identifier, provider=provider, version=version
+        )
         return template
 
     def after(self, *steps):
         if self.parent or any(step for step in steps if step.parent):
-            raise ValueError("Not allow operation, pipeline step has been included in a pipeline")
+            raise ValueError(
+                "Not allow operation, pipeline step has been included in a pipeline"
+            )
         for step in steps:
             if step not in self._depends:
                 self._depends.add(step)
@@ -100,10 +121,16 @@ class PipelineStep(object):
 
         spec = {
             "arguments": {
-                "parameters": [ipt.to_dict() for ipt in assigned_inputs if
-                               ipt.variable_category == "parameters"],
-                "artifacts": [ipt.to_dict() for ipt in assigned_inputs if
-                              ipt.variable_category == "artifacts"],
+                "parameters": [
+                    ipt.to_dict()
+                    for ipt in assigned_inputs
+                    if ipt.variable_category == "parameters"
+                ],
+                "artifacts": [
+                    ipt.to_dict()
+                    for ipt in assigned_inputs
+                    if ipt.variable_category == "artifacts"
+                ],
             }
         }
 

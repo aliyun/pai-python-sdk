@@ -5,7 +5,6 @@ from tests.unit import BaseUnitTestCase
 
 
 class TestArtifact(BaseUnitTestCase):
-
     def test_max_compute_artifact(self):
         cases = [
             {
@@ -16,7 +15,7 @@ class TestArtifact(BaseUnitTestCase):
                         "project": "prj_test",
                         "table": "test_table",
                     }
-                }
+                },
             },
             {
                 "name": "table_case2",
@@ -27,7 +26,7 @@ class TestArtifact(BaseUnitTestCase):
                         "table": "test_table",
                         "partition": "pt1=hello/pt2=world",
                     }
-                }
+                },
             },
             {
                 "name": "table_case3",
@@ -38,7 +37,7 @@ class TestArtifact(BaseUnitTestCase):
                         "table": "test_table",
                         "partition": "pt1=hello/pt2=world",
                     }
-                }
+                },
             },
             {
                 "name": "volume_case1",
@@ -50,7 +49,7 @@ class TestArtifact(BaseUnitTestCase):
                         "volumePartition": "vpartition",
                         "file": "i_am_file.csv",
                     }
-                }
+                },
             },
             {
                 "name": "volume_case2",
@@ -62,7 +61,7 @@ class TestArtifact(BaseUnitTestCase):
                         "volumePartition": "vpart",
                         "file": "i_am_file.csv",
                     }
-                }
+                },
             },
             {
                 "name": "offline_model_case3",
@@ -72,16 +71,22 @@ class TestArtifact(BaseUnitTestCase):
                     "location": {
                         "project": "prj_om",
                         "name": "xlab_m_GBDT_LR_1_1685664_v0_m_2",
-                    }
-                }
-            }
+                    },
+                },
+            },
         ]
         for case in cases:
             max_compute_af = MaxComputeResourceArtifact.from_resource_url(case["input"])
-            self.assertEqual(case["expected"], max_compute_af.to_dict(),
-                             "case:%s, expected: %s, result:%s" % (
-                                 case["name"], case["expected"], max_compute_af.to_dict(),
-                             ))
+            self.assertEqual(
+                case["expected"],
+                max_compute_af.to_dict(),
+                "case:%s, expected: %s, result:%s"
+                % (
+                    case["name"],
+                    case["expected"],
+                    max_compute_af.to_dict(),
+                ),
+            )
 
     def test_to_argument_by_spec(self):
         pass

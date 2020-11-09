@@ -20,8 +20,7 @@ class OfflineModelTransformer(XFlowTransformer):
                 Examples:
                     odps://project_name/offlinemodels/offline_model_name.
         """
-        super(OfflineModelTransformer, self).__init__(model=model,
-                                                      **kwargs)
+        super(OfflineModelTransformer, self).__init__(model=model, **kwargs)
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(OfflineModelTransformer, self)._compile_args(*inputs, **kwargs)
@@ -29,14 +28,14 @@ class OfflineModelTransformer(XFlowTransformer):
         args["inputDataSetArtifact"] = inputs[0]
         args["inputModelArtifact"] = kwargs.get("model")
         args["outputTableName"] = kwargs.get("output_table") or gen_temp_table()
-        args['outputPartition'] = kwargs.get("partitions")
+        args["outputPartition"] = kwargs.get("partitions")
         feature_cols = kwargs.get("feature_cols")
         if isinstance(feature_cols, (list, tuple)):
-            feature_cols = ','.join(feature_cols)
+            feature_cols = ",".join(feature_cols)
         args["featureColNames"] = feature_cols
         append_cols = kwargs.get("append_cols")
         if isinstance(feature_cols, (list, tuple)):
-            append_cols = ','.join(append_cols)
+            append_cols = ",".join(append_cols)
         args["appendColNames"] = append_cols
 
         args["resultColName"] = kwargs.get("result_col")
@@ -44,9 +43,22 @@ class OfflineModelTransformer(XFlowTransformer):
 
         return args
 
-    def transform(self, input_data, wait=True, job_name=None, feature_cols=None, label_col=None,
-                  result_col=None, score_col=None, detail_col=None, append_cols=None,
-                  output_table=None, output_partition=None, table_lifecycle=None, **kwargs):
+    def transform(
+        self,
+        input_data,
+        wait=True,
+        job_name=None,
+        feature_cols=None,
+        label_col=None,
+        result_col=None,
+        score_col=None,
+        detail_col=None,
+        append_cols=None,
+        output_table=None,
+        output_partition=None,
+        table_lifecycle=None,
+        **kwargs
+    ):
         return super(OfflineModelTransformer, self).transform(
             input_data,
             wait=wait,
@@ -102,9 +114,9 @@ class ModelTransferToOSS(XFlowTransformer):
 
         oss_path = kwargs["path"]
         if not oss_path.startswith("/"):
-            oss_path = '/' + oss_path
+            oss_path = "/" + oss_path
         if not oss_path.endswith("/"):
-            oss_path = oss_path + '/'
+            oss_path = oss_path + "/"
 
         args["path"] = oss_path
 
@@ -123,16 +135,13 @@ class ModelTransferToOSS(XFlowTransformer):
             _TransformJob: Job instance used as controller and get the outputs of transformer.
         """
         return super(ModelTransferToOSS, self).transform(
-            input_model,
-            job_name=job_name,
-            wait=wait,
-            path=path,
-            **kwargs
+            input_model, job_name=job_name, wait=wait, path=path, **kwargs
         )
 
 
 class FeatureNormalize(XFlowTransformer):
     """Normalize input dataset"""
+
     _identifier_default = "dataSource-xflow-maxCompute"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
@@ -148,19 +157,30 @@ class FeatureNormalize(XFlowTransformer):
         args["inputParaArtifact"] = kwargs.get("input_para_table")
         args["outputPartition"] = kwargs.get("output_partition")
 
-    def transform(self, input_table, output_table, output_para_table, input_para_table=None,
-                  output_partition=None, selected_cols=None, keep_original=False, **kwargs):
+    def transform(
+        self,
+        input_table,
+        output_table,
+        output_para_table,
+        input_para_table=None,
+        output_partition=None,
+        selected_cols=None,
+        keep_original=False,
+        **kwargs
+    ):
         super(FeatureNormalize, self).transform(
-            input_table=input_table, output_table=output_table,
+            input_table=input_table,
+            output_table=output_table,
             output_para_table=output_para_table,
             output_partition=output_partition,
             selected_cols=selected_cols,
             keep_original=keep_original,
-            **kwargs)
+            **kwargs
+        )
 
 
 class MaxComputeDataSource(XFlowTransformer):
-    """ Transform plain odps table/partition info to ODPS Table Artifact
+    """Transform plain odps table/partition info to ODPS Table Artifact
 
     :Example:
 
@@ -201,9 +221,5 @@ class MaxComputeDataSource(XFlowTransformer):
             _TransformJob: Job instance used as controller and get the outputs of transformer.
         """
         return super(MaxComputeDataSource, self).transform(
-            table_name,
-            partition=partition,
-            wait=wait,
-            job_name=job_name,
-            **kwargs
+            table_name, partition=partition, wait=wait, job_name=job_name, **kwargs
         )

@@ -30,16 +30,17 @@ class TestPaiFlowAPI(BaseIntegTestCase):
 
     def test_get_pipeline(self):
         identifier = "evaluate-xflow-maxCompute"
-        pipeline_info = self.session.get_pipeline(identifier=identifier,
-                                                  provider=ProviderAlibabaPAI,
-                                                  version="v1")
+        pipeline_info = self.session.get_pipeline(
+            identifier=identifier, provider=ProviderAlibabaPAI, version="v1"
+        )
         self.assertIsNotNone(pipeline_info["PipelineId"])
         manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
         self.assertEqual(identifier, manifest["metadata"]["identifier"])
 
     def test_list_pipeline(self):
-        pipeline_infos = list(iter_with_limit(self.session.list_pipeline(
-            provider=ProviderAlibabaPAI), 10))
+        pipeline_infos = list(
+            iter_with_limit(self.session.list_pipeline(provider=ProviderAlibabaPAI), 10)
+        )
         self.assertTrue(len(pipeline_infos) == 10)
 
     def test_provider(self):
@@ -80,7 +81,9 @@ class TestPaiFlowAPI(BaseIntegTestCase):
         self.assertTrue(count > 0)
 
     def test_list_template(self):
-        templates = list(iter_with_limit(PipelineTemplate.list(provider=ProviderAlibabaPAI), 10))
+        templates = list(
+            iter_with_limit(PipelineTemplate.list(provider=ProviderAlibabaPAI), 10)
+        )
         self.assertTrue(len(templates) <= 10)
 
     def test_list_run(self):

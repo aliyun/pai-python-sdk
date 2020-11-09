@@ -7,7 +7,6 @@ from tests.unit import BaseUnitTestCase
 
 
 class TestUtils(BaseUnitTestCase):
-
     def test_extract_odps_table_from_url(self):
         cases = [
             {

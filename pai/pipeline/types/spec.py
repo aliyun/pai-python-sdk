@@ -13,21 +13,33 @@ def validate_spec(items):
     counter = Counter((item.name for item in items))
     conflicts = {key for key, count in counter.items() if count > 1}
     if conflicts:
-        raise ValueError("Parameter/Artifact names conflict:%s" % (','.join(conflicts)))
+        raise ValueError("Parameter/Artifact names conflict:%s" % (",".join(conflicts)))
 
     # ensure parameters is prior to artifacts in list
-    af_pos = next((idx for idx, item in enumerate(items) if item.variable_category == "artifacts"),
-                  len(items))
+    af_pos = next(
+        (
+            idx
+            for idx, item in enumerate(items)
+            if item.variable_category == "artifacts"
+        ),
+        len(items),
+    )
 
     idx = next(
-        (idx for idx in range(af_pos, len(items)) if items[idx].variable_category == "parameters"),
-        len(items))
+        (
+            idx
+            for idx in range(af_pos, len(items))
+            if items[idx].variable_category == "parameters"
+        ),
+        len(items),
+    )
     if idx != len(items):
-        raise ValueError("Please ensure parameters is prior to artifacts in the spec list")
+        raise ValueError(
+            "Please ensure parameters is prior to artifacts in the spec list"
+        )
 
 
 class SpecBase(object):
-
     def __init__(self, items):
         self._items = items
         self._indexer = {item.name: idx for idx, item in enumerate(items)}
@@ -38,8 +50,10 @@ class SpecBase(object):
         return self._items
 
     def __repr__(self):
-        return '%s:\n%s' % (
-            type(self).__name__, '\n'.join(['\t' + str(item) for item in self._items]))
+        return "%s:\n%s" % (
+            type(self).__name__,
+            "\n".join(["\t" + str(item) for item in self._items]),
+        )
 
     def _repr_html(self):
         pass
@@ -60,18 +74,22 @@ class SpecBase(object):
 
     def to_dict(self):
         af_pos = next(
-            (idx for idx, item in enumerate(self._items) if item.variable_category == "artifacts"),
-            len(self._items))
+            (
+                idx
+                for idx, item in enumerate(self._items)
+                if item.variable_category == "artifacts"
+            ),
+            len(self._items),
+        )
 
         d = {
             "parameters": [param.to_dict() for param in self._items[:af_pos]],
-            "artifacts": [af.to_dict() for af in self._items[af_pos:]]
+            "artifacts": [af.to_dict() for af in self._items[af_pos:]],
         }
         return d
 
 
 class InputsSpec(SpecBase):
-
     def __init__(self, inputs):
         super(InputsSpec, self).__init__(items=inputs)
 
@@ -92,12 +110,13 @@ class InputsSpec(SpecBase):
                 assign_items.append(self._items[self._indexer[k]])
         else:
             raise ValueError(
-                "Unexpected input_args type:%s, required list or dict" % type(inputs_args))
+                "Unexpected input_args type:%s, required list or dict"
+                % type(inputs_args)
+            )
         return assign_items
 
 
 class OutputsSpec(SpecBase):
-
     def __init__(self, outputs):
         super(OutputsSpec, self).__init__(items=outputs)
 
@@ -128,8 +147,16 @@ def _load_parameter_spec(p, param_spec, kind):
     value = param_spec.pop("value", None)
     desc = param_spec.pop("desc", None)
 
-    param = PipelineParameter(name=name, typ=typ, default=value, desc=desc, kind=kind, from_=from_,
-                              parent=p, feasible=feasible)
+    param = PipelineParameter(
+        name=name,
+        typ=typ,
+        default=value,
+        desc=desc,
+        kind=kind,
+        from_=from_,
+        parent=p,
+        feasible=feasible,
+    )
     return param
 
 
@@ -142,6 +169,14 @@ def _load_artifact_spec(p, artifact_spec, kind):
     desc = artifact_spec.get("desc", None)
     required = artifact_spec.get("required", False)
 
-    af = PipelineArtifact(name=name, metadata=metadata, kind=kind, parent=p, from_=from_,
-                          default=value, desc=desc, required=required)
+    af = PipelineArtifact(
+        name=name,
+        metadata=metadata,
+        kind=kind,
+        parent=p,
+        from_=from_,
+        default=value,
+        desc=desc,
+        required=required,
+    )
     return af

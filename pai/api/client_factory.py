@@ -6,7 +6,6 @@ from pai.api.workspace import WorkspaceClient
 
 
 class ClientFactory(object):
-
     @staticmethod
     def _is_inner_client(acs_client):
         if acs_client.get_region_id() == "center":

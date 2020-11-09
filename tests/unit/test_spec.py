@@ -2,8 +2,12 @@ from __future__ import absolute_import
 
 import os
 
-from pai.pipeline.types.artifact import ArtifactDataType, ArtifactMetadata, \
-    PipelineArtifact, ArtifactLocationType
+from pai.pipeline.types.artifact import (
+    ArtifactDataType,
+    ArtifactMetadata,
+    PipelineArtifact,
+    ArtifactLocationType,
+)
 from pai.pipeline.types.parameter import PipelineParameter
 from pai.pipeline.types.spec import InputsSpec, validate_spec
 from tests.unit import BaseUnitTestCase
@@ -12,20 +16,25 @@ _current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestInputOutputSpec(BaseUnitTestCase):
-
     def test_spec_getitem(self):
         items = [
             PipelineParameter(name="A", typ=int, default=10),
             PipelineParameter(name="B", typ=str, default="result"),
             PipelineParameter(name="C", typ=bool, default=True),
-            PipelineArtifact(name="D",
-                             metadata=ArtifactMetadata(
-                                 data_type=ArtifactDataType.DataSet,
-                                 location_type=ArtifactLocationType.MaxComputeTable)),
-            PipelineArtifact(name="E",
-                             metadata=ArtifactMetadata(
-                                 data_type=ArtifactDataType.DataSet,
-                                 location_type=ArtifactLocationType.MaxComputeTable))
+            PipelineArtifact(
+                name="D",
+                metadata=ArtifactMetadata(
+                    data_type=ArtifactDataType.DataSet,
+                    location_type=ArtifactLocationType.MaxComputeTable,
+                ),
+            ),
+            PipelineArtifact(
+                name="E",
+                metadata=ArtifactMetadata(
+                    data_type=ArtifactDataType.DataSet,
+                    location_type=ArtifactLocationType.MaxComputeTable,
+                ),
+            ),
         ]
 
         specs = InputsSpec(items)
@@ -41,32 +50,41 @@ class TestInputOutputSpec(BaseUnitTestCase):
 
         param_a_2 = PipelineParameter(name="A", typ=bool, default=True)
 
-        af_d = PipelineArtifact(name="D",
-                                metadata=ArtifactMetadata(
-                                    data_type=ArtifactDataType.DataSet,
-                                    location_type=ArtifactLocationType.MaxComputeTable))
-        af_e = PipelineArtifact(name="E",
-                                metadata=ArtifactMetadata(
-                                    data_type=ArtifactDataType.DataSet,
-                                    location_type=ArtifactLocationType.MaxComputeTable))
-        af_f = PipelineArtifact(name="F",
-                                metadata=ArtifactMetadata(
-                                    data_type=ArtifactDataType.DataSet,
-                                    location_type=ArtifactLocationType.MaxComputeTable))
-        af_a = PipelineArtifact(name="A",
-                                metadata=ArtifactMetadata(
-                                    data_type=ArtifactDataType.DataSet,
-                                    location_type=ArtifactLocationType.MaxComputeTable))
+        af_d = PipelineArtifact(
+            name="D",
+            metadata=ArtifactMetadata(
+                data_type=ArtifactDataType.DataSet,
+                location_type=ArtifactLocationType.MaxComputeTable,
+            ),
+        )
+        af_e = PipelineArtifact(
+            name="E",
+            metadata=ArtifactMetadata(
+                data_type=ArtifactDataType.DataSet,
+                location_type=ArtifactLocationType.MaxComputeTable,
+            ),
+        )
+        af_f = PipelineArtifact(
+            name="F",
+            metadata=ArtifactMetadata(
+                data_type=ArtifactDataType.DataSet,
+                location_type=ArtifactLocationType.MaxComputeTable,
+            ),
+        )
+        af_a = PipelineArtifact(
+            name="A",
+            metadata=ArtifactMetadata(
+                data_type=ArtifactDataType.DataSet,
+                location_type=ArtifactLocationType.MaxComputeTable,
+            ),
+        )
 
         success_cases = [
             {
                 "name": "empty_case",
                 "inputs": [],
             },
-            {
-                "name": "params_case_1",
-                "inputs": [param_a]
-            },
+            {"name": "params_case_1", "inputs": [param_a]},
             {
                 "name": "params_case_2",
                 "inputs": [param_a, param_b, param_c],
@@ -86,7 +104,7 @@ class TestInputOutputSpec(BaseUnitTestCase):
             {
                 "name": "mix_case_2",
                 "inputs": [param_a, param_b, param_c, af_d, af_e, af_f],
-            }
+            },
         ]
 
         for case in success_cases:
@@ -108,7 +126,7 @@ class TestInputOutputSpec(BaseUnitTestCase):
             {
                 "name": "name_conflict_2",
                 "inputs": [param_a, af_a],
-            }
+            },
         ]
 
         for case in error_cases:

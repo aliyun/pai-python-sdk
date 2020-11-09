@@ -14,13 +14,21 @@ class LogisticRegression(XFlowEstimator):
 
     _provider_default = ProviderAlibabaPAI
 
-    def __init__(self, regularized_level=1.0, regularized_type="l1", max_iter=100,
-                 epsilon=1e-6, **kwargs):
+    def __init__(
+        self,
+        regularized_level=1.0,
+        regularized_type="l1",
+        max_iter=100,
+        epsilon=1e-6,
+        **kwargs
+    ):
         super(LogisticRegression, self).__init__(
             regularized_level=regularized_level,
             regularized_type=regularized_type,
             max_iter=max_iter,
-            epsilon=epsilon, **kwargs)
+            epsilon=epsilon,
+            **kwargs
+        )
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(LogisticRegression, self)._compile_args(*inputs, **kwargs)
@@ -45,8 +53,19 @@ class LogisticRegression(XFlowEstimator):
 
         return args
 
-    def fit(self, input_data, model_name, label_col, good_value, job_name=None, wait=True,
-            show_outputs=True, feature_cols=None, enable_sparse=None, sparse_delimiter=None):
+    def fit(
+        self,
+        input_data,
+        model_name,
+        label_col,
+        good_value,
+        job_name=None,
+        wait=True,
+        show_outputs=True,
+        feature_cols=None,
+        enable_sparse=None,
+        sparse_delimiter=None,
+    ):
         """
 
         Args:
@@ -64,16 +83,18 @@ class LogisticRegression(XFlowEstimator):
         Returns:
 
         """
-        return super(LogisticRegression, self).fit(input_data,
-                                                   job_name=job_name,
-                                                   wait=wait,
-                                                   show_outputs=show_outputs,
-                                                   model_name=model_name,
-                                                   feature_cols=feature_cols,
-                                                   label_col=label_col,
-                                                   enable_sparse=enable_sparse,
-                                                   sparse_delimiter=sparse_delimiter,
-                                                   good_value=good_value)
+        return super(LogisticRegression, self).fit(
+            input_data,
+            job_name=job_name,
+            wait=wait,
+            show_outputs=show_outputs,
+            model_name=model_name,
+            feature_cols=feature_cols,
+            label_col=label_col,
+            enable_sparse=enable_sparse,
+            sparse_delimiter=sparse_delimiter,
+            good_value=good_value,
+        )
 
 
 class RandomForestClassifier(XFlowEstimator):
@@ -83,15 +104,27 @@ class RandomForestClassifier(XFlowEstimator):
 
     _version_default = "1.0.0"
 
-    def __init__(self, session, tree_num, random_col_num, max_tree_deep, min_num_obj=None,
-                 min_num_per=None, max_record_size=None, **kwargs):
-        super(RandomForestClassifier, self).__init__(session=session, tree_num=tree_num,
-                                                     random_col_num=random_col_num,
-                                                     max_tree_deep=max_tree_deep,
-                                                     min_num_obj=min_num_obj,
-                                                     min_num_per=min_num_per,
-                                                     max_record_size=max_record_size,
-                                                     **kwargs)
+    def __init__(
+        self,
+        session,
+        tree_num,
+        random_col_num,
+        max_tree_deep,
+        min_num_obj=None,
+        min_num_per=None,
+        max_record_size=None,
+        **kwargs
+    ):
+        super(RandomForestClassifier, self).__init__(
+            session=session,
+            tree_num=tree_num,
+            random_col_num=random_col_num,
+            max_tree_deep=max_tree_deep,
+            min_num_obj=min_num_obj,
+            min_num_per=min_num_per,
+            max_record_size=max_record_size,
+            **kwargs
+        )
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(RandomForestClassifier, self)._compile_args(*inputs, **kwargs)
@@ -114,15 +147,29 @@ class RandomForestClassifier(XFlowEstimator):
         args["maxRecordSize"] = kwargs.get("max_record_size")
         return args
 
-    def fit(self, input_data, model_name=None, feature_cols=None, label_col=None, weight_col=None,
-            excluded_cols=None, tree_num=None, wait=True, algo_types=None, random_col_num=None,
-            force_categorical=False, **kwargs):
-        return super(RandomForestClassifier, self).fit(input_data,
-                                                       wait=wait,
-                                                       model_name=model_name,
-                                                       tree_num=tree_num,
-                                                       excluded_cols=excluded_cols,
-                                                       feature_cols=feature_cols,
-                                                       algo_types=algo_types,
-                                                       random_col_num=random_col_num,
-                                                       **kwargs)
+    def fit(
+        self,
+        input_data,
+        model_name=None,
+        feature_cols=None,
+        label_col=None,
+        weight_col=None,
+        excluded_cols=None,
+        tree_num=None,
+        wait=True,
+        algo_types=None,
+        random_col_num=None,
+        force_categorical=False,
+        **kwargs
+    ):
+        return super(RandomForestClassifier, self).fit(
+            input_data,
+            wait=wait,
+            model_name=model_name,
+            tree_num=tree_num,
+            excluded_cols=excluded_cols,
+            feature_cols=feature_cols,
+            algo_types=algo_types,
+            random_col_num=random_col_num,
+            **kwargs
+        )

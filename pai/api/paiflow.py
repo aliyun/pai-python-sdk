@@ -8,11 +8,25 @@ import yaml
 from pai.api.base import paginate_service_call, BaseClient
 from pai.core.exception import ServiceCallException
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
-    CreatePipelineRequest, DeletePipelineRequest, GetPipelineRequest, ListPipelinesRequest,
-    UpdatePipelineRequest, DescribePipelineRequest, UpdatePipelinePrivilegeRequest,
-    TerminateRunRequest, SuspendRunRequest, RetryRunRequest, StartRunRequest, ListRunsRequest,
-    ListNodeLogsRequest, ResumeRunRequest, GetRunRequest, GetNodeDetailRequest, CreateRunRequest,
-    ListNodeOutputsRequest, GetMyProviderRequest
+    CreatePipelineRequest,
+    DeletePipelineRequest,
+    GetPipelineRequest,
+    ListPipelinesRequest,
+    UpdatePipelineRequest,
+    DescribePipelineRequest,
+    UpdatePipelinePrivilegeRequest,
+    TerminateRunRequest,
+    SuspendRunRequest,
+    RetryRunRequest,
+    StartRunRequest,
+    ListRunsRequest,
+    ListNodeLogsRequest,
+    ResumeRunRequest,
+    GetRunRequest,
+    GetNodeDetailRequest,
+    CreateRunRequest,
+    ListNodeOutputsRequest,
+    GetMyProviderRequest,
 )
 from pai.libs.aliyunsdkpaiflow.request.v20200328 import GetPipelinePrivilegeRequest
 from pai.common.utils import ensure_str, ensure_unix_time
@@ -31,7 +45,7 @@ def require_workspace(f):
 
 class PAIFlowClient(BaseClient):
 
-    _ENV_SERVICE_ENDPOINT_KEY = 'ALIPAI_PAIFLOW_ENDPOINT'
+    _ENV_SERVICE_ENDPOINT_KEY = "ALIPAI_PAIFLOW_ENDPOINT"
 
     def __init__(self, acs_client, _is_inner=False):
         """Class to wrap APIs provided by PaiFlow pipeline service.
@@ -46,7 +60,10 @@ class PAIFlowClient(BaseClient):
         resp = super(PAIFlowClient, self)._call_service_with_exception(request)
         if resp["Code"] is not None:
             message = "Service response error, request:%s code:%s, message:%s" % (
-                request, resp["Code"], resp["Message"])
+                request,
+                resp["Code"],
+                resp["Message"],
+            )
             raise ServiceCallException(message)
         return resp
 
@@ -60,9 +77,9 @@ class PAIFlowClient(BaseClient):
 
     def _get_product(self):
         if self._inner:
-            return 'PAIFlowInner'
+            return "PAIFlowInner"
         else:
-            return 'PAIFlow'
+            return "PAIFlow"
 
     @property
     def is_workspace_required(self):
@@ -70,7 +87,9 @@ class PAIFlowClient(BaseClient):
             return True
         return False
 
-    def get_pipeline(self, pipeline_id=None, identifier=None, version=None, provider=None):
+    def get_pipeline(
+        self, pipeline_id=None, identifier=None, version=None, provider=None
+    ):
         request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
         if pipeline_id is not None:
             request.set_PipelineId(pipeline_id)
@@ -79,13 +98,16 @@ class PAIFlowClient(BaseClient):
             request.set_PipelineVersion(version)
             request.set_PipelineProvider(provider)
         else:
-            raise ValueError("Please provider pipeline_id or identifier-provider-version to fetch"
-                             " the specific Pipeline")
+            raise ValueError(
+                "Please provider pipeline_id or identifier-provider-version to fetch"
+                " the specific Pipeline"
+            )
         return self._call_service_with_exception(request)
 
     @paginate_service_call
-    def list_pipeline(self, identifier=None, provider=None, fuzzy=None, workspace_id=None,
-                      version=""):
+    def list_pipeline(
+        self, identifier=None, provider=None, fuzzy=None, workspace_id=None, version=""
+    ):
         request = self._construct_request(ListPipelinesRequest.ListPipelinesRequest)
 
         if workspace_id is not None:
@@ -123,13 +145,16 @@ class PAIFlowClient(BaseClient):
         return self._call_service_with_exception(request)
 
     def describe_pipeline(self, pipeline_id):
-        request = self._construct_request(DescribePipelineRequest.DescribePipelineRequest)
+        request = self._construct_request(
+            DescribePipelineRequest.DescribePipelineRequest
+        )
         request.set_PipelineId(ensure_str(pipeline_id))
         return self._call_service_with_exception(request)
 
     def update_pipeline_privilege(self, pipeline_id, user_ids):
         request = self._construct_request(
-            UpdatePipelinePrivilegeRequest.UpdatePipelinePrivilegeRequest)
+            UpdatePipelinePrivilegeRequest.UpdatePipelinePrivilegeRequest
+        )
         request.set_PipelineId(pipeline_id)
         if not user_ids:
             raise ValueError("Argument 'users' should not be empty.")
@@ -139,17 +164,30 @@ class PAIFlowClient(BaseClient):
         return self._call_service_with_exception(request)
 
     def list_pipeline_privilege(self, pipeline_id):
-        request = self._construct_request(GetPipelinePrivilegeRequest.GetPipelinePrivilegeRequest)
+        request = self._construct_request(
+            GetPipelinePrivilegeRequest.GetPipelinePrivilegeRequest
+        )
         request.set_PipelineId(pipeline_id)
         return self._call_service_with_exception(request)
 
     @require_workspace
-    def create_run(self, name, arguments, pipeline_id=None, manifest=None,
-                   no_confirm_required=False, workspace_id=None):
+    def create_run(
+        self,
+        name,
+        arguments,
+        pipeline_id=None,
+        manifest=None,
+        no_confirm_required=False,
+        workspace_id=None,
+    ):
         if not pipeline_id and not manifest:
-            raise ValueError("Create pipeline run require either pipeline_id or manifest.")
+            raise ValueError(
+                "Create pipeline run require either pipeline_id or manifest."
+            )
         if pipeline_id and manifest:
-            raise ValueError("Both pipeline_id and manifest are provide, create_run need only one.")
+            raise ValueError(
+                "Both pipeline_id and manifest are provide, create_run need only one."
+            )
         if not name:
             raise ValueError("Pipeline run instance need a name.")
 
@@ -174,8 +212,16 @@ class PAIFlowClient(BaseClient):
         return self._call_service_with_exception(request)
 
     @paginate_service_call
-    def list_run(self, name=None, run_id=None, pipeline_id=None, status=None, sorted_by=None,
-                 sorted_sequence=None, workspace_id=None):
+    def list_run(
+        self,
+        name=None,
+        run_id=None,
+        pipeline_id=None,
+        status=None,
+        sorted_by=None,
+        sorted_sequence=None,
+        workspace_id=None,
+    ):
         request = self._construct_request(ListRunsRequest.ListRunsRequest)
         if name is not None:
             request.set_Name(name)
@@ -237,8 +283,17 @@ class PAIFlowClient(BaseClient):
         request.set_Depth(depth)
         return self._call_service_with_exception(request)
 
-    def list_node_log(self, run_id, node_id, from_time=None, to_time=None, keyword=None,
-                      reverse=False, page_offset=0, page_size=100):
+    def list_node_log(
+        self,
+        run_id,
+        node_id,
+        from_time=None,
+        to_time=None,
+        keyword=None,
+        reverse=False,
+        page_offset=0,
+        page_size=100,
+    ):
         request = self._construct_request(ListNodeLogsRequest.ListNodeLogsRequest)
         request.set_RunId(run_id)
         request.set_NodeId(node_id)
@@ -258,8 +313,18 @@ class PAIFlowClient(BaseClient):
         request.set_PageSize(page_size)
         return self._call_service_with_exception(request)
 
-    def list_run_outputs(self, run_id, node_id, depth=2, name=None, sorted_by=None,
-                         sorted_sequence=None, typ=None, page_number=1, page_size=50):
+    def list_run_outputs(
+        self,
+        run_id,
+        node_id,
+        depth=2,
+        name=None,
+        sorted_by=None,
+        sorted_sequence=None,
+        typ=None,
+        page_number=1,
+        page_size=50,
+    ):
         request = self._construct_request(ListNodeOutputsRequest.ListNodeOutputsRequest)
 
         request.set_Depth(depth)

@@ -6,10 +6,9 @@ from pai.core.transformer import AlgoBaseTransformer
 
 class _XFlowAlgoMixin(object):
     _enable_sparse = False
-    XFlowProjectDefault = 'algo_public'
+    XFlowProjectDefault = "algo_public"
 
-    def __init__(self, xflow_execution=None, core_num=None,
-                 mem_size_per_core=None):
+    def __init__(self, xflow_execution=None, core_num=None, mem_size_per_core=None):
         self.xflow_execution = xflow_execution
         self.core_num = core_num
         self.mem_size_per_core = mem_size_per_core
@@ -36,14 +35,25 @@ class _XFlowAlgoMixin(object):
 class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
     _pmml_model = False
 
-    def __init__(self, xflow_execution=None, pmml_gen=None,
-                 pmml_oss_path=None, pmml_oss_endpoint=None, pmml_oss_rolearn=None,
-                 pmml_oss_bucket=None, **kwargs):
-        AlgoBaseEstimator.__init__(self, pmml_gen=pmml_gen,
-                                   pmml_oss_path=pmml_oss_path,
-                                   pmml_oss_endpoint=pmml_oss_endpoint,
-                                   pmml_oss_rolearn=pmml_oss_rolearn,
-                                   pmml_oss_bucket=pmml_oss_bucket, **kwargs)
+    def __init__(
+        self,
+        xflow_execution=None,
+        pmml_gen=None,
+        pmml_oss_path=None,
+        pmml_oss_endpoint=None,
+        pmml_oss_rolearn=None,
+        pmml_oss_bucket=None,
+        **kwargs
+    ):
+        AlgoBaseEstimator.__init__(
+            self,
+            pmml_gen=pmml_gen,
+            pmml_oss_path=pmml_oss_path,
+            pmml_oss_endpoint=pmml_oss_endpoint,
+            pmml_oss_rolearn=pmml_oss_rolearn,
+            pmml_oss_bucket=pmml_oss_bucket,
+            **kwargs
+        )
         _XFlowAlgoMixin.__init__(self, xflow_execution=xflow_execution)
 
     def _compile_args(self, *inputs, **kwargs):
@@ -59,7 +69,6 @@ class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
 
 
 class XFlowTransformer(AlgoBaseTransformer, _XFlowAlgoMixin):
-
     def __init__(self, xflow_execution=None, **kwargs):
         AlgoBaseTransformer.__init__(self, **kwargs)
         _XFlowAlgoMixin.__init__(self, xflow_execution=xflow_execution)

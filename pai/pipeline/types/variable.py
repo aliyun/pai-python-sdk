@@ -10,8 +10,17 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
     variable_category = None
 
-    def __init__(self, name, desc=None, kind="inputs", value=None, from_=None, required=None,
-                 parent=None, validator=None):
+    def __init__(
+        self,
+        name,
+        desc=None,
+        kind="inputs",
+        value=None,
+        from_=None,
+        required=None,
+        parent=None,
+        validator=None,
+    ):
         """
 
         Args:
@@ -48,14 +57,17 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             self.value = arg
         elif arg.parent is None:
             if not self.validate_value(arg.value):
-                raise ValueError("Value(%s) is invalid value for %s" % (arg.value, self))
+                raise ValueError(
+                    "Value(%s) is invalid value for %s" % (arg.value, self)
+                )
             self.value = arg.value
             self.from_ = arg
         else:
             if not self.validate_from(arg):
                 raise ValueError(
-                    "invalid assignment. %s left: %s, right: %s" % (
-                        self.fullname, self.typ, arg.typ))
+                    "invalid assignment. %s left: %s, right: %s"
+                    % (self.fullname, self.typ, arg.typ)
+                )
             self.from_ = arg
 
     @property
@@ -67,7 +79,8 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         """Unique identifier in pipeline manifest for PipelineVariable"""
         if self.parent:
             return ".".join(
-                [self.parent.ref_name, self.kind, self.variable_category, self.name])
+                [self.parent.ref_name, self.kind, self.variable_category, self.name]
+            )
         else:
             return ".".join([self.kind, self.variable_category, self.name])
 
@@ -86,9 +99,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         )
 
     def to_argument(self):
-        arguments = {
-            "name": self.name
-        }
+        arguments = {"name": self.name}
 
         if self.from_ is not None:
             if isinstance(self.from_, PipelineVariable):

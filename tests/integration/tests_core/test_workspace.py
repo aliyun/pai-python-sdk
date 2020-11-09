@@ -6,7 +6,6 @@ from tests.integration import BaseIntegTestCase
 
 
 class TestWorkspace(BaseIntegTestCase):
-
     @classmethod
     def get_ws_member_count(cls, ws):
         return len([member for member in ws.list_member()])

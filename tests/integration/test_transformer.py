@@ -6,7 +6,6 @@ from tests.integration import BaseIntegTestCase
 
 
 class TestOfflineModelTransformer(BaseIntegTestCase):
-
     @classmethod
     def setUpClass(cls):
         super(TestOfflineModelTransformer, cls).setUpClass()
@@ -19,13 +18,15 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
         project = self.odps_client.project
         model_name = self.TestModels["wumai_model"]
         tf = OfflineModelTransformer(
-            model="odps://{0}/offlinemodels/{1}".format(project,
-                                                        model_name),
+            model="odps://{0}/offlinemodels/{1}".format(project, model_name),
             xflow_execution=self.get_default_xflow_execution(),
         )
         job = tf.transform(
-            "odps://{}/tables/{}".format(project, self.TestDataSetTables["processed_wumai_data_2"]),
-            wait=False, job_name="pysdk-test-om-algo",
+            "odps://{}/tables/{}".format(
+                project, self.TestDataSetTables["processed_wumai_data_2"]
+            ),
+            wait=False,
+            job_name="pysdk-test-om-algo",
             feature_cols=["pm10", "so2", "co", "no2"],
             label_col="_c2",
             result_col="prediction_result",
@@ -47,9 +48,14 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
         )
 
         model_name = self.TestModels["wumai_model"]
-        offlinemodel = 'odps://{0}/offlinemodels/{1}'.format(self.odps_client.project, model_name)
-        job = tf.transform(offlinemodel, path="/paiflow/test/noprefix/",
-                           job_name="pysdk-test-modeltransfer2oss",
-                           wait=False)
+        offlinemodel = "odps://{0}/offlinemodels/{1}".format(
+            self.odps_client.project, model_name
+        )
+        job = tf.transform(
+            offlinemodel,
+            path="/paiflow/test/noprefix/",
+            job_name="pysdk-test-modeltransfer2oss",
+            wait=False,
+        )
         job.wait_for_completion(show_outputs=False)
         self.assertEqual(JobStatus.Succeeded, job.get_status())

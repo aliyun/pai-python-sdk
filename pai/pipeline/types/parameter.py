@@ -14,7 +14,7 @@ _PRIMITIVE_TYPE_MAP = {
     "Int": six.integer_types,
     "Double": _int_float_types,
     "Bool": bool,
-    "Str": six.string_types
+    "Str": six.string_types,
 }
 
 _NEGATIVE_INFINITY = Decimal("-infinity")
@@ -24,8 +24,17 @@ _POSITIVE_INFINITY = Decimal("infinity")
 class PipelineParameter(PipelineVariable):
     variable_category = "parameters"
 
-    def __init__(self, name, typ=str, default=None, desc=None, kind="inputs", from_=None,
-                 parent=None, feasible=None):
+    def __init__(
+        self,
+        name,
+        typ=str,
+        default=None,
+        desc=None,
+        kind="inputs",
+        from_=None,
+        parent=None,
+        feasible=None,
+    ):
         typ = ParameterType.normalize_typ(typ)
         validator = None
         if feasible:
@@ -37,8 +46,15 @@ class PipelineParameter(PipelineVariable):
             required = True
 
         super(PipelineParameter, self).__init__(
-            name=name, value=default, desc=desc, kind=kind, from_=from_, required=required,
-            parent=parent, validator=validator)
+            name=name,
+            value=default,
+            desc=desc,
+            kind=kind,
+            from_=from_,
+            required=required,
+            parent=parent,
+            validator=validator,
+        )
         self.typ = typ
 
     @property
@@ -57,8 +73,10 @@ class PipelineParameter(PipelineVariable):
 
     def validate_from(self, arg):
         if not isinstance(arg, PipelineParameter):
-            raise ValueError("arg is expected to be type of 'PipelineParameter' "
-                             "but was actually of type '%s'" % type(arg))
+            raise ValueError(
+                "arg is expected to be type of 'PipelineParameter' "
+                "but was actually of type '%s'" % type(arg)
+            )
 
         if arg.typ is not None and self.typ is not None and arg.typ != self.typ:
             return False
@@ -77,11 +95,20 @@ class PipelineParameter(PipelineVariable):
         value = param_spec.pop("value", None)
         desc = param_spec.pop("desc", None)
 
-        param = PipelineParameter(name=name, typ=typ, default=value, desc=desc, kind=kind,
-                                  from_=from_, feasible=feasible)
+        param = PipelineParameter(
+            name=name,
+            typ=typ,
+            default=value,
+            desc=desc,
+            kind=kind,
+            from_=from_,
+            feasible=feasible,
+        )
         if not param.validate_value(val):
             raise ValueError(
-                "Not Validate value for Parameter %s, value(%s:%s)" % (name, type(val), val))
+                "Not Validate value for Parameter %s, value(%s:%s)"
+                % (name, type(val), val)
+            )
         param.value = val
         return param.to_argument()
 
@@ -125,7 +152,9 @@ class Interval(object):
     _NUMBER_REGEXP = r"(-?(?:(?:[\d]+(\.[\d]*)?)|INF))"
     INTERVAL_PATTERN = re.compile(
         r"^([(\[])\s*{number_pattern}\s*,\s*{number_pattern}([)\]])$".format(
-            number_pattern=_NUMBER_REGEXP))
+            number_pattern=_NUMBER_REGEXP
+        )
+    )
 
     def __init__(self, min_, max_, min_inclusive, max_inclusive):
         self.min_ = min_
@@ -173,7 +202,9 @@ class Interval(object):
 
         interval = Interval(min_, max_, left == "[", right == "]")
         if not interval._validate_bound():
-            raise ValueError("invalid range: lower bound greater than upper bound is not allowed")
+            raise ValueError(
+                "invalid range: lower bound greater than upper bound is not allowed"
+            )
         return interval
 
     def _validate_bound(self):
@@ -209,7 +240,7 @@ _ParameterTypeMapping = {
     "map": "Map",
     "dict": "Map",
     "array": "Array",
-    "list": "Array"
+    "list": "Array",
 }
 
 
@@ -230,5 +261,7 @@ class ParameterType(Enum):
         elif isinstance(typ_instance, cls):
             return typ_instance
         else:
-            raise ValueError("Not Supported PipelineParameter Type: {typ}".format(typ=typ_instance))
+            raise ValueError(
+                "Not Supported PipelineParameter Type: {typ}".format(typ=typ_instance)
+            )
         return ParameterType(_ParameterTypeMapping[type_name])

@@ -15,11 +15,12 @@ from pai.core import setup_default_session
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
 OSSInfo = namedtuple(
-    "OSSInfo", [
+    "OSSInfo",
+    [
         "bucket",
         "endpoint",
         "rolearn",
-    ]
+    ],
 )
 
 
@@ -30,7 +31,7 @@ class BaseIntegTestCase(unittest.TestCase):
     """
 
     odps_client = None
-    default_xflow_project = 'algo_public'
+    default_xflow_project = "algo_public"
 
     TestDataSetTables = {
         "heart_disease_prediction": "heart_disease_prediction",
@@ -40,9 +41,7 @@ class BaseIntegTestCase(unittest.TestCase):
         "processed_wumai_data_2": "sdk_test_wumai_dataset_2",
     }
 
-    TestModels = {
-        "wumai_model": "wumai_model"
-    }
+    TestModels = {"wumai_model": "wumai_model"}
 
     @classmethod
     def setUpClass(cls):
@@ -99,7 +98,9 @@ class BaseIntegTestCase(unittest.TestCase):
             access_key_id=configs["client"]["access_key_id"],
             access_key_secret=configs["client"]["access_key_secret"],
         )
-        oss_bucket = oss2.Bucket(oss_auth, endpoint=oss_info.endpoint, bucket_name=oss_info.bucket)
+        oss_bucket = oss2.Bucket(
+            oss_auth, endpoint=oss_info.endpoint, bucket_name=oss_info.bucket
+        )
         return oss_info, oss_bucket
 
     @classmethod
@@ -133,12 +134,14 @@ class BaseIntegTestCase(unittest.TestCase):
                 "bucket": cfg_parser.get("oss", "bucket"),
                 "endpoint": cfg_parser.get("oss", "endpoint"),
                 "rolearn": cfg_parser.get("oss", "rolearn"),
-            }
+            },
         }
 
     @staticmethod
     def _log_config():
-        logging.basicConfig(level=logging.INFO,
-                            format='[%(asctime)s] %(pathname)s:%(lineno)d %(levelname)s '
-                                   '- %(message)s',
-                            datefmt='%Y/%m/%d %H:%M:%S')
+        logging.basicConfig(
+            level=logging.INFO,
+            format="[%(asctime)s] %(pathname)s:%(lineno)d %(levelname)s "
+            "- %(message)s",
+            datefmt="%Y/%m/%d %H:%M:%S",
+        )

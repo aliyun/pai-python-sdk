@@ -10,7 +10,9 @@ from odps import DataFrame as ODPSDataFrame
 from odps.models import Table
 from odps.models.partition import Partition
 
-odps_table_re = r'odps://(?P<project>[^/]+)/tables/(?P<table_name>[^/]+)(?P<partition>.*)'
+odps_table_re = (
+    r"odps://(?P<project>[^/]+)/tables/(?P<table_name>[^/]+)(?P<partition>.*)"
+)
 
 
 def md5_digest(raw_data):
@@ -33,7 +35,9 @@ def ensure_unix_time(t):
         return t
     else:
         raise ValueError(
-            "not support format, unable to convert to unix timestamp(%s:%s)" % (type(t), t))
+            "not support format, unable to convert to unix timestamp(%s:%s)"
+            % (type(t), t)
+        )
 
 
 def extract_odps_table_info(data):
@@ -55,9 +59,11 @@ def _extract_odps_table_info_from_url(resource):
     if not matches:
         raise ValueError("Not support ODPSTable resource schema.")
 
-    project, table, partition = matches.group("project"), matches.group(
-        "table_name"), matches.group("partition").strip(
-        "/")
+    project, table, partition = (
+        matches.group("project"),
+        matches.group("table_name"),
+        matches.group("partition").strip("/"),
+    )
     return project, table, partition
 
 
@@ -66,7 +72,7 @@ def ensure_unicode(t):
 
 
 def gen_temp_table(prefix="pai_temp_"):
-    return '{prefix}{identifier}'.format(
+    return "{prefix}{identifier}".format(
         prefix=prefix,
         identifier=uuid.uuid4().hex,
     )

@@ -25,7 +25,10 @@ def _load_pipeline_from_yaml(manifest):
         manifest = yaml.load(manifest, yaml.FullLoader)
 
     metadata = manifest["metadata"]
-    inputs, outputs, = load_input_output_spec(None, manifest["spec"])
+    (
+        inputs,
+        outputs,
+    ) = load_input_output_spec(None, manifest["spec"])
     args_indexer = {ipt.enclosed_fullname: ipt for ipt in inputs}
     args_indexer.update({opt.enclosed_fullname: opt for opt in outputs})
 
@@ -33,11 +36,15 @@ def _load_pipeline_from_yaml(manifest):
         if not variable.from_:
             return
         if not isinstance(variable.from_, six.string_types):
-            raise ValueError("Expected string type 'from' property, given type:%s",
-                             type(variable.from_))
+            raise ValueError(
+                "Expected string type 'from' property, given type:%s",
+                type(variable.from_),
+            )
         if variable.from_ not in args_indexer:
-            raise ValueError("'from' value(%s) of variable(%s) not found in manifest.",
-                             (variable.from_, variable.name))
+            raise ValueError(
+                "'from' value(%s) of variable(%s) not found in manifest.",
+                (variable.from_, variable.name),
+            )
         from_variable = args_indexer[variable.from_]
         variable._from = from_variable
 
@@ -60,7 +67,9 @@ def _load_pipeline_from_yaml(manifest):
             steps.append(step)
             args_indexer.update({ipt.enclosed_fullname: ipt for ipt in step.inputs})
             args_indexer.update({opt.enclosed_fullname: opt for opt in step.outputs})
-            step_depends_by_name[step_info["metadata"]["name"]] = step_info.get("dependencies", [])
+            step_depends_by_name[step_info["metadata"]["name"]] = step_info.get(
+                "dependencies", []
+            )
 
         step_naming_map = {step.name: step for step in steps}
         if len(step_naming_map) != len(steps):
@@ -68,8 +77,9 @@ def _load_pipeline_from_yaml(manifest):
 
         for idx, step_info in enumerate(pipeline_step_infos):
             step = steps[idx]
-            step_args = step_info["spec"]["arguments"].get("parameters", []) + step_info["spec"][
-                "arguments"].get("artifacts", [])
+            step_args = step_info["spec"]["arguments"].get(
+                "parameters", []
+            ) + step_info["spec"]["arguments"].get("artifacts", [])
             step_inputs = {}
             for arg_dict in step_args:
                 if arg_dict.get("from", None):
@@ -77,11 +87,15 @@ def _load_pipeline_from_yaml(manifest):
                 elif "value" in arg_dict:
                     step_inputs[arg_dict["name"]] = arg_dict["value"]
                 else:
-                    raise ValueError("No 'from' or 'value' was given in pipeline step arguments.")
+                    raise ValueError(
+                        "No 'from' or 'value' was given in pipeline step arguments."
+                    )
             step.assign_inputs(step_inputs)
 
-            depend_steps = [step_naming_map[depend_name] for depend_name in
-                            step_depends_by_name[step.name]]
+            depend_steps = [
+                step_naming_map[depend_name]
+                for depend_name in step_depends_by_name[step.name]
+            ]
 
             for depend_step in depend_steps:
                 if depend_step not in step.depends:
@@ -90,12 +104,14 @@ def _load_pipeline_from_yaml(manifest):
         for output in outputs:
             set_variable_from(output)
 
-        p = Pipeline(identifier=metadata["identifier"],
-                     provider=metadata["provider"],
-                     version=metadata["version"],
-                     steps=steps,
-                     inputs=inputs,
-                     outputs=outputs)
+        p = Pipeline(
+            identifier=metadata["identifier"],
+            provider=metadata["provider"],
+            version=metadata["version"],
+            steps=steps,
+            inputs=inputs,
+            outputs=outputs,
+        )
     elif "execution" in manifest["spec"]:
         image_uri = manifest["spec"]["execution"]["image"]
         command = manifest["spec"]["execution"]["command"]
@@ -151,11 +167,19 @@ class PipelineTemplate(object):
         self._manifest = manifest
         self._pipeline_id = pipeline_id
         self._workspace_id = workspace_id
-        self._inputs, self._outputs, = load_input_output_spec(self, manifest["spec"])
+        (
+            self._inputs,
+            self._outputs,
+        ) = load_input_output_spec(self, manifest["spec"])
 
     def __repr__(self):
         return "%s: {PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}" % (
-            type(self).__name__, self._pipeline_id, self.identifier, self.provider, self.version)
+            type(self).__name__,
+            self._pipeline_id,
+            self.identifier,
+            self.provider,
+            self.version,
+        )
 
     @property
     def inputs(self):
@@ -263,13 +287,19 @@ class PipelineTemplate(object):
 
         """
         session = get_default_session()
-        pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
-                                             version=version)
-        return cls(manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"],
-                   workspace_id=pipeline_info.get("WorkspaceId", None))
+        pipeline_info = session.get_pipeline(
+            identifier=identifier, provider=provider, version=version
+        )
+        return cls(
+            manifest=pipeline_info["Manifest"],
+            pipeline_id=pipeline_info["PipelineId"],
+            workspace_id=pipeline_info.get("WorkspaceId", None),
+        )
 
     @classmethod
-    def list(cls, identifier=None, provider=None, version=None, fuzzy=True, workspace=None):
+    def list(
+        cls, identifier=None, provider=None, version=None, fuzzy=True, workspace=None
+    ):
         """List the PipelineTemplate in PAI
 
         Search the pipeline templates available in remote PAI service. The method return a
@@ -291,20 +321,28 @@ class PipelineTemplate(object):
             provider=provider,
             fuzzy=fuzzy,
             version=version,
-            workspace_id=workspace.id if workspace else None)
+            workspace_id=workspace.id if workspace else None,
+        )
 
         for info in pl_gen:
-            yield cls(pipeline_id=info["PipelineId"], workspace_id=info.get("WorkspaceId", None))
+            yield cls(
+                pipeline_id=info["PipelineId"],
+                workspace_id=info.get("WorkspaceId", None),
+            )
 
     @classmethod
-    def load_by_identifier(cls, identifier, provider=None, version="v1", with_impl=False):
+    def load_by_identifier(
+        cls, identifier, provider=None, version="v1", with_impl=False
+    ):
         session = get_default_session()
-        pipeline_info = session.get_pipeline(identifier=identifier, provider=provider,
-                                             version=version)
+        pipeline_info = session.get_pipeline(
+            identifier=identifier, provider=provider, version=version
+        )
         if with_impl:
             pipeline_id = pipeline_info["PipelineId"]
-            manifest = yaml.load(session.describe_pipeline(pipeline_id)["Manifest"],
-                                 yaml.FullLoader)
+            manifest = yaml.load(
+                session.describe_pipeline(pipeline_id)["Manifest"], yaml.FullLoader
+            )
         else:
             manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
         component = _load_pipeline_from_yaml(manifest)
@@ -316,11 +354,14 @@ class PipelineTemplate(object):
         client = cls._get_pipeline_client()
 
         if with_impl:
-            manifest = yaml.load(client.describe_pipeline(pipeline_id)["Data"]["Manifest"],
-                                 yaml.FullLoader)
+            manifest = yaml.load(
+                client.describe_pipeline(pipeline_id)["Data"]["Manifest"],
+                yaml.FullLoader,
+            )
         else:
-            manifest = yaml.load(client.get_pipeline(pipeline_id)["Data"]["Manifest"],
-                                 yaml.FullLoader)
+            manifest = yaml.load(
+                client.get_pipeline(pipeline_id)["Data"]["Manifest"], yaml.FullLoader
+            )
         component = _load_pipeline_from_yaml(manifest)
         component._pipeline_id = pipeline_id
         return component
@@ -350,12 +391,16 @@ class PipelineTemplate(object):
 
         """
         if not self.pipeline_id:
-            raise ValueError("Require saved pipeline/component to use as pipeline step.")
-        return PipelineStep(identifier=self.identifier,
-                            provider=self.provider,
-                            version=self.version,
-                            inputs=inputs,
-                            name=name)
+            raise ValueError(
+                "Require saved pipeline/component to use as pipeline step."
+            )
+        return PipelineStep(
+            identifier=self.identifier,
+            provider=self.provider,
+            version=self.version,
+            inputs=inputs,
+            name=name,
+        )
 
     @classmethod
     def get(cls, pipeline_id):
@@ -371,16 +416,24 @@ class PipelineTemplate(object):
         """
         client = cls._get_pipeline_client()
         pipeline_info = client.get_pipeline(pipeline_id=pipeline_id)["Data"]
-        return cls(manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"])
+        return cls(
+            manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"]
+        )
 
     def translate_arguments(self, args):
         parameters, artifacts = [], []
         if not args:
             return parameters, artifacts
-        parameters_spec = {ipt.name: ipt.to_dict() for ipt in self.inputs if
-                           ipt.variable_category == "parameters"}
-        artifacts_spec = {ipt.name: ipt.to_dict() for ipt in self.inputs if
-                          ipt.variable_category == "artifacts"}
+        parameters_spec = {
+            ipt.name: ipt.to_dict()
+            for ipt in self.inputs
+            if ipt.variable_category == "parameters"
+        }
+        artifacts_spec = {
+            ipt.name: ipt.to_dict()
+            for ipt in self.inputs
+            if ipt.variable_category == "artifacts"
+        }
 
         for name, arg in args.items():
             if arg is None:
@@ -396,15 +449,27 @@ class PipelineTemplate(object):
             else:
                 logger.warning(
                     "Provider useless argument:%s, it is not require by the pipeline manifest spec."
-                    % name)
+                    % name
+                )
 
         requires = set(
-            [param_name for param_name, spec in parameters_spec.items() if spec.get("required")]
-            + [af_name for af_name, spec in artifacts_spec.items() if spec.get("required")])
+            [
+                param_name
+                for param_name, spec in parameters_spec.items()
+                if spec.get("required")
+            ]
+            + [
+                af_name
+                for af_name, spec in artifacts_spec.items()
+                if spec.get("required")
+            ]
+        )
         not_supply = requires - set(args.keys())
 
         if len(not_supply) > 0:
-            raise ValueError("Required arguments is not supplied:%s" % ",".join(not_supply))
+            raise ValueError(
+                "Required arguments is not supplied:%s" % ",".join(not_supply)
+            )
         return parameters, artifacts
 
     def save(self, identifier=None, version=None):
@@ -448,7 +513,9 @@ class PipelineTemplate(object):
         if "uuid" in self._manifest["metadata"]:
             del self._manifest["metadata"]["uuid"]
 
-        self._pipeline_id = session.create_pipeline(self._manifest, workspace=session.workspace)
+        self._pipeline_id = session.create_pipeline(
+            self._manifest, workspace=session.workspace
+        )
         return self
 
     def run(self, job_name, arguments=None, wait=True, show_outputs=True):
@@ -479,15 +546,22 @@ class PipelineTemplate(object):
         else:
             manifest = copy.deepcopy(self._manifest)
             if not self.identifier:
-                manifest["metadata"]["identifier"] = 'tmp-%s' % uuid.uuid4().hex
+                manifest["metadata"]["identifier"] = "tmp-%s" % uuid.uuid4().hex
                 manifest["metadata"]["version"] = "v0"
-        run_id = session.create_run(job_name, pipeline_args,
-                                    no_confirm_required=True,
-                                    pipeline_id=pipeline_id, manifest=manifest,
-                                    workspace=session.workspace)
+        run_id = session.create_run(
+            job_name,
+            pipeline_args,
+            no_confirm_required=True,
+            pipeline_id=pipeline_id,
+            manifest=manifest,
+            workspace=session.workspace,
+        )
 
-        run_instance = PipelineRun(run_id=run_id, name=job_name,
-                                   workspace_id=session.workspace.id if session.workspace else None)
+        run_instance = PipelineRun(
+            run_id=run_id,
+            name=job_name,
+            workspace_id=session.workspace.id if session.workspace else None,
+        )
         if not wait:
             return run_instance
         run_instance.wait_for_completion(show_outputs=show_outputs)

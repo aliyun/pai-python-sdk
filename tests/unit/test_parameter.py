@@ -3,13 +3,16 @@ from __future__ import absolute_import
 import unittest
 from decimal import Decimal
 
-from pai.pipeline.types.parameter import Interval, ParameterValidator, \
-    ParameterType, PipelineParameter
+from pai.pipeline.types.parameter import (
+    Interval,
+    ParameterValidator,
+    ParameterType,
+    PipelineParameter,
+)
 from tests.unit import BaseUnitTestCase
 
 
 class TestParameter(BaseUnitTestCase):
-
     def testParameter(self):
         cases = [
             {
@@ -19,17 +22,13 @@ class TestParameter(BaseUnitTestCase):
                     "kind": "inputs",
                     "typ": int,
                     "default": 100,
-                    "feasible": {
-                        "range": "[1, 1000]"
-                    },
+                    "feasible": {"range": "[1, 1000]"},
                 },
                 "expected": {
                     "name": "treeNum",
                     "type": "Int",
                     "value": 100,
-                    "feasible": {
-                        "range": "[1, 1000]"
-                    }
+                    "feasible": {"range": "[1, 1000]"},
                 },
             },
             {
@@ -81,7 +80,15 @@ class TestParameter(BaseUnitTestCase):
                     "feasible": {
                         "range": "(-INF, 1000]",
                     },
-                    "candidates": [Decimal("-INF"), -200, -100, 200, 1000, 3000, Decimal("INF")],
+                    "candidates": [
+                        Decimal("-INF"),
+                        -200,
+                        -100,
+                        200,
+                        1000,
+                        3000,
+                        Decimal("INF"),
+                    ],
                 },
                 "expected": [False, True, True, True, True, False, False],
             },
@@ -94,36 +101,47 @@ class TestParameter(BaseUnitTestCase):
                     "candidates": [-200, -100, 200, 1000, 3000],
                 },
                 "expected": [True, True, True, True, False],
-            }
+            },
         ]
 
         for case in cases:
             validator = ParameterValidator.load(case["input"]["feasible"])
-            results = [validator.validate(candidate) for candidate in case["input"]["candidates"]]
-            self.assertListEqual(results, case["expected"],
-                                 "Unexpected validate result, case:%s, expected:%s, result:%s" % (
-                                     case["name"], case["expected"], results))
+            results = [
+                validator.validate(candidate)
+                for candidate in case["input"]["candidates"]
+            ]
+            self.assertListEqual(
+                results,
+                case["expected"],
+                "Unexpected validate result, case:%s, expected:%s, result:%s"
+                % (case["name"], case["expected"], results),
+            )
 
     @staticmethod
     def interval_helper(interval):
-        return [interval.min_, interval.min_inclusive, interval.max_, interval.max_inclusive]
+        return [
+            interval.min_,
+            interval.min_inclusive,
+            interval.max_,
+            interval.max_inclusive,
+        ]
 
     def testIntervalLoad(self):
         success_cases = [
             {
                 "name": "integer_interval_1",
                 "input": "(-100, 2929]",
-                "expected": [-100, False, 2929, True]
+                "expected": [-100, False, 2929, True],
             },
             {
                 "name": "integer_interval_1",
                 "input": "(100, 2929]",
-                "expected": [100, False, 2929, True]
+                "expected": [100, False, 2929, True],
             },
             {
                 "name": "integer_interval_1",
                 "input": "(0, 100]",
-                "expected": [0, False, 100, True]
+                "expected": [0, False, 100, True],
             },
             {
                 "name": "float_interval",
@@ -138,8 +156,8 @@ class TestParameter(BaseUnitTestCase):
             {
                 "name": "infinity_float_case1",
                 "input": "[-INF, 11.23]",
-                "expected": [Decimal("-inf"), True, Decimal("11.23"), True]
-            }
+                "expected": [Decimal("-inf"), True, Decimal("11.23"), True],
+            },
         ]
 
         for case in success_cases:
@@ -147,8 +165,8 @@ class TestParameter(BaseUnitTestCase):
             self.assertListEqual(
                 case["expected"],
                 result,
-                "Unexpected interval result. case:%s, expected:%s, result:%s" % (
-                    case["name"], case["expected"], result)
+                "Unexpected interval result. case:%s, expected:%s, result:%s"
+                % (case["name"], case["expected"], result),
             )
 
         error_cases = [
@@ -179,7 +197,6 @@ class TestParameter(BaseUnitTestCase):
             {
                 "name": "invalid_pattern_3",
                 "input": "[-INF11, 11.23INF]",
-
             },
         ]
 
@@ -271,5 +288,5 @@ class TestParameter(BaseUnitTestCase):
             self.assertEqual(result, case["expected"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

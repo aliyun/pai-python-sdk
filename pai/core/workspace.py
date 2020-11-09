@@ -2,9 +2,7 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 
-SubUserInfo = namedtuple(
-    "SubUserInfo", ["user_id", "name"]
-)
+SubUserInfo = namedtuple("SubUserInfo", ["user_id", "name"])
 
 
 class WorkspaceRole(object):
@@ -52,11 +50,12 @@ class Workspace(object):
         return self._desc
 
     def __repr__(self):
-        return 'Workspace:%s:%s' % (self._name, self._id)
+        return "Workspace:%s:%s" % (self._name, self._id)
 
     @classmethod
     def _get_workspace_client(cls):
         from pai.core.session import get_default_session
+
         session = get_default_session()
         return session.ws_client
 
@@ -67,14 +66,17 @@ class Workspace(object):
 
     @classmethod
     def _load_from_dict(cls, d):
-        return cls(id=d["WorkspaceId"],
-                   name=d["WorkspaceName"],
-                   desc=d["Description"],
-                   creator_id=d["Creator"])
+        return cls(
+            id=d["WorkspaceId"],
+            name=d["WorkspaceName"],
+            desc=d["Description"],
+            creator_id=d["Creator"],
+        )
 
     def list_excluded_user_info(self):
         for sub_user_info in self._get_workspace_client().list_sub_users(
-                exclude_workspace_id=self.id):
+            exclude_workspace_id=self.id
+        ):
             yield SubUserInfo(
                 user_id=sub_user_info["SubUserId"],
                 name=sub_user_info["SubUserName"],
@@ -97,8 +99,9 @@ class Workspace(object):
 
     @classmethod
     def list(cls, name=None, sorted_by=None, sorted_sequence=None):
-        for ws in cls._get_workspace_client().list(name=name, sorted_by=sorted_by,
-                                                   sorted_sequence=sorted_sequence):
+        for ws in cls._get_workspace_client().list(
+            name=name, sorted_by=sorted_by, sorted_sequence=sorted_sequence
+        ):
             yield cls._load_from_dict(ws)
 
     @classmethod
@@ -108,8 +111,9 @@ class Workspace(object):
         return cls.get(ws_id)
 
     def list_member(self, name=None, role=None):
-        infos = self._get_workspace_client().list_member(workspace_id=self.id, name=name,
-                                                         role=role)
+        infos = self._get_workspace_client().list_member(
+            workspace_id=self.id, name=name, role=role
+        )
         for info in infos:
             yield WorkspaceMember.load_from_dict(info)
 
@@ -118,10 +122,13 @@ class Workspace(object):
             roles = [role]
         else:
             roles = role
-        resp = self._get_workspace_client().add_member(self.id, {
-            "UserId": user_id,
-            "Roles": roles,
-        })
+        resp = self._get_workspace_client().add_member(
+            self.id,
+            {
+                "UserId": user_id,
+                "Roles": roles,
+            },
+        )
         member_info = resp["Data"][0]
         return WorkspaceMember.load_from_dict(member_info)
 
@@ -130,8 +137,9 @@ class Workspace(object):
 
 
 class WorkspaceMember(object):
-
-    def __init__(self, id, user_id, roles, name=None, workspace_id=None, display_name=None):
+    def __init__(
+        self, id, user_id, roles, name=None, workspace_id=None, display_name=None
+    ):
         self.user_id = user_id
         self.roles = roles
         self.name = name

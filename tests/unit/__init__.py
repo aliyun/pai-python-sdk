@@ -16,11 +16,12 @@ from pai.core.workspace import Workspace
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
 OSSInfo = namedtuple(
-    "OSSInfo", [
+    "OSSInfo",
+    [
         "bucket",
         "endpoint",
         "rolearn",
-    ]
+    ],
 )
 
 
@@ -40,7 +41,9 @@ class BaseUnitTestCase(unittest.TestCase):
 
     @staticmethod
     def _log_config():
-        logging.basicConfig(level=logging.INFO,
-                            format='[%(asctime)s] %(pathname)s:%(lineno)d %(levelname)s '
-                                   '- %(message)s',
-                            datefmt='%Y/%m/%d %H:%M:%S')
+        logging.basicConfig(
+            level=logging.INFO,
+            format="[%(asctime)s] %(pathname)s:%(lineno)d %(levelname)s "
+            "- %(message)s",
+            datefmt="%Y/%m/%d %H:%M:%S",
+        )

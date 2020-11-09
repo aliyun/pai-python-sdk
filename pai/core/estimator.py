@@ -35,7 +35,9 @@ class Estimator(six.with_metaclass(ABCMeta, object)):
     def _run(self, job_name, arguments, **kwargs):
         raise NotImplementedError
 
-    def fit(self, wait=True, job_name=None, show_outputs=True, arguments=None, **kwargs):
+    def fit(
+        self, wait=True, job_name=None, show_outputs=True, arguments=None, **kwargs
+    ):
         """Run Estimator with given arguments.
 
         Args:
@@ -69,8 +71,14 @@ class PipelineEstimator(Estimator):
 
     """
 
-    def __init__(self, session=None, parameters=None, manifest=None, _compiled_args=False,
-                 pipeline_id=None):
+    def __init__(
+        self,
+        session=None,
+        parameters=None,
+        manifest=None,
+        _compiled_args=False,
+        pipeline_id=None,
+    ):
         """
 
         Args:
@@ -88,18 +96,26 @@ class PipelineEstimator(Estimator):
 
     @classmethod
     def from_manifest(cls, manifest, session, parameters=None):
-        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest)
+        pe = PipelineEstimator(
+            session=session, parameters=parameters, manifest=manifest
+        )
         return pe
 
     @classmethod
     def from_pipeline_id(cls, pipeline_id, session, parameters=None):
         pipeline_info = session.get_pipeline_by_id(pipeline_id)
         manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
-        pe = PipelineEstimator(session=session, parameters=parameters, manifest=manifest,
-                               pipeline_id=pipeline_id)
+        pe = PipelineEstimator(
+            session=session,
+            parameters=parameters,
+            manifest=manifest,
+            pipeline_id=pipeline_id,
+        )
         return pe
 
-    def fit(self, wait=True, job_name=None, show_outputs=True, arguments=None, **kwargs):
+    def fit(
+        self, wait=True, job_name=None, show_outputs=True, arguments=None, **kwargs
+    ):
         """Submit run job to PAIFlow backend.
 
         Args:
@@ -118,9 +134,13 @@ class PipelineEstimator(Estimator):
             run_args.update(arguments)
         else:
             run_args = arguments
-        return super(PipelineEstimator, self).fit(wait=wait, job_name=job_name,
-                                                  show_outputs=show_outputs,
-                                                  arguments=run_args, **kwargs)
+        return super(PipelineEstimator, self).fit(
+            wait=wait,
+            job_name=job_name,
+            show_outputs=show_outputs,
+            arguments=run_args,
+            **kwargs
+        )
 
     def _run(self, job_name, arguments, **kwargs):
         run = self._template.run(job_name=job_name, arguments=arguments, wait=False)
@@ -155,16 +175,25 @@ class AlgoBaseEstimator(PipelineEstimator):
     def __init__(self, **kwargs):
         session = get_default_session()
         manifest, pipeline_id = self.get_base_info(session)
-        super(AlgoBaseEstimator, self).__init__(session=session, parameters=kwargs,
-                                                _compiled_args=True, manifest=manifest,
-                                                pipeline_id=pipeline_id)
+        super(AlgoBaseEstimator, self).__init__(
+            session=session,
+            parameters=kwargs,
+            _compiled_args=True,
+            manifest=manifest,
+            pipeline_id=pipeline_id,
+        )
 
     def get_base_info(self, session):
-        pipeline_info = session.get_pipeline(identifier=self._identifier_default,
-                                             provider=self._provider_default,
-                                             version=self._version_default)
+        pipeline_info = session.get_pipeline(
+            identifier=self._identifier_default,
+            provider=self._provider_default,
+            version=self._version_default,
+        )
 
-        return yaml.load(pipeline_info["Manifest"], yaml.FullLoader), pipeline_info["PipelineId"]
+        return (
+            yaml.load(pipeline_info["Manifest"], yaml.FullLoader),
+            pipeline_info["PipelineId"],
+        )
 
     def fit(self, *inputs, **kwargs):
         wait = kwargs.pop("wait", True)
@@ -174,7 +203,9 @@ class AlgoBaseEstimator(PipelineEstimator):
         fit_args.update(kwargs)
 
         fit_args = {k: v for k, v in self._compile_args(*inputs, **fit_args).items()}
-        return super(AlgoBaseEstimator, self).fit(wait=wait, job_name=job_name, arguments=fit_args)
+        return super(AlgoBaseEstimator, self).fit(
+            wait=wait, job_name=job_name, arguments=fit_args
+        )
 
 
 class EstimatorJob(RunJob):
@@ -197,15 +228,19 @@ class EstimatorJob(RunJob):
         outputs = self.get_outputs()
         if not outputs:
             raise ValueError("No model artifact is available to create model")
-        artifact_infos = [output for output in outputs if output.is_model and output.value]
+        artifact_infos = [
+            output for output in outputs if output.is_model and output.value
+        ]
 
         if len(artifact_infos) == 0:
             raise ValueError("No model data is available to create model")
 
         if output_name is None:
             if len(artifact_infos) > 1:
-                raise ValueError("More than one model in Estimator outputs, please specific"
-                                 " the output used to create model")
+                raise ValueError(
+                    "More than one model in Estimator outputs, please specific"
+                    " the output used to create model"
+                )
             artifact_info = artifact_infos[0]
         else:
             infos = [m for m in artifact_infos if m.name == output_name]
@@ -214,15 +249,20 @@ class EstimatorJob(RunJob):
             elif len(infos) > 1:
                 raise ValueError(
                     "Unexpected EstimatorJob outputs, more than one output has name:%s ",
-                    output_name)
+                    output_name,
+                )
             artifact_info = infos[0]
 
         model_data = artifact_info.value
         metadata = artifact_info.metadata
 
         if metadata.model_type == ArtifactModelType.OfflineModel:
-            return XFlowOfflineModel(session=self.session, name=model_data.offline_model,
-                                     model_data=model_data)
+            return XFlowOfflineModel(
+                session=self.session,
+                name=model_data.offline_model,
+                model_data=model_data,
+            )
         else:
-            return PmmlModel(session=self.session, name=artifact_info.name,
-                             model_data=model_data)
+            return PmmlModel(
+                session=self.session, name=artifact_info.name, model_data=model_data
+            )
