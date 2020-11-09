@@ -1,0 +1,17 @@
+# 阿里云鉴权凭证信息
+[client]
+access_key_id=
+access_key_secret=
+region_id=
+
+# 算法使用的MaxCompute项目
+[odps]
+endpoint=
+logview_host=
+project=
+
+# 默认使用的OSS Bucket
+[oss]
+bucket =
+endpoint =
+rolearn =
