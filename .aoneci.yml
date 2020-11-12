@@ -115,30 +115,6 @@ stage:
       - ""
       - 'export TOX_PARALLEL_NO_SPINNER=1'
       - 'tox -p all -e py2,py3 -- -n 4 tests/unit'
-  lint:
-    env:
-      setting: {}
-      load: init-env
-    type: unit_test
-    exec:
-      - '#!/usr/bin/env bash'
-      - ""
-      - 'set -ae'
-      - 'set -o pipefail'
-      - ""
-      - ""
-      - 'export SOURCE_DIR=${source_root}'
-      - 'export BRANCH=${branch}'
-      - 'export REPO=${repo}'
-      - ""
-      - 'export SOURCE_DIR=${source_root}'
-      - 'echo "current ''SOURCE_DIR'' is ${SOURCE_DIR}"'
-      - ""
-      - ""
-      - 'cd ${SOURCE_DIR}'
-      - ""
-      - 'export TOX_PARALLEL_NO_SPINNER=1'
-      - 'tox -p all -e flake8'
   init-env:
     env:
       setting: {}
@@ -243,10 +219,36 @@ stage:
       - ""
       - ""
       - '$OSS_CMD cp ./htmlcov $oss_report_path --recursive'
-      - 'aone_print_text_info 1 "succeed" "CI Report" "${oss_report_url}"'
+      - 'aone_print_text_info 1 "succeed" "Coverage Report" "${oss_report_url}"'
       - ""
+  check:
+    env:
+      setting: {}
+      load: init-env
+    type: unit_test
+    exec:
+      - '#!/usr/bin/env bash'
+      - ""
+      - 'set -ae'
+      - 'set -o pipefail'
+      - ""
+      - ""
+      - 'export SOURCE_DIR=${source_root}'
+      - 'export BRANCH=${branch}'
+      - 'export REPO=${repo}'
+      - ""
+      - 'export SOURCE_DIR=${source_root}'
+      - 'echo "current ''SOURCE_DIR'' is ${SOURCE_DIR}"'
+      - ""
+      - ""
+      - 'cd ${SOURCE_DIR}'
+      - ""
+      - 'export TOX_PARALLEL_NO_SPINNER=1'
+      - 'tox -e flake8'
+      - 'tox -e black-check '
+      - 'tox -e sphinx'
 pipeline:
   - init-env
-  - 'lint,unit-test'
+  - 'check,unit-test'
   - 'integ-test(public),integ-test(inner)'
   - coverage
