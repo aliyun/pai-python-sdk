@@ -293,7 +293,7 @@ class Session(object):
 
         Args:
             name (str): Run instance name of the submit job.
-            arguments (list): Run arguments required by pipeline manifest.
+            arguments (dict): Run arguments required by pipeline manifest.
             env (list): Environment arguments of run.
             pipeline_id (str): Pipeline
             manifest (str): Pipeline manifest of the run workflow.

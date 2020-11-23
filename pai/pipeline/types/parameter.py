@@ -35,6 +35,11 @@ class PipelineParameter(PipelineVariable):
         parent=None,
         feasible=None,
     ):
+        """
+
+        Returns:
+            object:
+        """
         typ = ParameterType.normalize_typ(typ)
         validator = None
         if feasible:

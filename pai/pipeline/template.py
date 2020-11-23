@@ -8,9 +8,11 @@ import uuid
 import six
 import yaml
 
-from .core import Pipeline, ContainerComponent, PipelineBase
+from .core import Pipeline
+from .base import TemplateSpecBase
 from .run import PipelineRun
 from .step import PipelineStep
+from .templates.container import ContainerTemplate
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import load_input_output_spec
@@ -116,7 +118,7 @@ def _load_pipeline_from_yaml(manifest):
         image_uri = manifest["spec"]["execution"]["image"]
         command = manifest["spec"]["execution"]["command"]
         image_pull_config = manifest["spec"]["execution"].get("imageRegistryConfig")
-        p = ContainerComponent(
+        p = ContainerTemplate(
             identifier=metadata.get("identifier", None),
             provider=metadata.get("provider", None),
             version=metadata.get("version", None),
@@ -127,7 +129,7 @@ def _load_pipeline_from_yaml(manifest):
             outputs=outputs,
         )
     else:
-        p = PipelineBase(
+        p = TemplateSpecBase(
             identifier=metadata.get("identifier", None),
             provider=metadata.get("provider", None),
             version=metadata.get("version", None),

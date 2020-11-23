@@ -4,11 +4,11 @@ import uuid
 
 import time
 import unittest
+import yaml
 from unittest import skip
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline, PipelineStep
-from pai.pipeline.core import ContainerComponent
 from pai.pipeline.run import PipelineRunStatus
 from pai.pipeline.types.artifact import (
     ArtifactDataType,
@@ -289,38 +289,6 @@ class TestPipelineBuild(BaseIntegTestCase):
         self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
         run_instance.wait_for_completion(show_outputs=False)
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
-
-
-class TestContainerComponent(BaseIntegTestCase):
-    @skip("Only admin has privilege to create container-execution pipeline")
-    def test_component_base(self):
-        inputs = [
-            PipelineParameter(name="xflow_name", typ=str),
-            PipelineParameter(
-                name="execution", typ=dict, default=self.get_default_xflow_execution()
-            ),
-        ]
-        outputs = [
-            PipelineArtifact(
-                name="output1",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.OSS,
-                ),
-            )
-        ]
-
-        comp = ContainerComponent(
-            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1",
-            inputs=inputs,
-            outputs=outputs,
-            command=["python", "-m", "train", "--parameter={{inputs.parameters}}"],
-        )
-        p = comp.save(identifier="test-comp", version=str(time.time()))
-
-        session = get_default_session()
-
-        _ = session.create_run(pipeline_id=p.pipeline_id, name="test", arguments={})
 
 
 if __name__ == "__main__":

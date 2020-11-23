@@ -1,28 +1,14 @@
 from __future__ import absolute_import
 
-import logging
 import os
 import unittest
-from collections import namedtuple
 
-import oss2
-from odps import ODPS
-from six.moves import configparser
-from six.moves.configparser import DEFAULTSECT
+import logging
+from mock import patch
 
-from pai.core.session import setup_default_session
-from pai.core.workspace import Workspace
+from tests.unit.utils import get_mock_session
 
-_test_root = os.path.dirname(os.path.abspath(__file__))
-
-OSSInfo = namedtuple(
-    "OSSInfo",
-    [
-        "bucket",
-        "endpoint",
-        "rolearn",
-    ],
-)
+test_root = os.path.dirname(os.path.abspath(__file__))
 
 
 class BaseUnitTestCase(unittest.TestCase):
@@ -34,6 +20,11 @@ class BaseUnitTestCase(unittest.TestCase):
     def setUpClass(cls):
         super(BaseUnitTestCase, cls).setUpClass()
         cls._log_config()
+        cls.patch_mock_session()
+
+    @classmethod
+    def patch_mock_session(cls):
+        patch("pai.core.session.Session._default_session", get_mock_session()).start()
 
     @classmethod
     def tearDownClass(cls):

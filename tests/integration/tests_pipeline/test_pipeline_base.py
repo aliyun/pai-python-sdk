@@ -53,12 +53,7 @@ class TestPipelineBase(BaseIntegTestCase):
             },
         ]
 
-        def sort_item_by_name(args):
-            return sorted(args, key=lambda x: x["name"])
-
-        self.assertEqual(
-            sort_item_by_name(expected_parameters), sort_item_by_name(parameters)
-        )
+        self.assertEqual(sorted(expected_parameters), sorted(parameters))
 
         expected_artifacts = [
             {
@@ -73,6 +68,4 @@ class TestPipelineBase(BaseIntegTestCase):
             },
         ]
 
-        self.assertEqual(
-            sort_item_by_name(expected_artifacts), sort_item_by_name(artifacts)
-        )
+        self.assertEqual(sorted(expected_artifacts), sorted(artifacts))

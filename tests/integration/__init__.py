@@ -48,9 +48,9 @@ class BaseIntegTestCase(unittest.TestCase):
         super(BaseIntegTestCase, cls).setUpClass()
         cls._log_config()
 
-        cls._set_test_session()
-        cls.odps_client = cls._get_odps_client()
         cls.oss_info, cls.oss_bucket = cls._get_oss_info()
+        cls._set_test_session(cls.oss_bucket)
+        cls.odps_client = cls._get_odps_client()
 
     @classmethod
     def tearDownClass(cls):
@@ -69,9 +69,9 @@ class BaseIntegTestCase(unittest.TestCase):
         }
 
     @classmethod
-    def _set_test_session(cls):
+    def _set_test_session(cls, oss_bucket=None):
         client_config = cls.get_test_config()["client"]
-        default_session = setup_default_session(**client_config)
+        default_session = setup_default_session(oss_bucket=oss_bucket, **client_config)
         return default_session
 
     @classmethod

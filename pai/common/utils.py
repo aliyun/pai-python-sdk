@@ -1,7 +1,11 @@
 from __future__ import absolute_import
 
 import hashlib
+import os
 import re
+import tarfile
+import tempfile
+
 from datetime import datetime
 
 import six
@@ -87,3 +91,24 @@ def iter_with_limit(iterator, limit):
         idx += 1
         if idx >= limit:
             return
+
+
+def tar_source_files(source_files, target=None):
+    if target is None:
+        target = tempfile.mktemp()
+
+    with tarfile.open(target, "w:gz") as tar:
+        for name in source_files:
+            tar.add(name, arcname=os.path.basename(name))
+    return target
+
+
+def file_checksum(file_name, hash_type="md5"):
+    if hash_type.lower() != "md5":
+        raise ValueError("not support hash type")
+
+    hash_md5 = hashlib.md5()
+    with open(file_name, "rb") as f:
+        for chunk in iter(lambda: f.read(256 * 1024), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()

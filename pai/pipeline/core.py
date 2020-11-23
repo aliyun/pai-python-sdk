@@ -1,174 +1,21 @@
 from __future__ import absolute_import
 
 import logging
-from abc import ABCMeta
 from collections import defaultdict, Counter
 
-import six
 from graphviz import Digraph
 
+from .base import TemplateSpecBase
 from ..core.session import get_default_session
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
 from .types.spec import OutputsSpec, InputsSpec
 
-DEFAULT_PIPELINE_API_VERSION = "core/v1"
 
 logger = logging.getLogger(__name__)
 
 
-class PipelineBase(six.with_metaclass(ABCMeta, object)):
-    def __init__(
-        self,
-        inputs,
-        outputs,
-        identifier=None,
-        provider=None,
-        version=None,
-        pipeline_id=None,
-    ):
-        self._identifier = identifier
-        self._provider = provider
-        self._version = version
-        self._pipeline_id = pipeline_id
-        self._inputs = inputs if isinstance(inputs, InputsSpec) else InputsSpec(inputs)
-        self._outputs = (
-            outputs if isinstance(outputs, OutputsSpec) else OutputsSpec(outputs)
-        )
-
-    def __repr__(self):
-        return "%s:{PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}" % (
-            type(self).__name__,
-            self._pipeline_id,
-            self.identifier,
-            self.provider,
-            self.version,
-        )
-
-    @property
-    def inputs(self):
-        return self._inputs
-
-    @property
-    def outputs(self):
-        return self._outputs
-
-    @property
-    def metadata(self):
-        return {
-            "identifier": self._identifier,
-            "provider": self._provider,
-            "version": self._version,
-        }
-
-    @property
-    def identifier(self):
-        return self._identifier
-
-    @property
-    def provider(self):
-        return self._provider
-
-    @property
-    def version(self):
-        return self._version
-
-    @property
-    def _template(self):
-        from .template import PipelineTemplate
-
-        manifest = self.to_dict()
-        return PipelineTemplate(manifest=manifest, pipeline_id=self.pipeline_id)
-
-    @property
-    def pipeline_id(self):
-        return self._pipeline_id
-
-    @property
-    def is_saved(self):
-        return bool(self.pipeline_id)
-
-    def save(self, identifier=None, version=None):
-        templ = self._template.save(identifier=identifier, version=version)
-        self._identifier = templ.identifier
-        self._version = templ.version
-        self._provider = templ.provider
-        self._pipeline_id = templ.pipeline_id
-        return self
-
-    def to_estimator(self, parameters):
-        from pai.core.estimator import PipelineEstimator
-
-        return PipelineEstimator(
-            pipeline_id=self._template.pipeline_id,
-            manifest=self._template.manifest,
-            parameters=parameters,
-        )
-
-    def to_transformer(self, parameters=None):
-        from pai.core.transformer import PipelineTransformer
-
-        return PipelineTransformer(
-            pipeline_id=self._template.pipeline_id,
-            manifest=self._template.manifest,
-            parameters=parameters,
-        )
-
-    def run(self, job_name, arguments=None, **kwargs):
-        return self._template.run(job_name=job_name, arguments=arguments, **kwargs)
-
-    def _spec_to_dict(self):
-        spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict()}
-        return spec
-
-    def to_dict(self):
-        manifest = {
-            "apiVersion": DEFAULT_PIPELINE_API_VERSION,
-            "metadata": self.metadata,
-            "spec": self._spec_to_dict(),
-        }
-        return manifest
-
-
-class ContainerComponent(PipelineBase):
-    def __init__(
-        self,
-        image_uri,
-        inputs,
-        outputs,
-        command,
-        image_registry_config=None,
-        identifier=None,
-        provider=None,
-        version=None,
-        pipeline_id=None,
-    ):
-        self.image_uri = image_uri
-        self.image_registry_config = image_registry_config
-        self.command = command or []
-        super(ContainerComponent, self).__init__(
-            inputs=inputs,
-            outputs=outputs,
-            provider=provider,
-            version=version,
-            identifier=identifier,
-            pipeline_id=pipeline_id,
-        )
-
-    def to_dict(self):
-        d = super(ContainerComponent, self).to_dict()
-        d["spec"]["execution"] = {
-            "image": self.image_uri,
-            "command": self.command,
-        }
-
-        if self.image_registry_config:
-            d["spec"]["execution"]["imageRegistryConfig"] = self.image_registry_config
-
-        return d
-
-
-class Pipeline(PipelineBase):
+class Pipeline(TemplateSpecBase):
     """Represents pipeline instance in PAI Machine Learning pipeline.
 
     Pipeline can be constructed from multiple pipeline steps, or single container implementation.
@@ -341,13 +188,13 @@ class Pipeline(PipelineBase):
         for step in steps:
             step.parent = self
             if not step.name:
-                step.name = self._make_step_name(
+                step.name = self._gen_step_name(
                     step, used_names=used_names, search_limit=len(steps)
                 )
                 used_names.add(step.name)
 
     @classmethod
-    def _make_step_name(cls, step, used_names, search_limit=100):
+    def _gen_step_name(cls, step, used_names, search_limit=100):
         for i in range(search_limit):
             candidate = "%s-%s" % (step.identifier, i)
             if candidate not in used_names:
@@ -362,22 +209,6 @@ class Pipeline(PipelineBase):
         if name in self.steps:
             raise ValueError("Pipeline step name conflict: %s" % name)
         return name
-
-    @property
-    def input_parameters_spec(self):
-        return {
-            ipt.name: ipt.to_dict()
-            for ipt in self.inputs
-            if ipt.variable_category == "parameters"
-        }
-
-    @property
-    def input_artifacts_spec(self):
-        return {
-            ipt.name: ipt.to_dict()
-            for ipt in self.inputs
-            if ipt.variable_category == "artifacts"
-        }
 
     def dot(self):
         graph = Digraph()
