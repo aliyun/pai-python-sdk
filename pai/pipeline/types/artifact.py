@@ -234,6 +234,7 @@ class ArtifactValue(object):
     @classmethod
     def param_to_value_ref(cls, param):
         from pai.pipeline import PipelineParameter
+
         if not param:
             return
         elif isinstance(param, PipelineParameter):
@@ -241,7 +242,9 @@ class ArtifactValue(object):
         elif isinstance(param, six.string_types):
             return "{{inputs.parameters.%s}}" % param
         else:
-            raise ValueError("expect PipelineParameter or string, but given %s", type(param))
+            raise ValueError(
+                "expect PipelineParameter or string, but given %s", type(param)
+            )
 
 
 class MaxComputeResourceArtifact(ArtifactValue):

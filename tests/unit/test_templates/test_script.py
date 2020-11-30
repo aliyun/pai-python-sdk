@@ -8,8 +8,12 @@ from pai.pipeline.templates.script import (
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
 )
-from pai.pipeline.types import PipelineArtifact, ArtifactMetadata, ArtifactDataType, \
-    ArtifactLocationType
+from pai.pipeline.types import (
+    PipelineArtifact,
+    ArtifactMetadata,
+    ArtifactDataType,
+    ArtifactLocationType,
+)
 
 from pai.pipeline.types.artifact import MaxComputeTableArtifact
 from tests.unit import BaseUnitTestCase

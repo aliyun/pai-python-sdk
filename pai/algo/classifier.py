@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 
 from pai.common import ProviderAlibabaPAI
-from pai.xflow.base import XFlowEstimator
+from pai.algo.base import MaxComputeEstimator
 
 
-class LogisticRegression(XFlowEstimator):
+class LogisticRegression(MaxComputeEstimator):
     _enable_sparse = True
     _pmml_model = True
 
@@ -97,7 +97,7 @@ class LogisticRegression(XFlowEstimator):
         )
 
 
-class RandomForestClassifier(XFlowEstimator):
+class RandomForestClassifier(MaxComputeEstimator):
     _identifier_default = "random-forests-xflow-maxCompute"
 
     _provider_default = ProviderAlibabaPAI

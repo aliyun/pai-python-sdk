@@ -1,9 +1,9 @@
 from pai.common import ProviderAlibabaPAI
-from pai.xflow.base import XFlowTransformer
+from pai.algo.base import MaxComputeTransformer
 from pai.common.utils import gen_temp_table
 
 
-class OfflineModelTransformer(XFlowTransformer):
+class OfflineModelTransformer(MaxComputeTransformer):
     """XFlow based algorithm, transform data set from MaxCompute table use offlinemodel"""
 
     _enable_spare_input = True
@@ -73,7 +73,7 @@ class OfflineModelTransformer(XFlowTransformer):
         )
 
 
-class ModelTransferToOSS(XFlowTransformer):
+class ModelTransferToOSS(MaxComputeTransformer):
     """Util component used for transfer offlinemodel from MaxCompute to user-owned OSS bucket.
 
     XFlow algorithm task produce offlinemodel store in MaxCompute. By transfer the offlinemodel to
@@ -139,7 +139,7 @@ class ModelTransferToOSS(XFlowTransformer):
         )
 
 
-class FeatureNormalize(XFlowTransformer):
+class FeatureNormalize(MaxComputeTransformer):
     """Normalize input dataset"""
 
     _identifier_default = "dataSource-xflow-maxCompute"
@@ -179,7 +179,7 @@ class FeatureNormalize(XFlowTransformer):
         )
 
 
-class MaxComputeDataSource(XFlowTransformer):
+class MaxComputeDataSource(MaxComputeTransformer):
     """Transform plain odps table/partition info to ODPS Table Artifact
 
     :Example:

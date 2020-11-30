@@ -18,7 +18,7 @@ from pai.pipeline.types.artifact import (
 )
 from pai.pipeline.types.parameter import ParameterType, PipelineParameter
 from pai.common.utils import gen_temp_table
-from pai.xflow.classifier import LogisticRegression
+from pai.algo.classifier import LogisticRegression
 from tests.integration import BaseIntegTestCase
 
 
@@ -89,7 +89,7 @@ class TestXFlowEstimator(BaseIntegTestCase):
             "enableSparse": True,
             "itemDelimiter": ",",
             "kvDelimiter": ":",
-            "execution": lr.xflow_execution,
+            "execution": lr.max_compute_execution,
         }
 
         compiled_args = lr._compile_args("pai_temp_table", **args)

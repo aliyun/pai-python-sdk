@@ -4,22 +4,24 @@ from pai.core.estimator import AlgoBaseEstimator
 from pai.core.transformer import AlgoBaseTransformer
 
 
-class _XFlowAlgoMixin(object):
+class _MaxComputeAlgoMixin(object):
     _enable_sparse = False
     XFlowProjectDefault = "algo_public"
 
-    def __init__(self, xflow_execution=None, core_num=None, mem_size_per_core=None):
-        self.xflow_execution = xflow_execution
+    def __init__(
+        self, max_compute_execution=None, core_num=None, mem_size_per_core=None
+    ):
+        self.max_compute_execution = max_compute_execution
         self.core_num = core_num
         self.mem_size_per_core = mem_size_per_core
 
-    def get_xflow_args(self):
+    def get_maxc_args(self):
         return {
-            "execution": self.xflow_execution,
+            "execution": self.max_compute_execution,
         }
 
     def _compile_args(self, *inputs, **kwargs):
-        args = self.get_xflow_args()
+        args = self.get_maxc_args()
         if type(self)._enable_sparse and kwargs.get("enable_sparse"):
             args["enableSparse"] = True
             sparse_delimiter = kwargs["sparse_delimiter"]
@@ -32,12 +34,12 @@ class _XFlowAlgoMixin(object):
         return args
 
 
-class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
+class MaxComputeEstimator(AlgoBaseEstimator, _MaxComputeAlgoMixin):
     _pmml_model = False
 
     def __init__(
         self,
-        xflow_execution=None,
+        max_compute_execution=None,
         pmml_gen=None,
         pmml_oss_path=None,
         pmml_oss_endpoint=None,
@@ -54,10 +56,10 @@ class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
             pmml_oss_bucket=pmml_oss_bucket,
             **kwargs
         )
-        _XFlowAlgoMixin.__init__(self, xflow_execution=xflow_execution)
+        _MaxComputeAlgoMixin.__init__(self, max_compute_execution=max_compute_execution)
 
     def _compile_args(self, *inputs, **kwargs):
-        args = super(XFlowEstimator, self)._compile_args(*inputs, **kwargs)
+        args = super(MaxComputeEstimator, self)._compile_args(*inputs, **kwargs)
         if type(self)._pmml_model and kwargs.get("pmml_gen"):
             args["path"] = kwargs.get("pmml_oss_path")
             args["endpoint"] = kwargs.get("pmml_oss_endpoint")
@@ -68,7 +70,7 @@ class XFlowEstimator(AlgoBaseEstimator, _XFlowAlgoMixin):
         return args
 
 
-class XFlowTransformer(AlgoBaseTransformer, _XFlowAlgoMixin):
-    def __init__(self, xflow_execution=None, **kwargs):
+class MaxComputeTransformer(AlgoBaseTransformer, _MaxComputeAlgoMixin):
+    def __init__(self, max_compute_execution=None, **kwargs):
         AlgoBaseTransformer.__init__(self, **kwargs)
-        _XFlowAlgoMixin.__init__(self, xflow_execution=xflow_execution)
+        _MaxComputeAlgoMixin.__init__(self, max_compute_execution=max_compute_execution)

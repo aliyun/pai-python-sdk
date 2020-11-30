@@ -31,7 +31,7 @@ class XFlowOfflineModel(Model):
         )
 
     def transformer(self, xflow_execution=None):
-        from pai.xflow.transformer import OfflineModelTransformer
+        from pai.algo.transformer import OfflineModelTransformer
 
         return OfflineModelTransformer(
             session=self.session, model=self.model_data, xflow_execution=xflow_execution
