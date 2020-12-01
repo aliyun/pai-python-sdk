@@ -1,13 +1,18 @@
 import os
 from pprint import pprint
 
+from pai.pipeline import PipelineParameter
 from pai.pipeline.templates.script import (
     ScriptTemplate,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
 )
-from tests.unit import BaseUnitTestCase, test_root
+from pai.pipeline.types import PipelineArtifact, ArtifactMetadata, ArtifactDataType, \
+    ArtifactLocationType
+
+from pai.pipeline.types.artifact import MaxComputeTableArtifact
+from tests.unit import BaseUnitTestCase
 from tests.test_data import SCRIPT_DIR_PATH
 
 
@@ -36,3 +41,26 @@ class TestPythonScriptTemplate(BaseUnitTestCase):
             manifest["spec"]["execution"]["command"],
             [PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND],
         )
+
+    def test_table_ref(self):
+        templ = ScriptTemplate(
+            source_dir="./scripts",
+            entry_point="main.py",
+            inputs=[
+                PipelineParameter(
+                    "tableName",
+                ),
+                PipelineParameter("partition", default=""),
+            ],
+            outputs=[
+                PipelineArtifact(
+                    "outputTable",
+                    ArtifactMetadata(
+                        data_type=ArtifactDataType.DataSet,
+                        location_type=ArtifactLocationType.MaxComputeTable,
+                    ),
+                    default=MaxComputeTableArtifact.table_ref("tableName", "partition"),
+                )
+            ],
+        )
+        pprint(templ.to_dict())

@@ -231,6 +231,18 @@ class ArtifactValue(object):
                 "Not support artifact location_type: %s", metadata.location_type
             )
 
+    @classmethod
+    def param_to_value_ref(cls, param):
+        from pai.pipeline import PipelineParameter
+        if not param:
+            return
+        elif isinstance(param, PipelineParameter):
+            return param.enclosed_fullname
+        elif isinstance(param, six.string_types):
+            return "{{inputs.parameters.%s}}" % param
+        else:
+            raise ValueError("expect PipelineParameter or string, but given %s", type(param))
+
 
 class MaxComputeResourceArtifact(ArtifactValue):
     MaxComputeResourceUrlPattern = re.compile(
@@ -349,6 +361,22 @@ class MaxComputeTableArtifact(MaxComputeResourceArtifact):
         endpoint = d["location"].get("endpoint")
         partition = d["location"].get("partition")
         return cls(table=table, project=project, endpoint=endpoint, partition=partition)
+
+    @classmethod
+    def table_ref(cls, table_name, partition=None):
+        table_ref = cls.param_to_value_ref(table_name)
+        partition_ref = cls.param_to_value_ref(partition)
+        if not table_ref:
+            raise ValueError("MaxComputeTableArtifact require table not be None")
+        d = {
+            "location": {
+                "table": table_ref,
+            }
+        }
+
+        if partition_ref is not None:
+            d["location"]["partition"] = partition_ref
+        return json.dumps(d)
 
 
 class MaxComputeOfflineModelArtifact(MaxComputeResourceArtifact):
