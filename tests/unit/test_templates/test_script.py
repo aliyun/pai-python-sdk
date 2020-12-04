@@ -63,7 +63,9 @@ class TestPythonScriptTemplate(BaseUnitTestCase):
                         data_type=ArtifactDataType.DataSet,
                         location_type=ArtifactLocationType.MaxComputeTable,
                     ),
-                    default=MaxComputeTableArtifact.table_ref("tableName", "partition"),
+                    value=MaxComputeTableArtifact.value_from_param(
+                        "tableName", "partition"
+                    ),
                 )
             ],
         )

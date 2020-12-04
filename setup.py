@@ -17,6 +17,7 @@ requirements = [
     "pyyaml>=5.3.1",
     "six>=1.15.0",
     "importlib_metadata==2.0.0",
+    "docker>=4.4.0",
 ]
 
 

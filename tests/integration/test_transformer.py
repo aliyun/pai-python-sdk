@@ -43,7 +43,7 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
         tf = ModelTransferToOSS(
             bucket=self.oss_info.bucket,
             endpoint=self.oss_info.endpoint,
-            rolearn=self.oss_info.rolearn,
+            rolearn=self.oss_info.role_arn,
             xflow_execution=self.get_default_xflow_execution(),
         )
 

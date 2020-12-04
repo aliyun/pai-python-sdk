@@ -81,7 +81,7 @@ class TemplateSpecBase(six.with_metaclass(ABCMeta, object)):
         templ = self._template.save(identifier=identifier, version=version)
         return templ
 
-    def run(self, job_name, arguments=None, **kwargs):
+    def run(self, job_name, arguments=None, local_mode=False, **kwargs):
         return self._template.run(job_name=job_name, arguments=arguments, **kwargs)
 
     def _spec_to_dict(self):

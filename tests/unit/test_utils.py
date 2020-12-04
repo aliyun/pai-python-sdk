@@ -51,7 +51,7 @@ class TestUtils(BaseUnitTestCase):
             tar_result = tar_source_files(source_files, temp)
             self.assertTrue(tarfile.is_tarfile(tar_result))
 
-            expected = ["main.py", "utils.py"]
+            expected = ["main.py", "utils.py", "requirements.txt"]
 
             with tarfile.open(tar_result, "r") as result:
                 self.assertEqual(sorted(result.getnames()), sorted(expected))

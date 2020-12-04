@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import logging
+import oss2
 
 import six
 import yaml
@@ -18,6 +19,8 @@ def setup_default_session(
     access_key_secret=None,
     region_id=None,
     oss_bucket=None,
+    oss_bucket_name=None,
+    oss_endpoint=None,
     **kwargs
 ):
     """Setup the default session used by the program.
@@ -37,6 +40,20 @@ def setup_default_session(
         pai.core.session.Session: Initialized default session.
 
     """
+    if oss_bucket_name and oss_bucket:
+        raise ValueError(
+            "both bucket_name and oss_bucket are provided, only one is required."
+        )
+    if oss_bucket_name and not oss_endpoint:
+        raise ValueError("please provide oss endpoint")
+
+    if oss_bucket_name and oss_endpoint:
+        auth = oss2.Auth(
+            access_key_id=access_key_id, access_key_secret=access_key_secret
+        )
+        oss_bucket = oss2.Bucket(
+            auth=auth, endpoint=oss_endpoint, bucket_name=oss_bucket_name
+        )
 
     session = Session(
         access_key_id, access_key_secret, region_id, oss_bucket=oss_bucket, **kwargs
@@ -45,6 +62,7 @@ def setup_default_session(
 
     workspace = Workspace.get_or_create_default_workspace()
     session.set_workspace(workspace=workspace)
+
     return session
 
 

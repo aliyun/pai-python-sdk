@@ -6,6 +6,9 @@ from collections import Counter
 from .artifact import ArtifactMetadata, PipelineArtifact
 from .parameter import PipelineParameter
 
+IO_TYPE_INPUTS = "inputs"
+IO_TYPE_OUTPUTS = "outputs"
+
 
 def validate_spec(items):
     if not items:
@@ -48,6 +51,14 @@ class SpecBase(object):
     @property
     def items(self):
         return self._items
+
+    @property
+    def artifacts(self):
+        return [item for item in self._items if isinstance(item, PipelineArtifact)]
+
+    @property
+    def parameters(self):
+        return [item for item in self._items if isinstance(item, PipelineParameter)]
 
     def __repr__(self):
         return "%s:\n%s" % (
@@ -119,6 +130,8 @@ class InputsSpec(SpecBase):
 class OutputsSpec(SpecBase):
     def __init__(self, outputs):
         super(OutputsSpec, self).__init__(items=outputs)
+        for item in self.items:
+            item.kind = IO_TYPE_OUTPUTS
 
 
 def load_input_output_spec(p, spec):
@@ -175,7 +188,7 @@ def _load_artifact_spec(p, artifact_spec, kind):
         kind=kind,
         parent=p,
         from_=from_,
-        default=value,
+        value=value,
         desc=desc,
         required=required,
     )

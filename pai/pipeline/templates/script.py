@@ -58,6 +58,22 @@ class ScriptTemplate(ContainerTemplate):
         session = get_default_session()
         return session.oss_bucket
 
+    @property
+    def source_dir(self):
+        if hasattr(self, "_source_dir"):
+            return self._source_dir
+        self._source_dir = None
+        return self._source_dir
+
+    @source_dir.setter
+    def source_dir(self, src_dir):
+        if os.path.isabs(src_dir):
+            self._source_dir = src_dir
+        else:
+            cwd = os.getcwd()
+            src_dir = os.path.join(cwd, src_dir)
+            self._source_dir = src_dir
+
     def _upload_source_files(self):
         if self.source_dir.startswith("oss://"):
             self._code_url = self.source_dir
@@ -109,8 +125,9 @@ class ScriptTemplate(ContainerTemplate):
         self.prepare()
         return super(ScriptTemplate, self).save(identifier=identifier, version=version)
 
-    def run(self, job_name, arguments=None, **kwargs):
-        self.prepare()
+    def run(self, job_name, arguments=None, local_mode=False, **kwargs):
+        if not local_mode:
+            self.prepare()
         return super(ScriptTemplate, self).run(
             job_name=job_name, arguments=arguments, **kwargs
         )

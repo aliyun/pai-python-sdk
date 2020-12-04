@@ -26,7 +26,7 @@ class PipelineArtifact(PipelineVariable):
         path=None,
         desc=None,
         kind="inputs",
-        default=None,
+        value=None,
         from_=None,
         required=None,
         parent=None,
@@ -35,7 +35,7 @@ class PipelineArtifact(PipelineVariable):
             name=name,
             desc=desc,
             kind=kind,
-            value=default,
+            value=value,
             from_=from_,
             required=required,
             parent=parent,
@@ -232,19 +232,21 @@ class ArtifactValue(object):
             )
 
     @classmethod
-    def param_to_value_ref(cls, param):
+    def get_param_ref(cls, param):
         from pai.pipeline import PipelineParameter
 
         if not param:
             return
+
         elif isinstance(param, PipelineParameter):
-            return param.enclosed_fullname
+            ref = param.enclosed_fullname
         elif isinstance(param, six.string_types):
-            return "{{inputs.parameters.%s}}" % param
+            ref = "{{inputs.parameters.%s}}" % param
         else:
             raise ValueError(
                 "expect PipelineParameter or string, but given %s", type(param)
             )
+        return ref
 
 
 class MaxComputeResourceArtifact(ArtifactValue):
@@ -366,9 +368,9 @@ class MaxComputeTableArtifact(MaxComputeResourceArtifact):
         return cls(table=table, project=project, endpoint=endpoint, partition=partition)
 
     @classmethod
-    def table_ref(cls, table_name, partition=None):
-        table_ref = cls.param_to_value_ref(table_name)
-        partition_ref = cls.param_to_value_ref(partition)
+    def value_from_param(cls, table_name, partition=None):
+        table_ref = cls.get_param_ref(table_name)
+        partition_ref = cls.get_param_ref(partition)
         if not table_ref:
             raise ValueError("MaxComputeTableArtifact require table not be None")
         d = {

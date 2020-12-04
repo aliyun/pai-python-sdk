@@ -28,7 +28,7 @@ class WorkspaceClient(BaseClient):
         if self._endpoint:
             return self._endpoint
         elif self._inner:
-            return "aiworkspaceinner-share.aliyuncs.com"
+            return "aiworkspaceinner-inner.aliyuncs.com"
         else:
             return "aiworkspace.cn-shanghai.aliyuncs.com"
 
@@ -36,7 +36,7 @@ class WorkspaceClient(BaseClient):
         return "AIWorkSpace"
 
     @paginate_service_call
-    def list(self, name=None, sorted_by=None, sorted_sequence=None, page_size=None):
+    def list(self, name=None, sorted_by=None, sorted_sequence=None):
         request = self._construct_request(ListWorkspacesRequest.ListWorkspacesRequest)
         if name is not None:
             request.set_WorkspaceName(name)

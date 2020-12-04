@@ -8,7 +8,7 @@ import time
 from pai.common import ProviderAlibabaPAI
 from pai.core.job import JobStatus
 from pai.pipeline import PipelineRunStatus, PipelineStep
-from pai.pipeline.core import Pipeline
+from pai.pipeline.core import Pipeline, get_default_session
 from pai.pipeline.template import PipelineTemplate
 from pai.pipeline.types.artifact import (
     ArtifactDataType,
@@ -145,7 +145,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path,
             pmml_oss_endpoint=oss_endpoint,
-            pmml_oss_rolearn=self.oss_info.rolearn,
+            pmml_oss_rolearn=self.oss_info.role_arn,
             xflow_execution=xflow_execution,
         )
 
@@ -283,7 +283,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path,
             pmml_oss_endpoint=oss_endpoint,
-            pmml_oss_rolearn=self.oss_info.rolearn,
+            pmml_oss_rolearn=self.oss_info.role_arn,
         ).fit(
             split_output_1,
             wait=True,
@@ -495,6 +495,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
 
         p = create_pipeline()
         p.dot()
+
         pmml_oss_endpoint = self.oss_info.endpoint
         pmml_oss_path = "/paiflow/model_transfer2oss_test/"
         pmml_oss_bucket = self.oss_info.bucket
