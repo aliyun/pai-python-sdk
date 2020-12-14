@@ -5,7 +5,15 @@ import os
 
 from setuptools import setup, find_packages
 
-repo_root = os.path.dirname(os.path.abspath(__file__))
+pkg_root = os.path.dirname(os.path.abspath(__file__))
+
+PKG_VERSION_FILE = "pai/VERSION"
+
+
+def read_version():
+    with open(os.path.join(pkg_root, PKG_VERSION_FILE), "r") as f:
+        return f.read()
+
 
 requirements = [
     "aliyun-python-sdk-core==2.13.25",
@@ -35,10 +43,11 @@ if os.path.exists("README.md"):
 setup(
     name="alipai",
     python_requires=">=2.7",
-    version="0.1.7",
+    version=read_version(),
     description="Alibaba Cloud PAI Python SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    include_package_data=True,
     url="https://www.aliyun.com/product/bigdata/product/learn",
     packages=find_packages(include=["pai", "pai.*"]),
     install_requires=requirements,
