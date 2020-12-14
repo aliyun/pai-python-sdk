@@ -48,7 +48,7 @@ class WorkspaceClient(BaseClient):
 
     def get(self, workspace_id):
         request = self._construct_request(GetWorkspaceRequest.GetWorkspaceRequest)
-        request.set_WorkspaceId(workspace_id)
+        request.set_WorkspaceId(str(workspace_id))
         return self._call_service_with_exception(request)
 
     def update(self, workspace_id, name):

@@ -108,7 +108,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
     @unittest.skip("Simplify the test case")
     def test_algo_chain(self):
         default_project = self.odps_client.project
-        xflow_execution = self.get_default_xflow_execution()
+        xflow_execution = self.get_default_maxc_execution()
         data_set = self.odps_client.get_table(
             self.TestDataSetTables["processed_wumai_data_1"]
         )
@@ -184,7 +184,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
     # TODO: Simplify the test case
     @unittest.skip("Simplify the test case")
     def test_heart_disease_step_by_step(self):
-        xflow_execution = self.get_default_xflow_execution()
+        xflow_execution = self.get_default_maxc_execution()
 
         dataset_table = self.odps_client.get_table(
             self.TestDataSetTables["heart_disease_prediction"]
@@ -508,7 +508,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
         run_instance = p.run(
             job_name="test_run",
             arguments={
-                "xflow_execution": self.get_default_xflow_execution(),
+                "xflow_execution": self.get_default_maxc_execution(),
                 "pmml_oss_rolearn": pmml_oss_rolearn,
                 "pmml_oss_path": pmml_oss_path,
                 "pmml_oss_bucket": pmml_oss_bucket,

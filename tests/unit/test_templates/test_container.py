@@ -78,7 +78,7 @@ class TestContainerTemplate(BaseUnitTestCase):
         input_params_spec = manifest["spec"]["inputs"]["parameters"]
         input_artifacts_spec = manifest["spec"]["inputs"]["artifacts"]
         output_artifacts_spec = manifest["spec"]["outputs"]["artifacts"]
-        env_spec = manifest["spec"]["execution"]["env"]
+        env_spec = manifest["spec"]["container"]["envs"]
 
         self.assertEqual(
             input_params_spec,
@@ -117,8 +117,8 @@ class TestContainerTemplate(BaseUnitTestCase):
         )
 
         self.assertEqual(env_spec, env_vars)
-        self.assertEqual(manifest["spec"]["execution"]["command"], command)
-        self.assertEqual(manifest["spec"]["execution"]["image"], image_uri)
+        self.assertEqual(manifest["spec"]["container"]["command"], command)
+        self.assertEqual(manifest["spec"]["container"]["image"], image_uri)
         self.assertEqual(
-            manifest["spec"]["execution"]["imageRegistryConfig"], image_registry_config
+            manifest["spec"]["container"]["imageRegistryConfig"], image_registry_config
         )

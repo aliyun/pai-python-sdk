@@ -9,7 +9,7 @@ from pai.common.utils import tar_source_files, file_checksum
 from pai.core.session import get_default_session
 from pai.pipeline.templates.container import ContainerTemplate
 
-ScriptTemplateImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:0.1.0"
+ScriptTemplateImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:0.1.1"
 
 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND = "launch"
 PAI_SOURCE_CODE_ENV_KEY = "PAI_SOURCE_CODE_URL"
@@ -129,7 +129,7 @@ class ScriptTemplate(ContainerTemplate):
         if not local_mode:
             self.prepare()
         return super(ScriptTemplate, self).run(
-            job_name=job_name, arguments=arguments, **kwargs
+            job_name=job_name, arguments=arguments, local_mode=local_mode, **kwargs
         )
 
     def to_dict(self):

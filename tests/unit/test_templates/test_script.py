@@ -33,7 +33,7 @@ class TestPythonScriptTemplate(BaseUnitTestCase):
         )
         script_templ.prepare()
         manifest = script_templ.to_dict()
-        manifest_env = manifest["spec"]["execution"]["env"]
+        manifest_env = manifest["spec"]["container"]["envs"]
 
         self.assertTrue(manifest_env.get(PAI_SOURCE_CODE_ENV_KEY).startswith("oss://"))
         self.assertEqual(
@@ -42,7 +42,7 @@ class TestPythonScriptTemplate(BaseUnitTestCase):
         self.assertEqual(manifest_env.get("hello", ""), "world")
 
         self.assertEqual(
-            manifest["spec"]["execution"]["command"],
+            manifest["spec"]["container"]["command"],
             [PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND],
         )
 

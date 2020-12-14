@@ -567,4 +567,5 @@ class PipelineTemplate(object):
         if not wait:
             return run_instance
         run_instance.wait_for_completion(show_outputs=show_outputs)
+        print(run_instance.get_status())
         return run_instance

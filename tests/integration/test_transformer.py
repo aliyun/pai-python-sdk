@@ -19,7 +19,7 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
         model_name = self.TestModels["wumai_model"]
         tf = OfflineModelTransformer(
             model="odps://{0}/offlinemodels/{1}".format(project, model_name),
-            xflow_execution=self.get_default_xflow_execution(),
+            xflow_execution=self.get_default_maxc_execution(),
         )
         job = tf.transform(
             "odps://{}/tables/{}".format(
@@ -44,7 +44,7 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
             bucket=self.oss_info.bucket,
             endpoint=self.oss_info.endpoint,
             rolearn=self.oss_info.role_arn,
-            xflow_execution=self.get_default_xflow_execution(),
+            xflow_execution=self.get_default_maxc_execution(),
         )
 
         model_name = self.TestModels["wumai_model"]

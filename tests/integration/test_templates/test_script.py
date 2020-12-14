@@ -17,13 +17,14 @@ from pai.pipeline.types.parameter import (
 )
 from tests.integration import BaseIntegTestCase
 from tests.test_data import SCRIPT_DIR_PATH, MAXC_SQL_TEMPLATE_SCRIPT_PATH
+from pai.common.utils import gen_temp_table
 
 
 class TestScriptTemplate(BaseIntegTestCase):
     @classmethod
-    def get_odps_config(cls):
-        odps_config = cls.get_test_config()["odps"]
-        return odps_config
+    def get_maxc_config(cls):
+        _, _, maxc_config = cls.load_test_config()
+        return maxc_config
 
     def test_script(self):
         templ = ScriptTemplate(
@@ -112,6 +113,7 @@ class TestScriptTemplate(BaseIntegTestCase):
             ],
         )
 
+        maxc_config = self.get_maxc_config()
         container = templ.run(
             job_name="helloWorld",
             local_mode=True,
@@ -123,12 +125,12 @@ class TestScriptTemplate(BaseIntegTestCase):
                 """,
                 "t1": "odps://pai_sdk_test/tables/sample",
                 "t2": "odps://pai_sdk_test/tables/iris_data",
-                "outputTable": "pai_temp_table",
+                "outputTable": gen_temp_table(),
                 "execution": {
-                    "endpoint": self.get_odps_config()["endpoint"],
-                    "odpsProject": self.get_odps_config()["project"],
-                    "accessKeyId": self.get_odps_config()["access_key_id"],
-                    "accessKeySecret": self.get_odps_config()["access_key_secret"],
+                    "endpoint": maxc_config.endpoint,
+                    "odpsProject": maxc_config.project,
+                    "accessKeyId": maxc_config.access_key_id,
+                    "accessKeySecret": maxc_config.access_key_secret,
                 },
             },
         )

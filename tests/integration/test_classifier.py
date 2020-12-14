@@ -35,7 +35,7 @@ class TestLogisticsRegression(BaseIntegTestCase):
         model_name = "test_iris_model_%d" % random.randint(0, 999999)
         lr = LogisticRegression(
             regularized_type="l2",
-            xflow_execution=self.get_default_xflow_execution(),
+            xflow_execution=self.get_default_maxc_execution(),
         )
 
         iris_dataset_table = self.odps_client.get_table(
@@ -65,7 +65,7 @@ class TestLogisticsRegression(BaseIntegTestCase):
 
         lr = LogisticRegression(
             regularized_type="l2",
-            xflow_execution=self.get_default_xflow_execution(),
+            xflow_execution=self.get_default_maxc_execution(),
         )
         run_job = lr.fit(
             wait=False,

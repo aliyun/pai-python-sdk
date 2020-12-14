@@ -17,7 +17,6 @@ from pai.pipeline.types.artifact import (
     PipelineArtifact,
 )
 from pai.pipeline.types.parameter import PipelineParameter
-from pai.core.session import get_default_session
 from pai.common.utils import gen_temp_table
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
@@ -57,7 +56,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         pipeline_run = p.run(
             job_name="job_name",
             arguments={
-                "execution": self.get_default_xflow_execution(),
+                "execution": self.get_default_maxc_execution(),
                 "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
                 "table_name": self.TestDataSetTables["wumai_data"],
             },
@@ -65,7 +64,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             show_outputs=True,
         )
 
-        self.assertEqual(pipeline_run.get_status(), PipelineRunStatus.Succeeded)
+        self.assertEqual(PipelineRunStatus.Succeeded, pipeline_run.get_status())
 
     def test_composite_pipeline_save(self):
         (
@@ -282,7 +281,7 @@ class TestPipelineBuild(BaseIntegTestCase):
         run_instance = prev_pipeline.run(
             job_name="pysdk-test-nested-pipeline-run",
             arguments={
-                "xflow_execution": self.get_default_xflow_execution(),
+                "xflow_execution": self.get_default_maxc_execution(),
             },
             wait=False,
         )

@@ -15,15 +15,28 @@ logger = logging.getLogger(__name__)
 
 
 class PipelineRunStatus(object):
-    Init = "Init"
+    Initialized = "Initialized"
+    ReadyToSchedule = "ReadyToSchedule"
+    Starting = "Starting"
     Running = "Running"
+    WorkflowServiceStarting = "WorkflowServiceStarting"
     Suspended = "Suspended"
     Succeeded = "Succeeded"
-    Completed = "Succeeded"
     Terminated = "Terminated"
     Unknown = "Unknown"
     Skipped = "Skipped"
     Failed = "Failed"
+
+    @classmethod
+    def is_running(cls, status):
+        if status in (
+            PipelineRunStatus.Starting,
+            PipelineRunStatus.Running,
+            PipelineRunStatus.WorkflowServiceStarting,
+            PipelineRunStatus.ReadyToSchedule,
+        ):
+            return True
+        return False
 
 
 class PipelineRun(object):
@@ -211,8 +224,8 @@ class PipelineRun(object):
             elif not pending:
                 raise StopIteration
             else:
-                status = self.get_status()
-                if status == PipelineRunStatus.Running:
+                status = PipelineRunStatus(self.get_status())
+                if PipelineRunStatus.is_running(status):
                     time.sleep(1)
                 else:
                     raise StopIteration
@@ -226,7 +239,7 @@ class PipelineRun(object):
         start_time = datetime.now()
         run_info = self.get_run_info()
         while (
-            run_info["Status"] == PipelineRunStatus.Running and not run_info["NodeId"]
+            PipelineRunStatus.is_running(run_info["Status"]) and not run_info["NodeId"]
         ):
             run_info = self.get_run_info()
             time_elapse = datetime.now() - start_time
@@ -244,7 +257,7 @@ class PipelineRun(object):
         start_at = datetime.now()
         run_info = self.get_run_info()
         run_status = run_info["Status"]
-        if run_status == PipelineRunStatus.Init:
+        if run_status == PipelineRunStatus.Initialized:
             raise ValueError(
                 'Pipeline run instance is in status "Init", please start the run instance.'
             )
@@ -273,7 +286,7 @@ class PipelineRun(object):
 
         prev_status_infos = {}
         root_node_status = run_status
-        while root_node_status == PipelineRunStatus.Running:
+        while PipelineRunStatus.is_running(root_node_status):
             curr_time = datetime.now()
             if timeout and (curr_time - start_at).total_seconds() > timeout:
                 raise TimeoutException("RunInstance wait_for_completion timeout.")
@@ -288,10 +301,11 @@ class PipelineRun(object):
                     )
             prev_status_infos = curr_status_infos
             root_node_status = (
-                prev_status_infos[self.name]["status"]
-                if self.name in prev_status_infos
+                curr_status_infos[self.name]["status"]
+                if self.name in curr_status_infos
                 else root_node_status
             )
+
             time.sleep(2)
 
         return self
@@ -344,7 +358,7 @@ class _RunLogger(object):
                 page_offset += page_size
             else:
                 status = self.run_instance.get_status()
-                if status == PipelineRunStatus.Running:
+                if PipelineRunStatus.is_running(status):
                     time.sleep(2)
                 else:
                     break

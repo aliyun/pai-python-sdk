@@ -1,25 +1,48 @@
 from __future__ import absolute_import
 
-import os
-import unittest
 from collections import namedtuple
 
 import logging
+import os
 import oss2
+import unittest
 from odps import ODPS
 from six.moves import configparser
-from six.moves.configparser import DEFAULTSECT
 
 from pai.core import setup_default_session
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
-OSSInfo = namedtuple(
-    "OSSInfo",
+
+PaiServiceConfig = namedtuple(
+    "AlibabaCloudServiceConfig",
     [
-        "bucket",
+        "access_key_id",
+        "access_key_secret",
+        "region_id",
+        "workspace_id",
+    ],
+)
+
+
+MaxcConfig = namedtuple(
+    "MaxcConfig",
+    [
+        "access_key_id",
+        "access_key_secret",
         "endpoint",
-        "rolearn",
+        "project",
+    ],
+)
+
+OssConfig = namedtuple(
+    "OssConfig",
+    [
+        "access_key_id",
+        "access_key_secret",
+        "bucket_name",
+        "endpoint",
+        "role_arn",
     ],
 )
 
@@ -29,6 +52,9 @@ class BaseIntegTestCase(unittest.TestCase):
     """
     Base class for unittest, any test case class should inherit this.
     """
+
+    oss_info = None
+    oss_bucket = None
 
     odps_client = None
     default_xflow_project = "algo_public"
@@ -48,16 +74,18 @@ class BaseIntegTestCase(unittest.TestCase):
         super(BaseIntegTestCase, cls).setUpClass()
         cls._log_config()
 
-        cls.oss_info, cls.oss_bucket = cls._get_oss_info()
-        cls._set_test_session(cls.oss_bucket)
-        cls.odps_client = cls._get_odps_client()
+        pai_service_config, oss_config, maxc_config = cls.load_test_config()
+
+        cls.oss_info, cls.oss_bucket = cls._get_oss_bucket(oss_config)
+        cls._setup_test_session(pai_service_config, oss_config)
+        cls.odps_client = cls._get_odps_client(maxc_config)
 
     @classmethod
     def tearDownClass(cls):
         super(BaseIntegTestCase, cls).tearDownClass()
 
     @classmethod
-    def get_default_xflow_execution(cls, odps_client=None):
+    def get_default_maxc_execution(cls, odps_client=None):
         if not odps_client:
             odps_client = cls.odps_client
 
@@ -69,73 +97,70 @@ class BaseIntegTestCase(unittest.TestCase):
         }
 
     @classmethod
-    def _set_test_session(cls, oss_bucket=None):
-        client_config = cls.get_test_config()["client"]
-        default_session = setup_default_session(oss_bucket=oss_bucket, **client_config)
-        return default_session
-
-    @classmethod
-    def _get_odps_client(cls):
-        configs = cls.get_test_config()
-        access_key_id = configs["odps"]["access_key_id"]
-        access_key_secret = configs["odps"]["access_key_secret"]
-        project = configs["odps"]["project"]
-        endpoint = configs["odps"]["endpoint"]
-        logview_host = configs["odps"]["logview_host"]
-        return ODPS(
-            access_id=access_key_id,
-            secret_access_key=access_key_secret,
-            project=project,
-            endpoint=endpoint,
-            logview_host=logview_host,
+    def _setup_test_session(cls, pai_service_config, oss_config):
+        return setup_default_session(
+            access_key_id=pai_service_config.access_key_id,
+            access_key_secret=pai_service_config.access_key_secret,
+            region_id=pai_service_config.region_id,
+            workspace_id=pai_service_config.workspace_id,
+            oss_bucket_name=oss_config.bucket_name,
+            oss_endpoint=oss_config.endpoint,
         )
 
     @classmethod
-    def _get_oss_info(cls):
-        configs = cls.get_test_config()
-        oss_info = OSSInfo(**configs["oss"])
+    def _get_odps_client(cls, maxc_config):
+        return ODPS(
+            access_id=maxc_config.access_key_id,
+            secret_access_key=maxc_config.access_key_secret,
+            project=maxc_config.project,
+            endpoint=maxc_config.endpoint,
+        )
+
+    @classmethod
+    def _get_oss_bucket(cls, oss_config):
         oss_auth = oss2.Auth(
-            access_key_id=configs["client"]["access_key_id"],
-            access_key_secret=configs["client"]["access_key_secret"],
+            access_key_id=oss_config.access_key_id,
+            access_key_secret=oss_config.access_key_secret,
         )
         oss_bucket = oss2.Bucket(
-            oss_auth, endpoint=oss_info.endpoint, bucket_name=oss_info.bucket
+            oss_auth,
+            endpoint=oss_config.endpoint,
+            bucket_name=oss_config.bucket_name,
         )
-        return oss_info, oss_bucket
+        return oss_config, oss_bucket
 
     @classmethod
-    def get_test_config(cls):
+    def load_test_config(cls):
         test_config = os.environ.get("PAI_TEST_CONFIG", "test.ini")
         cfg_parser = configparser.ConfigParser()
-        cfg_parser.set(section=DEFAULTSECT, option="workspace_name", value="")
         cfg_parser.read(os.path.join(_test_root, test_config))
 
         access_key_id = cfg_parser.get("client", "access_key_id")
         access_key_secret = cfg_parser.get("client", "access_key_secret")
         region_id = cfg_parser.get("client", "region_id")
-        odps_project = cfg_parser.get("odps", "project")
-        odps_endpoint = cfg_parser.get("odps", "endpoint")
-        odps_logview_host = cfg_parser.get("odps", "logview_host")
 
-        return {
-            "client": {
-                "region_id": region_id,
-                "access_key_id": access_key_id,
-                "access_key_secret": access_key_secret,
-            },
-            "odps": {
-                "project": odps_project,
-                "access_key_id": access_key_id,
-                "access_key_secret": access_key_secret,
-                "endpoint": odps_endpoint,
-                "logview_host": odps_logview_host,
-            },
-            "oss": {
-                "bucket": cfg_parser.get("oss", "bucket"),
-                "endpoint": cfg_parser.get("oss", "endpoint"),
-                "rolearn": cfg_parser.get("oss", "rolearn"),
-            },
-        }
+        pai_service_config = PaiServiceConfig(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region_id=region_id,
+            workspace_id=cfg_parser.get("client", "workspace_id"),
+        )
+
+        oss_config = OssConfig(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            bucket_name=cfg_parser.get("oss", "bucket"),
+            endpoint=cfg_parser.get("oss", "endpoint"),
+            role_arn=cfg_parser.get("oss", "rolearn"),
+        )
+
+        maxc_config = MaxcConfig(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            endpoint=cfg_parser.get("odps", "endpoint"),
+            project=cfg_parser.get("odps", "project"),
+        )
+        return pai_service_config, oss_config, maxc_config
 
     @staticmethod
     def _log_config():
