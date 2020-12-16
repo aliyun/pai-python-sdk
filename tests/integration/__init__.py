@@ -47,7 +47,6 @@ OssConfig = namedtuple(
 )
 
 
-# TODO: refactor config initialization.
 class BaseIntegTestCase(unittest.TestCase):
     """
     Base class for unittest, any test case class should inherit this.

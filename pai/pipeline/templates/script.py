@@ -67,6 +67,8 @@ class ScriptTemplate(ContainerTemplate):
 
     @source_dir.setter
     def source_dir(self, src_dir):
+        if src_dir is None:
+            self._source_dir = None
         if os.path.isabs(src_dir):
             self._source_dir = src_dir
         else:
@@ -114,7 +116,8 @@ class ScriptTemplate(ContainerTemplate):
         )
         return oss_url
 
-    def get_image_uri(self):
+    @classmethod
+    def get_image_uri(cls):
         region_id = get_default_session().region_id
         return ScriptTemplateImage.format(region_id=region_id)
 

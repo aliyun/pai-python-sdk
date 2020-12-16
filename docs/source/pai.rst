@@ -7,4 +7,4 @@ API Reference
    api/session
    api/pipeline
    api/estimator
-   api/xflow
+   api/algo

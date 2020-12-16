@@ -1,14 +1,14 @@
-XFlow Algorithm
+Algorithm
 --------------------------
 
 
-.. autoclass:: pai.xflow.classifier.LogisticRegression
+.. autoclass:: pai.algo.classifier.LogisticRegression
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. autoclass:: pai.xflow.classifier.RandomForestClassifier
+.. autoclass:: pai.algo.classifier.RandomForestClassifier
    :members:
    :undoc-members:
    :show-inheritance:
