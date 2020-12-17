@@ -12,7 +12,7 @@ PKG_VERSION_FILE = "pai/VERSION"
 
 def read_version():
     with open(os.path.join(pkg_root, PKG_VERSION_FILE), "r") as f:
-        return f.read()
+        return f.readline().strip()
 
 
 requirements = [

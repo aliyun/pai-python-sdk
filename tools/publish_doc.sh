@@ -8,10 +8,11 @@
 # publish_doc production           # publish production documents
 #
 
+set -e
+
 function cd_docs_dir() {
   docs_dir="$(dirname "$0")/../docs"
-  cd "$docs_dir" || (echo "cd the workdir $(pkg_dir) fail" && exit)
-  pwd
+  cd "$docs_dir" || (echo "cd the workdir $(docs_dir) fail" && exit)
 }
 
 function build_doc() {
