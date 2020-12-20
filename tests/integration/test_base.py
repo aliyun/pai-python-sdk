@@ -134,9 +134,9 @@ class TestXFlowAlgo(BaseIntegTestCase):
         dataset1 = job_outputs[0]
         dataset2 = job_outputs[1]
 
-        oss_endpoint = self.oss_info.endpoint
+        oss_endpoint = self.oss_config.endpoint
         oss_path = "/pai_test/test_algo_chain/"
-        oss_bucket = self.oss_info.bucket
+        oss_bucket = self.oss_config.bucket
 
         model_name = "test_iris_model_%d" % (random.randint(0, 999999))
         lr = LogisticRegression(
@@ -145,7 +145,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path,
             pmml_oss_endpoint=oss_endpoint,
-            pmml_oss_rolearn=self.oss_info.role_arn,
+            pmml_oss_rolearn=self.oss_config.role_arn,
             xflow_execution=xflow_execution,
         )
 
@@ -273,9 +273,9 @@ class TestXFlowAlgo(BaseIntegTestCase):
         time.sleep(20)
         split_output_1, split_output_2 = split_job.get_outputs()
 
-        oss_endpoint = self.oss_info.endpoint
+        oss_endpoint = self.oss_config.endpoint
         oss_path = "/paiflow/model_transfer2oss_test/"
-        oss_bucket = self.oss_info.bucket
+        oss_bucket = self.oss_config.bucket
         lr_job = LogisticRegression(
             regularized_type="l2",
             xflow_execution=xflow_execution,
@@ -283,7 +283,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path,
             pmml_oss_endpoint=oss_endpoint,
-            pmml_oss_rolearn=self.oss_info.role_arn,
+            pmml_oss_rolearn=self.oss_config.role_arn,
         ).fit(
             split_output_1,
             wait=True,
@@ -496,10 +496,10 @@ class TestXFlowAlgo(BaseIntegTestCase):
         p = create_pipeline()
         p.dot()
 
-        pmml_oss_endpoint = self.oss_info.endpoint
+        pmml_oss_endpoint = self.oss_config.endpoint
         pmml_oss_path = "/paiflow/model_transfer2oss_test/"
-        pmml_oss_bucket = self.oss_info.bucket
-        pmml_oss_rolearn = self.oss_info.rolearn
+        pmml_oss_bucket = self.oss_config.bucket
+        pmml_oss_rolearn = self.oss_config.rolearn
 
         dataset_table = self.odps_client.get_table(
             self.TestDataSetTables["heart_disease_prediction"]

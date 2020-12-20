@@ -52,9 +52,11 @@ class BaseIntegTestCase(unittest.TestCase):
     Base class for unittest, any test case class should inherit this.
     """
 
-    oss_info = None
-    oss_bucket = None
+    maxc_config = None
+    pai_service_config = None
+    oss_config = None
 
+    default_session = None
     odps_client = None
     default_xflow_project = "algo_public"
 
@@ -73,11 +75,11 @@ class BaseIntegTestCase(unittest.TestCase):
         super(BaseIntegTestCase, cls).setUpClass()
         cls._log_config()
 
-        pai_service_config, oss_config, maxc_config = cls.load_test_config()
+        cls.pai_service_config, cls.oss_config, cls.maxc_config = cls.load_test_config()
 
-        cls.oss_info, cls.oss_bucket = cls._get_oss_bucket(oss_config)
-        cls._setup_test_session(pai_service_config, oss_config)
-        cls.odps_client = cls._get_odps_client(maxc_config)
+        cls.oss_bucket = cls._init_oss_bucket()
+        cls.default_session = cls._setup_test_session()
+        cls.odps_client = cls._init_maxc_client()
 
     @classmethod
     def tearDownClass(cls):
@@ -96,37 +98,37 @@ class BaseIntegTestCase(unittest.TestCase):
         }
 
     @classmethod
-    def _setup_test_session(cls, pai_service_config, oss_config):
+    def _setup_test_session(cls):
         return setup_default_session(
-            access_key_id=pai_service_config.access_key_id,
-            access_key_secret=pai_service_config.access_key_secret,
-            region_id=pai_service_config.region_id,
-            workspace_id=pai_service_config.workspace_id,
-            oss_bucket_name=oss_config.bucket_name,
-            oss_endpoint=oss_config.endpoint,
+            access_key_id=cls.pai_service_config.access_key_id,
+            access_key_secret=cls.pai_service_config.access_key_secret,
+            region_id=cls.pai_service_config.region_id,
+            workspace_id=cls.pai_service_config.workspace_id,
+            oss_bucket_name=cls.oss_config.bucket_name,
+            oss_endpoint=cls.oss_config.endpoint,
         )
 
     @classmethod
-    def _get_odps_client(cls, maxc_config):
+    def _init_maxc_client(cls):
         return ODPS(
-            access_id=maxc_config.access_key_id,
-            secret_access_key=maxc_config.access_key_secret,
-            project=maxc_config.project,
-            endpoint=maxc_config.endpoint,
+            access_id=cls.maxc_config.access_key_id,
+            secret_access_key=cls.maxc_config.access_key_secret,
+            project=cls.maxc_config.project,
+            endpoint=cls.maxc_config.endpoint,
         )
 
     @classmethod
-    def _get_oss_bucket(cls, oss_config):
+    def _init_oss_bucket(cls):
         oss_auth = oss2.Auth(
-            access_key_id=oss_config.access_key_id,
-            access_key_secret=oss_config.access_key_secret,
+            access_key_id=cls.oss_config.access_key_id,
+            access_key_secret=cls.oss_config.access_key_secret,
         )
         oss_bucket = oss2.Bucket(
             oss_auth,
-            endpoint=oss_config.endpoint,
-            bucket_name=oss_config.bucket_name,
+            endpoint=cls.oss_config.endpoint,
+            bucket_name=cls.oss_config.bucket_name,
         )
-        return oss_config, oss_bucket
+        return oss_bucket
 
     @classmethod
     def load_test_config(cls):
