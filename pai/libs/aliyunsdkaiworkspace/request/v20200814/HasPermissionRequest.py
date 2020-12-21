@@ -19,9 +19,21 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class HasPermissionRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'HasPermission')
+		self.set_uri_pattern('/api/core/v1.0/permissions/[PermissionCode]/exists')
 		self.set_method('GET')
+
+	def get_PermissionCode(self):
+		return self.get_path_params().get('PermissionCode')
+
+	def set_PermissionCode(self,PermissionCode):
+		self.add_path_param('PermissionCode',PermissionCode)
+
+	def get_WorkspaceId(self):
+		return self.get_query_params().get('WorkspaceId')
+
+	def set_WorkspaceId(self,WorkspaceId):
+		self.add_query_param('WorkspaceId',WorkspaceId)

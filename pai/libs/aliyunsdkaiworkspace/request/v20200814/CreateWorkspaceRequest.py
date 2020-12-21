@@ -19,9 +19,27 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class CreateWorkspaceRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
-		self.set_method('GET')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'CreateWorkspace')
+		self.set_uri_pattern('/api/core/v1.0/workspaces')
+		self.set_method('POST')
+
+	def get_WorkspaceName(self):
+		return self.get_body_params().get('WorkspaceName')
+
+	def set_WorkspaceName(self,WorkspaceName):
+		self.add_body_params('WorkspaceName', WorkspaceName)
+
+	def get_Description(self):
+		return self.get_body_params().get('Description')
+
+	def set_Description(self,Description):
+		self.add_body_params('Description', Description)
+
+	def get_WorkspaceAlias(self):
+		return self.get_body_params().get('WorkspaceAlias')
+
+	def set_WorkspaceAlias(self,WorkspaceAlias):
+		self.add_body_params('WorkspaceAlias', WorkspaceAlias)

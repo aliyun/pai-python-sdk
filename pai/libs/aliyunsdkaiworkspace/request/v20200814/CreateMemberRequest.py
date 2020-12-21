@@ -26,6 +26,12 @@ class CreateMemberRequest(RoaRequest):
 		self.set_uri_pattern('/api/core/v1.0/workspaces/[WorkspaceId]/members')
 		self.set_method('POST')
 
+	def get_UserId(self):
+		return self.get_body_params().get('UserId')
+
+	def set_UserId(self,UserId):
+		self.add_body_params('UserId', UserId)
+
 	def get_WorkspaceId(self):
 		return self.get_path_params().get('WorkspaceId')
 

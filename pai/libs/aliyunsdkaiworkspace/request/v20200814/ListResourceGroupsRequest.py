@@ -19,9 +19,15 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class ListResourceGroupsRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListResourceGroups')
+		self.set_uri_pattern('/api/core/v1.0/tenants/[TenantId]/resourceGroups')
 		self.set_method('GET')
+
+	def get_TenantId(self):
+		return self.get_path_params().get('TenantId')
+
+	def set_TenantId(self,TenantId):
+		self.add_path_param('TenantId',TenantId)

@@ -19,9 +19,9 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class GetTenantRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetTenant')
+		self.set_uri_pattern('/api/core/v1.0/tenants')
 		self.set_method('GET')

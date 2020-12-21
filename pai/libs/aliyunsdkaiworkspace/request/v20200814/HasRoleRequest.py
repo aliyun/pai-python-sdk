@@ -19,9 +19,21 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class HasRoleRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'HasRole')
+		self.set_uri_pattern('/api/core/v1.0/roles/[RoleName]/exists')
 		self.set_method('GET')
+
+	def get_RoleARN(self):
+		return self.get_query_params().get('RoleARN')
+
+	def set_RoleARN(self,RoleARN):
+		self.add_query_param('RoleARN',RoleARN)
+
+	def get_RoleName(self):
+		return self.get_query_params().get('RoleName')
+
+	def set_RoleName(self,RoleName):
+		self.add_query_param('RoleName',RoleName)

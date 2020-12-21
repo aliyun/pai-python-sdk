@@ -19,9 +19,21 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class GetExistenceRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetExistence')
+		self.set_uri_pattern('/api/core/v1.0/existences/[Id]')
 		self.set_method('GET')
+
+	def get_Id(self):
+		return self.get_path_params().get('Id')
+
+	def set_Id(self,Id):
+		self.add_path_param('Id',Id)
+
+	def get_Type(self):
+		return self.get_query_params().get('Type')
+
+	def set_Type(self,Type):
+		self.add_query_param('Type',Type)

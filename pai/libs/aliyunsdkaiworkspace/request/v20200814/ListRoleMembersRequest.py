@@ -19,9 +19,15 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class GetDefaultWorkspaceRequest(RoaRequest):
+class ListRoleMembersRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'GetDefaultWorkspace')
-		self.set_uri_pattern('/api/core/v1.0/defaultWorkspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListRoleMembers')
+		self.set_uri_pattern('/api/core/v1.0/workspaces/[WorkspaceId]/roleMembers')
 		self.set_method('GET')
+
+	def get_WorkspaceId(self):
+		return self.get_path_params().get('WorkspaceId')
+
+	def set_WorkspaceId(self,WorkspaceId):
+		self.add_path_param('WorkspaceId',WorkspaceId)

@@ -26,18 +26,6 @@ class ListSubUsersRequest(RoaRequest):
 		self.set_uri_pattern('/api/core/v1.0/subUsers')
 		self.set_method('GET')
 
-	def get_PageSize(self):
-		return self.get_query_params().get('PageSize')
-
-	def set_PageSize(self,PageSize):
-		self.add_query_param('PageSize',PageSize)
-
-	def get_PageNumber(self):
-		return self.get_query_params().get('PageNumber')
-
-	def set_PageNumber(self,PageNumber):
-		self.add_query_param('PageNumber',PageNumber)
-
 	def get_ExcludeWorkspaceId(self):
 		return self.get_query_params().get('ExcludeWorkspaceId')
 

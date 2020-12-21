@@ -19,11 +19,11 @@
 
 from aliyunsdkcore.request import RoaRequest
 
-class ListWorkspacesRequest(RoaRequest):
+class ListResourcesRequest(RoaRequest):
 
 	def __init__(self):
-		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListWorkspaces')
-		self.set_uri_pattern('/api/core/v1.0/workspaces')
+		RoaRequest.__init__(self, 'AIWorkSpace', '2020-08-14', 'ListResources')
+		self.set_uri_pattern('/api/core/v1.0/workspaces/[WorkspaceId]/resources')
 		self.set_method('GET')
 
 	def get_PageSize(self):
@@ -32,23 +32,11 @@ class ListWorkspacesRequest(RoaRequest):
 	def set_PageSize(self,PageSize):
 		self.add_query_param('PageSize',PageSize)
 
-	def get_WorkspaceName(self):
-		return self.get_query_params().get('WorkspaceName')
+	def get_ResourceName(self):
+		return self.get_query_params().get('ResourceName')
 
-	def set_WorkspaceName(self,WorkspaceName):
-		self.add_query_param('WorkspaceName',WorkspaceName)
-
-	def get_SortOrder(self):
-		return self.get_query_params().get('SortOrder')
-
-	def set_SortOrder(self,SortOrder):
-		self.add_query_param('SortOrder',SortOrder)
-
-	def get_SortField(self):
-		return self.get_query_params().get('SortField')
-
-	def set_SortField(self,SortField):
-		self.add_query_param('SortField',SortField)
+	def set_ResourceName(self,ResourceName):
+		self.add_query_param('ResourceName',ResourceName)
 
 	def get_PageNumber(self):
 		return self.get_query_params().get('PageNumber')
@@ -57,7 +45,13 @@ class ListWorkspacesRequest(RoaRequest):
 		self.add_query_param('PageNumber',PageNumber)
 
 	def get_WorkspaceId(self):
-		return self.get_query_params().get('WorkspaceId')
+		return self.get_path_params().get('WorkspaceId')
 
 	def set_WorkspaceId(self,WorkspaceId):
-		self.add_query_param('WorkspaceId',WorkspaceId)
+		self.add_path_param('WorkspaceId',WorkspaceId)
+
+	def get_ProductType(self):
+		return self.get_query_params().get('ProductType')
+
+	def set_ProductType(self,ProductType):
+		self.add_query_param('ProductType',ProductType)

@@ -26,11 +26,11 @@ class UpdateWorkspaceRequest(RoaRequest):
 		self.set_uri_pattern('/api/core/v1.0/workspaces/[WorkspaceId]')
 		self.set_method('PUT')
 
-	def get_WorkspaceName(self):
-		return self.get_body_params().get('WorkspaceName')
+	def get_WorkspaceAlias(self):
+		return self.get_body_params().get('WorkspaceAlias')
 
-	def set_WorkspaceName(self,WorkspaceName):
-		self.add_body_params('WorkspaceName', WorkspaceName)
+	def set_WorkspaceAlias(self,WorkspaceAlias):
+		self.add_body_params('WorkspaceAlias', WorkspaceAlias)
 
 	def get_WorkspaceId(self):
 		return self.get_path_params().get('WorkspaceId')
