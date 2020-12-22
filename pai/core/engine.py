@@ -27,17 +27,19 @@ class ComputeEngine(with_metaclass(ABCMeta)):
         self.name = name
         self.is_default = is_default
 
+    def __str__(self):
+        return "%s:%s" % (type(self).__name__, self.name)
+
+    def __repr__(self):
+        return self.__str__()
+
     def to_execution_config(self, **kwargs):
         raise NotImplementedError(
             "to_execution_config in ComputeEngine is not implemented."
         )
 
     @classmethod
-    def create(cls, engine_info):
-        return cls(name=engine_info["Name"], is_default=engine_info["IsDefault"])
-
-    @classmethod
-    def load_from_dict(cls, compute_engine_info):
+    def deserialize(cls, compute_engine_info):
         if "ResourceInstances" not in compute_engine_info:
             raise ValueError(
                 "require 'ResourceInstance' in ComputeEngine information dict."
@@ -50,8 +52,11 @@ class ComputeEngine(with_metaclass(ABCMeta)):
 
         for engine_cls in ComputeEngine.__subclasses__():
             if engine_cls.EngineType == engine_type:
-                return engine_cls.create(compute_engine_info)
-        return ComputeEngine.create(compute_engine_info)
+                return engine_cls.deserialize(compute_engine_info)
+        return cls(
+            name=compute_engine_info["Name"],
+            is_default=compute_engine_info["IsDefault"],
+        )
 
 
 class MaxComputeEngine(ComputeEngine):
@@ -95,7 +100,7 @@ class MaxComputeEngine(ComputeEngine):
         }
 
     @classmethod
-    def create(cls, engine_info):
+    def deserialize(cls, engine_info):
         instances = [
             MaxComputeProjectInstance.create(info)
             for info in engine_info["ResourceInstances"]
@@ -151,7 +156,7 @@ class MaxComputeProjectInstance(object):
         is_default = instance_info.get("IsDefault")
         name = instance_info.get("Name")
         resource_groups = [
-            ResourceGroup.load_from_dict(rg_info)
+            ResourceGroup.deserialize(rg_info)
             for rg_info in instance_info["ResourceGroups"]
         ]
 
@@ -207,10 +212,18 @@ class ResourceGroup(object):
         self.quotas = quotas
 
     def __str__(self):
-        return "%s:%s:%s:%s" % (type(self), self.name, self.commodity_code, self.mode)
+        return "%s:%s:%s:%s" % (
+            type(self).__name__,
+            self.name,
+            self.commodity_code,
+            self.mode,
+        )
+
+    def __repr__(self):
+        return self.__str__()
 
     @classmethod
-    def load_from_dict(cls, resource_group_info):
+    def deserialize(cls, resource_group_info):
         name = resource_group_info["Name"]
         card_type = resource_group_info["CardType"]
         commodity_code = resource_group_info["CommodityCode"]

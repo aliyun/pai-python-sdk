@@ -18,10 +18,11 @@ def setup_default_session(
     access_key_id=None,
     access_key_secret=None,
     region_id=None,
-    workspace_id=None,
     oss_bucket=None,
     oss_bucket_name=None,
     oss_endpoint=None,
+    workspace_id=None,
+    workspace_name=None,
     **kwargs
 ):
     """Setup the default session used by the program.
@@ -34,10 +35,11 @@ def setup_default_session(
         access_key_secret (str): Alibaba Cloud access key secret.
         region_id (str): Alibaba Cloud region id, Please visit below url to view the detail:
              https://help.aliyun.com/document_detail/40654.html
-        workspace_id:
         oss_bucket (oss2.Bucket): oss2.Bucket object.
         oss_endpoint:
         oss_bucket_name:
+        workspace_id: Id of workspace use in the default session.
+        workspace_name: Name of workspace in the default session.
         **kwargs:
 
     Returns:
@@ -64,9 +66,20 @@ def setup_default_session(
     )
     Session._default_session = session
 
+    if workspace_name and workspace_id:
+        raise ValueError(
+            "both workspace_name and workspace_id are provided, only one is required."
+        )
+
     if workspace_id:
         workspace = Workspace.get(workspace_id)
+        if not workspace:
+            raise ValueError("Workspace not found, workspace_id=%s" % workspace_id)
         session.set_workspace(workspace=workspace)
+    elif workspace_name:
+        workspace = Workspace.get_by_name(name=workspace_name)
+        if not workspace:
+            raise ValueError("Workspace not found, workspace_name=%s" % workspace_name)
 
     return session
 

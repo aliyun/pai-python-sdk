@@ -18,7 +18,9 @@ def paginate_service_call(f):
     @wraps(f)
     def _(self, *args, **kwargs):
         request = f(self, *args, **kwargs)
-        return self._call_paginate_service_with_exception(request)
+        page_num = kwargs.pop("page_num", 1)
+        page_size = kwargs.pop("page_size", DefaultPageSize)
+        return self._call_paginate_service_with_exception(request, page_num, page_size)
 
     return _
 
@@ -56,8 +58,9 @@ class BaseClient(object):
             raise ServiceCallException(e.__str__())
         return resp
 
-    def _call_paginate_service_with_exception(self, request, page_size=DefaultPageSize):
-        page_num = 1
+    def _call_paginate_service_with_exception(
+        self, request, page_num=1, page_size=DefaultPageSize
+    ):
         is_end = False
         while not is_end:
             request.set_PageNumber(page_num)

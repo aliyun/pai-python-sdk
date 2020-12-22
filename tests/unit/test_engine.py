@@ -211,7 +211,7 @@ class TestComputeEngine(BaseUnitTestCase):
         ]
 
         for case in cases:
-            compute_engine = ComputeEngine.load_from_dict(case["input"])
+            compute_engine = ComputeEngine.deserialize(case["input"])
             self.assertIsInstance(
                 compute_engine,
                 case["expected"]["cls"],
