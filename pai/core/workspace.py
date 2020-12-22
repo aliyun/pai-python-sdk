@@ -89,10 +89,18 @@ class Workspace(object):
 
     @classmethod
     def get_by_name(cls, name):
+        name = name.strip()
         if not name:
             raise ValueError("Please given validate workspace name.")
 
-        ws_info = next(cls._get_workspace_client().list(name=name), None)
+        ws_info = next(
+            (
+                ws
+                for ws in cls._get_workspace_client().list(name=name)
+                if ws["WorkspaceName"] == name
+            ),
+            None,
+        )
         if not ws_info:
             return
         return cls._load_from_dict(ws_info)
