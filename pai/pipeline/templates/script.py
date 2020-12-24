@@ -9,7 +9,7 @@ from pai.common.utils import tar_source_files, file_checksum
 from pai.core.session import get_default_session
 from pai.pipeline.templates.container import ContainerTemplate
 
-ScriptTemplateImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:0.1.1"
+ScriptTemplateImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:1.0.0"
 
 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND = "launch"
 PAI_SOURCE_CODE_ENV_KEY = "PAI_SOURCE_CODE_URL"
@@ -96,13 +96,13 @@ class ScriptTemplate(ContainerTemplate):
             object_key = "pai/script_template/{date}/{checksum}/source.gz.tar".format(
                 date=date.today().isoformat(), checksum=checksum
             )
-            oss_url = self.put_if_not_exists(src=tar_result, object_key=object_key)
+            oss_url = self._put_source_if_not_exists(src=tar_result, object_key=object_key)
             self._code_url = oss_url
             return self._code_url
         finally:
             os.remove(tar_result)
 
-    def put_if_not_exists(self, src, object_key):
+    def _put_source_if_not_exists(self, src, object_key):
         oss_bucket = self.get_oss_bucket()
         try:
             oss_bucket.head_object(object_key)
