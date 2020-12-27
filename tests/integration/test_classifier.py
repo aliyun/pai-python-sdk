@@ -35,7 +35,7 @@ class TestLogisticsRegression(BaseIntegTestCase):
         model_name = "test_iris_model_%d" % random.randint(0, 999999)
         lr = LogisticRegression(
             regularized_type="l2",
-            xflow_execution=self.get_default_maxc_execution(),
+            max_compute_execution=self.get_default_maxc_execution(),
         )
 
         iris_dataset_table = self.odps_client.get_table(
@@ -60,12 +60,17 @@ class TestLogisticsRegression(BaseIntegTestCase):
         self.assertIsNotNone(offline_model)
 
     def test_async_train(self):
+        from pai.core.session import get_default_session
+
+        sess = get_default_session()
+        print("Workspace")
+        print(sess.workspace)
         model_name = "test_wumai_model_%d" % random.randint(0, 999999)
         self.temp_models.append(model_name)
 
         lr = LogisticRegression(
             regularized_type="l2",
-            xflow_execution=self.get_default_maxc_execution(),
+            max_compute_execution=self.get_default_maxc_execution(),
         )
         run_job = lr.fit(
             wait=False,

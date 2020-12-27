@@ -88,7 +88,6 @@ class TemplateSpecBase(six.with_metaclass(ABCMeta, object)):
         spec = {"inputs": self.inputs.to_dict(), "outputs": self.outputs.to_dict()}
         return spec
 
-    @abstractmethod
     def to_dict(self):
         data = {
             "apiVersion": DEFAULT_PIPELINE_API_VERSION,

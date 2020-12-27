@@ -22,7 +22,7 @@ from pai.algo.classifier import LogisticRegression
 from tests.integration import BaseIntegTestCase
 
 
-class TestXFlowEstimator(BaseIntegTestCase):
+class TestEstimator(BaseIntegTestCase):
     def test_algo_init(self):
         lr = LogisticRegression(
             regularized_level=1.0, regularized_type="l2", max_iter=200, epsilon=1e-6
@@ -108,7 +108,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
     @unittest.skip("Simplify the test case")
     def test_algo_chain(self):
         default_project = self.odps_client.project
-        xflow_execution = self.get_default_maxc_execution()
+        maxc_execution = self.get_default_maxc_execution()
         data_set = self.odps_client.get_table(
             self.TestDataSetTables["processed_wumai_data_1"]
         )
@@ -120,7 +120,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
         ).run(
             job_name="split-job",
             arguments={
-                "execution": xflow_execution,
+                "execution": maxc_execution,
                 "fraction": 0.7,
                 "inputArtifact": data_set,
                 "output1TableName": gen_temp_table(),
@@ -136,7 +136,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
 
         oss_endpoint = self.oss_config.endpoint
         oss_path = "/pai_test/test_algo_chain/"
-        oss_bucket = self.oss_config.bucket
+        oss_bucket = self.oss_config.bucket_name
 
         model_name = "test_iris_model_%d" % (random.randint(0, 999999))
         lr = LogisticRegression(
@@ -146,7 +146,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             pmml_oss_path=oss_path,
             pmml_oss_endpoint=oss_endpoint,
             pmml_oss_rolearn=self.oss_config.role_arn,
-            xflow_execution=xflow_execution,
+            max_compute_execution=maxc_execution,
         )
 
         feature_cols = ["pm10", "so2", "co", "no2"]
@@ -170,7 +170,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             )
         )
         model = job.create_model(output_name="outputArtifact")
-        tf = model.transformer(xflow_execution=xflow_execution)
+        tf = model.transformer(xflow_execution=maxc_execution)
         job = tf.transform(
             input_data=dataset2,
             wait=False,
@@ -275,7 +275,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
 
         oss_endpoint = self.oss_config.endpoint
         oss_path = "/paiflow/model_transfer2oss_test/"
-        oss_bucket = self.oss_config.bucket
+        oss_bucket = self.oss_config.bucket_name
         lr_job = LogisticRegression(
             regularized_type="l2",
             xflow_execution=xflow_execution,
@@ -498,8 +498,8 @@ class TestXFlowAlgo(BaseIntegTestCase):
 
         pmml_oss_endpoint = self.oss_config.endpoint
         pmml_oss_path = "/paiflow/model_transfer2oss_test/"
-        pmml_oss_bucket = self.oss_config.bucket
-        pmml_oss_rolearn = self.oss_config.rolearn
+        pmml_oss_bucket = self.oss_config.bucket_name
+        pmml_oss_rolearn = self.oss_config.role_arn
 
         dataset_table = self.odps_client.get_table(
             self.TestDataSetTables["heart_disease_prediction"]

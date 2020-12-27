@@ -159,6 +159,6 @@ class WorkspaceMember(object):
             user_id=d["UserId"],
             id=d["MemberId"],
             name=d["MemberName"],
-            display_name=d["DisplayName"],
+            display_name=d["MemberAlias"],
             roles=d["Roles"],
         )

@@ -25,6 +25,3 @@ class TestWorkspace(BaseIntegTestCase):
     def test_list_members(self):
         workspace = Workspace.get(self.pai_service_config.workspace_id)
         print(len([member for member in workspace.list_member()]))
-
-
-

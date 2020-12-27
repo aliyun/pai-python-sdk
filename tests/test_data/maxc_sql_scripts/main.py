@@ -26,7 +26,7 @@ def build_sql(sql, context):
         if not artifact.raw_value:
             continue
         placeholder = "${%s}" % artifact.name
-        table = artifact.table()
+        table = artifact.get_table()
         sql = sql.replace(placeholder, table)
     sql_sentences = MaxComputeSqlUtils.split(sql)
     if len(sql_sentences) == 0:
@@ -45,12 +45,7 @@ def build_sql(sql, context):
 def main():
     args, run_context = prepare()
     maxc_execution = json.loads(args.execution)
-    max_compute_executor = MaxComputeExecutor(
-        project=maxc_execution["odpsProject"],
-        endpoint=maxc_execution["endpoint"],
-        access_key_id=maxc_execution.get("accessKeyId"),
-        access_key_secret=maxc_execution.get("accessKeySecret"),
-    )
+    max_compute_executor = MaxComputeExecutor.from_config(maxc_execution)
 
     sql_script, dest_table = build_sql(args.sql, run_context)
 
@@ -60,7 +55,7 @@ def main():
         sql=sql_script,
         delete_tables=dest_table,
     )
-    max_compute_executor.run(job)
+    max_compute_executor.submit(job)
 
 
 if __name__ == "__main__":

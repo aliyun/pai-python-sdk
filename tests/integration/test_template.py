@@ -12,7 +12,7 @@ from pai.common.utils import iter_with_limit
 class TestTemplate(BaseIntegTestCase):
     def test_list_templates(self):
         templates = list(
-            iter_with_limit(PipelineTemplate.list(identifier="xflow", fuzzy=True), 10)
+            iter_with_limit(PipelineTemplate.list(provider=ProviderAlibabaPAI), 100)
         )
         self.assertTrue(len(templates) != 0)
 

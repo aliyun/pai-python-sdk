@@ -1,6 +1,7 @@
 import os
 from pprint import pprint
 
+import re
 from pai.pipeline import PipelineParameter
 from pai.pipeline.templates.script import (
     ScriptTemplate,
@@ -20,12 +21,12 @@ from tests.unit import BaseUnitTestCase
 from tests.test_data import SCRIPT_DIR_PATH
 
 
-class TestPythonScriptTemplate(BaseUnitTestCase):
+class TestScriptTemplate(BaseUnitTestCase):
     def test_script(self):
         entry_point = "main.py"
         script_templ = ScriptTemplate(
             source_dir=SCRIPT_DIR_PATH,
-            entry_point="main.py",
+            entry_file="main.py",
             inputs=[],
             env={
                 "hello": "world",
@@ -46,10 +47,53 @@ class TestPythonScriptTemplate(BaseUnitTestCase):
             [PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND],
         )
 
+    def test_check_script_source_files(self):
+        cases = [
+            {
+                "name": "oss_source_case1",
+                "input": {
+                    "entry_file": "oss://test_bucket/main.py",
+                    "source_dir": "oss://test_bucket/hello/world",
+                },
+                "expectedErrorMsg": "OSS",
+            },
+            {
+                "name": "oss_source_case2",
+                "input": {
+                    "entry_file": "oss://test_bucket/main.py",
+                    "source_dir": "/test_bucket/hello/world",
+                },
+                "expectedErrorMsg": "OSS",
+            },
+            {
+                "name": "entry_file_is_dir",
+                "input": {
+                    "entry_file": "oss://test_bucket/source_path/dir/",
+                    "source_dir": "/test_bucket/hello/world",
+                },
+                "expectedErrorMsg": r"directory path",
+            },
+            {
+                "name": "source",
+                "input": {
+                    "entry_file": "test_bucket/source_path/dir/main.py",
+                    "source_dir": "/test_bucket/hello/world",
+                },
+                "expectedErrorMsg": "top-level directory",
+            },
+        ]
+
+        for case in cases:
+            with self.assertRaisesRegexp(ValueError, case["expectedErrorMsg"]):
+                ScriptTemplate.check_source_file(
+                    entry_file=case["input"]["entry_file"],
+                    source_dir=case["input"]["source_dir"],
+                )
+
     def test_table_ref(self):
         templ = ScriptTemplate(
             source_dir="./scripts",
-            entry_point="main.py",
+            entry_file="main.py",
             inputs=[
                 PipelineParameter(
                     "tableName",

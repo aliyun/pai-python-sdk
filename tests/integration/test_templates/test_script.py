@@ -1,4 +1,7 @@
-from pai.pipeline import PipelineRunStatus
+import contextlib
+
+import os
+
 from pai.pipeline.templates import (
     ScriptTemplate,
     PAI_SOURCE_CODE_ENV_KEY,
@@ -20,52 +23,81 @@ from tests.test_data import SCRIPT_DIR_PATH, MAXC_SQL_TEMPLATE_SCRIPT_PATH
 from pai.common.utils import gen_temp_table
 
 
+@contextlib.contextmanager
+def cwd_context(target_dir):
+    previous_dir = os.getcwd()
+    os.chdir(target_dir)
+    try:
+        yield
+    finally:
+        os.chdir(previous_dir)
+
+
 class TestScriptTemplate(BaseIntegTestCase):
     @classmethod
     def get_maxc_config(cls):
         _, _, maxc_config = cls.load_test_config()
         return maxc_config
 
-    def test_script(self):
+    def test_local_source_files(self):
         templ = ScriptTemplate(
-            entry_point="main.py",
+            entry_file="main.py",
             source_dir=SCRIPT_DIR_PATH,
             inputs=[
                 PipelineParameter(name="foo", typ=int, default=10),
                 PipelineParameter(name="bar", typ=int, default=200),
-                PipelineArtifact(
-                    name="dataSet",
-                    metadata=ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.OSS,
-                    ),
-                ),
             ],
-            outputs=[
-                PipelineParameter(name="result", typ=int, default=100),
-                PipelineArtifact(
-                    name="handled",
-                    metadata=ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.OSS,
-                    ),
-                ),
-            ],
-            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/base:0.1.0",
         )
         templ.prepare()
         manifest = templ.to_dict()
-        env_vars = manifest["spec"]["execution"]["env"]
-        print(env_vars)
-
+        env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
-        run = templ.run(job_name="HelloWorld", wait=True)
-        self.assertEqual(run.get_status(), PipelineRunStatus.Succeeded)
+
+    def test_single_local_file(self):
+        templ = ScriptTemplate(
+            entry_file="../../test_data/maxc_sql_scripts/main.py",
+            inputs=[
+                PipelineParameter(name="foo", typ=int, default=10),
+                PipelineParameter(name="bar", typ=int, default=200),
+            ],
+        )
+        templ.prepare()
+        manifest = templ.to_dict()
+        env_vars = manifest["spec"]["container"]["envs"]
+        self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+
+    def test_oss_source_files(self):
+        templ = ScriptTemplate(
+            entry_file="main.py",
+            source_dir="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to_files/source.tar.gz",
+        )
+        templ.prepare()
+        manifest = templ.to_dict()
+        env_vars = manifest["spec"]["container"]["envs"]
+        self.assertTrue(
+            env_vars[PAI_SOURCE_CODE_ENV_KEY],
+            "oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to_files/source.tar.gz",
+        )
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+
+    def test_oss_single_file(self):
+        templ = ScriptTemplate(
+            entry_file="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/main.py",
+        )
+        templ.prepare()
+        manifest = templ.to_dict()
+        env_vars = manifest["spec"]["container"]["envs"]
+        self.assertTrue(
+            env_vars[PAI_SOURCE_CODE_ENV_KEY],
+            "oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/main.py",
+        )
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
 
     def test_local_run(self):
         templ = ScriptTemplate(
-            entry_point="main.py",
+            entry_file="main.py",
             source_dir=MAXC_SQL_TEMPLATE_SCRIPT_PATH,
             inputs=[
                 PipelineParameter("sql"),
@@ -120,11 +152,9 @@ class TestScriptTemplate(BaseIntegTestCase):
             arguments={
                 "sql": """
                 -- SQL Example
-                describe ${t1};
                 select * from ${t2};
                 """,
-                "t1": "odps://pai_sdk_test/tables/sample",
-                "t2": "odps://pai_sdk_test/tables/iris_data",
+                "t2": "odps://pai_online_project/tables/breast_cancer_data",
                 "outputTable": gen_temp_table(),
                 "execution": {
                     "endpoint": maxc_config.endpoint,

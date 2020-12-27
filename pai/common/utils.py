@@ -112,3 +112,21 @@ def file_checksum(file_name, hash_type="md5"):
         for chunk in iter(lambda: f.read(256 * 1024), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def to_abs_path(path):
+    if os.path.isabs(path):
+        return path
+    else:
+        return os.path.abspath(path)
+
+
+def extract_file_name(file_or_path):
+    _, tail = os.path.split(file_or_path)
+    return tail.strip()
+
+
+def makedirs(path_dir, mode=0o777):
+    if not os.path.exists(path_dir):
+        # argument `exist_ok` not support in Python2
+        os.makedirs(path_dir, mode=mode)

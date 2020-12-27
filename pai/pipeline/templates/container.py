@@ -12,6 +12,7 @@ import shutil
 from pai.pipeline.base import TemplateSpecBase
 from pai.pipeline.types.artifact import PipelineArtifact
 from pai.pipeline.types.spec import IO_TYPE_OUTPUTS
+from pai.common.utils import makedirs
 
 # PAI_BASE_DIR_ENV_KEY = "PAI_BASE_DIR"
 PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
@@ -56,12 +57,10 @@ class ContainerTemplate(TemplateSpecBase):
             "image": self.image_uri,
             "command": self.command,
         }
-
-        if self.image_registry_config:
-            d["spec"]["container"]["imageRegistryConfig"] = self.image_registry_config
-
-        if self.env:
-            d["spec"]["container"]["envs"] = self.env
+        d["spec"]["container"]["imageRegistryConfig"] = (
+            self.image_registry_config or dict()
+        )
+        d["spec"]["container"]["envs"] = self.env or dict()
         return d
 
     def run(self, job_name, arguments=None, local_mode=False, **kwargs):
@@ -73,8 +72,6 @@ class ContainerTemplate(TemplateSpecBase):
             )
 
     def _local_run(self, job_name, arguments=None):
-        source_dir = self.source_dir if hasattr(self, "source_dir") else None
-        entry_point = self.entry_point if hasattr(self, "entry_point") else None
         return LocalContainerRun(
             job_name=job_name,
             inputs=self.inputs,
@@ -83,8 +80,6 @@ class ContainerTemplate(TemplateSpecBase):
             command=self.command,
             arguments=arguments,
             env=self.env.copy() if self.env else None,
-            source_dir=source_dir,
-            entry_point=entry_point,
         ).run()
 
 
@@ -101,7 +96,7 @@ class LocalContainerRun(object):
         arguments,
         env=None,
         container_base_dir=None,
-        source_dir=None,
+        source_files=None,
         entry_point=None,
     ):
         """
@@ -123,8 +118,8 @@ class LocalContainerRun(object):
         self.command = command
         self.arguments = arguments
         self.container_base_dir = container_base_dir or type(self).BASE_WORKSPACE_DIR
-        self.source_dir = source_dir
         self.entry_point = entry_point
+        self.source_files = source_files
         self.tmp_base_dir = None
 
     def prepare(self):
@@ -178,19 +173,21 @@ class LocalContainerRun(object):
         )
 
     def _prepare_code(self):
-        source_dir = (
-            self.source_dir
-            if hasattr(self, "source_dir") and self.source_dir
-            else os.path.dirname(self.entry_point)
-        )
-
         target_dir = "{0}/code/".format(self.tmp_base_dir)
-        shutil.copytree(source_dir, target_dir)
-        self.env.update(
-            {
-                PAI_PROGRAM_ENTRY_POINT_ENV_KEY: self.entry_point,
-            }
-        )
+        makedirs(target_dir)
+
+        if self.source_files:
+            for src in self.source_files:
+                if os.path.isfile(src):
+                    shutil.copy(src, target_dir)
+                else:
+                    shutil.copytree(src, target_dir)
+        if self.entry_point:
+            self.env.update(
+                {
+                    PAI_PROGRAM_ENTRY_POINT_ENV_KEY: self.entry_point,
+                }
+            )
 
     def _prepare_artifacts(self):
         artifact_path_format = "{0}/{1}/artifacts/{2}/data"

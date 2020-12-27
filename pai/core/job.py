@@ -9,8 +9,11 @@ from ..pipeline.run import PipelineRunStatus
 
 
 class JobStatus(Enum):
-    Init = "Init"
+    Initialized = "Initialized"
+    ReadyToSchedule = "ReadyToSchedule"
+    Starting = "Starting"
     Running = "Running"
+    WorkflowServiceStarting = "WorkflowServiceStarting"
     Suspended = "Suspended"
     Succeeded = "Succeeded"
     Terminated = "Terminated"
