@@ -8,16 +8,14 @@ class _MaxComputeAlgoMixin(object):
     _enable_sparse = False
     XFlowProjectDefault = "algo_public"
 
-    def __init__(
-        self, max_compute_execution=None, core_num=None, mem_size_per_core=None
-    ):
-        self.max_compute_execution = max_compute_execution
+    def __init__(self, execution=None, core_num=None, mem_size_per_core=None):
+        self.execution = execution
         self.core_num = core_num
         self.mem_size_per_core = mem_size_per_core
 
     def get_maxc_args(self):
         return {
-            "execution": self.max_compute_execution,
+            "execution": self.execution,
         }
 
     def _compile_args(self, *inputs, **kwargs):
@@ -39,7 +37,7 @@ class MaxComputeEstimator(AlgoBaseEstimator, _MaxComputeAlgoMixin):
 
     def __init__(
         self,
-        max_compute_execution=None,
+        execution=None,
         pmml_gen=None,
         pmml_oss_path=None,
         pmml_oss_endpoint=None,
@@ -56,7 +54,7 @@ class MaxComputeEstimator(AlgoBaseEstimator, _MaxComputeAlgoMixin):
             pmml_oss_bucket=pmml_oss_bucket,
             **kwargs
         )
-        _MaxComputeAlgoMixin.__init__(self, max_compute_execution=max_compute_execution)
+        _MaxComputeAlgoMixin.__init__(self, execution=execution)
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(MaxComputeEstimator, self)._compile_args(*inputs, **kwargs)
@@ -71,6 +69,6 @@ class MaxComputeEstimator(AlgoBaseEstimator, _MaxComputeAlgoMixin):
 
 
 class MaxComputeTransformer(AlgoBaseTransformer, _MaxComputeAlgoMixin):
-    def __init__(self, max_compute_execution=None, **kwargs):
+    def __init__(self, execution=None, **kwargs):
         AlgoBaseTransformer.__init__(self, **kwargs)
-        _MaxComputeAlgoMixin.__init__(self, max_compute_execution=max_compute_execution)
+        _MaxComputeAlgoMixin.__init__(self, execution=execution)

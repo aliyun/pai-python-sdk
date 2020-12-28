@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from pai.common import ProviderAlibabaPAI
 from pai.pipeline import PipelineParameter, PipelineStep, Pipeline
-from pai.common.utils import gen_temp_table
+from pai.common.utils import gen_run_node_scoped_placeholder
 
 
 def create_simple_composite_pipeline():
@@ -31,7 +31,7 @@ def create_simple_composite_pipeline():
         inputs={
             "inputArtifact": data_source_step.outputs["outputArtifact"],
             "execution": execution_input,
-            "outputTable": gen_temp_table(),
+            "outputTable": gen_run_node_scoped_placeholder(suffix="outputTable"),
             "cols_to_double": cols_to_double_input,
             "coreNum": 2,
             "memSizePerCore": 1024,
@@ -44,9 +44,9 @@ def create_simple_composite_pipeline():
         inputs={
             "inputArtifact": type_transform_step.outputs[0],
             "execution": execution_input,
-            "output1TableName": gen_temp_table(),
+            "output1TableName": gen_run_node_scoped_placeholder(suffix="output1Table"),
             "fraction": 0.5,
-            "output2TableName": gen_temp_table(),
+            "output2TableName": gen_run_node_scoped_placeholder(suffix="output2Table"),
             "coreNum": 2,
             "memSizePerCore": 1024,
             "lifecycle": 28,

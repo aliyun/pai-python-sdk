@@ -47,6 +47,27 @@ OssConfig = namedtuple(
 )
 
 
+class PublicMaxComputeTableDataSet(object):
+    default_dataset_project = "pai_online_project"
+
+    def __init__(self, table_name, feature_cols, label_col):
+        self.table_name = table_name
+        self.feature_cols = feature_cols
+        self.label_col = label_col
+
+    @property
+    def columns(self):
+        return self.feature_cols + [self.label_col]
+
+    def get_table(self):
+        return "%s.%s" % (self.default_dataset_project, self.table_name)
+
+    def to_url(self):
+        return "odps://{0}/tables/{1}".format(
+            type(self).default_dataset_project, self.table_name
+        )
+
+
 class BaseIntegTestCase(unittest.TestCase):
     """
     Base class for unittest, any test case class should inherit this.
@@ -60,15 +81,54 @@ class BaseIntegTestCase(unittest.TestCase):
     odps_client = None
     default_xflow_project = "algo_public"
 
-    TestDataSetTables = {
-        "heart_disease_prediction": "heart_disease_prediction",
-        "wumai_data": "wumai_data",
-        "iris_data": "iris_data",
-        "processed_wumai_data_1": "sdk_test_wumai_dataset_1",
-        "processed_wumai_data_2": "sdk_test_wumai_dataset_2",
-    }
+    wumai_dataset = PublicMaxComputeTableDataSet(
+        table_name="wumai_data",
+        feature_cols=[
+            "hour",
+            "time",
+            "pm10",
+            "so2",
+            "co",
+            "no2",
+        ],
+        label_col="pm2",
+    )
 
-    TestModels = {"wumai_model": "wumai_model"}
+    breast_cancer_dataset = PublicMaxComputeTableDataSet(
+        table_name="breast_cancer_data",
+        feature_cols=[
+            "age",
+            "menopause",
+            "tumor_size",
+            "inv_nodes",
+            "node_caps",
+            "deg_malig",
+            "breast",
+            "breast_quad",
+            "irradiat",
+        ],
+        label_col="class",
+    )
+
+    heart_disease_prediction_dataset = PublicMaxComputeTableDataSet(
+        table_name="heart_disease_prediction",
+        feature_cols=[
+            "sex",
+            "cp",
+            "fbs",
+            "restecg",
+            "exang",
+            "slop",
+            "thal",
+            "age",
+            "trestbps",
+            "chol",
+            "thalach",
+            "oldpeak",
+            "ca",
+        ],
+        label_col="ifhealth",
+    )
 
     @classmethod
     def setUpClass(cls):

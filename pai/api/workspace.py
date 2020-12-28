@@ -17,7 +17,6 @@ from pai.libs.aliyunsdkaiworkspace.request.v20200814 import (
     CreateMemberRequest,
     ListPermissionsRequest,
     GetPermissionRequest,
-    GetDefaultWorkspaceRequest,
     GetTenantRequest,
     ListResourcesRequest,
 )
@@ -115,7 +114,7 @@ class WorkspaceClient(BaseClient):
     def list_sub_users(self, exclude_workspace_id=None):
         request = self._construct_request(ListSubUsersRequest.ListSubUsersRequest)
         if exclude_workspace_id:
-            request.set_WorkspaceId(exclude_workspace_id)
+            request.set_ExcludeWorkspaceId(exclude_workspace_id)
         return self._call_service_with_exception(request)
 
     def list_permissions(self, workspace_id):
@@ -129,12 +128,6 @@ class WorkspaceClient(BaseClient):
         request.set_PermissionCode(permission_code)
         return self._call_service_with_exception(request)
 
-    def get_default_workspace(self):
-        request = self._construct_request(
-            GetDefaultWorkspaceRequest.GetDefaultWorkspaceRequest
-        )
-        return self._call_service_with_exception(request)
-
     def create_tenant(self):
         request = self._construct_request(CreateTenantRequest.CreateTenantRequest)
         return self._call_service_with_exception(request)
@@ -144,7 +137,6 @@ class WorkspaceClient(BaseClient):
         return self._call_service_with_exception(request)
 
     def add_compute_engine(self, workspace_id):
-        request = self._construct_request(CreateResourceRequest.CreateResourceRequest)
         pass
 
     @paginate_service_call

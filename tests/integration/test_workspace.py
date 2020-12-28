@@ -14,21 +14,21 @@ class TestWorkspace(BaseIntegTestCase):
         super(TestWorkspace, cls).setUpClass()
         cls.default_workspace = Workspace.get(cls.pai_service_config.workspace_id)
 
+    def test_list_workspace(self):
+        self.assertIsNotNone(self.default_workspace)
+        limit = 10
+        workspaces = [ws for ws in iter_with_limit(Workspace.list(), limit)]
+        self.assertTrue(0 < len(workspaces) <= limit)
+
+    def test_get_by_name(self):
+        ws = Workspace.get_by_name(name=self.default_workspace.name)
+        self.assertEqual(ws, self.default_workspace)
+
     def test_list_sub_users(self):
         sub_users = list(
             Workspace.list_sub_users(exclude_workspace_id=self.default_workspace.id)
         )
         self.assertTrue(len(sub_users) > 0)
-
-    @classmethod
-    def get_ws_member_count(cls, ws):
-        return len([member for member in ws.list_member()])
-
-    def test_workspace_api(self):
-        self.assertIsNotNone(self.default_workspace)
-        limit = 10
-        workspaces = [ws for ws in iter_with_limit(Workspace.list(), limit)]
-        self.assertTrue(0 < len(workspaces) <= limit)
 
     def test_list_members(self):
         self.assertTrue(
@@ -42,14 +42,7 @@ class TestWorkspace(BaseIntegTestCase):
         engines = list(
             iter_with_limit(self.default_workspace.list_compute_engines(), 10)
         )
-        self.assertTrue(len(engines) >= 0)
+        self.assertTrue(0 <= len(engines) <= 10)
 
     def test_get_resource_groups(self):
         self.assertTrue(len(Workspace.list_resource_groups()) > 0)
-
-    # def test_list_commodities(self):
-    #     print(Workspace.list_commodities())
-
-    def test_get_by_name(self):
-        ws = Workspace.get_by_name(name=self.default_workspace.name)
-        self.assertEqual(ws, self.default_workspace)

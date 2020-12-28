@@ -23,27 +23,13 @@ class Pipeline(TemplateSpecBase):
 
     """
 
-    def __init__(
-        self,
-        steps=None,
-        inputs=None,
-        outputs=None,
-        identifier=None,
-        version=None,
-        provider=None,
-    ):
+    def __init__(self, steps=None, inputs=None, outputs=None, **kwargs):
         """Pipeline initializer."""
 
         self._steps, inputs, outputs = self._build_pipeline(steps, inputs, outputs)
 
         self._session = get_default_session()
-        super(Pipeline, self).__init__(
-            inputs=inputs,
-            outputs=outputs,
-            identifier=identifier,
-            provider=provider,
-            version=version,
-        )
+        super(Pipeline, self).__init__(inputs=inputs, outputs=outputs, **kwargs)
 
     @property
     def steps(self):

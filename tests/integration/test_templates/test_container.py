@@ -1,5 +1,4 @@
 # coding: utf-8
-import yaml
 
 from pai.pipeline.templates.container import ContainerTemplate
 
@@ -38,7 +37,7 @@ class TestContainerTemplate(BaseIntegTestCase):
         ]
 
         container_templ = ContainerTemplate(
-            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1",
+            image_uri="python:3",
             inputs=inputs,
             outputs=outputs,
             command=[

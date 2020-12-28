@@ -202,7 +202,7 @@ class ScriptTemplate(ContainerTemplate):
                 for fname in os.listdir(to_abs_path(self._source_dir))
             ]
 
-        LocalContainerRun(
+        return LocalContainerRun(
             job_name=job_name,
             inputs=self.inputs,
             outputs=self.outputs,

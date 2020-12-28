@@ -53,10 +53,11 @@ class TestScriptTemplate(BaseIntegTestCase):
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+        templ.run(job_name="HelloWorld")
 
     def test_single_local_file(self):
         templ = ScriptTemplate(
-            entry_file="../../test_data/maxc_sql_scripts/main.py",
+            entry_file=os.path.join(SCRIPT_DIR_PATH, "main.py"),
             inputs=[
                 PipelineParameter(name="foo", typ=int, default=10),
                 PipelineParameter(name="bar", typ=int, default=200),
@@ -146,7 +147,7 @@ class TestScriptTemplate(BaseIntegTestCase):
         )
 
         maxc_config = self.get_maxc_config()
-        container = templ.run(
+        local_run_container = templ.run(
             job_name="helloWorld",
             local_mode=True,
             arguments={
@@ -164,4 +165,4 @@ class TestScriptTemplate(BaseIntegTestCase):
                 },
             },
         )
-        self.assertEqual(container.attrs["State"]["ExitCode"], 0)
+        self.assertEqual(local_run_container.attrs["State"]["ExitCode"], 0)

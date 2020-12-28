@@ -79,6 +79,7 @@ class Workspace(object):
     @classmethod
     def get(cls, ws_id):
         ws = cls._get_service_client().get(workspace_id=ws_id)
+        print(ws)
         return cls.deserialize(ws["Data"])
 
     @classmethod

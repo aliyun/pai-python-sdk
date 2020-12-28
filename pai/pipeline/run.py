@@ -296,6 +296,7 @@ class PipelineRun(object):
                     node_fullname not in prev_status_infos
                     and status_info["status"] != PipelineRunStatus.Skipped
                 ):
+                    print("Add Logger Node: %s" % node_fullname)
                     run_logger.submit(
                         node_id=status_info["nodeId"], node_name=node_fullname
                     )
@@ -351,10 +352,11 @@ class _RunLogger(object):
                 page_size=page_size,
                 page_offset=page_offset,
             )
+            print(node_name, run_id, node_id, len(logs))
             if logs:
                 for log in logs:
                     print("%s: %s" % (node_name, log))
-                time.sleep(0.2)
+                time.sleep(0.5)
                 page_offset += page_size
             else:
                 status = self.run_instance.get_status()

@@ -9,7 +9,7 @@ from tests.integration.tests_pipeline import create_simple_composite_pipeline
 from pai.common.utils import iter_with_limit
 
 
-class TestTemplate(BaseIntegTestCase):
+class TestTemplateService(BaseIntegTestCase):
     def test_list_templates(self):
         templates = list(
             iter_with_limit(PipelineTemplate.list(provider=ProviderAlibabaPAI), 100)

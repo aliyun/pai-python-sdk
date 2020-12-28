@@ -57,8 +57,8 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             job_name="job_name",
             arguments={
                 "execution": self.get_default_maxc_execution(),
-                "cols_to_double": "time,hour,pm2,pm10,so2,co,no2",
-                "table_name": self.TestDataSetTables["wumai_data"],
+                "cols_to_double": ",".join(self.wumai_dataset.columns),
+                "table_name": self.wumai_dataset.get_table(),
             },
             wait=True,
             show_outputs=True,
@@ -73,12 +73,13 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             type_transform_step,
             split_step,
         ) = create_simple_composite_pipeline()
-        self.assertIsNone(p.pipeline_id)
 
         new_version = uuid.uuid4().hex[:30]
-        _ = p.save(identifier="test-composite-pipeline", version=new_version)
-        self.assertIsNotNone(p.pipeline_id)
-        self.assertEqual(p.version, new_version)
+        identifier = "test-composite-pipeline"
+        saved_pipeline = p.save(identifier=identifier, version=new_version)
+
+        self.assertEqual(saved_pipeline.version, new_version)
+        self.assertEqual(saved_pipeline.identifier, identifier)
 
     def test_conflict_step_names(self):
         execution_input = PipelineParameter(name="execution", typ="map")
@@ -192,8 +193,6 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
 
         with self.assertRaisesRegexp(ValueError, "Cycle dependency detected") as _:
             _ = Pipeline(
-                identifier="test-pipeline",
-                version="v1",
                 steps=[type_transform_step, data_source_step],
             )
 
@@ -204,8 +203,11 @@ class TestPipelineBuild(BaseIntegTestCase):
         self.maxDiff = None
 
     def test_nested_pipeline(self):
+
+        dataset = self.wumai_dataset
+
         def create_saved_base_pipeline():
-            execution_input = PipelineParameter(name="xflow_execution", typ="map")
+            execution_input = PipelineParameter(name="execution", typ="map")
 
             data_source_step = PipelineStep(
                 identifier="dataSource-xflow-maxCompute",
@@ -214,7 +216,7 @@ class TestPipelineBuild(BaseIntegTestCase):
                 name="dataSource",
                 inputs={
                     "execution": execution_input,
-                    "tableName": self.TestDataSetTables["wumai_data"],
+                    "tableName": dataset.get_table(),
                     "partition": "",
                 },
             )
@@ -228,7 +230,7 @@ class TestPipelineBuild(BaseIntegTestCase):
                     "inputArtifact": data_source_step.outputs["outputArtifact"],
                     "execution": execution_input,
                     "outputTable": gen_temp_table(),
-                    "cols_to_double": "pm10,so2,co,no2",
+                    "cols_to_double": ",".join(dataset.columns),
                 },
             )
             split_step = PipelineStep(
@@ -246,34 +248,33 @@ class TestPipelineBuild(BaseIntegTestCase):
 
             version = "v%s" % (str(int(time.time() * 1000)))
             p = Pipeline(
-                identifier="nested-pipeline-test",
-                version=version,
                 steps=[split_step],
                 outputs=split_step.outputs[:1],
             )
 
-            return p.save()
+            return p.save(
+                identifier="nested-pipeline-test",
+                version=version,
+            )
 
         pipeline = create_saved_base_pipeline()
         self.assertIsNotNone(pipeline.pipeline_id)
 
         prev_pipeline = pipeline
         for idx in range(1, 10):
-            xflow_execution_input = PipelineParameter(name="xflow_execution", typ="map")
+            execution_input = PipelineParameter(name="execution", typ="map")
             inner_step = PipelineStep(
                 identifier=prev_pipeline.identifier,
                 version=prev_pipeline.version,
                 provider=prev_pipeline.provider,
                 name="inner-step-%s" % idx,
-                inputs={"xflow_execution": xflow_execution_input},
+                inputs={"execution": execution_input},
             )
 
-            p = Pipeline(
+            p = Pipeline(steps=[inner_step], outputs=inner_step.outputs[:1],).save(
                 identifier="test-nest-pipeline-%s" % idx,
                 version="v%s" % (str(int(time.time() * 1000))),
-                steps=[inner_step],
-                outputs=inner_step.outputs[:1],
-            ).save()
+            )
 
             self.assertIsNotNone(p.pipeline_id)
             prev_pipeline = p
@@ -281,11 +282,10 @@ class TestPipelineBuild(BaseIntegTestCase):
         run_instance = prev_pipeline.run(
             job_name="pysdk-test-nested-pipeline-run",
             arguments={
-                "xflow_execution": self.get_default_maxc_execution(),
+                "execution": self.get_default_maxc_execution(),
             },
             wait=False,
         )
-        self.assertEqual(PipelineRunStatus.Running, run_instance.get_status())
         run_instance.wait_for_completion(show_outputs=False)
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
 

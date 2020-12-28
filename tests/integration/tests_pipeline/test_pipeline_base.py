@@ -25,14 +25,13 @@ class TestPipelineBase(BaseIntegTestCase):
     def test_args_translate(self):
         p = self.init_prediction_pipeline()
 
-        table_name = self.TestDataSetTables["iris_data"]
         arguments = {
             "execution": {
                 "k1": "value",
                 "k2": "value",
             },
             "outputTableName": "pai_output_test_table",
-            "inputDataSetArtifact": self.odps_client.get_table(table_name),
+            "inputDataSetArtifact": self.breast_cancer_dataset.to_url(),
             "inputModelArtifact": "odps://%s/offlinemodels/test_iris_model"
             % self.odps_client.project,
         }
@@ -53,13 +52,19 @@ class TestPipelineBase(BaseIntegTestCase):
             },
         ]
 
-        self.assertEqual(sorted(expected_parameters), sorted(parameters))
+        self.assertListEqual(
+            sorted(expected_parameters, key=lambda x: x["name"]),
+            sorted(parameters, key=lambda x: x["name"]),
+        )
 
         expected_artifacts = [
             {
                 "name": "inputDataSetArtifact",
                 "value": '{"location": {"project": "%s", "table": "%s"}}'
-                % (self.odps_client.project, table_name),
+                % (
+                    self.breast_cancer_dataset.default_dataset_project,
+                    self.breast_cancer_dataset.table_name,
+                ),
             },
             {
                 "name": "inputModelArtifact",
@@ -68,4 +73,7 @@ class TestPipelineBase(BaseIntegTestCase):
             },
         ]
 
-        self.assertEqual(sorted(expected_artifacts), sorted(artifacts))
+        self.assertEqual(
+            sorted(expected_artifacts, key=lambda x: x["name"]),
+            sorted(artifacts, key=lambda x: x["name"]),
+        )

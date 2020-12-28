@@ -19,6 +19,10 @@ odps_table_re = (
 )
 
 
+PAI_PIPELINE_RUN_ID_PLACEHOLDER = "${pai_system_run_id}"
+PAI_PIPELINE_NODE_ID_PLACEHOLDER = "${pai_system_node_id}"
+
+
 def md5_digest(raw_data):
     return hashlib.md5(raw_data).hexdigest()
 
@@ -80,6 +84,17 @@ def gen_temp_table(prefix="pai_temp_"):
         prefix=prefix,
         identifier=uuid.uuid4().hex,
     )
+
+
+def gen_run_node_scoped_placeholder(suffix=None):
+    if suffix:
+        return "{0}_{1}_{2}".format(
+            PAI_PIPELINE_NODE_ID_PLACEHOLDER, PAI_PIPELINE_RUN_ID_PLACEHOLDER, suffix
+        )
+    else:
+        return "{0}_{1}".format(
+            PAI_PIPELINE_NODE_ID_PLACEHOLDER, PAI_PIPELINE_RUN_ID_PLACEHOLDER
+        )
 
 
 def iter_with_limit(iterator, limit):

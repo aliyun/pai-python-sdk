@@ -32,7 +32,7 @@ SDK对于部分基础的的算法模块进行了封装，例如逻辑回归和�
                             pmml_gen=True, pmml_oss_bucket=oss_bucket_name,
                             pmml_oss_path=oss_path, pmml_oss_endpoint=oss_endpoint,
                             pmml_oss_rolearn=oss_rolearn,
-                            max_compute_execution=maxc_execution)
+                            execution=maxc_execution)
 
     job = lr.fit(wait=True, input_data="odps://pai_online_project/tables/wumai_data",
                 job_name="lr-test",

@@ -4,53 +4,43 @@ from __future__ import print_function
 import random
 import time
 
-import odps
-
-from pai.core.job import JobStatus
 from pai.algo.classifier import LogisticRegression
+from pai.core.job import JobStatus
 from tests.integration import BaseIntegTestCase
 
 
 class TestLogisticsRegression(BaseIntegTestCase):
-    temp_tables = []
     temp_models = []
 
     @classmethod
-    def setUpClass(cls):
-        super(TestLogisticsRegression, cls).setUpClass()
-        # prepare DataSet table
-        table_name = cls.TestDataSetTables["processed_wumai_data_1"]
-        cls.iris_df = odps.DataFrame(cls.odps_client.get_table(table_name))
-
-    @classmethod
     def tearDownClass(cls):
-        # clear temp tables
         super(TestLogisticsRegression, cls).tearDownClass()
-        for name in cls.temp_tables:
-            cls.odps_client.delete_table(name, if_exists=True, async_=True)
         for model_name in cls.temp_models:
             cls.odps_client.delete_offline_model(model_name, if_exists=True)
 
+    @classmethod
+    def gen_temp_model_name(cls):
+        model_name = "test_model_%d" % random.randint(0, 999999999)
+        cls.temp_models.append(model_name)
+        return model_name
+
     def test_sync_train(self):
-        model_name = "test_iris_model_%d" % random.randint(0, 999999)
+        model_name = self.gen_temp_model_name()
         lr = LogisticRegression(
             regularized_type="l2",
-            max_compute_execution=self.get_default_maxc_execution(),
+            execution=self.get_default_maxc_execution(),
         )
 
-        iris_dataset_table = self.odps_client.get_table(
-            self.TestDataSetTables["processed_wumai_data_1"]
-        )
-
+        dataset = self.breast_cancer_dataset
         run_job = lr.fit(
             wait=True,
             show_outputs=False,
-            input_data=iris_dataset_table,
+            input_data=dataset.to_url(),
             job_name="pysdk-test-lr-sync-fit",
             model_name=model_name,
             good_value=1,
-            label_col="_c2",
-            feature_cols=["pm10", "so2", "co", "no2"],
+            label_col=dataset.label_col,
+            feature_cols=dataset.feature_cols,
         )
 
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
@@ -60,32 +50,26 @@ class TestLogisticsRegression(BaseIntegTestCase):
         self.assertIsNotNone(offline_model)
 
     def test_async_train(self):
-        from pai.core.session import get_default_session
-
-        sess = get_default_session()
-        print("Workspace")
-        print(sess.workspace)
-        model_name = "test_wumai_model_%d" % random.randint(0, 999999)
-        self.temp_models.append(model_name)
+        model_name = self.gen_temp_model_name()
 
         lr = LogisticRegression(
             regularized_type="l2",
-            max_compute_execution=self.get_default_maxc_execution(),
+            execution=self.get_default_maxc_execution(),
         )
+        data_set = self.breast_cancer_dataset
+
         run_job = lr.fit(
             wait=False,
-            input_data=self.iris_df,
-            label_col="_c2",
+            input_data=data_set.to_url(),
+            label_col=data_set.label_col,
             good_value=1,
             job_name="pysdk-test-lr-async-fit",
             model_name=model_name,
-            feature_cols=["pm10", "so2", "co", "no2"],
+            feature_cols=data_set.feature_cols,
         )
 
-        self.assertEqual(JobStatus.Running, run_job.get_status())
         run_job.wait_for_completion()
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
-        time.sleep(20)
         offline_model = run_job.create_model(output_name="outputArtifact")
         self.assertIsNotNone(offline_model)
 

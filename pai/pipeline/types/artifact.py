@@ -320,6 +320,7 @@ class MaxComputeResourceArtifact(ArtifactValue):
         if isinstance(resource, ODPSTable):
             project = resource.project.name
             table = resource.name
+            print("Project", project, "table", table)
             return MaxComputeTableArtifact(
                 project=project,
                 table=table,

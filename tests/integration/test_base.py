@@ -8,7 +8,7 @@ import time
 from pai.common import ProviderAlibabaPAI
 from pai.core.job import JobStatus
 from pai.pipeline import PipelineRunStatus, PipelineStep
-from pai.pipeline.core import Pipeline, get_default_session
+from pai.pipeline.core import Pipeline
 from pai.pipeline.template import PipelineTemplate
 from pai.pipeline.types.artifact import (
     ArtifactDataType,
@@ -17,7 +17,7 @@ from pai.pipeline.types.artifact import (
     PipelineArtifact,
 )
 from pai.pipeline.types.parameter import ParameterType, PipelineParameter
-from pai.common.utils import gen_temp_table
+from pai.common.utils import gen_temp_table, gen_run_node_scoped_placeholder
 from pai.algo.classifier import LogisticRegression
 from tests.integration import BaseIntegTestCase
 
@@ -89,7 +89,7 @@ class TestEstimator(BaseIntegTestCase):
             "enableSparse": True,
             "itemDelimiter": ",",
             "kvDelimiter": ":",
-            "execution": lr.max_compute_execution,
+            "execution": lr.execution,
         }
 
         compiled_args = lr._compile_args("pai_temp_table", **args)
@@ -98,97 +98,13 @@ class TestEstimator(BaseIntegTestCase):
 
         self.assertDictEqual(result_args, expected)
 
-    def test_multiple_call_fit(self):
-        pass
 
-
-class TestXFlowAlgo(BaseIntegTestCase):
-
-    # TODO: Simplify the test case
-    @unittest.skip("Simplify the test case")
-    def test_algo_chain(self):
-        default_project = self.odps_client.project
-        maxc_execution = self.get_default_maxc_execution()
-        data_set = self.odps_client.get_table(
-            self.TestDataSetTables["processed_wumai_data_1"]
-        )
-
-        split_job = PipelineTemplate.get_by_identifier(
-            identifier="split-xflow-maxCompute",
-            provider=ProviderAlibabaPAI,
-            version="v1",
-        ).run(
-            job_name="split-job",
-            arguments={
-                "execution": maxc_execution,
-                "fraction": 0.7,
-                "inputArtifact": data_set,
-                "output1TableName": gen_temp_table(),
-                "output2TableName": gen_temp_table(),
-            },
-        )
-
-        self.assertEqual(PipelineRunStatus.Succeeded, split_job.get_status())
-        time.sleep(10)  # Because of outputs delay.
-        job_outputs = split_job.get_outputs()
-        dataset1 = job_outputs[0]
-        dataset2 = job_outputs[1]
-
-        oss_endpoint = self.oss_config.endpoint
-        oss_path = "/pai_test/test_algo_chain/"
-        oss_bucket = self.oss_config.bucket_name
-
-        model_name = "test_iris_model_%d" % (random.randint(0, 999999))
-        lr = LogisticRegression(
-            regularized_type="l2",
-            pmml_gen=True,
-            pmml_oss_bucket=oss_bucket,
-            pmml_oss_path=oss_path,
-            pmml_oss_endpoint=oss_endpoint,
-            pmml_oss_rolearn=self.oss_config.role_arn,
-            max_compute_execution=maxc_execution,
-        )
-
-        feature_cols = ["pm10", "so2", "co", "no2"]
-        label_col = "_c2"
-
-        job = lr.fit(
-            wait=True,
-            input_data=dataset1,
-            job_name="pysdk-test-lr-sync-fit",
-            model_name=model_name,
-            good_value=1,
-            label_col=label_col,
-            feature_cols=feature_cols,
-        )
-        self.assertEqual(JobStatus.Succeeded, job.get_status())
-        time.sleep(10)  # Because of outputs delay.
-        self.assertTrue(
-            self.odps_client.exist_offline_model(
-                model_name,
-                default_project,
-            )
-        )
-        model = job.create_model(output_name="outputArtifact")
-        tf = model.transformer(xflow_execution=maxc_execution)
-        job = tf.transform(
-            input_data=dataset2,
-            wait=False,
-            feature_cols=feature_cols,
-            append_cols=feature_cols + [label_col],
-            label_col=label_col,
-        )
-        job.wait_for_completion(show_outputs=False)
-        self.assertEqual(JobStatus.Succeeded, job.get_status())
-
-    # TODO: Simplify the test case
+class TestAlgo(BaseIntegTestCase):
     @unittest.skip("Simplify the test case")
     def test_heart_disease_step_by_step(self):
-        xflow_execution = self.get_default_maxc_execution()
+        maxc_execution = self.get_default_maxc_execution()
 
-        dataset_table = self.odps_client.get_table(
-            self.TestDataSetTables["heart_disease_prediction"]
-        )
+        dataset = self.heart_disease_prediction_dataset
 
         sql = (
             "select age, (case sex when 'male' then 1 else 0 end) as sex, (case cp when "
@@ -207,8 +123,8 @@ class TestXFlowAlgo(BaseIntegTestCase):
         ).run(
             job_name="sql-job",
             arguments={
-                "execution": xflow_execution,
-                "inputArtifact1": dataset_table,
+                "execution": maxc_execution,
+                "inputArtifact1": dataset.to_url(),
                 "sql": sql,
                 "outputTable": gen_temp_table(),
             },
@@ -224,7 +140,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
         ).run(
             job_name="transform-job",
             arguments={
-                "execution": xflow_execution,
+                "execution": maxc_execution,
                 "inputArtifact": output_table_artifact,
                 "cols_to_double": "sex,cp,fbs,restecg,exang,slop,thal,"
                 "ifhealth,age,trestbps,chol,thalach,oldpeak,ca",
@@ -243,7 +159,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
         ).run(
             job_name="normalize-job",
             arguments={
-                "execution": xflow_execution,
+                "execution": maxc_execution,
                 "inputArtifact": type_transform_result,
                 "selectedColNames": "sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,"
                 "chol,thalach,oldpeak,ca",
@@ -263,7 +179,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             job_name="split-job",
             arguments={
                 "inputArtifact": normalized_dataset,
-                "execution": xflow_execution,
+                "execution": maxc_execution,
                 "fraction": 0.8,
                 "output1TableName": gen_temp_table(),
                 "output2TableName": gen_temp_table(),
@@ -278,7 +194,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
         oss_bucket = self.oss_config.bucket_name
         lr_job = LogisticRegression(
             regularized_type="l2",
-            xflow_execution=xflow_execution,
+            xflow_execution=maxc_execution,
             pmml_gen=True,
             pmml_oss_bucket=oss_bucket,
             pmml_oss_path=oss_path,
@@ -305,7 +221,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
             arguments={
                 "inputModelArtifact": offlinemodel_artifact,
                 "inputDataSetArtifact": split_output_2,
-                "execution": xflow_execution,
+                "execution": maxc_execution,
                 "outputTableName": gen_temp_table(),
                 "featureColNames": "sex,cp,fbs,restecg,exang,slop,thal,"
                 "age,trestbps,chol,thalach,oldpeak,ca",
@@ -323,7 +239,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
         ).run(
             job_name="evaluate-job",
             arguments={
-                "execution": xflow_execution,
+                "execution": maxc_execution,
                 "inputArtifact": transform_result,
                 "outputDetailTableName": gen_temp_table(),
                 "outputELDetailTableName": gen_temp_table(),
@@ -341,12 +257,16 @@ class TestXFlowAlgo(BaseIntegTestCase):
         time.sleep(10)
 
     def test_heart_disease_prediction_pipeline(self):
+        dataset = type(self).heart_disease_prediction_dataset
+        full_col_names = ",".join(dataset.feature_cols + [dataset.label_col])
+        print(full_col_names)
+
         def create_pipeline():
             pmml_oss_bucket = PipelineParameter("pmml_oss_bucket")
             pmml_oss_rolearn = PipelineParameter("pmml_oss_rolearn")
             pmml_oss_path = PipelineParameter("pmml_oss_path")
             pmml_oss_endpoint = PipelineParameter("pmml_oss_endpoint")
-            xflow_execution = PipelineParameter("xflow_execution", ParameterType.Map)
+            execution = PipelineParameter("execution", ParameterType.Map)
             dataset_input = PipelineArtifact(
                 "dataset-table",
                 metadata=ArtifactMetadata(
@@ -373,9 +293,11 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 version="v1",
                 inputs={
                     "inputArtifact1": dataset_input,
-                    "execution": xflow_execution,
+                    "execution": execution,
                     "sql": sql,
-                    "outputTable": gen_temp_table(),
+                    "outputTable": gen_run_node_scoped_placeholder(
+                        suffix="outputTable"
+                    ),
                 },
             )
 
@@ -385,11 +307,12 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "execution": xflow_execution,
+                    "execution": execution,
                     "inputArtifact": sql_step.outputs["outputArtifact"],
-                    "cols_to_double": "sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,"
-                    "chol,thalach,oldpeak,ca",
-                    "outputTable": gen_temp_table(),
+                    "cols_to_double": full_col_names,
+                    "outputTable": gen_run_node_scoped_placeholder(
+                        suffix="outputTable"
+                    ),
                 },
             )
 
@@ -399,13 +322,16 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "execution": xflow_execution,
+                    "execution": execution,
                     "inputArtifact": type_transform_step.outputs["outputArtifact"],
-                    "selectedColNames": "sex,cp,fbs,restecg,exang,slop,thal,ifhealth,age,trestbps,"
-                    "chol,thalach,oldpeak,ca",
+                    "selectedColNames": full_col_names,
                     "lifecycle": 1,
-                    "outputTableName": gen_temp_table(),
-                    "outputParaTableName": gen_temp_table(),
+                    "outputTableName": gen_run_node_scoped_placeholder(
+                        suffix="outputTable"
+                    ),
+                    "outputParaTableName": gen_run_node_scoped_placeholder(
+                        suffix="outputParaTable"
+                    ),
                 },
             )
 
@@ -416,10 +342,14 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 version="v1",
                 inputs={
                     "inputArtifact": normalize_step.outputs["outputArtifact"],
-                    "execution": xflow_execution,
+                    "execution": execution,
                     "fraction": 0.8,
-                    "output1TableName": gen_temp_table(),
-                    "output2TableName": gen_temp_table(),
+                    "output1TableName": gen_run_node_scoped_placeholder(
+                        suffix="output1Table"
+                    ),
+                    "output2TableName": gen_run_node_scoped_placeholder(
+                        suffix="output2Table"
+                    ),
                 },
             )
 
@@ -434,7 +364,7 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 version="v1",
                 inputs={
                     "inputArtifact": split_step.outputs["outputArtifact1"],
-                    "execution": xflow_execution,
+                    "execution": execution,
                     "generatePmml": True,
                     "endpoint": pmml_oss_endpoint,
                     "bucket": pmml_oss_bucket,
@@ -444,9 +374,8 @@ class TestXFlowAlgo(BaseIntegTestCase):
                     # "regularizedType": "l2",
                     "modelName": model_name,
                     "goodValue": 1,
-                    "featureColNames": "sex,cp,fbs,restecg,exang,slop,"
-                    "thal,age,trestbps,chol,thalach,oldpeak,ca",
-                    "labelColName": "ifhealth",
+                    "featureColNames": ",".join(dataset.feature_cols),
+                    "labelColName": dataset.label_col,
                 },
             )
 
@@ -458,11 +387,12 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 inputs={
                     "inputModelArtifact": lr_step.outputs["outputArtifact"],
                     "inputDataSetArtifact": split_step.outputs["outputArtifact2"],
-                    "execution": xflow_execution,
-                    "outputTableName": gen_temp_table(),
-                    "featureColNames": "sex,cp,fbs,restecg,exang,slop,"
-                    "thal,age,trestbps,chol,thalach,oldpeak,ca",
-                    "appendColNames": "ifhealth",
+                    "execution": execution,
+                    "outputTableName": gen_run_node_scoped_placeholder(
+                        suffix="outputTable"
+                    ),
+                    "featureColNames": ",".join(dataset.feature_cols),
+                    "appendColNames": dataset.label_col,
                 },
             )
 
@@ -472,13 +402,19 @@ class TestXFlowAlgo(BaseIntegTestCase):
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "execution": xflow_execution,
+                    "execution": execution,
                     "inputArtifact": offline_model_pred_step.outputs["outputArtifact"],
-                    "outputDetailTableName": gen_temp_table(),
-                    "outputELDetailTableName": gen_temp_table(),
-                    "outputMetricTableName": gen_temp_table(),
+                    "outputDetailTableName": gen_run_node_scoped_placeholder(
+                        suffix="outputDetail"
+                    ),
+                    "outputELDetailTableName": gen_run_node_scoped_placeholder(
+                        suffix="outputELDetail"
+                    ),
+                    "outputMetricTableName": gen_run_node_scoped_placeholder(
+                        suffix="outputMetricDetail"
+                    ),
                     "scoreColName": "prediction_score",
-                    "labelColName": "ifhealth",
+                    "labelColName": dataset.label_col,
                     "coreNum": 2,
                     "memSizePerCore": 512,
                 },
@@ -497,26 +433,20 @@ class TestXFlowAlgo(BaseIntegTestCase):
         p.dot()
 
         pmml_oss_endpoint = self.oss_config.endpoint
-        pmml_oss_path = "/paiflow/model_transfer2oss_test/"
+        pmml_oss_path = "/test/pai/model_transfer2oss_test/"
         pmml_oss_bucket = self.oss_config.bucket_name
         pmml_oss_rolearn = self.oss_config.role_arn
 
-        dataset_table = self.odps_client.get_table(
-            self.TestDataSetTables["heart_disease_prediction"]
-        )
-
         run_instance = p.run(
-            job_name="test_run",
+            job_name="test_heart_disease_pred",
             arguments={
-                "xflow_execution": self.get_default_maxc_execution(),
+                "execution": self.get_default_maxc_execution(),
                 "pmml_oss_rolearn": pmml_oss_rolearn,
                 "pmml_oss_path": pmml_oss_path,
                 "pmml_oss_bucket": pmml_oss_bucket,
                 "pmml_oss_endpoint": pmml_oss_endpoint,
-                "dataset-table": dataset_table,
+                "dataset-table": dataset.to_url(),
             },
-            wait=False,
         )
-        run_instance.wait_for_completion(show_outputs=True)
 
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
