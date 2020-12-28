@@ -250,5 +250,5 @@ stage:
 pipeline:
   - init-env
   - 'check,unit-test'
-  - 'integ-test(public),integ-test(inner)'
+  - 'integ-test(public)'
   - coverage
