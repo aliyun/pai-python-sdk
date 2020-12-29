@@ -25,7 +25,7 @@ class PipelineArtifact(PipelineVariable):
         metadata=None,
         path=None,
         desc=None,
-        kind="inputs",
+        io_type="inputs",
         value=None,
         from_=None,
         required=None,
@@ -34,7 +34,7 @@ class PipelineArtifact(PipelineVariable):
         super(PipelineArtifact, self).__init__(
             name=name,
             desc=desc,
-            kind=kind,
+            io_type=io_type,
             value=value,
             from_=from_,
             required=required,
@@ -64,7 +64,7 @@ class PipelineArtifact(PipelineVariable):
         return True
 
     @classmethod
-    def to_argument_by_spec(cls, val, af_spec, kind="inputs"):
+    def to_argument_by_spec(cls, val, af_spec, io_type="inputs"):
         af_spec = af_spec.copy()
 
         name = af_spec.pop("name")
@@ -76,7 +76,7 @@ class PipelineArtifact(PipelineVariable):
         param = PipelineArtifact(
             name=name,
             metadata=metadata,
-            kind=kind,
+            io_type=io_type,
             from_=from_,
             required=required,
             desc=desc,

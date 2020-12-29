@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 
 import copy
+import string
+
 import logging
-import time
 import uuid
 
 import six
 import yaml
+import random
 
 from .core import Pipeline
 from .base import TemplateSpecBase
@@ -446,7 +448,9 @@ class PipelineTemplate(object):
                 param = PipelineParameter.to_argument_by_spec(arg, param_spec)
                 parameters.append(param)
             elif af_spec:
-                af = PipelineArtifact.to_argument_by_spec(arg, af_spec, kind="inputs")
+                af = PipelineArtifact.to_argument_by_spec(
+                    arg, af_spec, io_type="inputs"
+                )
                 artifacts.append(af)
             else:
                 logger.warning(
@@ -520,6 +524,14 @@ class PipelineTemplate(object):
         )
         return self
 
+    @classmethod
+    def _gen_job_name(cls, prefix="job_"):
+        if prefix:
+            return prefix + "".join(
+                [random.choice(string.ascii_letters) for _ in range(8)]
+            )
+        return
+
     def run(self, job_name, arguments=None, wait=True, show_outputs=True):
         """Run the workflow using the workflow definition in PipelineTemplate and given arguments.
 
@@ -535,7 +547,7 @@ class PipelineTemplate(object):
         """
         session = get_default_session()
         if job_name is None:
-            job_name = "tmp-{0}".format(int(time.time() * 1000))
+            job_name = self._gen_job_name()
         parameters, artifacts = self.translate_arguments(arguments)
         pipeline_args = {
             "parameters": parameters,

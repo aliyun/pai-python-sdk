@@ -14,7 +14,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         self,
         name,
         desc=None,
-        kind="inputs",
+        io_type="inputs",
         value=None,
         from_=None,
         required=None,
@@ -26,7 +26,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         Args:
             name: name of parameter.
             desc: parameter description.
-            kind: usage of PipelineParameter in pipeline, either "input" or "output"
+            io_type: usage of PipelineParameter in pipeline, either "input" or "output"
             value: default value of parameter
             from_:
             required:
@@ -34,7 +34,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             parent:
         """
         self.name = name
-        self.kind = kind
+        self.io_type = io_type
         self.desc = desc
         self.value = value
         self.from_ = from_
@@ -79,10 +79,10 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         """Unique identifier in pipeline manifest for PipelineVariable"""
         if self.parent:
             return ".".join(
-                [self.parent.ref_name, self.kind, self.variable_category, self.name]
+                [self.parent.ref_name, self.io_type, self.variable_category, self.name]
             )
         else:
-            return ".".join([self.kind, self.variable_category, self.name])
+            return ".".join([self.io_type, self.variable_category, self.name])
 
     @property
     def enclosed_fullname(self):
@@ -92,7 +92,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         return "%s:{Name:%s, Kind:%s, Required:%s, Value:%s, Desc:%s}" % (
             type(self).__name__,
             self.name,
-            self.kind,
+            self.io_type,
             self.required,
             self.value,
             self.desc,

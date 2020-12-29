@@ -19,7 +19,7 @@ class TestParameter(BaseUnitTestCase):
                 "name": "integer_type_param",
                 "input": {
                     "name": "treeNum",
-                    "kind": "inputs",
+                    "io_type": "inputs",
                     "typ": int,
                     "default": 100,
                     "feasible": {"range": "[1, 1000]"},
@@ -35,7 +35,7 @@ class TestParameter(BaseUnitTestCase):
                 "name": "str_type_param",
                 "input": {
                     "name": "outputTableName",
-                    "kind": "inputs",
+                    "io_type": "inputs",
                     "typ": str,
                     "default": "pai_temp_18090911",
                 },
@@ -50,7 +50,7 @@ class TestParameter(BaseUnitTestCase):
         for case in cases:
             param = PipelineParameter(**case["input"])
             self.assertDictEqual(param.to_dict(), case["expected"])
-            self.assertEqual(param.kind, case["input"]["kind"])
+            self.assertEqual(param.io_type, case["input"]["io_type"])
 
     def testParameterRangeValidator(self):
         cases = [

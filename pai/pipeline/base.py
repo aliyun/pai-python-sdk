@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 
-from abc import abstractmethod, ABCMeta
-
 import six
+from abc import ABCMeta
 
 from pai.core.session import get_default_session
 from pai.pipeline.consts import DEFAULT_PIPELINE_API_VERSION

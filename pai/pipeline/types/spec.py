@@ -131,7 +131,7 @@ class OutputsSpec(SpecBase):
     def __init__(self, outputs):
         super(OutputsSpec, self).__init__(items=outputs)
         for item in self.items:
-            item.kind = IO_TYPE_OUTPUTS
+            item.io_type = IO_TYPE_OUTPUTS
 
 
 def load_input_output_spec(p, spec):
@@ -152,7 +152,7 @@ def load_input_output_spec(p, spec):
     return InputsSpec(inputs), OutputsSpec(outputs)
 
 
-def _load_parameter_spec(p, param_spec, kind):
+def _load_parameter_spec(p, param_spec, io_type):
     typ = param_spec.pop("type", None)
     name = param_spec.pop("name")
     from_ = param_spec.pop("from", None)
@@ -165,7 +165,7 @@ def _load_parameter_spec(p, param_spec, kind):
         typ=typ,
         default=value,
         desc=desc,
-        kind=kind,
+        io_type=io_type,
         from_=from_,
         parent=p,
         feasible=feasible,
@@ -173,8 +173,8 @@ def _load_parameter_spec(p, param_spec, kind):
     return param
 
 
-def _load_artifact_spec(p, artifact_spec, kind):
-    assert kind in ("inputs", "outputs")
+def _load_artifact_spec(p, artifact_spec, io_type):
+    assert io_type in ("inputs", "outputs")
     metadata = ArtifactMetadata.from_dict(artifact_spec.get("metadata", None))
     name = artifact_spec.get("name", None)
     from_ = artifact_spec.get("from", None)
@@ -185,7 +185,7 @@ def _load_artifact_spec(p, artifact_spec, kind):
     af = PipelineArtifact(
         name=name,
         metadata=metadata,
-        kind=kind,
+        io_type=io_type,
         parent=p,
         from_=from_,
         value=value,

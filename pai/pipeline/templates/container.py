@@ -192,7 +192,10 @@ class LocalContainerRun(object):
     def _prepare_artifacts(self):
         artifact_path_format = "{0}/{1}/artifacts/{2}/data"
         for artifact in self.inputs.artifacts:
-            if artifact.name not in self.arguments or artifact.kind == IO_TYPE_OUTPUTS:
+            if (
+                artifact.name not in self.arguments
+                or artifact.io_type == IO_TYPE_OUTPUTS
+            ):
                 continue
             artifact_arg = PipelineArtifact.to_argument_by_spec(
                 self.arguments[artifact.name], artifact.to_dict()

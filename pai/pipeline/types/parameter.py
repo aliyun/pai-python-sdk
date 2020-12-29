@@ -30,7 +30,7 @@ class PipelineParameter(PipelineVariable):
         typ=str,
         default=None,
         desc=None,
-        kind="inputs",
+        io_type="inputs",
         from_=None,
         parent=None,
         feasible=None,
@@ -54,7 +54,7 @@ class PipelineParameter(PipelineVariable):
             name=name,
             value=default,
             desc=desc,
-            kind=kind,
+            io_type=io_type,
             from_=from_,
             required=required,
             parent=parent,
@@ -94,7 +94,7 @@ class PipelineParameter(PipelineVariable):
 
         typ = param_spec.pop("type", None)
         name = param_spec.pop("name")
-        kind = "inputs"
+        io_type = "inputs"
         from_ = param_spec.pop("from", None)
         feasible = param_spec.pop("feasible", None)
         value = param_spec.pop("value", None)
@@ -105,7 +105,7 @@ class PipelineParameter(PipelineVariable):
             typ=typ,
             default=value,
             desc=desc,
-            kind=kind,
+            io_type=io_type,
             from_=from_,
             feasible=feasible,
         )
