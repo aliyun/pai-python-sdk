@@ -11,9 +11,9 @@ from pai.common import ProviderAlibabaPAI
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.run import PipelineRunStatus
 from pai.pipeline.types.artifact import (
-    ArtifactDataType,
-    ArtifactLocationType,
-    ArtifactMetadata,
+    DataType,
+    LocationType,
+    LocationArtifactMetadata,
     PipelineArtifact,
 )
 from pai.pipeline.types.parameter import PipelineParameter
@@ -85,9 +85,8 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         execution_input = PipelineParameter(name="execution", typ="map")
         dataset_input = PipelineArtifact(
             name="dataset_table",
-            metadata=ArtifactMetadata(
-                data_type=ArtifactDataType.DataSet,
-                location_type=ArtifactLocationType.MaxComputeTable,
+            metadata=LocationArtifactMetadata(
+                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
 
@@ -125,9 +124,8 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         execution_input = PipelineParameter(name="execution", typ="map")
         dataset_input = PipelineArtifact(
             name="dataset_table",
-            metadata=ArtifactMetadata(
-                data_type=ArtifactDataType.DataSet,
-                location_type=ArtifactLocationType.MaxComputeTable,
+            metadata=LocationArtifactMetadata(
+                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
 

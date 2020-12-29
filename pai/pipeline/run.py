@@ -7,7 +7,7 @@ from datetime import datetime
 from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.core.exception import TimeoutException
-from pai.pipeline.types.artifact import ArtifactEntity
+from pai.core.artifact import ArchivedArtifact
 from pai.core.session import get_default_session
 from pai.core.workspace import Workspace
 
@@ -96,6 +96,19 @@ class PipelineRun(object):
                 workspace_id=info.get("WorkspaceId", None),
             )
 
+    @classmethod
+    def deserialize(cls, obj_dict):
+        run_id, name, pipeline_id, workspace_id = (
+            obj_dict["RunId"],
+            obj_dict["Name"],
+            obj_dict["PipelineId"],
+            obj_dict.get("WorkspaceId"),
+        )
+
+        return cls(
+            run_id=run_id, name=name, pipeline_id=pipeline_id, workspace_id=workspace_id
+        )
+
     def __repr__(self):
         return "PipelineRun:%s" % self.run_id
 
@@ -177,7 +190,7 @@ class PipelineRun(object):
             "RunInstance outputs: run_id:%s, node_id:%s, outputs:%s"
             % (self.run_id, node_id, outputs)
         )
-        return [ArtifactEntity.from_run_output(output) for output in outputs]
+        return [ArchivedArtifact.deserialize(output) for output in outputs]
 
     def get_status(self):
         return self.get_run_info()["Status"]

@@ -10,7 +10,7 @@ from .job import RunJob
 from .model import XFlowOfflineModel, PmmlModel
 from .session import get_default_session
 from ..pipeline.template import SavedTemplate
-from ..pipeline.types.artifact import ArtifactModelType
+from ..pipeline.types.artifact import ModelType
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +252,7 @@ class EstimatorJob(RunJob):
         model_data = artifact_info.value
         metadata = artifact_info.metadata
 
-        if metadata.model_type == ArtifactModelType.OfflineModel:
+        if metadata.model_type == ModelType.OfflineModel:
             return XFlowOfflineModel(
                 session=self.session,
                 name=model_data.offline_model,

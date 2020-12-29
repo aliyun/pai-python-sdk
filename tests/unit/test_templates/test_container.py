@@ -4,9 +4,9 @@ from pai.pipeline import PipelineParameter
 from pai.pipeline.template import ContainerTemplate
 from pai.pipeline.types import (
     PipelineArtifact,
-    ArtifactMetadata,
-    ArtifactDataType,
-    ArtifactLocationType,
+    LocationArtifactMetadata,
+    DataType,
+    LocationType,
 )
 from tests.unit import BaseUnitTestCase
 
@@ -22,16 +22,14 @@ class TestContainerTemplate(BaseUnitTestCase):
             ),
             PipelineArtifact(
                 name="dataset",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.OSS,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet, location_type=LocationType.OSS
                 ),
             ),
             PipelineArtifact(
                 name="model",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.Model,
-                    location_type=ArtifactLocationType.OSS,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.Model, location_type=LocationType.OSS
                 ),
             ),
         ]
@@ -39,16 +37,14 @@ class TestContainerTemplate(BaseUnitTestCase):
         outputs = [
             PipelineArtifact(
                 name="output1",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.OSS,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet, location_type=LocationType.OSS
                 ),
             ),
             PipelineArtifact(
                 name="output2",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.Model,
-                    location_type=ArtifactLocationType.OSS,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.Model, location_type=LocationType.OSS
                 ),
             ),
         ]

@@ -1,4 +1,7 @@
 import contextlib
+from pprint import pprint
+
+import json
 
 import os
 
@@ -10,9 +13,9 @@ from pai.pipeline.template import (
 
 from pai.pipeline.types import (
     PipelineArtifact,
-    ArtifactMetadata,
-    ArtifactDataType,
-    ArtifactLocationType,
+    LocationArtifactMetadata,
+    DataType,
+    LocationType,
 )
 from pai.pipeline.types.artifact import MaxComputeTableArtifact
 from pai.pipeline.types.parameter import (
@@ -44,9 +47,11 @@ class TestScriptTemplate(BaseIntegTestCase):
             entry_file="main.py",
             source_dir=SCRIPT_DIR_PATH,
             inputs=[
-                PipelineParameter(name="foo", typ=int, default=10),
+                PipelineParameter(name="foo", typ=str, default="Hello"),
                 PipelineParameter(name="bar", typ=int, default=200),
             ],
+            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/max-compute-executor:1.0.4",
+            command=["bash", "-c", "env && launch"],
         )
         templ.prepare()
         manifest = templ.to_dict()
@@ -107,39 +112,39 @@ class TestScriptTemplate(BaseIntegTestCase):
                 PipelineParameter("lifeCycle", typ=int, default=7),
                 PipelineArtifact(
                     "t1",
-                    ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.MaxComputeTable,
+                    LocationArtifactMetadata(
+                        data_type=DataType.DataSet,
+                        location_type=LocationType.MaxComputeTable,
                     ),
                 ),
                 PipelineArtifact(
                     "t2",
-                    ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.MaxComputeTable,
+                    LocationArtifactMetadata(
+                        data_type=DataType.DataSet,
+                        location_type=LocationType.MaxComputeTable,
                     ),
                 ),
                 PipelineArtifact(
                     "t3",
-                    ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.MaxComputeTable,
+                    LocationArtifactMetadata(
+                        data_type=DataType.DataSet,
+                        location_type=LocationType.MaxComputeTable,
                     ),
                 ),
                 PipelineArtifact(
                     "t4",
-                    ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.MaxComputeTable,
+                    LocationArtifactMetadata(
+                        data_type=DataType.DataSet,
+                        location_type=LocationType.MaxComputeTable,
                     ),
                 ),
             ],
             outputs=[
                 PipelineArtifact(
                     "outputTable",
-                    metadata=ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.MaxComputeTable,
+                    metadata=LocationArtifactMetadata(
+                        data_type=DataType.DataSet,
+                        location_type=LocationType.MaxComputeTable,
                     ),
                     value=MaxComputeTableArtifact.value_from_param("outputTable"),
                 )

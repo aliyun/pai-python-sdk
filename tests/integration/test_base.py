@@ -10,9 +10,9 @@ from pai.core.job import JobStatus
 from pai.pipeline import PipelineRunStatus, PipelineStep, SavedTemplate
 from pai.pipeline.core import Pipeline
 from pai.pipeline.types.artifact import (
-    ArtifactDataType,
-    ArtifactLocationType,
-    ArtifactMetadata,
+    DataType,
+    LocationType,
+    LocationArtifactMetadata,
     PipelineArtifact,
 )
 from pai.pipeline.types.parameter import ParameterType, PipelineParameter
@@ -268,9 +268,9 @@ class TestAlgo(BaseIntegTestCase):
             execution = PipelineParameter("execution", ParameterType.Map)
             dataset_input = PipelineArtifact(
                 "dataset-table",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.MaxComputeTable,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet,
+                    location_type=LocationType.MaxComputeTable,
                 ),
                 required=True,
             )

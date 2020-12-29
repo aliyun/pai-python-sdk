@@ -4,9 +4,9 @@ from pai.pipeline.template import ContainerTemplate
 
 from pai.pipeline.types import (
     PipelineArtifact,
-    ArtifactMetadata,
-    ArtifactDataType,
-    ArtifactLocationType,
+    LocationArtifactMetadata,
+    DataType,
+    LocationType,
 )
 from pai.pipeline.types.parameter import (
     PipelineParameter,
@@ -20,18 +20,16 @@ class TestContainerTemplate(BaseIntegTestCase):
             PipelineParameter(name="xflow_name", typ=str),
             PipelineArtifact(
                 name="inputs1",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.OSS,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet, location_type=LocationType.OSS
                 ),
             ),
         ]
         outputs = [
             PipelineArtifact(
                 name="output1",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.OSS,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet, location_type=LocationType.OSS
                 ),
             ),
         ]

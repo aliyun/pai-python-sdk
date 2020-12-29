@@ -11,9 +11,9 @@ from pai.pipeline.template import (
 )
 from pai.pipeline.types import (
     PipelineArtifact,
-    ArtifactMetadata,
-    ArtifactDataType,
-    ArtifactLocationType,
+    LocationArtifactMetadata,
+    DataType,
+    LocationType,
 )
 
 from pai.pipeline.types.artifact import MaxComputeTableArtifact
@@ -103,9 +103,9 @@ class TestScriptTemplate(BaseUnitTestCase):
             outputs=[
                 PipelineArtifact(
                     "outputTable",
-                    ArtifactMetadata(
-                        data_type=ArtifactDataType.DataSet,
-                        location_type=ArtifactLocationType.MaxComputeTable,
+                    LocationArtifactMetadata(
+                        data_type=DataType.DataSet,
+                        location_type=LocationType.MaxComputeTable,
                     ),
                     value=MaxComputeTableArtifact.value_from_param(
                         "tableName", "partition"

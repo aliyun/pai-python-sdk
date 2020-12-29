@@ -3,10 +3,10 @@ from __future__ import absolute_import
 import os
 
 from pai.pipeline.types.artifact import (
-    ArtifactDataType,
-    ArtifactMetadata,
+    DataType,
+    LocationArtifactMetadata,
     PipelineArtifact,
-    ArtifactLocationType,
+    LocationType,
 )
 from pai.pipeline.types.parameter import PipelineParameter
 from pai.pipeline.types.spec import InputsSpec, split_variable_by_category
@@ -23,16 +23,16 @@ class TestInputOutputSpec(BaseUnitTestCase):
             PipelineParameter(name="C", typ=bool, default=True),
             PipelineArtifact(
                 name="D",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.MaxComputeTable,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet,
+                    location_type=LocationType.MaxComputeTable,
                 ),
             ),
             PipelineArtifact(
                 name="E",
-                metadata=ArtifactMetadata(
-                    data_type=ArtifactDataType.DataSet,
-                    location_type=ArtifactLocationType.MaxComputeTable,
+                metadata=LocationArtifactMetadata(
+                    data_type=DataType.DataSet,
+                    location_type=LocationType.MaxComputeTable,
                 ),
             ),
         ]
@@ -52,30 +52,26 @@ class TestInputOutputSpec(BaseUnitTestCase):
 
         af_d = PipelineArtifact(
             name="D",
-            metadata=ArtifactMetadata(
-                data_type=ArtifactDataType.DataSet,
-                location_type=ArtifactLocationType.MaxComputeTable,
+            metadata=LocationArtifactMetadata(
+                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
         af_e = PipelineArtifact(
             name="E",
-            metadata=ArtifactMetadata(
-                data_type=ArtifactDataType.DataSet,
-                location_type=ArtifactLocationType.MaxComputeTable,
+            metadata=LocationArtifactMetadata(
+                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
         af_f = PipelineArtifact(
             name="F",
-            metadata=ArtifactMetadata(
-                data_type=ArtifactDataType.DataSet,
-                location_type=ArtifactLocationType.MaxComputeTable,
+            metadata=LocationArtifactMetadata(
+                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
         af_a = PipelineArtifact(
             name="A",
-            metadata=ArtifactMetadata(
-                data_type=ArtifactDataType.DataSet,
-                location_type=ArtifactLocationType.MaxComputeTable,
+            metadata=LocationArtifactMetadata(
+                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
 

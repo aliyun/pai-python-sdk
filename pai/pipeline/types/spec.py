@@ -4,7 +4,7 @@ from collections import Counter
 import six
 from abc import ABCMeta, abstractmethod
 
-from .artifact import ArtifactMetadata, PipelineArtifact
+from .artifact import LocationArtifactMetadata, PipelineArtifact
 from .parameter import PipelineParameter
 
 IO_TYPE_INPUTS = "inputs"
@@ -205,7 +205,7 @@ def _load_parameter_spec(p, param_spec, io_type):
 
 def _load_artifact_spec(p, artifact_spec, io_type):
     assert io_type in ("inputs", "outputs")
-    metadata = ArtifactMetadata.from_dict(artifact_spec.get("metadata", None))
+    metadata = LocationArtifactMetadata.from_dict(artifact_spec.get("metadata", None))
     name = artifact_spec.get("name", None)
     from_ = artifact_spec.get("from", None)
     value = artifact_spec.get("value", None)
