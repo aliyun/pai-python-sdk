@@ -8,7 +8,7 @@ from .artifact import (
     ArtifactModelType,
 )
 from .parameter import PipelineParameter, ParameterType
-from .spec import InputsSpec, OutputsSpec
+from .spec import InputsSpec, OutputsSpec, IO_TYPE_OUTPUTS, IO_TYPE_INPUTS
 
 __all__ = [
     "PipelineArtifact",

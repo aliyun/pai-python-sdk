@@ -9,7 +9,7 @@ from pai.common import ProviderAlibabaPAI
 from pai.core.job import JobStatus
 from pai.pipeline import PipelineRunStatus, PipelineStep
 from pai.pipeline.core import Pipeline
-from pai.pipeline.template import PipelineTemplate
+from pai.pipeline.template import SavedTemplate
 from pai.pipeline.types.artifact import (
     ArtifactDataType,
     ArtifactLocationType,
@@ -118,7 +118,7 @@ class TestAlgo(BaseIntegTestCase):
         )
 
         # Extract and transform dataset using max_compute sql.
-        sql_job = PipelineTemplate.get_by_identifier(
+        sql_job = SavedTemplate.get_by_identifier(
             identifier="sql-xflow-maxCompute", provider=ProviderAlibabaPAI, version="v1"
         ).run(
             job_name="sql-job",
@@ -133,7 +133,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(10)
         output_table_artifact = sql_job.get_outputs()[0]
 
-        type_transform_job = PipelineTemplate.get_by_identifier(
+        type_transform_job = SavedTemplate.get_by_identifier(
             identifier="type-transform-xflow-maxCompute",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -152,7 +152,7 @@ class TestAlgo(BaseIntegTestCase):
         type_transform_result = type_transform_job.get_outputs()[0]
 
         # Normalize Feature
-        normalize_job = PipelineTemplate.get_by_identifier(
+        normalize_job = SavedTemplate.get_by_identifier(
             identifier="normalize-xflow-maxCompute",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -171,7 +171,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(20)
         normalized_dataset = normalize_job.get_outputs()[0]
 
-        split_job = PipelineTemplate.get_by_identifier(
+        split_job = SavedTemplate.get_by_identifier(
             identifier="split-xflow-maxCompute",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -212,7 +212,7 @@ class TestAlgo(BaseIntegTestCase):
 
         time.sleep(20)
         offlinemodel_artifact, pmml_output = lr_job.get_outputs()
-        transform_job = PipelineTemplate.get_by_identifier(
+        transform_job = SavedTemplate.get_by_identifier(
             identifier="prediction-xflow-maxCompute",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -232,7 +232,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(20)
         transform_result = transform_job.get_outputs()[0]
 
-        evaluate_job = PipelineTemplate.get_by_identifier(
+        evaluate_job = SavedTemplate.get_by_identifier(
             identifier="evaluate-xflow-maxCompute",
             provider=ProviderAlibabaPAI,
             version="v1",

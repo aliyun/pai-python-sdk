@@ -9,7 +9,7 @@ import json
 import os
 import shutil
 
-from pai.pipeline.base import TemplateSpecBase
+from pai.pipeline.base import TemplateBase
 from pai.pipeline.types.artifact import PipelineArtifact
 from pai.pipeline.types.spec import IO_TYPE_OUTPUTS
 from pai.common.utils import makedirs
@@ -22,7 +22,7 @@ PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
 
 
-class ContainerTemplate(TemplateSpecBase):
+class ContainerTemplate(TemplateBase):
 
     default_identifier = "container_template"
 

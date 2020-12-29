@@ -5,7 +5,7 @@ from collections import defaultdict, Counter
 
 from graphviz import Digraph
 
-from .base import TemplateSpecBase
+from .base import TemplateBase
 from ..core.session import get_default_session
 from .types.artifact import PipelineArtifact
 from .types.parameter import PipelineParameter
@@ -15,7 +15,7 @@ from .types.spec import OutputsSpec, InputsSpec
 logger = logging.getLogger(__name__)
 
 
-class Pipeline(TemplateSpecBase):
+class Pipeline(TemplateBase):
     """Represents pipeline instance in PAI Machine Learning pipeline.
 
     Pipeline can be constructed from multiple pipeline steps, or single container implementation.

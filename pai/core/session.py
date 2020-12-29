@@ -332,7 +332,7 @@ class Session(object):
             arguments (dict): Run arguments required by pipeline manifest.
             env (list): Environment arguments of run.
             pipeline_id (str): Pipeline
-            manifest (str): Pipeline manifest of the run workflow.
+            manifest (str or dict): Pipeline manifest of the run workflow.
             no_confirm_required (bool): Run workflow start immediately if true
                 else start_run service call if required to start the workflow.
 

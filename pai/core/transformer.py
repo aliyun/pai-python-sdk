@@ -8,7 +8,7 @@ import yaml
 
 from .job import RunJob
 from .session import get_default_session
-from ..pipeline.template import PipelineTemplate
+from ..pipeline.template import SavedTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +44,18 @@ class Transformer(six.with_metaclass(ABCMeta, object)):
 
 class PipelineTransformer(Transformer):
     def __init__(
-        self, parameters=None, manifest=None, _compiled_args=False, pipeline_id=None
+        self,
+        parameters=None,
+        manifest=None,
+        _compiled_args=False,
+        pipeline_id=None,
+        workspace_id=None,
     ):
         self._session = get_default_session()
         self._compiled_args = _compiled_args
-        self._template = PipelineTemplate(manifest=manifest, pipeline_id=pipeline_id)
+        self._template = SavedTemplate(
+            manifest=manifest, pipeline_id=pipeline_id, workspace_id=workspace_id
+        )
         super(PipelineTransformer, self).__init__(parameters=parameters)
 
     def transform(

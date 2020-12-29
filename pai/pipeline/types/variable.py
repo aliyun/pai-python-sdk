@@ -71,18 +71,24 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             self.from_ = arg
 
     @property
-    def is_assigned(self):
-        return self._is_assigned
-
-    @property
     def fullname(self):
         """Unique identifier in pipeline manifest for PipelineVariable"""
-        if self.parent:
+        from pai.pipeline.template import TemplateBase
+
+        if self.parent and not isinstance(self.parent, TemplateBase):
             return ".".join(
                 [self.parent.ref_name, self.io_type, self.variable_category, self.name]
             )
         else:
             return ".".join([self.io_type, self.variable_category, self.name])
+
+    def bind(self, parent, io_type):
+        if self.parent and parent != self.parent:
+            raise ValueError(
+                "Pipeline variable has bound to another template instance."
+            )
+        self.parent = parent
+        self.io_type = io_type
 
     @property
     def enclosed_fullname(self):

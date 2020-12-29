@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import os
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline.template import PipelineTemplate
+from pai.pipeline.template import SavedTemplate
 from tests.integration import BaseIntegTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +17,7 @@ class TestPipelineBase(BaseIntegTestCase):
         version="v1",
         provider=ProviderAlibabaPAI,
     ):
-        p = PipelineTemplate.get_by_identifier(
+        p = SavedTemplate.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )
         return p

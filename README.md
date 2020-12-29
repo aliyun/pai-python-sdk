@@ -44,11 +44,11 @@ PAI provides a list of public pipeline templates which could be used as workflow
 
 ```python
 
-from pai.pipeline import PipelineTemplate
+from pai.pipeline import SavedTemplate
 from pai.common import ProviderAlibabaPAI
 
 # search PipelineTemplate which provide by `PAI` and include `xflow` in identifier.
-template = next(PipelineTemplate.list(identifie="xflow", provider=ProviderAlibabaPAI))
+template = next(SavedTemplate.list(identifie="xflow", provider=ProviderAlibabaPAI))
 
 # view template inputs/outputs.
 template
@@ -61,10 +61,10 @@ After submitting run job, users are able to inspect the detailed workflow DAG, e
 ```python
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline import PipelineTemplate
+from pai.pipeline import SavedTemplate
 
 # Get specific template by Identifier-Provider-Version
-template = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
+template = SavedTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
     provider=ProviderAlibabaPAI, version="v1")
 
 xflow_execution = {

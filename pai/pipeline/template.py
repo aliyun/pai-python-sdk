@@ -1,22 +1,13 @@
 from __future__ import absolute_import
 
-import copy
-import string
-
 import logging
-import uuid
-
 import six
 import yaml
-import random
 
+from .base import TemplateBase
 from .core import Pipeline
-from .base import TemplateSpecBase
-from .run import PipelineRun
 from .step import PipelineStep
 from .templates.container import ContainerTemplate
-from .types.artifact import PipelineArtifact
-from .types.parameter import PipelineParameter
 from .types.spec import load_input_output_spec
 from ..core.session import get_default_session
 from ..core.workspace import Workspace
@@ -116,10 +107,10 @@ def _load_pipeline_from_yaml(manifest):
             inputs=inputs,
             outputs=outputs,
         )
-    elif "execution" in manifest["spec"]:
-        image_uri = manifest["spec"]["execution"]["image"]
-        command = manifest["spec"]["execution"]["command"]
-        image_pull_config = manifest["spec"]["execution"].get("imageRegistryConfig")
+    elif "container" in manifest["spec"]:
+        image_uri = manifest["spec"]["container"]["image"]
+        command = manifest["spec"]["container"]["command"]
+        image_pull_config = manifest["spec"]["container"].get("imageRegistryConfig")
         p = ContainerTemplate(
             identifier=metadata.get("identifier", None),
             provider=metadata.get("provider", None),
@@ -131,7 +122,7 @@ def _load_pipeline_from_yaml(manifest):
             outputs=outputs,
         )
     else:
-        p = TemplateSpecBase(
+        p = TemplateBase(
             identifier=metadata.get("identifier", None),
             provider=metadata.get("provider", None),
             version=metadata.get("version", None),
@@ -141,7 +132,7 @@ def _load_pipeline_from_yaml(manifest):
     return p
 
 
-class PipelineTemplate(object):
+class SavedTemplate(TemplateBase):
     """PipelineTemplate represent the pipeline schema from pipeline/component.
 
     PipelineTemplate object include the definition of "Workflow" use in PAI pipeline service.
@@ -150,7 +141,7 @@ class PipelineTemplate(object):
 
     """
 
-    def __init__(self, manifest=None, pipeline_id=None, workspace_id=None):
+    def __init__(self, pipeline_id, workspace_id=None, manifest=None):
         """Template constructor.
 
         Args:
@@ -158,26 +149,31 @@ class PipelineTemplate(object):
             pipeline_id: Unique ID for pipeline in PAI service.
             workspace_id: ID of the workspace which the pipeline belongs to.
         """
-        if not pipeline_id and not manifest:
-            raise ValueError("Neither pipeline_id and manifest are given.")
-
-        self._session = get_default_session()
-        if not manifest:
-            pipeline_info = self._session.get_pipeline_by_id(pipeline_id)
-            manifest = pipeline_info["Manifest"]
+        if not manifest or not workspace_id:
+            session = get_default_session()
+            manifest = session.get_pipeline_by_id(pipeline_id)["Manifest"]
         if isinstance(manifest, six.string_types):
             manifest = yaml.load(manifest, yaml.FullLoader)
 
         self._manifest = manifest
         self._pipeline_id = pipeline_id
         self._workspace_id = workspace_id
-        (
-            self._inputs,
-            self._outputs,
-        ) = load_input_output_spec(self, manifest["spec"])
+
+        inputs, outputs = load_input_output_spec(self, manifest["spec"])
+
+        identifier = manifest["metadata"]["identifier"]
+        provider = manifest["metadata"]["provider"]
+        version = manifest["metadata"]["version"]
+        super(SavedTemplate, self).__init__(
+            inputs=inputs,
+            outputs=outputs,
+            identifier=identifier,
+            provider=provider,
+            version=version,
+        )
 
     def __repr__(self):
-        return "%s: {PipelineId:%s, Identifier:%s, Provider:%s, Version:%s}" % (
+        return "%s:Id=%s,Identifier=%s,Provider=%s,Version=%s" % (
             type(self).__name__,
             self._pipeline_id,
             self.identifier,
@@ -186,24 +182,8 @@ class PipelineTemplate(object):
         )
 
     @property
-    def inputs(self):
-        """Inputs Spec of the template.
-
-        Returns:
-            pai.pipeline.types.spec.InputsSpec: Inputs of the template
-
-        """
-        return self._inputs
-
-    @property
-    def outputs(self):
-        """Outputs Spec of the template
-
-        Returns:
-            pai.pipeline.types.spec.OutputsSpec: Outputs of the template
-
-        """
-        return self._outputs
+    def id(self):
+        return self._pipeline_id
 
     @property
     def pipeline_id(self):
@@ -234,32 +214,6 @@ class PipelineTemplate(object):
         return yaml.dump(self._manifest)
 
     @property
-    def identifier(self):
-        """Pipeline identifier.
-
-        Returns:
-            str: Identifier of the pipeline template.
-
-        """
-        return self._manifest["metadata"]["identifier"]
-
-    @property
-    def provider(self):
-        """Pipeline provider.
-
-        Provider of user-defined pipeline will be auto-completed with the Account UID.
-
-        Returns:
-            str: Provider identifier of the pipeline template.
-
-        """
-        return self._manifest["metadata"]["provider"]
-
-    @property
-    def version(self):
-        return self._manifest["metadata"]["version"]
-
-    @property
     def workspace(self):
         """Workspace of the pipeline template
 
@@ -273,10 +227,6 @@ class PipelineTemplate(object):
         return Workspace.get(self._workspace_id) if self._workspace_id else None
 
     @classmethod
-    def _get_pipeline_client(cls):
-        return get_default_session().paiflow_client
-
-    @classmethod
     def get_by_identifier(cls, identifier, provider=None, version="v1"):
         """Get PipelineTemplate with identifier-provider-version tuple.
 
@@ -287,7 +237,7 @@ class PipelineTemplate(object):
             version (str): Version of the pipeline.
 
         Returns:
-            pai.pipeline.template.PipelineTemplate: PipelineTemplate instance
+            pai.pipeline.template.SavedTemplate: PipelineTemplate instance
 
         """
         session = get_default_session()
@@ -320,7 +270,7 @@ class PipelineTemplate(object):
         Yields:
               pai.pipeline.template.PipelineTemplate: PipelineTemplate match the query.
         """
-        pl_gen = cls._get_pipeline_client().list_pipeline(
+        pl_gen = cls._get_service_client().list_pipeline(
             identifier=identifier,
             provider=provider,
             fuzzy=fuzzy,
@@ -329,46 +279,20 @@ class PipelineTemplate(object):
         )
 
         for info in pl_gen:
-            yield cls(
-                pipeline_id=info["PipelineId"],
-                workspace_id=info.get("WorkspaceId", None),
-            )
+            yield cls.deserialize(info)
 
     @classmethod
-    def load_by_identifier(
-        cls, identifier, provider=None, version="v1", with_impl=False
-    ):
-        session = get_default_session()
-        pipeline_info = session.get_pipeline(
-            identifier=identifier, provider=provider, version=version
+    def deserialize(cls, obj_dict):
+        manifest, id, workspace_id = (
+            obj_dict.get("Manifest"),
+            obj_dict["PipelineId"],
+            obj_dict["WorkspaceId"],
         )
-        if with_impl:
-            pipeline_id = pipeline_info["PipelineId"]
-            manifest = yaml.load(
-                session.describe_pipeline(pipeline_id)["Manifest"], yaml.FullLoader
-            )
-        else:
-            manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
-        component = _load_pipeline_from_yaml(manifest)
-        component._pipeline_id = pipeline_info["PipelineId"]
-        return component
-
-    @classmethod
-    def load(cls, pipeline_id, with_impl=False):
-        client = cls._get_pipeline_client()
-
-        if with_impl:
-            manifest = yaml.load(
-                client.describe_pipeline(pipeline_id)["Data"]["Manifest"],
-                yaml.FullLoader,
-            )
-        else:
-            manifest = yaml.load(
-                client.get_pipeline(pipeline_id)["Data"]["Manifest"], yaml.FullLoader
-            )
-        component = _load_pipeline_from_yaml(manifest)
-        component._pipeline_id = pipeline_id
-        return component
+        return cls(
+            workspace_id=workspace_id,
+            pipeline_id=id,
+            manifest=manifest,
+        )
 
     @classmethod
     def _has_impl(cls, manifest):
@@ -378,7 +302,7 @@ class PipelineTemplate(object):
         if "spec" not in manifest:
             return False
         spec = manifest["spec"]
-        if "pipelines" not in spec and "execution" not in spec:
+        if "pipelines" not in spec and "container" not in spec:
             return False
         return True
 
@@ -414,170 +338,24 @@ class PipelineTemplate(object):
             pipeline_id (str): Unique pipeline id.
 
         Returns:
-            pai.pipeline.template.PipelineTemplate: PipelineTemplate instance with the
+            pai.pipeline.template.SavedTemplate: PipelineTemplate instance with the
              specific pipeline_id
 
         """
-        client = cls._get_pipeline_client()
+        client = cls._get_service_client()
         pipeline_info = client.get_pipeline(pipeline_id=pipeline_id)["Data"]
-        return cls(
-            manifest=pipeline_info["Manifest"], pipeline_id=pipeline_info["PipelineId"]
-        )
-
-    def translate_arguments(self, args):
-        parameters, artifacts = [], []
-        if not args:
-            return parameters, artifacts
-        parameters_spec = {
-            ipt.name: ipt.to_dict()
-            for ipt in self.inputs
-            if ipt.variable_category == "parameters"
-        }
-        artifacts_spec = {
-            ipt.name: ipt.to_dict()
-            for ipt in self.inputs
-            if ipt.variable_category == "artifacts"
-        }
-
-        for name, arg in args.items():
-            if arg is None:
-                continue
-            param_spec = parameters_spec.get(name, None)
-            af_spec = artifacts_spec.get(name, None)
-            if param_spec:
-                param = PipelineParameter.to_argument_by_spec(arg, param_spec)
-                parameters.append(param)
-            elif af_spec:
-                af = PipelineArtifact.to_argument_by_spec(
-                    arg, af_spec, io_type="inputs"
-                )
-                artifacts.append(af)
-            else:
-                logger.warning(
-                    "Provider useless argument:%s, it is not require by the pipeline manifest spec."
-                    % name
-                )
-
-        requires = set(
-            [
-                param_name
-                for param_name, spec in parameters_spec.items()
-                if spec.get("required")
-            ]
-            + [
-                af_name
-                for af_name, spec in artifacts_spec.items()
-                if spec.get("required")
-            ]
-        )
-        not_supply = requires - set(args.keys())
-
-        if len(not_supply) > 0:
-            raise ValueError(
-                "Required arguments is not supplied:%s" % ",".join(not_supply)
-            )
-        return parameters, artifacts
+        return cls.deserialize(pipeline_info)
 
     def save(self, identifier=None, version=None):
-        """Save the Pipeline in PAI service for reuse or share it with others.
+        raise NotImplementedError("SaveTemplate is not savable.")
 
-        By specific the identifier, version and upload the manifest, the PipelineTemplate instance
-        is store into the remote service and return the pipeline_id of the saved PipelineTemplate.
-        Account UID in Alibaba Cloud is use as the provider of the saved template by default.
-        Saved PipelineTemplate could be fetch using the pipeline_id or the specific
-        identifier-provider-version.
-
-        Args:
-            identifier (str): The identifier of the saved pipeline.
-            version (str): Version of the saved pipeline.
-
-        Returns:
-            pai.pipeline.template.PipelineTemplate: Saved PipelineTemplate instance
-            (with pipeline_id generate by remote service).
-
-        """
-        if self.pipeline_id:
-            raise ValueError("Pipeline template has been saved")
-
+    def _submit(self, job_name, args):
         session = get_default_session()
-        provider = session.provider
-
-        if identifier is None and version is None and self.pipeline_id:
-            raise ValueError("Pipeline Manifest has been saved.")
-
-        if not self.identifier and not identifier:
-            raise ValueError("Required pipeline identifier.")
-
-        if not self.version and not version:
-            raise ValueError("Required pipeline version")
-
-        self._manifest["metadata"]["provider"] = provider
-        if identifier is not None:
-            self._manifest["metadata"]["identifier"] = identifier or self.identifier
-        if version is not None:
-            self._manifest["metadata"]["version"] = version or self.version
-        if "uuid" in self._manifest["metadata"]:
-            del self._manifest["metadata"]["uuid"]
-
-        self._pipeline_id = session.create_pipeline(
-            self._manifest, workspace=session.workspace
-        )
-        return self
-
-    @classmethod
-    def _gen_job_name(cls, prefix="job_"):
-        if prefix:
-            return prefix + "".join(
-                [random.choice(string.ascii_letters) for _ in range(8)]
-            )
-        return
-
-    def run(self, job_name, arguments=None, wait=True, show_outputs=True):
-        """Run the workflow using the workflow definition in PipelineTemplate and given arguments.
-
-        Args:
-            job_name (str): Name of the submit pipeline run job.
-            arguments (dict): Inputs arguments used in the run workflow.
-            wait (bool): Wait util the job stop(succeed or failed or terminated).
-            show_outputs (bool): Show the outputs of the job.
-
-        Returns:
-            pai.pipeline.run.PipelineRun: PipelineRun instance of the submit job.
-
-        """
-        session = get_default_session()
-        if job_name is None:
-            job_name = self._gen_job_name()
-        parameters, artifacts = self.translate_arguments(arguments)
-        pipeline_args = {
-            "parameters": parameters,
-            "artifacts": artifacts,
-        }
-
-        pipeline_id, manifest = None, None
-        if self.pipeline_id:
-            pipeline_id = self.pipeline_id
-        else:
-            manifest = copy.deepcopy(self._manifest)
-            if not self.identifier:
-                manifest["metadata"]["identifier"] = "tmp-%s" % uuid.uuid4().hex
-                manifest["metadata"]["version"] = "v0"
         run_id = session.create_run(
             job_name,
-            pipeline_args,
+            args,
             no_confirm_required=True,
-            pipeline_id=pipeline_id,
-            manifest=manifest,
+            pipeline_id=self._pipeline_id,
             workspace=session.workspace,
         )
-
-        run_instance = PipelineRun(
-            run_id=run_id,
-            name=job_name,
-            workspace_id=session.workspace.id if session.workspace else None,
-        )
-        if not wait:
-            return run_instance
-        run_instance.wait_for_completion(show_outputs=show_outputs)
-        print(run_instance.get_status())
-        return run_instance
+        return run_id
