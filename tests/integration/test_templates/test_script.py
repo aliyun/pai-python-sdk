@@ -2,7 +2,7 @@ import contextlib
 
 import os
 
-from pai.pipeline.templates import (
+from pai.pipeline.template import (
     ScriptTemplate,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,

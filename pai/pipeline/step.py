@@ -96,7 +96,7 @@ class PipelineStep(object):
 
     @classmethod
     def get_template(cls, identifier, provider, version):
-        from .template import SavedTemplate
+        from . import SavedTemplate
 
         template = SavedTemplate.get_by_identifier(
             identifier=identifier, provider=provider, version=version

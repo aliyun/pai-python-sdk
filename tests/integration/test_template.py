@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import time
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline.template import SavedTemplate
+from pai.pipeline import SavedTemplate
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
 from pai.common.utils import iter_with_limit

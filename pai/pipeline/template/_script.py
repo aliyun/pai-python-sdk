@@ -15,7 +15,7 @@ from pai.common.utils import (
 )
 
 from pai.core.session import get_default_session
-from pai.pipeline.templates.container import ContainerTemplate, LocalContainerRun
+from pai.pipeline.template._container import ContainerTemplate, LocalContainerRun
 
 ScriptTemplateImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:1.0.0"
 

@@ -13,5 +13,4 @@ __all__ = [
     "PipelineRunStatus",
     "PipelineRun",
     "PipelineParameter",
-    "SavedTemplate",
 ]

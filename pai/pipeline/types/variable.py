@@ -73,7 +73,7 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
     @property
     def fullname(self):
         """Unique identifier in pipeline manifest for PipelineVariable"""
-        from pai.pipeline.template import TemplateBase
+        from pai.pipeline.template._base import TemplateBase
 
         if self.parent and not isinstance(self.parent, TemplateBase):
             return ".".join(

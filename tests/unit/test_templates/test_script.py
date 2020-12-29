@@ -3,7 +3,7 @@ from pprint import pprint
 
 import re
 from pai.pipeline import PipelineParameter
-from pai.pipeline.templates.script import (
+from pai.pipeline.template import (
     ScriptTemplate,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
     PAI_SOURCE_CODE_ENV_KEY,

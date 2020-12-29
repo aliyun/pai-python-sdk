@@ -116,7 +116,7 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
 
     @property
     def _template(self):
-        from .template import SavedTemplate
+        from pai.pipeline import SavedTemplate
 
         manifest = self.to_dict()
         return SavedTemplate(manifest=manifest)
@@ -135,11 +135,11 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
             version (str): Version of the saved pipeline.
 
         Returns:
-            pai.pipeline.template.SavedTemplate: Saved PipelineTemplate instance
+            pai.pipeline.SavedTemplate: Saved PipelineTemplate instance
             (with pipeline_id generate by remote service).
 
         """
-        from pai.pipeline.template import SavedTemplate
+        from pai.pipeline import SavedTemplate
 
         session = get_default_session()
         provider = session.provider

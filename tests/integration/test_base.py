@@ -7,9 +7,8 @@ import time
 
 from pai.common import ProviderAlibabaPAI
 from pai.core.job import JobStatus
-from pai.pipeline import PipelineRunStatus, PipelineStep
+from pai.pipeline import PipelineRunStatus, PipelineStep, SavedTemplate
 from pai.pipeline.core import Pipeline
-from pai.pipeline.template import SavedTemplate
 from pai.pipeline.types.artifact import (
     ArtifactDataType,
     ArtifactLocationType,

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import os
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline.template import SavedTemplate
+from pai.pipeline import SavedTemplate
 from tests.integration import BaseIntegTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))

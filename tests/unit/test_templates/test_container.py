@@ -1,7 +1,7 @@
 from pprint import pprint
 
 from pai.pipeline import PipelineParameter
-from pai.pipeline.templates.container import ContainerTemplate
+from pai.pipeline.template import ContainerTemplate
 from pai.pipeline.types import (
     PipelineArtifact,
     ArtifactMetadata,

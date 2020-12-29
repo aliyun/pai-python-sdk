@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from pai.pipeline.templates.container import ContainerTemplate
+from pai.pipeline.template import ContainerTemplate
 
 from pai.pipeline.types import (
     PipelineArtifact,
