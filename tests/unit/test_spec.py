@@ -9,7 +9,7 @@ from pai.pipeline.types.artifact import (
     ArtifactLocationType,
 )
 from pai.pipeline.types.parameter import PipelineParameter
-from pai.pipeline.types.spec import InputsSpec, validate_spec
+from pai.pipeline.types.spec import InputsSpec, split_variable_by_category
 from tests.unit import BaseUnitTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -108,7 +108,7 @@ class TestInputOutputSpec(BaseUnitTestCase):
         ]
 
         for case in success_cases:
-            _ = validate_spec(case["inputs"])
+            _ = split_variable_by_category(case["inputs"])
 
         error_cases = [
             {
@@ -131,4 +131,4 @@ class TestInputOutputSpec(BaseUnitTestCase):
 
         for case in error_cases:
             with self.assertRaises(ValueError):
-                validate_spec(case["inputs"])
+                split_variable_by_category(case["inputs"])

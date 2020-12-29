@@ -1,8 +1,9 @@
 import copy
+from collections import Counter
 
 import six
+from abc import ABCMeta, abstractmethod
 
-from collections import Counter
 from .artifact import ArtifactMetadata, PipelineArtifact
 from .parameter import PipelineParameter
 
@@ -10,9 +11,9 @@ IO_TYPE_INPUTS = "inputs"
 IO_TYPE_OUTPUTS = "outputs"
 
 
-def validate_spec(items):
+def split_variable_by_category(items):
     if not items:
-        return
+        return [], []
     counter = Counter((item.name for item in items))
     conflicts = {key for key, count in counter.items() if count > 1}
     if conflicts:
@@ -40,34 +41,13 @@ def validate_spec(items):
         raise ValueError(
             "Please ensure parameters is prior to artifacts in the spec list"
         )
+    return items[0:af_pos], items[af_pos:]
 
 
-class SpecBase(object):
+class IndexedItemMixin(six.with_metaclass(ABCMeta, object)):
     def __init__(self, items):
         self._items = items
-        self._indexer = {item.name: idx for idx, item in enumerate(items)}
-        validate_spec(items)
-
-    @property
-    def items(self):
-        return self._items
-
-    @property
-    def artifacts(self):
-        return [item for item in self._items if isinstance(item, PipelineArtifact)]
-
-    @property
-    def parameters(self):
-        return [item for item in self._items if isinstance(item, PipelineParameter)]
-
-    def __repr__(self):
-        return "%s:\n%s" % (
-            type(self).__name__,
-            "\n".join(["\t" + str(item) for item in self._items]),
-        )
-
-    def _repr_html(self):
-        pass
+        self._indexer = {self.index_key(item): idx for idx, item in enumerate(items)}
 
     def __getitem__(self, key):
         if isinstance(key, six.integer_types):
@@ -82,6 +62,43 @@ class SpecBase(object):
 
     def __len__(self):
         return len(self._items)
+
+    @abstractmethod
+    def index_key(self, item):
+        pass
+
+
+class SpecBase(IndexedItemMixin):
+    def __init__(self, items):
+        items = items or []
+        parameter_items, artifact_items = split_variable_by_category(items)
+        self._parameters = Parameters(parameter_items)
+        self._artifacts = Artifacts(artifact_items)
+        super(SpecBase, self).__init__(items)
+
+    @staticmethod
+    def sort_items(items):
+        # ensure parameters is prior to artifacts
+        # `sorted` in Python is stable sort.
+        return sorted(items, key=lambda x: 0 if isinstance(x, PipelineParameter) else 1)
+
+    @property
+    def items(self):
+        return self._items
+
+    @property
+    def artifacts(self):
+        return self._artifacts
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    def __repr__(self):
+        return "%s:\n%s" % (
+            type(self).__name__,
+            "\n".join(["\t" + str(item) for item in self._items]),
+        )
 
     def to_dict(self):
         af_pos = next(
@@ -98,6 +115,9 @@ class SpecBase(object):
             "artifacts": [af.to_dict() for af in self._items[af_pos:]],
         }
         return d
+
+    def index_key(self, item):
+        return item.name
 
 
 class InputsSpec(SpecBase):
@@ -131,7 +151,17 @@ class OutputsSpec(SpecBase):
     def __init__(self, outputs):
         super(OutputsSpec, self).__init__(items=outputs)
         for item in self.items:
-            item.io_type = IO_TYPE_OUTPUTS
+            item.kind = IO_TYPE_OUTPUTS
+
+
+class Parameters(IndexedItemMixin):
+    def index_key(self, item):
+        return item.name
+
+
+class Artifacts(IndexedItemMixin):
+    def index_key(self, item):
+        return item.name
 
 
 def load_input_output_spec(p, spec):
