@@ -23,11 +23,10 @@ class ArchivedArtifact(object):
         self.id = id
 
     def __repr__(self):
-        return "%s:Id=%s,Name=%s, Metadata=%s" % (
+        return "%s:Id=%s,Name=%s" % (
             type(self).__name__,
             self.id,
             self.name,
-            self.metadata,
         )
 
     @classmethod

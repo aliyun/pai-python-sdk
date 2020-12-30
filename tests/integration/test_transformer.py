@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import random
+from unittest import skip
 
 from pai.algo.classifier import LogisticRegression
 from pai.core.job import JobStatus
@@ -66,6 +67,7 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
 
         self.assertEqual(JobStatus.Succeeded, job.get_status())
 
+    @skip("ModelTransferJob In PaiFlow not available.")
     def test_model_transfer(self):
         tf = ModelTransferToOSS(
             oss_bucket=self.oss_config.bucket_name,
