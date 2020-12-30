@@ -51,7 +51,7 @@ class TestLogisticsRegression(BaseIntegTestCase):
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         # PipelineOutput is not ready while status switch to succeed.
         time.sleep(10)
-        offline_model = run_job.create_model(output_name="modelType")
+        offline_model = run_job.create_model(output_name="model")
         self.assertIsNotNone(offline_model)
 
         run_job.create_model(output_name="PMMLOutput")

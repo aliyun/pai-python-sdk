@@ -84,21 +84,32 @@ class ModelTransferToOSS(MaxComputeTransformer):
     _provider_default = ProviderAlibabaPAI
     _version_default = "v1"
 
-    def __init__(self, bucket, endpoint, rolearn, overwrite=True, **kwargs):
+    def __init__(
+        self,
+        oss_bucket,
+        oss_endpoint,
+        oss_path,
+        rolearn,
+        format="pmml",
+        overwrite=True,
+        **kwargs
+    ):
         """
 
         Args:
-            bucket (str): Transfer target oss bucket name.
-            endpoint (str): Domain name that the service can use to access OSS.
+            oss_bucket (str): Transfer target oss bucket name.
+            oss_endpoint (str): Domain name that the service can use to access OSS.
             model_format (str): Convert to specific Model format  while transfer to target OSS,
                 optional 'original', 'pmml', etc.
             rolearn (str): Alibaba Cloud Role ARN, used for access OSS service.
         """
         super(ModelTransferToOSS, self).__init__(
-            bucket=bucket,
-            endpoint=endpoint,
+            oss_bucket=oss_bucket,
+            oss_endpoint=oss_endpoint,
+            oss_path=oss_path,
             rolearn=rolearn,
             overwrite=overwrite,
+            format=format,
             **kwargs
         )
 
@@ -106,22 +117,24 @@ class ModelTransferToOSS(MaxComputeTransformer):
         args = super(ModelTransferToOSS, self)._compile_args(*inputs, **kwargs)
 
         assert len(inputs) > 0
-        args["inputArtifact"] = inputs[0]
-        args["rolearn"] = kwargs["rolearn"]
-        args["endpoint"] = kwargs["endpoint"]
-        args["bucket"] = kwargs["bucket"]
+        args["inputTable"] = inputs[0]
+        args["arn"] = kwargs["rolearn"]
+        args["format"] = kwargs["format"]
+        args["overwrite"] = kwargs["overwrite"]
 
-        oss_path = kwargs["path"]
-        if not oss_path.startswith("/"):
-            oss_path = "/" + oss_path
-        if not oss_path.endswith("/"):
-            oss_path = oss_path + "/"
-
-        args["path"] = oss_path
+        oss_path_dir = kwargs["oss_path"]
+        if not oss_path_dir.startswith("/"):
+            oss_path_dir = "/" + oss_path_dir
+        if not oss_path_dir.endswith("/"):
+            oss_path_dir = oss_path_dir + "/"
+        oss_path = "oss://{0}.{1}{2}".format(
+            kwargs["oss_bucket"], kwargs["oss_endpoint"], oss_path_dir
+        )
+        args["ossPath"] = oss_path
 
         return args
 
-    def transform(self, input_model, path=None, wait=True, job_name=None, **kwargs):
+    def transform(self, input_model, wait=True, job_name=None, **kwargs):
         """Transfer input offlinemodel to sepcific path of OSS bucket.
 
         Args:
@@ -134,7 +147,7 @@ class ModelTransferToOSS(MaxComputeTransformer):
             _TransformJob: Job instance used as controller and get the outputs of transformer.
         """
         return super(ModelTransferToOSS, self).transform(
-            input_model, job_name=job_name, wait=wait, path=path, **kwargs
+            input_model, job_name=job_name, wait=wait, **kwargs
         )
 
 
@@ -150,11 +163,16 @@ class FeatureNormalize(MaxComputeTransformer):
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(FeatureNormalize, self)._compile_args(*inputs, **kwargs)
-        args["inputArtifact"] = kwargs.get("input_table")
-        args["outputArtifact"] = kwargs.get("output_table")
-        args["outputParaArtifact"] = kwargs.get("output_para_table")
-        args["inputParaArtifact"] = kwargs.get("input_para_table")
-        args["outputPartition"] = kwargs.get("output_partition")
+        args["inputTable"] = kwargs.get("input_table")
+        args["inputParaTable"] = kwargs.get("input_para_table")
+        args["outputTableName"] = kwargs.get("output_table")
+        args["outputParaTableName"] = kwargs.get("output_para_table")
+        args["selectedColNames"] = (
+            ",".join(kwargs.get("selected_cols"))
+            if isinstance(kwargs.get("selected_cols"), list)
+            else kwargs.get("selected_cols")
+        )
+        args["keepOriginal"] = kwargs.get("keep_original")
 
     def transform(
         self,
@@ -200,8 +218,8 @@ class MaxComputeDataSource(MaxComputeTransformer):
     def _compile_args(self, *inputs, **kwargs):
         args = super(MaxComputeDataSource, self)._compile_args(*inputs, **kwargs)
         assert len(inputs) > 0
-        args["tableName"] = inputs[0]
-        args["partition"] = kwargs.pop("partition")
+        args["inputTableName"] = inputs[0]
+        args["inputTablePartitions"] = kwargs.pop("partition")
         return args
 
     def transform(self, table_name, partition=None, wait=True, job_name=None, **kwargs):

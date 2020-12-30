@@ -252,8 +252,7 @@ class EstimatorJob(RunJob):
         model_data = artifact_info.value
         metadata = artifact_info.metadata
 
-        print(metadata.type_attributes)
-        model_type = metadata.type_attributes.get("model_type")
+        model_type = metadata.type_attributes.get("modelType")
 
         if not model_type:
             raise ValueError("Output artifact %s is not a model." % model_type)

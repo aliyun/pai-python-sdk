@@ -68,8 +68,9 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
 
     def test_model_transfer(self):
         tf = ModelTransferToOSS(
-            bucket=self.oss_config.bucket_name,
-            endpoint=self.oss_config.endpoint,
+            oss_bucket=self.oss_config.bucket_name,
+            oss_endpoint=self.oss_config.endpoint,
+            oss_path="/test/pai/offlinemodel_transfer/",
             rolearn=self.oss_config.role_arn,
             execution=self.get_default_maxc_execution(),
         )
@@ -80,7 +81,6 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
         )
         job = tf.transform(
             offlinemodel,
-            path="/test/pai/offlinemodel_transfer/",
             job_name="pysdk-test-modeltransfer2oss",
             wait=False,
         )

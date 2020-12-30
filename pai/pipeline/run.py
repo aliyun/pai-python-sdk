@@ -365,7 +365,6 @@ class _RunLogger(object):
                 page_size=page_size,
                 page_offset=page_offset,
             )
-            print(node_name, run_id, node_id, len(logs))
             if logs:
                 for log in logs:
                     print("%s: %s" % (node_name, log))

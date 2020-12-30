@@ -79,7 +79,6 @@ class Workspace(object):
     @classmethod
     def get(cls, ws_id):
         ws = cls._get_service_client().get(workspace_id=ws_id)
-        print(ws)
         return cls.deserialize(ws["Data"])
 
     @classmethod
@@ -112,7 +111,6 @@ class Workspace(object):
         r = cls._get_service_client().deserialize(
             name=name, alias=alias, description=desc
         )
-        print(r)
         ws_id = r["Data"]["WorkspaceId"]
         return cls.get(ws_id)
 

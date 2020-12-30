@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from pprint import pprint
 
 import uuid
 
@@ -232,7 +231,6 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
     def _submit(self, job_name, args):
         session = get_default_session()
         manifest = self.to_dict()
-        pprint(manifest)
         run_id = session.create_run(
             job_name,
             args,
