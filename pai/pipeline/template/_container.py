@@ -1,22 +1,18 @@
 # coding: utf-8
 from __future__ import print_function
 
-import six
-import tempfile
-
-import docker
 import json
 import os
+import tempfile
+
 import shutil
 
+from pai.common.utils import makedirs
 from pai.pipeline.base import TemplateBase
 from pai.pipeline.types.artifact import PipelineArtifact
 from pai.pipeline.types.spec import IO_TYPE_OUTPUTS
-from pai.common.utils import makedirs
 
-# PAI_BASE_DIR_ENV_KEY = "PAI_BASE_DIR"
 PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
-
 PAI_MANIFEST_SPEC_INPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_INPUTS"
 PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
@@ -131,6 +127,8 @@ class LocalContainerRun(object):
         self.env["PYTHONUNBUFFERED"] = "1"
 
     def run(self):
+        import docker
+
         print("Local container run start")
         self.prepare()
         try:

@@ -82,7 +82,7 @@ class TestPaiFlowAPI(BaseIntegTestCase):
 
     def test_list_template(self):
         templates = list(
-            iter_with_limit(SavedTemplate.list(provider=ProviderAlibabaPAI), 100)
+            iter_with_limit(SavedTemplate.list(provider=ProviderAlibabaPAI), 10)
         )
 
         for template in templates:

@@ -94,6 +94,9 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
     def enclosed_fullname(self):
         return "{{%s}}" % self.fullname
 
+    def __str__(self):
+        return self.__repr__()
+
     def __repr__(self):
         return "%s:{Name:%s, Kind:%s, Required:%s, Value:%s, Desc:%s}" % (
             type(self).__name__,

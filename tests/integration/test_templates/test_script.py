@@ -1,7 +1,6 @@
 import contextlib
-from pprint import pprint
 
-import json
+from unittest import skip
 
 import os
 
@@ -99,6 +98,7 @@ class TestScriptTemplate(BaseIntegTestCase):
         )
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
 
+    @skip("Aone dynamic container environment do not support docker in docker.")
     def test_local_run(self):
         templ = ScriptTemplate(
             entry_file="main.py",
