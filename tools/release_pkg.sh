@@ -5,9 +5,11 @@
 #
 # usage:
 #
-# release_pkg.sh v1.0.0 testpypi            # release v1.0.0 to testpypi
+# release_pkg.sh testpypi v1.0.0            # release v1.0.0 to testpypi
 #
-# release_pkg.sh v1.0.0 pypi                # release v1.1.1 to pypi
+# release_pkg.sh pypi v1.0.2                # release v1.1.1 to pypi
+#
+# release_pkg.sh oss                        # release local package to OSS.
 #
 
 set -e
@@ -16,10 +18,10 @@ set -e
 PKG_DISTRIBUTE_NAME=alipai
 PKG_IMPORT_NAME=pai
 
-version_tag=${1}
-repo=${2:-testpypi}
+repo=${1:-testpypi}
+version_tag=${2}
 
-if [[ version_tag != v* ]]; then
+if [[ version_tag != v* && repo != "oss" ]]; then
   echo "release version tag should be startswith v" && exit 1
 fi
 
@@ -28,8 +30,10 @@ pkg_version=${version_tag#v*}
 # checkout current git HEAD to specific version tag.
 function checkout_release_version() {
 
-  git fetch origin refs/tags/"$version_tag"
-  git checkout tags/"$version_tag"
+  if [ $repo != "oss" ]; then
+    git fetch origin refs/tags/"$version_tag"
+    git checkout tags/"$version_tag"
+  fi
 
   expected_version=$pkg_version
   current_version=$(cat $PKG_IMPORT_NAME/VERSION)
@@ -43,6 +47,7 @@ function checkout_release_version() {
 # build and publish the package to PyPI.
 function build_and_publish() {
   index_repo=$1
+  pkg_version=$2
   # install build/publish tools
   python3 -m pip install --upgrade setuptools
   python3 -m pip install wheel
@@ -62,21 +67,30 @@ function build_and_publish() {
     echo "publish package($wheel_pkg) to Test PyPI"
     python3 -m twine upload -r pypi "$wheel_pkg"
     echo "Succeed upload package to PyPI!"
+  elif [ "$index_repo" == "oss" ]; then
+    echo "publish package($wheel_pkg) to OSS Bucket"
+    ossutilmac64 cp $wheel_pkg oss://pai-sdk/$PKG_DISTRIBUTE_NAME/dist/
+    echo "Succeed upload package to OSS, please visit:"
+    echo "https://pai-sdk.oss-cn-shanghai.aliyuncs.com/$PKG_DISTRIBUTE_NAME/$wheel_pkg"
   else
     echo "unknown PyPI repository."
   fi
 }
 
 function main() {
-  if [ -z $version_tag ]; then
-    echo "please specific the version " && exit 1
-  fi
 
   pkg_root_dir="$(dirname "$0")/.."
   cd "$pkg_root_dir" || (echo "cd the workdir $(pkg_root_dir) fail" && exit 1)
 
-  checkout_release_version $version_tag
-  build_and_publish $repo
+  release_version=$pkg_version
+
+  if [ $repo != "oss" ]; then
+    checkout_release_version
+  else
+    release_version=$(cat $PKG_IMPORT_NAME/VERSION)
+  fi
+
+  build_and_publish $repo $release_version
 
 }
 
