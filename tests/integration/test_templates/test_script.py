@@ -50,8 +50,6 @@ class TestScriptTemplate(BaseIntegTestCase):
                 PipelineParameter(name="foo", typ=str, default="Hello"),
                 PipelineParameter(name="bar", typ=int, default=200),
             ],
-            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/max-compute-executor:1.0.4",
-            command=["bash", "-c", "env && launch"],
         )
         templ.prepare()
         manifest = templ.to_dict()
