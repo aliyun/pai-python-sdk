@@ -92,11 +92,11 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
 
         split_step_1 = PipelineStep(
             name="split-step",
-            identifier="split-xflow-maxCompute",
+            identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={
-                "inputArtifact": dataset_input,
+                "inputTable": dataset_input,
                 "execution": execution_input,
                 "output1TableName": gen_temp_table(),
                 "fraction": 0.5,
@@ -105,11 +105,11 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         )
         split_step_2 = PipelineStep(
             name="split-step",
-            identifier="split-xflow-maxCompute",
+            identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={
-                "inputArtifact": dataset_input,
+                "inputTable": dataset_input,
                 "execution": execution_input,
                 "output1TableName": gen_temp_table(),
                 "fraction": 0.5,
@@ -131,7 +131,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
 
         split_step_1 = PipelineStep(
             name="split-step-1",
-            identifier="split-xflow-maxCompute",
+            identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={
@@ -143,7 +143,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             },
         )
         split_step_2 = PipelineStep(
-            identifier="split-xflow-maxCompute",
+            identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={
@@ -164,7 +164,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         table_input = PipelineParameter(name="table_name", typ=str)
 
         data_source_step = PipelineStep(
-            identifier="dataSource-xflow-maxCompute",
+            identifier="data_source",
             provider=ProviderAlibabaPAI,
             version="v1",
             name="dataSource",
@@ -176,7 +176,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         )
 
         type_transform_step = PipelineStep(
-            identifier="type-transform-xflow-maxCompute",
+            identifier="type_transform",
             provider=ProviderAlibabaPAI,
             version="v1",
             name="typeTransform",
@@ -208,35 +208,35 @@ class TestPipelineBuild(BaseIntegTestCase):
             execution_input = PipelineParameter(name="execution", typ="map")
 
             data_source_step = PipelineStep(
-                identifier="dataSource-xflow-maxCompute",
+                identifier="data_source",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 name="dataSource",
                 inputs={
                     "execution": execution_input,
-                    "tableName": dataset.get_table(),
-                    "partition": "",
+                    "inputTableName": dataset.get_table(),
+                    "inputTablePartitions": "",
                 },
             )
 
             type_transform_step = PipelineStep(
-                identifier="type-transform-xflow-maxCompute",
+                identifier="type_transform",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 name="typeTransform",
                 inputs={
-                    "inputArtifact": data_source_step.outputs["outputArtifact"],
+                    "inputTable": data_source_step.outputs["outputTable"],
                     "execution": execution_input,
                     "outputTable": gen_temp_table(),
                     "cols_to_double": ",".join(dataset.columns),
                 },
             )
             split_step = PipelineStep(
-                identifier="split-xflow-maxCompute",
+                identifier="split",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "inputArtifact": type_transform_step.outputs[0],
+                    "inputTable": type_transform_step.outputs[0],
                     "execution": execution_input,
                     "output1TableName": gen_temp_table(),
                     "fraction": 0.5,

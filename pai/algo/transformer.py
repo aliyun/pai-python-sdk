@@ -8,7 +8,7 @@ class OfflineModelTransformer(MaxComputeTransformer):
 
     _enable_spare_input = True
 
-    _identifier_default = "prediction-xflow-maxCompute"
+    _identifier_default = "Prediction_1"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
@@ -81,7 +81,7 @@ class ModelTransferToOSS(MaxComputeTransformer):
      use to deploy to Elastic Algorithm Service (EAS), or other utilities.
     """
 
-    _identifier_default = "modeltransfer2oss-xflow-maxCompute"
+    _identifier_default = "generalmodeltransfer2oss"
     _provider_default = ProviderAlibabaPAI
     _version_default = "v1"
 
@@ -142,7 +142,7 @@ class ModelTransferToOSS(MaxComputeTransformer):
 class FeatureNormalize(MaxComputeTransformer):
     """Normalize input dataset"""
 
-    _identifier_default = "dataSource-xflow-maxCompute"
+    _identifier_default = "normalize_1"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 
@@ -191,7 +191,7 @@ class MaxComputeDataSource(MaxComputeTransformer):
 
     """
 
-    _identifier_default = "dataSource-xflow-maxCompute"
+    _identifier_default = "data_source"
     _version_default = "v1"
     _provider_default = ProviderAlibabaPAI
 

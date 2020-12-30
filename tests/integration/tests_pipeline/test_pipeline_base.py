@@ -13,7 +13,7 @@ class TestPipelineBase(BaseIntegTestCase):
     @classmethod
     def init_prediction_pipeline(
         cls,
-        identifier="prediction-xflow-maxCompute",
+        identifier="Prediction_1",
         version="v1",
         provider=ProviderAlibabaPAI,
     ):

@@ -29,7 +29,7 @@ class TestPaiFlowAPI(BaseIntegTestCase):
             del cls.session
 
     def test_get_pipeline(self):
-        identifier = "evaluate-xflow-maxCompute"
+        identifier = "evaluate_1"
         pipeline_info = self.session.get_pipeline(
             identifier=identifier, provider=ProviderAlibabaPAI, version="v1"
         )
@@ -82,9 +82,13 @@ class TestPaiFlowAPI(BaseIntegTestCase):
 
     def test_list_template(self):
         templates = list(
-            iter_with_limit(SavedTemplate.list(provider=ProviderAlibabaPAI), 10)
+            iter_with_limit(SavedTemplate.list(provider=ProviderAlibabaPAI), 100)
         )
-        self.assertTrue(len(templates) <= 10)
+
+        for template in templates:
+            print(template)
+            print(template.inputs)
+            print(template.outputs)
 
     def test_list_run(self):
         runs = list(iter_with_limit(PipelineRun.list(), 10))

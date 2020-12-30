@@ -8,7 +8,7 @@ class LogisticRegression(MaxComputeEstimator):
     _enable_sparse = True
     _pmml_model = True
 
-    _identifier_default = "logisticregression-binary-xflow-maxCompute"
+    _identifier_default = "logisticregression_binary"
 
     _version_default = "v1"
 
@@ -98,7 +98,7 @@ class LogisticRegression(MaxComputeEstimator):
 
 
 class RandomForestClassifier(MaxComputeEstimator):
-    _identifier_default = "random-forests-xflow-maxCompute"
+    _identifier_default = "random_forests_1"
 
     _provider_default = ProviderAlibabaPAI
 

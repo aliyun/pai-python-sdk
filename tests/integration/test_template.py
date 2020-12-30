@@ -18,7 +18,7 @@ class TestTemplateService(BaseIntegTestCase):
 
     # def test_load_template(self):
     #     component = SavedTemplate.load_by_identifier(
-    #         "split-xflow-maxCompute",
+    #         "split",
     #         provider=ProviderAlibabaPAI,
     #         version="v1",
     #         with_impl=False,

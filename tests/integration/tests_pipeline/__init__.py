@@ -12,24 +12,24 @@ def create_simple_composite_pipeline():
     table_input = PipelineParameter(name="table_name", typ=str)
 
     data_source_step = PipelineStep(
-        identifier="dataSource-xflow-maxCompute",
+        identifier="data_source",
         provider=ProviderAlibabaPAI,
         version="v1",
         name="dataSource",
         inputs={
             "execution": execution_input,
-            "tableName": table_input,
-            "partition": "",
+            "inputTableName": table_input,
+            "inputTablePartitions": "",
         },
     )
 
     type_transform_step = PipelineStep(
-        identifier="type-transform-xflow-maxCompute",
+        identifier="type_transform",
         provider=ProviderAlibabaPAI,
         version="v1",
         name="typeTransform",
         inputs={
-            "inputArtifact": data_source_step.outputs["outputArtifact"],
+            "inputTable": data_source_step.outputs["outputTable"],
             "execution": execution_input,
             "outputTable": gen_run_node_scoped_placeholder(suffix="outputTable"),
             "cols_to_double": cols_to_double_input,
@@ -38,11 +38,11 @@ def create_simple_composite_pipeline():
         },
     )
     split_step = PipelineStep(
-        identifier="split-xflow-maxCompute",
+        identifier="split",
         provider=ProviderAlibabaPAI,
         version="v1",
         inputs={
-            "inputArtifact": type_transform_step.outputs[0],
+            "inputTable": type_transform_step.outputs[0],
             "execution": execution_input,
             "output1TableName": gen_run_node_scoped_placeholder(suffix="output1Table"),
             "fraction": 0.5,

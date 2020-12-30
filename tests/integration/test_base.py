@@ -118,7 +118,7 @@ class TestAlgo(BaseIntegTestCase):
 
         # Extract and transform dataset using max_compute sql.
         sql_job = SavedTemplate.get_by_identifier(
-            identifier="sql-xflow-maxCompute", provider=ProviderAlibabaPAI, version="v1"
+            identifier="sql", provider=ProviderAlibabaPAI, version="v1"
         ).run(
             job_name="sql-job",
             arguments={
@@ -133,7 +133,7 @@ class TestAlgo(BaseIntegTestCase):
         output_table_artifact = sql_job.get_outputs()[0]
 
         type_transform_job = SavedTemplate.get_by_identifier(
-            identifier="type-transform-xflow-maxCompute",
+            identifier="type_transform",
             provider=ProviderAlibabaPAI,
             version="v1",
         ).run(
@@ -152,7 +152,7 @@ class TestAlgo(BaseIntegTestCase):
 
         # Normalize Feature
         normalize_job = SavedTemplate.get_by_identifier(
-            identifier="normalize-xflow-maxCompute",
+            identifier="normalize_1",
             provider=ProviderAlibabaPAI,
             version="v1",
         ).run(
@@ -171,7 +171,7 @@ class TestAlgo(BaseIntegTestCase):
         normalized_dataset = normalize_job.get_outputs()[0]
 
         split_job = SavedTemplate.get_by_identifier(
-            identifier="split-xflow-maxCompute",
+            identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
         ).run(
@@ -212,7 +212,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(20)
         offlinemodel_artifact, pmml_output = lr_job.get_outputs()
         transform_job = SavedTemplate.get_by_identifier(
-            identifier="prediction-xflow-maxCompute",
+            identifier="Prediction_1",
             provider=ProviderAlibabaPAI,
             version="v1",
         ).run(
@@ -232,7 +232,7 @@ class TestAlgo(BaseIntegTestCase):
         transform_result = transform_job.get_outputs()[0]
 
         evaluate_job = SavedTemplate.get_by_identifier(
-            identifier="evaluate-xflow-maxCompute",
+            identifier="evaluate_1",
             provider=ProviderAlibabaPAI,
             version="v1",
         ).run(
@@ -286,28 +286,28 @@ class TestAlgo(BaseIntegTestCase):
                 "0 end) as ifHealth from ${t1};"
             )
             sql_step = PipelineStep(
-                "sql-xflow-maxCompute",
+                "sql",
                 name="sql-1",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "inputArtifact1": dataset_input,
+                    "inputTable1": dataset_input,
                     "execution": execution,
                     "sql": sql,
-                    "outputTable": gen_run_node_scoped_placeholder(
+                    "outputTableName": gen_run_node_scoped_placeholder(
                         suffix="outputTable"
                     ),
                 },
             )
 
             type_transform_step = PipelineStep(
-                "type-transform-xflow-maxCompute",
+                "type_transform",
                 name="type-transform-1",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
                     "execution": execution,
-                    "inputArtifact": sql_step.outputs["outputArtifact"],
+                    "inputTable": sql_step.outputs["outputTable"],
                     "cols_to_double": full_col_names,
                     "outputTable": gen_run_node_scoped_placeholder(
                         suffix="outputTable"
@@ -316,13 +316,13 @@ class TestAlgo(BaseIntegTestCase):
             )
 
             normalize_step = PipelineStep(
-                "normalize-xflow-maxCompute",
+                "normalize_1",
                 name="normalize-1",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
                     "execution": execution,
-                    "inputArtifact": type_transform_step.outputs["outputArtifact"],
+                    "inputTable": type_transform_step.outputs["outputTable"],
                     "selectedColNames": full_col_names,
                     "lifecycle": 1,
                     "outputTableName": gen_run_node_scoped_placeholder(
@@ -335,12 +335,12 @@ class TestAlgo(BaseIntegTestCase):
             )
 
             split_step = PipelineStep(
-                identifier="split-xflow-maxCompute",
+                identifier="split",
                 name="split-1",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "inputArtifact": normalize_step.outputs["outputArtifact"],
+                    "inputTable": normalize_step.outputs["outputTable"],
                     "execution": execution,
                     "fraction": 0.8,
                     "output1TableName": gen_run_node_scoped_placeholder(
@@ -357,20 +357,21 @@ class TestAlgo(BaseIntegTestCase):
             )
 
             lr_step = PipelineStep(
-                identifier="logisticregression-binary-xflow-maxCompute",
+                identifier="logisticregression_binary",
                 name="logisticregression-1",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "inputArtifact": split_step.outputs["outputArtifact1"],
+                    "inputTable": split_step.outputs["output1Table"],
                     "execution": execution,
                     "generatePmml": True,
-                    "endpoint": pmml_oss_endpoint,
-                    "bucket": pmml_oss_bucket,
-                    "path": pmml_oss_path,
-                    "rolearn": pmml_oss_rolearn,
+                    "pmmlOssEndpoint": pmml_oss_endpoint,
+                    "pmmlOssBucket": pmml_oss_bucket,
+                    "pmmlOssPath": pmml_oss_path,
+                    "pmmlOverwrite": True,
+                    "roleArn": pmml_oss_rolearn,
                     "regularizedLevel": 1.0,
-                    # "regularizedType": "l2",
+                    "regularizedType": "l2",
                     "modelName": model_name,
                     "goodValue": 1,
                     "featureColNames": ",".join(dataset.feature_cols),
@@ -379,13 +380,13 @@ class TestAlgo(BaseIntegTestCase):
             )
 
             offline_model_pred_step = PipelineStep(
-                identifier="prediction-xflow-maxCompute",
+                identifier="Prediction_1",
                 name="offlinemodel-pred",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
-                    "inputModelArtifact": lr_step.outputs["outputArtifact"],
-                    "inputDataSetArtifact": split_step.outputs["outputArtifact2"],
+                    "model": lr_step.outputs["model"],
+                    "inputTable": split_step.outputs["output2Table"],
                     "execution": execution,
                     "outputTableName": gen_run_node_scoped_placeholder(
                         suffix="outputTable"
@@ -396,13 +397,13 @@ class TestAlgo(BaseIntegTestCase):
             )
 
             evaluate_step = PipelineStep(
-                identifier="evaluate-xflow-maxCompute",
+                identifier="evaluate_1",
                 name="evaluate-1",
                 provider=ProviderAlibabaPAI,
                 version="v1",
                 inputs={
                     "execution": execution,
-                    "inputArtifact": offline_model_pred_step.outputs["outputArtifact"],
+                    "inputTable": offline_model_pred_step.outputs["outputTable"],
                     "outputDetailTableName": gen_run_node_scoped_placeholder(
                         suffix="outputDetail"
                     ),
@@ -414,16 +415,14 @@ class TestAlgo(BaseIntegTestCase):
                     ),
                     "scoreColName": "prediction_score",
                     "labelColName": dataset.label_col,
-                    "coreNum": 2,
-                    "memSizePerCore": 512,
                 },
             )
 
             p = Pipeline(
                 steps=[evaluate_step, offline_model_pred_step],
                 outputs={
-                    "pmmlModel": lr_step.outputs["outputArtifact"],
-                    "evaluateResult": evaluate_step.outputs["outputMetricsArtifact"],
+                    "pmmlModel": lr_step.outputs["PMMLOutput"],
+                    "evaluateResult": evaluate_step.outputs["outputMetricTable"],
                 },
             )
             return p
