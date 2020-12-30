@@ -4,7 +4,6 @@ import json
 import re
 
 import six
-from enum import Enum
 from odps.df import DataFrame as ODPSDataFrame
 from odps.models import (
     Table as ODPSTable,
@@ -14,6 +13,24 @@ from odps.models import (
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 
 from pai.pipeline.types.variable import PipelineVariable
+
+
+class DataType(object):
+    DataSet = "DataSet"
+    Model = "Model"
+    ModelEvaluation = "ModelEvaluation"
+
+
+class LocationType(object):
+    MaxComputeTable = "MaxComputeTable"
+    MaxComputeVolume = "MaxComputeVolume"
+    MaxComputeOfflineModel = "MaxComputeOfflineModel"
+    OSS = "OSS"
+
+
+class ModelType(object):
+    OfflineModel = "OfflineModel"
+    PMML = "PMML"
 
 
 class PipelineArtifact(PipelineVariable):
@@ -81,7 +98,7 @@ class PipelineArtifact(PipelineVariable):
             required=required,
             desc=desc,
         )
-        af_value = ArtifactValue.from_resource(val)
+        af_value = LocationArtifactValue.from_resource(val)
         if not param.validate_value(val):
             raise ValueError(
                 "Not Validate value for Parameter %s, value(%s:%s)"
@@ -106,7 +123,7 @@ class PipelineArtifact(PipelineVariable):
         d = super(PipelineArtifact, self).to_dict()
         d["metadata"] = self.metadata.to_dict()
         if self.value is not None:
-            if isinstance(self.value, ArtifactValue):
+            if isinstance(self.value, LocationArtifactValue):
                 d["value"] = self.value.to_dict()
             else:
                 d["value"] = self.value
@@ -164,28 +181,23 @@ class LocationArtifactMetadata(object):
     def from_dict(cls, d):
         af_typ = d["type"]
         data_type = list(af_typ.keys())[0]
-
-        location_type = af_typ[data_type.value].get("locationType")
-        data_type_infos = af_typ.get("type", {}).get("data_type", {})
-
-        if "modelType" in af_typ[data_type.value]:
-            model_type = ModelType(af_typ[data_type.value]["modelType"])
-        path = d.get("path")
-
+        type_attributes = af_typ[data_type].copy()
+        location_type = type_attributes.pop("locationType", None)
         return cls(
             data_type=data_type,
             location_type=location_type,
-            model_type=model_type,
-            path=path,
+            type_attributes=type_attributes,
         )
 
 
-class ArtifactValue(object):
+class LocationArtifactValue(object):
     def __init__(self):
         pass
 
     @classmethod
     def from_resource(cls, resource, metadata=None):
+        from pai.core.artifact import ArchivedArtifact
+
         if isinstance(resource, six.string_types):
             if resource.startswith("odps://"):
                 return MaxComputeResourceArtifact.from_resource_url(resource)
@@ -201,9 +213,9 @@ class ArtifactValue(object):
             resource, (ODPSTable, ODPSPartition, ODPSDataFrame, ODPSVolume)
         ):
             return MaxComputeResourceArtifact.from_odps_resource(resource)
-        elif isinstance(resource, ArtifactEntity):
+        elif isinstance(resource, ArchivedArtifact):
             return resource.value
-        elif isinstance(resource, ArtifactValue):
+        elif isinstance(resource, LocationArtifactValue):
             return resource
 
         raise ValueError("Not support artifact resource:%s", type(resource))
@@ -246,7 +258,7 @@ class ArtifactValue(object):
         return ref
 
 
-class MaxComputeResourceArtifact(ArtifactValue):
+class MaxComputeResourceArtifact(LocationArtifactValue):
     MaxComputeResourceUrlPattern = re.compile(
         r"odps://(?P<project>[^/]+)/(?P<resource_type>(?:tables)|(?:volumes)|(?:offlinemodels))/"
         r"(?P<resource_name>[^/]+)/?(?P<sub_resource>[^\?]+)?(?P<arguments>[.*])?"
@@ -435,7 +447,7 @@ class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
         )
 
 
-class OSSArtifact(ArtifactValue):
+class OSSArtifact(LocationArtifactValue):
     def __init__(self, bucket, key, endpoint, rolearn):
         super(OSSArtifact, self).__init__()
         self.bucket = bucket
@@ -468,90 +480,3 @@ class OSSArtifact(ArtifactValue):
         endpoint = d["location"].get("endpoint")
         rolearn = d["location"].get("rolearn")
         return OSSArtifact(bucket=bucket, key=key, endpoint=endpoint, rolearn=rolearn)
-
-
-class DataType(object):
-    DataSet = "DataSet"
-    Model = "Model"
-    ModelEvaluation = "ModelEvaluation"
-
-
-class LocationType(object):
-    MaxComputeTable = "MaxComputeTable"
-    MaxComputeVolume = "MaxComputeVolume"
-    MaxComputeOfflineModel = "MaxComputeOfflineModel"
-    OSS = "OSS"
-
-
-class ModelType(object):
-    OfflineModel = "OfflineModel"
-    PMML = "PMML"
-
-
-class ArtifactEntity(object):
-    """Artifact instance, hold the information of metadata and value of artifact."""
-
-    def __init__(self, metadata, value, name, producer, artifact_id):
-        """ArtifactEntity class constructor.
-
-        Args:
-            metadata (:class:`~.pai.pipeline.artifact.ArtifactMetadata`): Artifact metadata info.
-            value (:class:`~.pai.pipeline.artifact.ArtifactValue`): Artifact value.
-            name (str): name of artifact, actually, it is the name of artifact in manifest of
-                source pipeline.
-            producer (str): Producer of the artifact, identified by step name of pipeline.
-            artifact_id (str): Unique artifact identifier in pipeline service.
-        """
-        self.name = name
-        self.metadata = metadata
-        self.value = value
-        self.producer = producer
-        self.artifact_id = artifact_id
-
-    def __repr__(self):
-        return "%s: {Name:%s, Metadata:%s}" % (
-            type(self).__name__,
-            self.name,
-            self.metadata,
-        )
-
-    @classmethod
-    def from_run_output(cls, output):
-        """Build new ArtifactInfo instance from Run output json.
-
-        Output Example:
-
-        {'Info':
-         {'value':
-         '{"location": {"table": "pai_temp_77c08aeb2e514c9d8649feba4a88ee77"}}',
-         'metadata': {'path': '/tmp/outputs/artifacts/outputArtifact/data',
-          'type': {'DataSet': {'locationType': 'MaxComputeTable'}}}},
-          'Name': 'outputArtifact',
-          'Producer': 'flow-ec67rsug8kyly4049z',
-          'CreateTime': 1595214018000,
-          'Type': 'DataSet',
-          'Id': 'artifact-e0xdqhsfhqctxkpyli'
-        }
-
-        Args:
-            output (dict): Run output return by pipeline service.
-        Returns:
-            ArtifactEntity: ArtifactInfo instance.
-        """
-
-        name = output["Name"]
-        metadata = LocationArtifactMetadata.from_dict(output["Info"]["metadata"])
-        value = ArtifactValue.from_resource(output["Info"]["value"], metadata=metadata)
-        producer = output["Producer"]
-        artifact_id = output["Id"]
-        return ArtifactEntity(
-            metadata=metadata,
-            value=value,
-            name=name,
-            producer=producer,
-            artifact_id=artifact_id,
-        )
-
-    @property
-    def is_model(self):
-        return self.metadata.data_type == DataType.Model
