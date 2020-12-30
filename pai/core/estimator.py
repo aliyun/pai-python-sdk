@@ -252,13 +252,21 @@ class EstimatorJob(RunJob):
         model_data = artifact_info.value
         metadata = artifact_info.metadata
 
-        if metadata.model_type == ModelType.OfflineModel:
+        print(metadata.type_attributes)
+        model_type = metadata.type_attributes.get("model_type")
+
+        if not model_type:
+            raise ValueError("Output artifact %s is not a model." % model_type)
+
+        if model_type == ModelType.OfflineModel:
             return XFlowOfflineModel(
                 session=self.session,
                 name=model_data.offline_model,
                 model_data=model_data,
             )
-        else:
+        elif model_type == ModelType.PMML:
             return PmmlModel(
                 session=self.session, name=artifact_info.name, model_data=model_data
             )
+        else:
+            raise ValueError("Unknown model_type %s." % model_type)

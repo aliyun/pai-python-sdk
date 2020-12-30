@@ -59,10 +59,10 @@ class MaxComputeEstimator(AlgoBaseEstimator, _MaxComputeAlgoMixin):
     def _compile_args(self, *inputs, **kwargs):
         args = super(MaxComputeEstimator, self)._compile_args(*inputs, **kwargs)
         if type(self)._pmml_model and kwargs.get("pmml_gen"):
-            args["path"] = kwargs.get("pmml_oss_path")
-            args["endpoint"] = kwargs.get("pmml_oss_endpoint")
-            args["rolearn"] = kwargs.get("pmml_oss_rolearn")
-            args["bucket"] = kwargs.get("pmml_oss_bucket")
+            args["pmmlOssPath"] = kwargs.get("pmml_oss_path")
+            args["pmmlOssEndpoint"] = kwargs.get("pmml_oss_endpoint")
+            args["roleArn"] = kwargs.get("pmml_oss_rolearn")
+            args["pmmlOssBucket"] = kwargs.get("pmml_oss_bucket")
             args["generatePmml"] = kwargs.get("pmml_gen")
 
         return args

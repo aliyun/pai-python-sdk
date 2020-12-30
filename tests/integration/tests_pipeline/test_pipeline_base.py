@@ -31,8 +31,8 @@ class TestPipelineBase(BaseIntegTestCase):
                 "k2": "value",
             },
             "outputTableName": "pai_output_test_table",
-            "inputDataSetArtifact": self.breast_cancer_dataset.to_url(),
-            "inputModelArtifact": "odps://%s/offlinemodels/test_iris_model"
+            "inputTable": self.breast_cancer_dataset.to_url(),
+            "model": "odps://%s/offlinemodels/test_iris_model"
             % self.odps_client.project,
         }
 
@@ -59,7 +59,7 @@ class TestPipelineBase(BaseIntegTestCase):
 
         expected_artifacts = [
             {
-                "name": "inputDataSetArtifact",
+                "name": "inputTable",
                 "value": '{"location": {"project": "%s", "table": "%s"}}'
                 % (
                     self.breast_cancer_dataset.default_dataset_project,
@@ -67,7 +67,7 @@ class TestPipelineBase(BaseIntegTestCase):
                 ),
             },
             {
-                "name": "inputModelArtifact",
+                "name": "model",
                 "value": '{"location": {"name": "test_iris_model", "project":'
                 ' "%s"}, "name": "test_iris_model"}' % self.odps_client.project,
             },

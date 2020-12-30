@@ -29,6 +29,11 @@ class TestLogisticsRegression(BaseIntegTestCase):
         lr = LogisticRegression(
             regularized_type="l2",
             execution=self.get_default_maxc_execution(),
+            pmml_gen=True,
+            pmml_oss_path="/test/",
+            pmml_oss_bucket=self.oss_config.bucket_name,
+            pmml_oss_endpoint=self.oss_config.endpoint,
+            pmml_oss_rolearn=self.oss_config.role_arn,
         )
 
         dataset = self.breast_cancer_dataset
@@ -46,8 +51,10 @@ class TestLogisticsRegression(BaseIntegTestCase):
         self.assertEqual(JobStatus.Succeeded, run_job.get_status())
         # PipelineOutput is not ready while status switch to succeed.
         time.sleep(10)
-        offline_model = run_job.create_model(output_name="model")
+        offline_model = run_job.create_model(output_name="modelType")
         self.assertIsNotNone(offline_model)
+
+        run_job.create_model(output_name="PMMLOutput")
 
     def test_async_train(self):
         model_name = self.gen_temp_model_name()

@@ -32,9 +32,7 @@ class LogisticRegression(MaxComputeEstimator):
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(LogisticRegression, self)._compile_args(*inputs, **kwargs)
-        assert len(inputs) > 0
-
-        args["inputArtifact"] = inputs[0]
+        args["inputTable"] = inputs[0]
 
         args["regularizedType"] = kwargs.get("regularized_type")
         args["regularizedLevel"] = kwargs.get("regularized_level")
@@ -130,7 +128,7 @@ class RandomForestClassifier(MaxComputeEstimator):
         args = super(RandomForestClassifier, self)._compile_args(*inputs, **kwargs)
         assert len(inputs) > 0
 
-        args["inputArtifact"] = inputs[0]
+        args["inputTable"] = inputs[0]
         args["labelColName"] = kwargs.get("label_col")
         args["modelName"] = kwargs.get("model_name")
         args["treeNum"] = kwargs.get("tree_num")

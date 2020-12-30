@@ -10,7 +10,7 @@ from tests.integration import BaseIntegTestCase
 
 class TestOfflineModelTransformer(BaseIntegTestCase):
 
-    model_name = None
+    model_name = "test_model_326736521"
     train_dataset = BaseIntegTestCase.breast_cancer_dataset
 
     @classmethod
@@ -45,6 +45,7 @@ class TestOfflineModelTransformer(BaseIntegTestCase):
     def test_offlinemodel_transformer(self):
         project = self.maxc_config.project
         model_name = self.model_name
+
         tf = OfflineModelTransformer(
             model="odps://{0}/offlinemodels/{1}".format(project, model_name),
             execution=self.get_default_maxc_execution(),

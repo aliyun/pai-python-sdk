@@ -24,11 +24,10 @@ class OfflineModelTransformer(MaxComputeTransformer):
 
     def _compile_args(self, *inputs, **kwargs):
         args = super(OfflineModelTransformer, self)._compile_args(*inputs, **kwargs)
-        assert len(inputs) > 0
-        args["inputDataSetArtifact"] = inputs[0]
-        args["inputModelArtifact"] = kwargs.get("model")
+        args["inputTable"] = inputs[0]
+        args["model"] = kwargs.get("model")
         args["outputTableName"] = kwargs.get("output_table") or gen_temp_table()
-        args["outputPartition"] = kwargs.get("partitions")
+        args["outputTablePartition"] = kwargs.get("partitions")
         feature_cols = kwargs.get("feature_cols")
         if isinstance(feature_cols, (list, tuple)):
             feature_cols = ",".join(feature_cols)
@@ -39,7 +38,7 @@ class OfflineModelTransformer(MaxComputeTransformer):
         args["appendColNames"] = append_cols
 
         args["resultColName"] = kwargs.get("result_col")
-        args["tableLifecycle"] = kwargs.get("table_lifecycle")
+        args["lifecycle"] = kwargs.get("table_lifecycle")
 
         return args
 
@@ -56,7 +55,7 @@ class OfflineModelTransformer(MaxComputeTransformer):
         append_cols=None,
         output_table=None,
         output_partition=None,
-        table_lifecycle=None,
+        lifecycle=None,
         **kwargs
     ):
         return super(OfflineModelTransformer, self).transform(

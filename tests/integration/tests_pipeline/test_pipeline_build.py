@@ -135,7 +135,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={
-                "inputArtifact": dataset_input,
+                "inputTable": dataset_input,
                 "execution": execution_input,
                 "output1TableName": gen_temp_table(),
                 "fraction": 0.5,
@@ -147,7 +147,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={
-                "inputArtifact": dataset_input,
+                "inputTable": dataset_input,
                 "execution": execution_input,
                 "output1TableName": gen_temp_table(),
                 "fraction": 0.5,
@@ -170,8 +170,8 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             name="dataSource",
             inputs={
                 "execution": execution_input,
-                "tableName": table_input,
-                "partition": "",
+                "inputTableName": table_input,
+                "inputTablePartitions": "",
             },
         )
 
@@ -181,7 +181,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             version="v1",
             name="typeTransform",
             inputs={
-                "inputArtifact": data_source_step.outputs["outputArtifact"],
+                "inputTable": data_source_step.outputs["outputTable"],
                 "execution": execution_input,
                 "outputTable": gen_temp_table(),
                 "cols_to_double": cols_to_double_input,
