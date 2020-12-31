@@ -90,10 +90,12 @@ class TestContainerTemplate(BaseUnitTestCase):
                 {
                     "metadata": {"type": {"DataSet": {"locationType": "OSS"}}},
                     "name": "dataset",
+                    "required": False,
                 },
                 {
                     "metadata": {"type": {"Model": {"locationType": "OSS"}}},
                     "name": "model",
+                    "required": False,
                 },
             ],
         )
@@ -104,10 +106,12 @@ class TestContainerTemplate(BaseUnitTestCase):
                 {
                     "metadata": {"type": {"DataSet": {"locationType": "OSS"}}},
                     "name": "output1",
+                    "required": False,
                 },
                 {
                     "metadata": {"type": {"Model": {"locationType": "OSS"}}},
                     "name": "output2",
+                    "required": False,
                 },
             ],
         )
