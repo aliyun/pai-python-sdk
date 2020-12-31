@@ -45,7 +45,7 @@ class PipelineArtifact(PipelineVariable):
         io_type="inputs",
         value=None,
         from_=None,
-        required=None,
+        required=False,
         parent=None,
     ):
         super(PipelineArtifact, self).__init__(
@@ -129,6 +129,7 @@ class PipelineArtifact(PipelineVariable):
                 d["value"] = self.value
         if self.path is not None:
             d["path"] = self.path
+        d["required"] = self.required
         return d
 
 
