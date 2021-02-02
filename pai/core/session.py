@@ -322,9 +322,9 @@ class Session(object):
         no_confirm_required=True,
         workspace=None,
     ):
-        """Submit a pipeline run with pipeline _template and run arguments.
+        """Submit a pipeline run with pipeline operator and run arguments.
 
-        If pipeline_id is supplied, remote pipeline manifest is used as workflow _template.
+        If pipeline_id is supplied, remote pipeline manifest is used as workflow template.
 
 
         Args:

@@ -1,7 +1,7 @@
 from pprint import pprint
 
 from pai.pipeline import PipelineParameter
-from pai.pipeline.template import ContainerTemplate
+from pai.operator import ContainerOperator
 from pai.pipeline.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
@@ -11,7 +11,7 @@ from pai.pipeline.types import (
 from tests.unit import BaseUnitTestCase
 
 
-class TestContainerTemplate(BaseUnitTestCase):
+class TestContainerOperator(BaseUnitTestCase):
     def test_manifest(self):
         inputs = [
             PipelineParameter(name="epoch", typ=int),
@@ -60,7 +60,7 @@ class TestContainerTemplate(BaseUnitTestCase):
         image_uri = "registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1"
         command = "train"
 
-        templ = ContainerTemplate(
+        templ = ContainerOperator(
             image_uri=image_uri,
             command=command,
             image_registry_config=image_registry_config,

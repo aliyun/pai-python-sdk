@@ -1,10 +1,8 @@
-import os
 from pprint import pprint
 
-import re
 from pai.pipeline import PipelineParameter
-from pai.pipeline.template import (
-    ScriptTemplate,
+from pai.operator import (
+    ScriptOperator,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
@@ -21,10 +19,10 @@ from tests.unit import BaseUnitTestCase
 from tests.test_data import SCRIPT_DIR_PATH
 
 
-class TestScriptTemplate(BaseUnitTestCase):
+class TestScriptOperator(BaseUnitTestCase):
     def test_script(self):
         entry_point = "main.py"
-        script_templ = ScriptTemplate(
+        script_templ = ScriptOperator(
             source_dir=SCRIPT_DIR_PATH,
             entry_file="main.py",
             inputs=[],
@@ -85,13 +83,13 @@ class TestScriptTemplate(BaseUnitTestCase):
 
         for case in cases:
             with self.assertRaisesRegexp(ValueError, case["expectedErrorMsg"]):
-                ScriptTemplate.check_source_file(
+                ScriptOperator.check_source_file(
                     entry_file=case["input"]["entry_file"],
                     source_dir=case["input"]["source_dir"],
                 )
 
     def test_table_ref(self):
-        templ = ScriptTemplate(
+        templ = ScriptOperator(
             source_dir="./scripts",
             entry_file="main.py",
             inputs=[

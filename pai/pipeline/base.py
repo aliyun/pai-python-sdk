@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_VERSION = "v1"
 
 
-class TemplateBase(six.with_metaclass(ABCMeta, object)):
+class OperatorBase(six.with_metaclass(ABCMeta, object)):
     def __init__(
         self,
         inputs,
@@ -71,20 +71,20 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
 
     @property
     def inputs(self):
-        """Inputs Spec of the template.
+        """Inputs Spec of the operator.
 
         Returns:
-            pai.pipeline.types.spec.InputsSpec: Inputs of the template
+            pai.pipeline.types.spec.InputsSpec: Inputs of the operator.
 
         """
         return self._inputs
 
     @property
     def outputs(self):
-        """Outputs Spec of the template
+        """Outputs Spec of the operator.
 
         Returns:
-            pai.pipeline.types.spec.OutputsSpec: Outputs of the template
+            pai.pipeline.types.spec.OutputsSpec: Outputs of the operator
 
         """
         return self._outputs
@@ -113,19 +113,12 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
     def version(self):
         return self._version
 
-    @property
-    def _template(self):
-        from pai.pipeline import SavedTemplate
-
-        manifest = self.to_dict()
-        return SavedTemplate(manifest=manifest)
-
     def save(self, identifier, version):
         """Save the Pipeline in PAI service for reuse or share it with others.
 
         By specific the identifier, version and upload the manifest, the PipelineTemplate instance
         is store into the remote service and return the pipeline_id of the saved PipelineTemplate.
-        Account UID in Alibaba Cloud is use as the provider of the saved template by default.
+        Account UID in Alibaba Cloud is use as the provider of the saved operator by default.
         Saved PipelineTemplate could be fetch using the pipeline_id or the specific
         identifier-provider-version.
 
@@ -138,7 +131,7 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
             (with pipeline_id generate by remote service).
 
         """
-        from pai.pipeline import SavedTemplate
+        from pai.operator import SavedOperator
 
         session = get_default_session()
         provider = session.provider
@@ -148,7 +141,7 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
 
         if not identifier or not version:
             raise ValueError(
-                "Please provide the identifier and version for the template."
+                "Please provide the identifier and version for the operator."
             )
 
         manifest = self.to_dict()
@@ -158,7 +151,7 @@ class TemplateBase(six.with_metaclass(ABCMeta, object)):
         manifest["metadata"]["version"] = version
         id = session.create_pipeline(manifest, workspace=session.workspace)
 
-        return SavedTemplate.get(id)
+        return SavedOperator.get(id)
 
     @classmethod
     def _gen_job_name(cls, prefix="job_"):

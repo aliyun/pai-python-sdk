@@ -25,27 +25,27 @@ PAI Pipeline Service根据推送到服务端的工作流定义，负责完成工
 2. 容器镜像运行定义，包含使用的镜像，镜像仓库访问凭证，镜像的环境变量定义，镜像运行命令等信息。Pipeline Service根据这些信息运行对应的镜像。
 
 
-SDK提供了ContainerTemplate和ScriptTemplate，方便用户构建自定义组件（**推荐使用ScriptTemplate**)。
+SDK提供了ContainerOperator和ScriptOperator，方便用户构建自定义组件（**推荐使用ScriptOperator**)。
 
-ContainerTemplate
+ContainerOperator
 ----------------------------
 
-使用SDK中的ContainerTemplate，用户可以完成一个基于容器的自定义组件创建，
+使用SDK中的ContainerOperator，用户可以完成一个基于容器的自定义组件创建，
 
-以下ContainerTemplate的一个使用样例，它通过一段Python代码，打印出运行容器的环境变量。
-ContainerTemplate构造函数的inputs和outputs参数是用于表示组件的输入和输出信息定义， 而image_uri, command, env则分别表示使用的容器，运行命令，和注入容器的环境变量信息。
+以下ContainerOperator的一个使用样例，它通过一段Python代码，打印出运行容器的环境变量。
+ContainerOperator构造函数的inputs和outputs参数是用于表示组件的输入和输出信息定义， 而image_uri, command, env则分别表示使用的容器，运行命令，和注入容器的环境变量信息。
 
-作为一个组件的定义，构造出来的ContainerTemplate可以直接指定输入参数运行，也可以通过 `.save` 方法保存到Pipeline Service后端中，共享给其他用户，或是用于构造新的工作流中一个节点使用。
+作为一个组件的定义，构造出来的ContainerOperator可以直接指定输入参数运行，也可以通过 `.save` 方法保存到Pipeline Service后端中，共享给其他用户，或是用于构造新的工作流中一个节点使用。
 
 
 .. code-block:: python
 
     import yaml
-    from pai.pipeline.templates.container import ContainerTemplate
+    from pai.operator.container import ContainerOperator
     from pai.pipeline.types import PipelineParameter
 
 
-    container_templ = ContainerTemplate(
+    container_op = ContainerOperator(
         image_uri="python:3",
         inputs=[
             PipelineParameter(name="foo"),
@@ -60,21 +60,21 @@ ContainerTemplate构造函数的inputs和outputs参数是用于表示组件的�
         env={"CustomEnvKey": "CustomEnvValue"},
     )
 
-    container_templ.run(
+    container_op.run(
         job_name="containerTemplExample",
         arguments={
             "foo": "this is foo",
             "bar": "this is bar",
         },
     )
-    container_templ.save(identifier="containerTemplExample", version="v1")
+    container_op.save(identifier="containerTemplExample", version="v1")
 
-    print(yaml.dump(container_templ.to_dict()))
+    print(yaml.dump(container_op.to_dict()))
 
 
-PAI Pipeline Service使用yaml格式的manifest表示组件或是Pipeline的定义，可以通过 *templ.to_dict()* 获取对应的定义信息。
+PAI Pipeline Service使用yaml格式的manifest表示组件或是Pipeline的定义，可以通过 *op.to_dict()* 获取对应的定义信息。
 
-下面的yaml文件manifest来自于以上的ContainerTemplate的例子。Manifest中的.spec是组件在Pipeline Service中的运行定义，其中, spec.inputs和spec.outputs是组件在Pipeline Service中的输入输出信息，而container则是对应的容器运行相关的信息。
+下面的yaml文件manifest来自于以上的ContainerOperator的例子。Manifest中的.spec是组件在Pipeline Service中的运行定义，其中, spec.inputs和spec.outputs是组件在Pipeline Service中的输入输出信息，而container则是对应的容器运行相关的信息。
 
 
 .. code-block:: yaml
@@ -108,24 +108,24 @@ PAI Pipeline Service使用yaml格式的manifest表示组件或是Pipeline的定�
         parameters: []
 
 
-ScriptTemplate
+ScriptOperator
 ---------------------------
 
-通过SDK的ScriptTemplate，用户只需要定义组件的输入输出信息，以及镜像内的执行的Python脚本，既可以完成自定义组件的定义，简化了用户自定义一个组件的成本。
+通过SDK的ScriptOperator，用户只需要定义组件的输入输出信息，以及镜像内的执行的Python脚本，既可以完成自定义组件的定义，简化了用户自定义一个组件的成本。
 
-ScriptTemplate默认使用Pipeline Service的基础镜像作为组件运行镜像，使用launch命令作为镜像的启动命令。
+ScriptOperator默认使用Pipeline Service的基础镜像作为组件运行镜像，使用launch命令作为镜像的启动命令。
 
-以下的例子中，我们使用ScriptTemplate构建了一个组件，组件对应的容器内会运行我们定义的entry_point，也就是main.py。
+以下的例子中，我们使用ScriptOperator构建了一个组件，组件对应的容器内会运行我们定义的entry_point，也就是main.py。
 
 
 .. code-block:: python
 
     # 调用以下代码前，请先调用setup_default_session初始化与PAI service的session.
     import yaml
-    from pai.pipeline.templates import ScriptTemplate
+    from pai.operator import ScriptOperator
     from pai.pipeline.types import PipelineParameter
 
-    templ = ScriptTemplate(
+    op = ScriptOperator(
         entry_point="main.py",
         script_dir="scripts",
         inputs=[
@@ -137,7 +137,7 @@ ScriptTemplate默认使用Pipeline Service的基础镜像作为组件运行镜�
 
     # 直接运行对应的组件
     # 如果本地安装了docker，可以设置为local_mode=True在本地运行组件对应的容器.
-    templ.run(
+    op.run(
         job_name="exampleScript",
         local_mode=False,
         arguments={
@@ -147,10 +147,10 @@ ScriptTemplate默认使用Pipeline Service的基础镜像作为组件运行镜�
     )
 
     # 保存组件(组件的identifier-version不能冲突，以下语句只能运行一次).
-    templ.save(identifier="simpleExample", version="v1")
+    op.save(identifier="simpleExample", version="v1")
 
     # 查看组件的定义信息
-    print(yaml.dump(templ.to_dict()))
+    print(yaml.dump(op.to_dict()))
 
 
 以下是main.py文件中的内容, 在容器内会以 *python -m main --foo 'This is FOO' --bar BAR* 命令被调用。
@@ -160,7 +160,7 @@ ScriptTemplate默认使用Pipeline Service的基础镜像作为组件运行镜�
     import argparse
 
     def main():
-        parser = argparse.ArgumentParser("ScriptTemplate arguments parser")
+        parser = argparse.ArgumentParser("ScriptOperator arguments parser")
         parser.add_argument("--foo")
         parser.add_argument("--bar")
 
@@ -174,7 +174,7 @@ ScriptTemplate默认使用Pipeline Service的基础镜像作为组件运行镜�
         main()
 
 
-ScriptTemplate将对应的 `script_dir` 打包上传到OSS中，将对应的OSS URL和运行脚本(entry_point)的作为对应容器的环境变量定义在组件的Manifest中, 默认使用 **launch** 作为镜像的启动命令。
+ScriptOperator将对应的 `script_dir` 打包上传到OSS中，将对应的OSS URL和运行脚本(entry_point)的作为对应容器的环境变量定义在组件的Manifest中, 默认使用 **launch** 作为镜像的启动命令。
 
 容器内的launch命令是预先安装在默认镜像中(安装pai_running_utils时默认安装的命令行脚本)。他主要完成以下工作:
 
@@ -185,11 +185,11 @@ ScriptTemplate将对应的 `script_dir` 打包上传到OSS中，将对应的OSS 
 .. image:: ../images/launch.png
 
 
-如果需要在ScriptTemplate使用自定义镜像，请在镜像中预先安装pai_running_utils.
+如果需要在ScriptOperator使用自定义镜像，请在镜像中预先安装pai_running_utils.
 
 .. note::
 
-    注： 在ScriptTemplate时，无法通过在source_dir的requirements.txt文件完成pai_running_utils的安装。ScriptTemplate初始化的launch命令，依赖于pai_running_utils完成代码下载和requirements安装的工作，需要在使用的镜像内预先安装 pai_running_utils
+    注： 在ScriptOperator时，无法通过在source_dir的requirements.txt文件完成pai_running_utils的安装。ScriptOperator初始化的launch命令，依赖于pai_running_utils完成代码下载和requirements安装的工作，需要在使用的镜像内预先安装 pai_running_utils
 
 Artifact
 ------------------------
@@ -244,18 +244,18 @@ OssLocationArtifact则是表示在阿里云OSS上存储的数据，包含OSS buc
     }
 
 
-以下的例子中，使用ScriptTemplate定义了一个组件，他的功能是选取输入的MaxCompute表中的部分列，输出一张选择列组成的MaxComputeTable。
+以下的例子中，使用ScriptOperator定义了一个组件，他的功能是选取输入的MaxCompute表中的部分列，输出一张选择列组成的MaxComputeTable。
 
 组件有3个输入参数，分别为输出目标的MaxCompute表名(destTable)，选择的列信息(selectColNames), 以及执行的MaxCompute引擎配置信息(execution), 输入的MaxCompute表(inputTable)信息以Artifact形式传递。
 
 
 .. code-block:: python
 
-    from pai.pipeline.templates import ScriptTemplate
+    from pai.operator import ScriptOperator
     from pai.pipeline.types import PipelineParameter, PipelineArtifact, ArtifactMetadata,
     ArtifactLocationType, ArtifactDataType
 
-    templ = ScriptTemplate(
+    op = ScriptOperator(
         entry_point="main.py",
         script_dir="scripts",
         inputs=[
@@ -272,7 +272,7 @@ OssLocationArtifact则是表示在阿里云OSS上存储的数据，包含OSS buc
         ]
         )
 
-    templ.run(
+    op.run(
         job_name="example",
         arguments={
             "destTable": "sql_script_dest_table",

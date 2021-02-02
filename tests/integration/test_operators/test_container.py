@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from pai.pipeline.template import ContainerTemplate
+from pai.operator import ContainerOperator
 
 from pai.pipeline.types import (
     PipelineArtifact,
@@ -14,7 +14,7 @@ from pai.pipeline.types.parameter import (
 from tests.integration import BaseIntegTestCase
 
 
-class TestContainerTemplate(BaseIntegTestCase):
+class TestContainerOperator(BaseIntegTestCase):
     def test_component_base(self):
         inputs = [
             PipelineParameter(name="xflow_name", typ=str),
@@ -34,7 +34,7 @@ class TestContainerTemplate(BaseIntegTestCase):
             ),
         ]
 
-        container_templ = ContainerTemplate(
+        container_templ = ContainerOperator(
             image_uri="python:3",
             inputs=inputs,
             outputs=outputs,

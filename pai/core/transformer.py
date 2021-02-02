@@ -8,7 +8,7 @@ import yaml
 
 from .job import RunJob
 from .session import get_default_session
-from ..pipeline.template import SavedTemplate
+from pai.operator import SavedOperator
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class PipelineTransformer(Transformer):
     ):
         self._session = get_default_session()
         self._compiled_args = _compiled_args
-        self._template = SavedTemplate(
+        self._operator = SavedOperator(
             manifest=manifest, pipeline_id=pipeline_id, workspace_id=workspace_id
         )
         super(PipelineTransformer, self).__init__(parameters=parameters)
@@ -76,25 +76,25 @@ class PipelineTransformer(Transformer):
         )
 
     def _run(self, job_name=None, arguments=None, **kwargs):
-        run = self._template.run(job_name=job_name, arguments=arguments, wait=False)
+        run = self._operator.run(job_name=job_name, arguments=arguments, wait=False)
         logger.info("PaiFlow CreateRun Job, RunId:%s" % run.run_id)
         return run
 
     @property
     def identifier(self):
-        return self._template.identifier
+        return self._operator.identifier
 
     @property
     def provider(self):
-        return self._template.provider
+        return self._operator.provider
 
     @property
     def version(self):
-        return self._template.version
+        return self._operator.version
 
     @property
     def pipeline_id(self):
-        return self._template.pipeline_id
+        return self._operator.pipeline_id
 
 
 # TODO: extract common method/attribute from AlgoBaseEstimator, AlgoBaseTransformer

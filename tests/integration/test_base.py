@@ -7,7 +7,8 @@ import time
 
 from pai.common import ProviderAlibabaPAI
 from pai.core.job import JobStatus
-from pai.pipeline import PipelineRunStatus, PipelineStep, SavedTemplate
+from pai.pipeline import PipelineRunStatus, PipelineStep
+from pai.operator import SavedOperator
 from pai.pipeline.core import Pipeline
 from pai.pipeline.types.artifact import (
     DataType,
@@ -117,7 +118,7 @@ class TestAlgo(BaseIntegTestCase):
         )
 
         # Extract and transform dataset using max_compute sql.
-        sql_job = SavedTemplate.get_by_identifier(
+        sql_job = SavedOperator.get_by_identifier(
             identifier="sql", provider=ProviderAlibabaPAI, version="v1"
         ).run(
             job_name="sql-job",
@@ -132,7 +133,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(10)
         output_table_artifact = sql_job.get_outputs()[0]
 
-        type_transform_job = SavedTemplate.get_by_identifier(
+        type_transform_job = SavedOperator.get_by_identifier(
             identifier="type_transform",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -151,7 +152,7 @@ class TestAlgo(BaseIntegTestCase):
         type_transform_result = type_transform_job.get_outputs()[0]
 
         # Normalize Feature
-        normalize_job = SavedTemplate.get_by_identifier(
+        normalize_job = SavedOperator.get_by_identifier(
             identifier="normalize_1",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -170,7 +171,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(20)
         normalized_dataset = normalize_job.get_outputs()[0]
 
-        split_job = SavedTemplate.get_by_identifier(
+        split_job = SavedOperator.get_by_identifier(
             identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -211,7 +212,7 @@ class TestAlgo(BaseIntegTestCase):
 
         time.sleep(20)
         offlinemodel_artifact, pmml_output = lr_job.get_outputs()
-        transform_job = SavedTemplate.get_by_identifier(
+        transform_job = SavedOperator.get_by_identifier(
             identifier="Prediction_1",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -231,7 +232,7 @@ class TestAlgo(BaseIntegTestCase):
         time.sleep(20)
         transform_result = transform_job.get_outputs()[0]
 
-        evaluate_job = SavedTemplate.get_by_identifier(
+        evaluate_job = SavedOperator.get_by_identifier(
             identifier="evaluate_1",
             provider=ProviderAlibabaPAI,
             version="v1",

@@ -17,6 +17,6 @@ PAI SDK封装了PAI在阿里云上提供的服务，使得用户能够在代码�
 
    guide/initialization
    guide/pipeline
-   guide/template
+   guide/operator
    guide/estimator
 

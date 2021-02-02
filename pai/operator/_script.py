@@ -15,9 +15,9 @@ from pai.common.utils import (
 )
 
 from pai.core.session import get_default_session
-from pai.pipeline.template._container import ContainerTemplate, LocalContainerRun
+from pai.operator._container import ContainerOperator, LocalContainerRun
 
-ScriptTemplateImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:1.0.0"
+ScriptOperatorImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:1.0.0"
 
 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND = "launch"
 PAI_SOURCE_CODE_ENV_KEY = "PAI_SOURCE_CODE_URL"
@@ -26,7 +26,7 @@ PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
 ProgramSourceFiles = namedtuple("ProgramSourceFiles", ["entry_point", "source_files"])
 
 
-class ScriptTemplate(ContainerTemplate):
+class ScriptOperator(ContainerOperator):
     """Build component run with script files.
 
     ScriptTemplate defines a PAI pipeline service component run with provided script. The Source files
@@ -44,7 +44,7 @@ class ScriptTemplate(ContainerTemplate):
         image_uri=None,
         **kwargs
     ):
-        """Constructor of ScriptTemplate.
+        """Constructor of ScriptOperator.
 
         Args:
             entry_file: Entry point script file, could be OSS file url or local file.
@@ -58,7 +58,7 @@ class ScriptTemplate(ContainerTemplate):
         self._entry_file = entry_file
         self._source_dir = self._format_source_dir(source_dir)
         self._program_files = None
-        super(ScriptTemplate, self).__init__(
+        super(ScriptOperator, self).__init__(
             inputs=inputs,
             outputs=outputs,
             image_uri=image_uri or self._get_default_image_uri(),
@@ -106,7 +106,7 @@ class ScriptTemplate(ContainerTemplate):
     @classmethod
     def _get_default_image_uri(cls):
         region_id = get_default_session().region_id
-        return ScriptTemplateImage.format(region_id=region_id)
+        return ScriptOperatorImage.format(region_id=region_id)
 
     def get_oss_bucket(self):
         session = get_default_session()
@@ -132,7 +132,7 @@ class ScriptTemplate(ContainerTemplate):
         try:
             tar_source_files(source_files=source_files, target=tar_result)
             checksum = file_checksum(tar_result)
-            object_key = "pai/script_template/{date}/{checksum}/source.gz.tar".format(
+            object_key = "pai/script_operator/{date}/{checksum}/source.gz.tar".format(
                 date=date.today().isoformat(), checksum=checksum
             )
             oss_url = self._put_source_if_not_exists(
@@ -168,17 +168,17 @@ class ScriptTemplate(ContainerTemplate):
 
     def save(self, identifier, version):
         self.prepare()
-        return super(ScriptTemplate, self).save(identifier=identifier, version=version)
+        return super(ScriptOperator, self).save(identifier=identifier, version=version)
 
     def run(self, job_name, arguments=None, local_mode=False, **kwargs):
         if not local_mode:
             self.prepare()
-        return super(ScriptTemplate, self).run(
+        return super(ScriptOperator, self).run(
             job_name=job_name, arguments=arguments, local_mode=local_mode, **kwargs
         )
 
     def to_dict(self):
-        manifest = super(ScriptTemplate, self).to_dict()
+        manifest = super(ScriptOperator, self).to_dict()
         if self._program_files:
             manifest["spec"]["container"]["envs"].update(
                 {

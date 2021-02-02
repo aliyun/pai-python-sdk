@@ -4,8 +4,8 @@ from unittest import skip
 
 import os
 
-from pai.pipeline.template import (
-    ScriptTemplate,
+from pai.operator import (
+    ScriptOperator,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
 )
@@ -35,14 +35,14 @@ def cwd_context(target_dir):
         os.chdir(previous_dir)
 
 
-class TestScriptTemplate(BaseIntegTestCase):
+class TestScriptOperator(BaseIntegTestCase):
     @classmethod
     def get_maxc_config(cls):
         _, _, maxc_config = cls.load_test_config()
         return maxc_config
 
     def test_local_source_files(self):
-        templ = ScriptTemplate(
+        templ = ScriptOperator(
             entry_file="main.py",
             source_dir=SCRIPT_DIR_PATH,
             inputs=[
@@ -58,7 +58,7 @@ class TestScriptTemplate(BaseIntegTestCase):
         templ.run(job_name="HelloWorld")
 
     def test_single_local_file(self):
-        templ = ScriptTemplate(
+        templ = ScriptOperator(
             entry_file=os.path.join(SCRIPT_DIR_PATH, "main.py"),
             inputs=[
                 PipelineParameter(name="foo", typ=int, default=10),
@@ -72,7 +72,7 @@ class TestScriptTemplate(BaseIntegTestCase):
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
 
     def test_oss_source_files(self):
-        templ = ScriptTemplate(
+        templ = ScriptOperator(
             entry_file="main.py",
             source_dir="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to_files/source.tar.gz",
         )
@@ -86,7 +86,7 @@ class TestScriptTemplate(BaseIntegTestCase):
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
 
     def test_oss_single_file(self):
-        templ = ScriptTemplate(
+        templ = ScriptOperator(
             entry_file="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/main.py",
         )
         templ.prepare()
@@ -100,7 +100,7 @@ class TestScriptTemplate(BaseIntegTestCase):
 
     @skip("Aone dynamic container environment do not support docker in docker.")
     def test_local_run(self):
-        templ = ScriptTemplate(
+        templ = ScriptOperator(
             entry_file="main.py",
             source_dir=MAXC_SQL_TEMPLATE_SCRIPT_PATH,
             inputs=[

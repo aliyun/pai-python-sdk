@@ -7,7 +7,8 @@ import unittest
 import yaml
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline import PipelineRun, SavedTemplate
+from pai.pipeline import PipelineRun
+from pai.operator import SavedOperator
 from pai.core.session import get_default_session
 from pai.common.utils import iter_with_limit
 from tests.integration import BaseIntegTestCase
@@ -82,7 +83,7 @@ class TestPaiFlowAPI(BaseIntegTestCase):
 
     def test_list_template(self):
         templates = list(
-            iter_with_limit(SavedTemplate.list(provider=ProviderAlibabaPAI), 10)
+            iter_with_limit(SavedOperator.list(provider=ProviderAlibabaPAI), 10)
         )
 
         for template in templates:

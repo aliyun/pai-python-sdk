@@ -8,7 +8,7 @@ import tempfile
 import shutil
 
 from pai.common.utils import makedirs
-from pai.pipeline.base import TemplateBase
+from pai.pipeline.base import OperatorBase
 from pai.pipeline.types.artifact import PipelineArtifact
 from pai.pipeline.types.spec import IO_TYPE_OUTPUTS
 
@@ -18,10 +18,7 @@ PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
 
 
-class ContainerTemplate(TemplateBase):
-
-    default_identifier = "container_template"
-
+class ContainerOperator(OperatorBase):
     def __init__(
         self,
         image_uri,
@@ -39,7 +36,7 @@ class ContainerTemplate(TemplateBase):
         self.command = command
         self.env = env
 
-        super(ContainerTemplate, self).__init__(
+        super(ContainerOperator, self).__init__(
             inputs=inputs,
             outputs=outputs,
             identifier=identifier,
@@ -48,7 +45,7 @@ class ContainerTemplate(TemplateBase):
         )
 
     def to_dict(self):
-        d = super(ContainerTemplate, self).to_dict()
+        d = super(ContainerOperator, self).to_dict()
         d["spec"]["container"] = {
             "image": self.image_uri,
             "command": self.command,
@@ -63,7 +60,7 @@ class ContainerTemplate(TemplateBase):
         if local_mode:
             return self._local_run(job_name, arguments=arguments)
         else:
-            return super(ContainerTemplate, self).run(
+            return super(ContainerOperator, self).run(
                 job_name=job_name, arguments=arguments, **kwargs
             )
 

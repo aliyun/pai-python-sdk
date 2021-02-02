@@ -1,23 +1,21 @@
 from __future__ import absolute_import
 
-import time
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline import SavedTemplate
+from pai.operator import SavedOperator
 from tests.integration import BaseIntegTestCase
-from tests.integration.tests_pipeline import create_simple_composite_pipeline
 from pai.common.utils import iter_with_limit
 
 
-class TestTemplateService(BaseIntegTestCase):
-    def test_list_templates(self):
-        templates = list(
-            iter_with_limit(SavedTemplate.list(provider=ProviderAlibabaPAI), 100)
+class TestPipelineService(BaseIntegTestCase):
+    def test_list_operator(self):
+        operators = list(
+            iter_with_limit(SavedOperator.list(provider=ProviderAlibabaPAI), 100)
         )
-        self.assertTrue(len(templates) != 0)
+        self.assertTrue(len(operators) != 0)
 
-    # def test_load_template(self):
-    #     component = SavedTemplate.load_by_identifier(
+    # def test_load_operator(self):
+    #     component = SavedOperator.load_by_identifier(
     #         "split",
     #         provider=ProviderAlibabaPAI,
     #         version="v1",
@@ -29,7 +27,7 @@ class TestTemplateService(BaseIntegTestCase):
     #     p, _, _, _ = create_simple_composite_pipeline()
     #     p = p.save(identifier="test-simple-pipeline", version="v%s" % int(time.time()))
     #
-    #     saved_pipeline = SavedTemplate.load(p.pipeline_id, with_impl=True)
+    #     saved_pipeline = SavedOperator.load(p.pipeline_id, with_impl=True)
     #     self.assertTrue(len(saved_pipeline.steps) == len(p.steps))
     #
     #     inputs_names = [item.name for item in p.inputs]

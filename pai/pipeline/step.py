@@ -25,16 +25,16 @@ class PipelineStep(object):
     ):
         self._depends = depends or set()
         self._assigned = set()
-        template = self.get_template(
+        operator = self.get_operator(
             identifier=identifier, provider=provider, version=version
         )
-        self._metadata = copy.copy(template.manifest["metadata"])
+        self._metadata = copy.copy(operator.manifest["metadata"])
         self._name = name
 
         (
             inputs_spec,
             outputs_spec,
-        ) = load_input_output_spec(self, template.manifest["spec"])
+        ) = load_input_output_spec(self, operator.manifest["spec"])
         self.parent = None
         self.inputs = inputs_spec
         self.outputs = outputs_spec
@@ -95,13 +95,13 @@ class PipelineStep(object):
         self._name = value
 
     @classmethod
-    def get_template(cls, identifier, provider, version):
-        from . import SavedTemplate
+    def get_operator(cls, identifier, provider, version):
+        from pai.operator import SavedOperator
 
-        template = SavedTemplate.get_by_identifier(
+        operator = SavedOperator.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )
-        return template
+        return operator
 
     def after(self, *steps):
         if self.parent or any(step for step in steps if step.parent):

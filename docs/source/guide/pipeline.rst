@@ -4,28 +4,28 @@ Pipeline 工作流
 
 PAIFlow，是PAI平台研发的ML Pipeline Service，提供了机器学习工作流编排和运行管理的功能, 支持通过SDK编排和运行pipeline。
 
-PipelineTemplate
+Operator
 ----------------------
 
 
-PipelineTemplate对象是PAI Pipeline Service中的算法组件, 也是一个PAIFlow中可运行的组件定义, 包含了组件的输入输出信息，以及具体执行的实现（可能是一个DAG执行或是一个单独的镜像执行）。
+Operator对象是PAI Pipeline Service中的算法组件, 也是一个PAI Flow中可运行的组件定义, 包含了组件的输入输出信息，以及具体执行的实现（可能是一个DAG执行或是一个单独的镜像执行）。
 
-用户可以从PAI服务获取保存在PAI后端的算法组件，也可以使用从本地构造的Pipeline/Component对象中抽取出对应的算法组件。 通过template的raw_manifest属性可以获得YAML格式定义的算法组件的schema。
+用户可以从PAI服务获取保存在PAI后端的算法组件，也可以使用从本地构造的Pipeline/Operator对象中抽取出对应的算法组件。 通过operator的raw_manifest属性可以获得YAML格式定义的算法组件的schema。
 
-PAI提供了一些公共的算法组件，在PipelineTemplate.list方法中, 通过指定provider为ProviderAlibabaPAI，可以拉取到PAI提供的算法组件列表。用户可以通过inputs, outputs属性查看对应组件的输入输出信息。
+PAI提供了一些公共的算法组件，在SavedOperator.list方法中, 通过指定provider为ProviderAlibabaPAI，可以拉取到PAI提供的算法组件列表。用户可以通过inputs, outputs属性查看对应组件的输入输出信息。
 
 .. code-block:: python
 
-    from pai.pipeline.template import PipelineTemplate
+    from pai.operator import SavedOperator
     from pai.common import ProviderAlibabaPAI
 
-    for templ in PipelineTemplate.list(provider=ProviderAlibabaPAI):
-        print(templ.pipeline_id, templ.identifier, templ.provider, templ.version)
+    for op in SavedOperator.list(provider=ProviderAlibabaPAI):
+        print(op.pipeline_id, op.identifier, op.provider, op.version)
 
-    template = next(PipelineTemplate.list(provider=ProviderAlibabaPAI))
-    # inspect the inputs and outputs of the template.
-    print(template.inputs)
-    print(template.outputs)
+    op = next(SavedOperator.list(provider=ProviderAlibabaPAI))
+    # inspect the inputs and outputs of the operator.
+    print(op.inputs)
+    print(op.outputs)
 
 
 开发者可以通过指定identifier-provider-version 或是 pipeline_id从PAIFlow获取一个唯一算法组件，区别是前者是由组件开发者在保存组件时指定，而后者是由PAIFlow生成的组件的唯一ID标识。
@@ -39,10 +39,10 @@ PAI提供了一些公共的算法组件，在PipelineTemplate.list方法中, 通
 
     from pai.common.utils import gen_temp_table
 
-    templ = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute", provider=ProviderAlibabaPAI, version="v1")
-    print(templ.inputs)
+    op = SavedOperator.get_by_identifier(identifier="split", provider=ProviderAlibabaPAI, version="v1")
+    print(op.inputs)
 
-    # split-xflow-maxCompute 运行在MaxCompute中，需要指定运行的MaxCompute项目以及执行环境。
+    # split 运行在MaxCompute中，需要指定运行的MaxCompute项目以及执行环境。
     # maxc_execution 作为算法组件的一个输入，标识算法组件的执行MaxCompute引擎。
     maxc_execution = {
         "odpsInfoFile": "/share/base/odpsInfo.ini",
@@ -50,7 +50,7 @@ PAI提供了一些公共的算法组件，在PipelineTemplate.list方法中, 通
         "odpsProject": "YOUR_MAX_COMPUTE_PROJECT",
     }
 
-    pipeline_run = templ.run(
+    pipeline_run = op.run(
         job_name="example-split-job",
         arguments={
             "execution":maxc_execution,
@@ -87,7 +87,8 @@ PAI Pipeline Service支持将多个算法组件拼接成为一个一个新的Pip
 .. code-block:: python
 
     from pai.pipeline.types import PipelineParameter, PipelineArtifact, ArtifactMetadata, ArtifactDataType, ArtifactLocationType
-    from pai.pipeline import PipelineStep, Pipeline, PipelineTemplate
+    from pai.pipeline import PipelineStep, Pipeline
+    from pai.operator import SavedOperator
 
     def create_composite_pipeline():
         # 定义当前的Pipeline的Inputs
@@ -107,10 +108,10 @@ PAI Pipeline Service支持将多个算法组件拼接成为一个一个新的Pip
         )
 
         # PipelineTemplate也可以作为一个Step构建Pipeline
-        split_template = PipelineTemplate.get_by_identifier(identifier="split-xflow-maxCompute",
+        split_operator = SavedOperator.get_by_identifier(identifier="split-xflow-maxCompute",
          provider=ProviderAlibabaPAI, version="v1")
 
-        split_step = split_template.as_step(inputs={"inputArtifact": type_transform_step.outputs[0],
+        split_step = split_operator.as_step(inputs={"inputArtifact": type_transform_step.outputs[0],
                 "execution": execution_input, "output1TableName": gen_temp_table(),
                 "fraction": 0.5, "output2TableName": gen_temp_table(),
             })
