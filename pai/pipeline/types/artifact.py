@@ -46,6 +46,7 @@ class PipelineArtifact(PipelineVariable):
         value=None,
         from_=None,
         required=False,
+        repeated=False,
         parent=None,
     ):
         super(PipelineArtifact, self).__init__(
@@ -59,6 +60,7 @@ class PipelineArtifact(PipelineVariable):
         )
         self.metadata = metadata
         self.path = path
+        self.repeated = repeated
 
     def validate_from(self, arg):
         if not isinstance(arg, PipelineArtifact):
@@ -80,23 +82,29 @@ class PipelineArtifact(PipelineVariable):
     def validate_value(self, val):
         return True
 
-    def to_argument(self, value):
-        argument = {"name": self.name}
-        translate_val = self._try_translate_artifact_value(value)
-        if translate_val:
-            argument["value"] = json.dumps(translate_val.to_dict(), sort_keys=True)
-        else:
-            argument["value"] = value
+    def normalized_name(self, index):
+        return "%s_%s" % (self.name, index)
 
+    def to_argument(self, arg):
+        argument = {"name": self.name}
+        if self.repeated:
+            arg_list = arg if isinstance(arg, list) else [arg]
+            results = [
+                {"name": self.normalized_name(idx), "value": self._translate_value(v)}
+                for idx, v in enumerate(arg_list)
+            ]
+            argument["value"] = results
+        else:
+            argument["value"] = self._translate_value(arg)
         return argument
 
     @classmethod
-    def _try_translate_artifact_value(cls, val):
+    def _translate_value(cls, val):
         try:
             af_value = LocationArtifactValue.from_resource(val)
-            return af_value
+            return json.dumps(af_value.to_dict(), sort_keys=True)
         except ValueError:
-            return None
+            return val
 
     def to_dict(self):
         d = super(PipelineArtifact, self).to_dict()
@@ -109,7 +117,19 @@ class PipelineArtifact(PipelineVariable):
         if self.path is not None:
             d["path"] = self.path
         d["required"] = self.required
+        if self.repeated:
+            d["repeated"] = self.repeated
         return d
+
+
+class PipelineArtifactElement(object):
+    def __init__(self, parent, index):
+        self.parent = parent
+        self.index = index
+
+    @property
+    def name(self):
+        return "%s_%s" % (self.parent, self.index)
 
 
 class LocationArtifactMetadata(object):

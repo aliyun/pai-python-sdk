@@ -44,6 +44,7 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         self._version = version or _DEFAULT_VERSION
         self._provider = provider or session.provider
         self._initialize_io_spec(inputs, outputs)
+        self._repeated_artifact_config = {}
 
     def _initialize_io_spec(self, inputs, outputs):
         self._inputs = (
@@ -199,6 +200,10 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
             else:
                 parameters.append(value)
 
+        for name, count in self._repeated_artifact_config:
+            if name not in args:
+                artifacts.append({"name": name, "value": [None for _ in range(count)]})
+
         return parameters, artifacts
 
     def _submit(self, job_name, args):
@@ -213,10 +218,31 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         )
         return run_id
 
+    def add_artifact_config(self, artifact_name, count):
+        """
+        Set the count of repeated artifact in operator run.
+
+        Args:
+            artifact_name: output repeated artifact name.
+            count:
+        """
+        artifacts = {
+            item.name: item
+            for item in itertools.chain(self.outputs.artifacts, self.inputs.artifacts)
+        }
+        artifact = artifacts.get(artifact_name)
+        if not artifact:
+            raise ValueError("artifact is not exists: %s" % artifact_name)
+
+        if not artifact.repeated:
+            raise ValueError("artifact is not repeated: %s", artifact_name)
+        self._repeated_artifact_config[artifact_name] = count
+        return self
+
     def run(
         self, job_name=None, wait=True, arguments=None, show_outputs=True, **kwargs
     ):
-        """Run the workflow using the workflow definition in PipelineTemplate and given arguments.
+        """Run the operator using the definition in SavedOperator and given arguments.
 
         Args:
             job_name (str): Name of the submit pipeline run job.

@@ -1,4 +1,5 @@
 import copy
+import itertools
 
 import six
 
@@ -40,6 +41,21 @@ class PipelineStep(object):
         self.outputs = outputs_spec
 
         self.assign_inputs(inputs)
+        self._repeated_artifact_config = {}
+
+    def add_artifact_config(self, artifact_name, count):
+        artifacts = {
+            item.name: item
+            for item in itertools.chain(self.outputs.artifacts, self.inputs.artifacts)
+        }
+        artifact = artifacts.get(artifact_name)
+        if not artifact:
+            raise ValueError("artifact is not exists: %s" % artifact_name)
+
+        if not artifact.repeated:
+            raise ValueError("artifact is not repeated: %s", artifact_name)
+        self._repeated_artifact_config[artifact_name] = count
+        return self
 
     # TODO: Confirm pipeline step name restriction
     @classmethod
