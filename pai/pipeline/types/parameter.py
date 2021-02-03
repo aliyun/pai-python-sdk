@@ -88,35 +88,6 @@ class PipelineParameter(PipelineVariable):
 
         return True
 
-    @classmethod
-    def to_argument_by_spec(cls, val, param_spec):
-        param_spec = param_spec.copy()
-
-        typ = param_spec.pop("type", None)
-        name = param_spec.pop("name")
-        io_type = "inputs"
-        from_ = param_spec.pop("from", None)
-        feasible = param_spec.pop("feasible", None)
-        value = param_spec.pop("value", None)
-        desc = param_spec.pop("desc", None)
-
-        param = PipelineParameter(
-            name=name,
-            typ=typ,
-            default=value,
-            desc=desc,
-            io_type=io_type,
-            from_=from_,
-            feasible=feasible,
-        )
-        if not param.validate_value(val):
-            raise ValueError(
-                "Not Validate value for Parameter %s, value(%s:%s)"
-                % (name, type(val), val)
-            )
-        param.value = val
-        return param.to_argument()
-
     def to_dict(self):
         d = super(PipelineParameter, self).to_dict()
         d["type"] = self.typ.value

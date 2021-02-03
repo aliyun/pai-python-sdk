@@ -87,6 +87,3 @@ class TestArtifact(BaseUnitTestCase):
                     max_compute_af.to_dict(),
                 ),
             )
-
-    def test_to_argument_by_spec(self):
-        pass

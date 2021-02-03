@@ -92,6 +92,7 @@ class Pipeline(OperatorBase):
             )
         sorted_steps = cls._topo_sort(visited_steps)
         cls._check_steps(steps)
+        cls._check_inputs_outputs_name_conflict(inputs, outputs)
 
         return sorted_steps, inputs, outputs
 
@@ -166,6 +167,15 @@ class Pipeline(OperatorBase):
         if conflicts:
             raise ValueError(
                 "Given pipeline step name conflict:%s" % ",".join(conflicts)
+            )
+
+    @classmethod
+    def _check_inputs_outputs_name_conflict(cls, inputs, outputs):
+        names = [v.name for v in inputs + outputs]
+        conflicts = [name for name, c in Counter(names).items() if c > 1]
+        if conflicts:
+            raise ValueError(
+                "Given input/output variable name conflict:%s" % ",".join(conflicts)
             )
 
     def _update_steps(self, steps):

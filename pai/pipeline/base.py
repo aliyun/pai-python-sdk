@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-
+import itertools
 import uuid
 
 import logging
@@ -171,54 +171,34 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         parameters, artifacts = [], []
         if not args:
             return parameters, artifacts
-        parameters_spec = {
-            ipt.name: ipt.to_dict()
-            for ipt in self.inputs
-            if ipt.variable_category == "parameters"
-        }
-        artifacts_spec = {
-            ipt.name: ipt.to_dict()
-            for ipt in self.inputs
-            if ipt.variable_category == "artifacts"
-        }
 
-        for name, arg in args.items():
-            if arg is None:
-                continue
-            param_spec = parameters_spec.get(name, None)
-            af_spec = artifacts_spec.get(name, None)
-            if param_spec:
-                param = PipelineParameter.to_argument_by_spec(arg, param_spec)
-                parameters.append(param)
-            elif af_spec:
-                af = PipelineArtifact.to_argument_by_spec(
-                    arg, af_spec, io_type="inputs"
-                )
-                artifacts.append(af)
-            else:
-                logger.warning(
-                    "Provider useless argument:%s, it is not require by the pipeline manifest spec."
-                    % name
-                )
-
-        requires = set(
-            [
-                param_name
-                for param_name, spec in parameters_spec.items()
-                if spec.get("required")
-            ]
-            + [
-                af_name
-                for af_name, spec in artifacts_spec.items()
-                if spec.get("required")
-            ]
-        )
+        requires = set([af.name for af in self.inputs.artifacts if af.required])
         not_supply = requires - set(args.keys())
-
         if len(not_supply) > 0:
             raise ValueError(
                 "Required arguments is not supplied:%s" % ",".join(not_supply)
             )
+
+        name_var_mapping = {
+            item.name: item for item in itertools.chain(self.inputs, self.outputs)
+        }
+
+        for name, arg in args.items():
+            if name not in name_var_mapping:
+                logger.error(
+                    "Provider useless argument:%s, it is not require by the pipeline manifest spec."
+                    % name
+                )
+                raise ValueError("provided argument is not required:%s" % name)
+
+            variable = name_var_mapping[name]
+            value = variable.to_argument(arg)
+
+            if variable.variable_category == "artifacts":
+                artifacts.append(value)
+            else:
+                parameters.append(value)
+
         return parameters, artifacts
 
     def _submit(self, job_name, args):

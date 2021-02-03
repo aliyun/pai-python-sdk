@@ -80,44 +80,23 @@ class PipelineArtifact(PipelineVariable):
     def validate_value(self, val):
         return True
 
+    def to_argument(self, value):
+        argument = {"name": self.name}
+        translate_val = self._try_translate_artifact_value(value)
+        if translate_val:
+            argument["value"] = json.dumps(translate_val.to_dict(), sort_keys=True)
+        else:
+            argument["value"] = value
+
+        return argument
+
     @classmethod
-    def to_argument_by_spec(cls, val, af_spec, io_type="inputs"):
-        af_spec = af_spec.copy()
-
-        name = af_spec.pop("name")
-        metadata = LocationArtifactMetadata.from_dict(af_spec.pop("metadata", None))
-        desc = af_spec.pop("desc", None)
-        from_ = af_spec.pop("from", None)
-        required = af_spec.pop("required", None)
-
-        param = PipelineArtifact(
-            name=name,
-            metadata=metadata,
-            io_type=io_type,
-            from_=from_,
-            required=required,
-            desc=desc,
-        )
-        af_value = LocationArtifactValue.from_resource(val)
-        if not param.validate_value(val):
-            raise ValueError(
-                "Not Validate value for Parameter %s, value(%s:%s)"
-                % (name, type(val), val)
-            )
-        param.value = af_value
-        return param.to_argument()
-
-    def to_argument(self):
-        arguments = {"name": self.name}
-
-        if self.from_ is not None:
-            if isinstance(self.from_, PipelineArtifact):
-                arguments["from"] = "{{%s}}" % self.from_.fullname
-            else:
-                arguments["from"] = self.from_
-        elif self.value is not None:
-            arguments["value"] = json.dumps(self.value.to_dict(), sort_keys=True)
-        return arguments
+    def _try_translate_artifact_value(cls, val):
+        try:
+            af_value = LocationArtifactValue.from_resource(val)
+            return af_value
+        except ValueError:
+            return None
 
     def to_dict(self):
         d = super(PipelineArtifact, self).to_dict()

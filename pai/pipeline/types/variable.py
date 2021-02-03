@@ -107,16 +107,11 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             self.desc,
         )
 
-    def to_argument(self):
-        arguments = {"name": self.name}
-
-        if self.from_ is not None:
-            if isinstance(self.from_, PipelineVariable):
-                arguments["from"] = self.enclosed_fullname
-            else:
-                arguments["from"] = self.from_
-        elif self.value is not None:
-            arguments["value"] = self.value
+    def to_argument(self, value):
+        arguments = {
+            "name": self.name,
+            "value": value,
+        }
         return arguments
 
     def to_dict(self):

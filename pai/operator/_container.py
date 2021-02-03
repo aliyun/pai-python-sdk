@@ -192,9 +192,8 @@ class LocalContainerRun(object):
                 or artifact.io_type == IO_TYPE_OUTPUTS
             ):
                 continue
-            artifact_arg = PipelineArtifact.to_argument_by_spec(
-                self.arguments[artifact.name], artifact.to_dict()
-            )
+
+            artifact_arg = artifact.to_argument(self.arguments[artifact.name])
             artifact_raw_value = artifact_arg["value"]
             local_artifact_path = artifact_path_format.format(
                 self.tmp_base_dir, "inputs", artifact.name
