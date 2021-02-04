@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from pprint import pprint
 
 import os
 import unittest
@@ -11,9 +12,7 @@ from pai.pipeline import PipelineRun
 from pai.operator import SavedOperator
 from pai.core.session import get_default_session
 from pai.common.utils import iter_with_limit
-from tests.integration import BaseIntegTestCase
-
-_test_root = os.path.dirname(os.path.abspath(__file__))
+from tests.integration import BaseIntegTestCase, _test_root
 
 
 class TestPaiFlowAPI(BaseIntegTestCase):
@@ -94,6 +93,21 @@ class TestPaiFlowAPI(BaseIntegTestCase):
     def test_list_run(self):
         runs = list(iter_with_limit(PipelineRun.list(), 10))
         self.assertTrue(len(runs) <= 10)
+
+    def test_load_pipeline(self):
+        # sess = get_default_session()
+        #
+        # identitifers = ["sql", "split"]
+        #
+        # manifest_dir = os.path.join(_test_root, "..", "test_data", "manifests")
+        #
+        # for id in identitifers:
+        #     op = SavedOperator.get_by_identifier(identifier=id, provider=ProviderAlibabaPAI, version="v1")
+        #     manifest = sess.describe_pipeline(op.pipeline_id)["Manifest"]
+        #     file = os.path.join(manifest_dir, id + ".yaml")
+        #     with open(file, "w") as f:
+        #         f.write(manifest)
+        pass
 
 
 if __name__ == "__main__":

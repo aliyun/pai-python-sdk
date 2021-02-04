@@ -5,6 +5,7 @@ import six
 
 from .types.spec import load_input_output_spec
 from .types.variable import PipelineVariable
+from ..common.utils import is_iterable
 
 
 class PipelineStep(object):
@@ -29,7 +30,7 @@ class PipelineStep(object):
         operator = self.get_operator(
             identifier=identifier, provider=provider, version=version
         )
-        self._metadata = copy.copy(operator.manifest["metadata"])
+        self._metadata = self._parse_raw_metadata(operator.manifest["metadata"])
         self._name = name
 
         (
@@ -43,7 +44,21 @@ class PipelineStep(object):
         self.assign_inputs(inputs)
         self._repeated_artifact_config = {}
 
-    def add_artifact_config(self, artifact_name, count):
+    @classmethod
+    def _parse_raw_metadata(cls, raw_metadata):
+        metadata = {
+            "identifier": raw_metadata["identifier"],
+            "provider": raw_metadata["provider"],
+            "uuid": raw_metadata["uuid"],
+            "version": raw_metadata["version"],
+        }
+        return metadata
+
+    @property
+    def repeated_io_config(self):
+        return self._repeated_artifact_config
+
+    def set_artifact_count(self, artifact_name, count):
         artifacts = {
             item.name: item
             for item in itertools.chain(self.outputs.artifacts, self.inputs.artifacts)
@@ -54,7 +69,7 @@ class PipelineStep(object):
 
         if not artifact.repeated:
             raise ValueError("artifact is not repeated: %s", artifact_name)
-        self._repeated_artifact_config[artifact_name] = count
+        artifact.count = count
         return self
 
     # TODO: Confirm pipeline step name restriction
@@ -77,14 +92,25 @@ class PipelineStep(object):
 
         if isinstance(inputs, dict):
             inputs = inputs.values()
-        steps = set(
-            [
-                ipt.parent
-                for ipt in inputs
-                if isinstance(ipt, PipelineVariable) and ipt.parent
-            ]
-        )
-        self._depends = steps.union(self._depends)
+
+        values = []
+        for ipt in inputs:
+            if isinstance(ipt, (list, tuple)):
+                values.extend(ipt)
+            else:
+                values.append(ipt)
+
+        def _depend_step(input):
+            from pai.pipeline.types.artifact import PipelineArtifactElement
+
+            if isinstance(input, PipelineVariable) and input.parent:
+                return input.parent
+            elif isinstance(input, PipelineArtifactElement) and input.artifact.parent:
+                return input.artifact.parent
+
+        input_steps = set(filter(None, [_depend_step(val) for val in values]))
+
+        self._depends = input_steps.union(self._depends)
 
     @property
     def metadata(self):
@@ -135,18 +161,28 @@ class PipelineStep(object):
     def _convert_spec_to_json(self):
         assigned_inputs = [ipt for ipt in self.inputs if ipt.name in self._assigned]
 
+        repeated_artifact_config = [
+            {
+                "name": opt.name,
+                "value": [None] * opt.count,
+            }
+            for opt in self.outputs.artifacts
+            if opt.repeated and opt.count
+        ]
+
         spec = {
             "arguments": {
                 "parameters": [
-                    ipt.to_dict()
+                    ipt.to_argument()
                     for ipt in assigned_inputs
                     if ipt.variable_category == "parameters"
                 ],
                 "artifacts": [
-                    ipt.to_dict()
+                    ipt.to_argument()
                     for ipt in assigned_inputs
                     if ipt.variable_category == "artifacts"
-                ],
+                ]
+                + repeated_artifact_config,
             }
         }
 

@@ -12,12 +12,14 @@ from odps.models import (
 )
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 
+from pai.common.utils import is_iterable
 from pai.pipeline.types.variable import PipelineVariable
 
 
 class DataType(object):
     DataSet = "DataSet"
     Model = "Model"
+    Any = "Any"
     ModelEvaluation = "ModelEvaluation"
 
 
@@ -61,22 +63,94 @@ class PipelineArtifact(PipelineVariable):
         self.metadata = metadata
         self.path = path
         self.repeated = repeated
+        self._count = None
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        if not self.repeated:
+            raise ValueError("no repeated artifact do not has count attribute.")
+
+        if not isinstance(value, six.integer_types) or value <= 0:
+            raise ValueError("invalid count for repeated artifact:%s" % value)
+
+        self._count = value
+
+    def reset_count(self):
+        self._count = None
 
     def validate_from(self, arg):
-        if not isinstance(arg, PipelineArtifact):
+        if isinstance(arg, PipelineArtifact):
+            source = arg
+            if source.repeated and not source.parent:
+                raise ValueError("repeated artifact could not assign entirely.")
+        elif isinstance(arg, PipelineArtifactElement):
+            source = arg.artifact
+        else:
             raise ValueError(
                 "arg is expected to be type of 'PipelineParameter' "
                 "but was actually of type '%s'" % type(arg)
             )
 
         if (
-            arg.metadata is not None
+            source.metadata is not None
             and self.metadata is not None
-            and arg.metadata != self.metadata
+            and source.metadata != self.metadata
         ):
             return False
-
         return True
+
+    def assign(self, arg):
+        def _validate(item):
+            if isinstance(
+                item, (PipelineArtifact, PipelineArtifactElement)
+            ) and not self.validate_from(item):
+                raise ValueError(
+                    "invalid assignment. %s left: %s, right: %s"
+                    % (self.fullname, self, arg)
+                )
+            elif not isinstance(
+                item, (PipelineArtifact, PipelineArtifactElement)
+            ) and not self.validate_value(item):
+                raise ValueError("Value(%s) is invalid value for %s" % (item, self))
+
+        if self.repeated:
+            if is_iterable(arg):
+                value = [item for item in arg]
+            else:
+                value = [arg]
+            for item in value:
+                _validate(item)
+
+            self.value = value
+        else:
+            _validate(arg)
+            if isinstance(arg, (PipelineArtifact, PipelineArtifactElement)):
+                self.from_ = arg
+            else:
+                self.value = arg
+
+    def __getitem__(self, key):
+        if not self.repeated:
+            raise KeyError("no repeated artifact is not indexable.")
+
+        if isinstance(key, six.integer_types):
+            return PipelineArtifactElement(self, key)
+        elif isinstance(key, slice):
+            if key.stop is None:
+                raise ValueError(
+                    "slice of repeated artifact should have stop property."
+                )
+            start, stop, step = key.indices(key.stop)
+            indexes = range(stop)[start:stop:step]
+            return [
+                PipelineArtifactElement(artifact=self, index=idx) for idx in indexes
+            ]
+
+        raise KeyError("please provide integer to index the artifact element.")
 
     # TODO: Artifact value validation
     def validate_value(self, val):
@@ -85,7 +159,19 @@ class PipelineArtifact(PipelineVariable):
     def normalized_name(self, index):
         return "%s_%s" % (self.name, index)
 
-    def to_argument(self, arg):
+    def depend_steps(self):
+        def _depend_step(value):
+            if isinstance(value, PipelineArtifact) and value.parent:
+                return value.parent
+            elif isinstance(value, PipelineArtifactElement) and value.artifact.parent:
+                return value.artifact.parent
+
+        if self.from_:
+            return filter(None, [_depend_step(self.from_)])
+        elif self.repeated and self.value:
+            return filter(None, [_depend_step(item) for item in self.value])
+
+    def translate_argument(self, arg):
         argument = {"name": self.name}
         if self.repeated:
             arg_list = arg if isinstance(arg, list) else [arg]
@@ -106,6 +192,32 @@ class PipelineArtifact(PipelineVariable):
         except ValueError:
             return val
 
+    def to_argument(self):
+        argument = {"name": self.name}
+        if self.repeated:
+            values = []
+            for idx, item in enumerate(self.value):
+                if isinstance(item, (PipelineArtifact, PipelineArtifactElement)):
+                    values.append(
+                        {
+                            "name": self.normalized_name(idx),
+                            "from": item.enclosed_fullname,
+                        }
+                    )
+                else:
+                    values.append(
+                        {
+                            "name": self.normalized_name(idx),
+                            "value": None,
+                        }
+                    )
+            argument["value"] = values
+        elif self.from_:
+            argument["from"] = self.from_.enclosed_fullname
+        else:
+            argument["value"] = self.value
+        return argument
+
     def to_dict(self):
         d = super(PipelineArtifact, self).to_dict()
         d["metadata"] = self.metadata.to_dict()
@@ -123,13 +235,34 @@ class PipelineArtifact(PipelineVariable):
 
 
 class PipelineArtifactElement(object):
-    def __init__(self, parent, index):
-        self.parent = parent
+    def __init__(self, artifact, index):
+        self.artifact = artifact
         self.index = index
+        self._from = None
+        self._value = None
 
     @property
     def name(self):
-        return "%s_%s" % (self.parent, self.index)
+        return "%s_%s" % (self.artifact.name, self.index)
+
+    @property
+    def fullname(self):
+        return ".".join(
+            [
+                self.artifact.parent.ref_name,
+                self.artifact.io_type,
+                self.artifact.variable_category,
+                self.name,
+            ]
+        )
+
+    @property
+    def enclosed_fullname(self):
+        return "{{%s}}" % self.fullname
+
+    @property
+    def parent(self):
+        return self.artifact.parent
 
 
 class LocationArtifactMetadata(object):
@@ -163,8 +296,10 @@ class LocationArtifactMetadata(object):
         return self.to_dict()
 
     def __eq__(self, other):
-        if isinstance(other, LocationArtifactMetadata):
-            return (
+        if self.data_type == DataType.Any:
+            return True
+        elif isinstance(other, LocationArtifactMetadata):
+            return other.data_type == DataType.Any or (
                 self.data_type == other.data_type
                 and self.location_type == other.location_type
                 and self.type_attributes == other.type_attributes

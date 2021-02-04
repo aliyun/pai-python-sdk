@@ -1,9 +1,8 @@
 from __future__ import absolute_import
 
+import logging
 import os
 import unittest
-
-import logging
 from mock import patch
 
 from tests.unit.utils import get_mock_session

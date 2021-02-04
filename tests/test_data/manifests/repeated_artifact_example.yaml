@@ -1,0 +1,76 @@
+apiVersion: "core/v1"
+metadata:
+  provider: "pai"
+  name: null
+  version: "v1"
+  identifier: "repeated_artifact_example"
+  uuid: "mockuuid"
+  namespace: null
+  annotations: {}
+  labels: null
+spec:
+  inputs:
+    artifacts:
+    - name: "input1"
+      metadata:
+        type:
+          Any: {}
+      desc: "Python Input Port"
+      defaultValue: null
+      value: null
+      from: null
+      required: false
+      repeated: true
+      path: null
+    parameters: []
+  outputs:
+    artifacts:
+    - name: "output2"
+      metadata:
+        type:
+          Any: {}
+      desc: "Python Output Port"
+      defaultValue: null
+      from: null
+      required: false
+      repeated: true
+      path: null
+    parameters: []
+  arguments:
+    artifacts: []
+    parameters: []
+  dependencies: []
+  container:
+    image: "registry.cn-shanghai.aliyuncs.com/paiflow-core/max-compute-executor:1.0.4"
+    imageRegistryConfig: null
+    command:
+    - "bash"
+    - "/paiflow-bin/start.sh"
+    args: null
+    resources: null
+    name: null
+    envs: {}
+    volumeMounts:
+    - name: "download-volume"
+      path: "/paiflow"
+  initContainers:
+  - image: "registry.cn-shanghai.aliyuncs.com/paiflow-core/resource-downloader:dev"
+    imageRegistryConfig: null
+    command:
+    - "start.sh"
+    args:
+    - "--source"
+    - "oss://pai-studio-cn-shanghai/algo/pai/sql/v1/be33f334f1f1f264610bfe487366a05a1f861742/working?endpoint=oss-cn-shanghai-internal.aliyuncs.com&roleARN=acs:ram::1326689413376250:role/pai-studio-algo-download-role&ownerId=1326689413376250"
+    - "--destination"
+    - "/downloadPath"
+    resources: null
+    name: "initdownload"
+    envs: {}
+    volumeMounts:
+    - name: "download-volume"
+      path: "/downloadPath"
+  sideCarContainers: []
+  pipelines: []
+  volumes:
+  - name: "download-volume"
+    emptyDir: {}

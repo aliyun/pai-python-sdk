@@ -193,7 +193,7 @@ class LocalContainerRun(object):
             ):
                 continue
 
-            artifact_arg = artifact.to_argument(self.arguments[artifact.name])
+            artifact_arg = artifact.translate_argument(self.arguments[artifact.name])
             artifact_raw_value = artifact_arg["value"]
             local_artifact_path = artifact_path_format.format(
                 self.tmp_base_dir, "inputs", artifact.name

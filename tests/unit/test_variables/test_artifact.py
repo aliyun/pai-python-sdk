@@ -1,6 +1,16 @@
 from __future__ import absolute_import
 
-from pai.pipeline.types.artifact import MaxComputeResourceArtifact
+from pprint import pprint
+
+from pai.operator import ContainerOperator
+from pai.pipeline import PipelineParameter
+from pai.pipeline.types.artifact import (
+    MaxComputeResourceArtifact,
+    PipelineArtifact,
+    LocationArtifactMetadata,
+    DataType,
+    LocationType,
+)
 from tests.unit import BaseUnitTestCase
 
 
@@ -87,3 +97,72 @@ class TestArtifact(BaseUnitTestCase):
                     max_compute_af.to_dict(),
                 ),
             )
+
+    def test_repeated_artifact(self):
+        container_op = ContainerOperator(
+            inputs=[
+                PipelineParameter("foo"),
+                PipelineArtifact(
+                    "input1",
+                    repeated=True,
+                    metadata=LocationArtifactMetadata(
+                        data_type=DataType.DataSet, location_type=LocationType.OSS
+                    ),
+                ),
+                PipelineArtifact(
+                    "input2",
+                    repeated=True,
+                    metadata=LocationArtifactMetadata(
+                        data_type=DataType.DataSet, location_type=LocationType.OSS
+                    ),
+                ),
+            ],
+            outputs=[
+                PipelineArtifact(
+                    "output1",
+                    repeated=True,
+                    metadata=LocationArtifactMetadata(
+                        data_type=DataType.DataSet, location_type=LocationType.OSS
+                    ),
+                ),
+            ],
+            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1",
+            command="train",
+        )
+
+        container_op.set_artifact_count("output1", 3)
+        container_op.set_artifact_count("input2", 2)
+        parameters, artifacts = container_op.translate_arguments(
+            {
+                "foo": "bar",
+                "input1": [
+                    "odps://pai_online_project/tables/wumai_data",
+                    "odps://pai_online_project/tables/breast_cancer_data",
+                ],
+            }
+        )
+
+        self.assertEqual([{"name": "foo", "value": "bar"}], parameters)
+
+        self.assertEqual(
+            [
+                {
+                    "name": "input1",
+                    "value": [
+                        {
+                            "name": "input1_0",
+                            "value": '{"location": {"project": "pai_online_project", "table": '
+                            '"wumai_data"}}',
+                        },
+                        {
+                            "name": "input1_1",
+                            "value": '{"location": {"project": "pai_online_project", "table": '
+                            '"breast_cancer_data"}}',
+                        },
+                    ],
+                },
+                {"name": "input2", "value": [None, None]},
+                {"name": "output1", "value": [None, None, None]},
+            ],
+            artifacts,
+        )

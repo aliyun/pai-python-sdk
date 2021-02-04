@@ -1,0 +1,214 @@
+apiVersion: "core/v1"
+metadata:
+  provider: "pai"
+  name: null
+  version: "v1"
+  identifier: "split"
+  uuid: "cxqp6a62xros4ms80u"
+  namespace: null
+  annotations: {}
+  labels: null
+spec:
+  inputs:
+    artifacts:
+    - name: "inputTable"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
+      desc: "Input Port"
+      defaultValue: null
+      value: null
+      from: null
+      required: true
+      path: null
+    parameters:
+    - name: "output1TableName"
+      type: "String"
+      desc: null
+      value: "pai_temp_${pai_system_run_id}_${pai_system_node_id}_output1Table"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "output2TableName"
+      type: "String"
+      desc: null
+      value: "pai_temp_${pai_system_run_id}_${pai_system_node_id}_output2Table"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "fraction"
+      type: "String"
+      desc: "Splitting Fraction"
+      value: "0.8"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "output1TablePartition"
+      type: "String"
+      desc: null
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "output2TablePartition"
+      type: "String"
+      desc: null
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "lifecycle"
+      type: "String"
+      desc: null
+      value: "28"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "randomSeed"
+      type: "String"
+      desc: "Random Seed"
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "_splitMethod"
+      type: "String"
+      desc: "Splitting Method"
+      value: "_fraction"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "idColName"
+      type: "String"
+      desc: "ID Column (Do Not Split Columns with the Same ID)"
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "_advanced"
+      type: "String"
+      desc: "Advanced Options"
+      value: "false"
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "thresholdColName"
+      type: "String"
+      desc: "Threshold Column"
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "threshold"
+      type: "String"
+      desc: "Threshold"
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "coreNum"
+      type: "String"
+      desc: "Cores"
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "memSizePerCore"
+      type: "String"
+      desc: "Memory Size per Core"
+      value: ""
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+    - name: "execution"
+      type: "Map"
+      desc: null
+      value: null
+      resolvedValue: null
+      from: null
+      path: null
+      feasible: null
+  outputs:
+    artifacts:
+    - name: "output1Table"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
+      desc: "Output Table 1"
+      defaultValue: null
+      value:
+        location:
+          partition: "{{inputs.parameters.output1TablePartition}}"
+          table: "{{inputs.parameters.output1TableName}}"
+      from: null
+      required: false
+      path: null
+    - name: "output2Table"
+      metadata:
+        type:
+          DataSet:
+            locationType: "MaxComputeTable"
+      desc: "Output Table 2"
+      defaultValue: null
+      value:
+        location:
+          partition: "{{inputs.parameters.output2TablePartition}}"
+          table: "{{inputs.parameters.output2TableName}}"
+      from: null
+      required: false
+      path: null
+    parameters: []
+  arguments:
+    artifacts: []
+    parameters: []
+  dependencies: []
+  container:
+    image: "registry.cn-shanghai.aliyuncs.com/paiflow-core/max-compute-executor:1.0.4"
+    imageRegistryConfig: null
+    command:
+    - "bash"
+    - "/paiflow-bin/start.sh"
+    args: null
+    resources: null
+    name: null
+    envs: {}
+    volumeMounts:
+    - name: "download-volume"
+      path: "/paiflow"
+  initContainers:
+  - image: "registry.cn-shanghai.aliyuncs.com/paiflow-core/resource-downloader:dev"
+    imageRegistryConfig: null
+    command:
+    - "start.sh"
+    args:
+    - "--source"
+    - "oss://pai-studio-cn-shanghai/algo/pai/split/v1/d8836cd2abd0b1ff7a1bce7471e0f21f4f8154dd/working?endpoint=oss-cn-shanghai-internal.aliyuncs.com&roleARN=acs:ram::1326689413376250:role/pai-studio-algo-download-role&ownerId=1326689413376250"
+    - "--destination"
+    - "/downloadPath"
+    resources: null
+    name: "initdownload"
+    envs: {}
+    volumeMounts:
+    - name: "download-volume"
+      path: "/downloadPath"
+  sideCarContainers: []
+  pipelines: []
+  volumes:
+  - name: "download-volume"
+    emptyDir: {}

@@ -50,18 +50,17 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
     def validate_value(self, val):
         pass
 
+    @abstractmethod
+    def validate_from(self, val):
+        pass
+
     def assign(self, arg):
-        if not isinstance(arg, PipelineVariable):
+        from .artifact import PipelineArtifactElement
+
+        if not isinstance(arg, (PipelineVariable, PipelineArtifactElement)):
             if not self.validate_value(arg):
                 raise ValueError("Arg:%s is invalid value for %s" % (arg, self))
             self.value = arg
-        elif arg.parent is None:
-            if not self.validate_value(arg.value):
-                raise ValueError(
-                    "Value(%s) is invalid value for %s" % (arg.value, self)
-                )
-            self.value = arg.value
-            self.from_ = arg
         else:
             if not self.validate_from(arg):
                 raise ValueError(
@@ -107,12 +106,26 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
             self.desc,
         )
 
-    def to_argument(self, value):
+    def translate_argument(self, value):
         arguments = {
             "name": self.name,
             "value": value,
         }
         return arguments
+
+    def to_argument(self):
+        argument = {"name": self.name}
+        if self.from_:
+            argument["from"] = self.from_.enclosed_fullname
+        else:
+            argument["value"] = self.value
+        return argument
+
+    def depend_steps(self):
+        from pai.pipeline import PipelineStep
+
+        if self.from_ and self.from_.parent and isinstance(self.from_, PipelineStep):
+            return self.from_
 
     def to_dict(self):
         d = {

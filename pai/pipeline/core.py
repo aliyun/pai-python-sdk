@@ -7,7 +7,7 @@ from graphviz import Digraph
 
 from .base import OperatorBase
 from ..core.session import get_default_session
-from .types.artifact import PipelineArtifact
+from .types.artifact import PipelineArtifact, PipelineArtifactElement
 from .types.parameter import PipelineParameter
 from .types.spec import OutputsSpec, InputsSpec
 
@@ -46,7 +46,7 @@ class Pipeline(OperatorBase):
         Returns:
 
         """
-        steps, inputs, _ = self._infer_pipeline(steps, inputs, outputs)
+        steps, inputs, _ = self._infer_pipeline_graph(steps, inputs, outputs)
         inputs_spec = InputsSpec(inputs) if isinstance(inputs, list) else inputs
         outputs_spec = OutputsSpec(self._build_outputs(outputs))
 
@@ -55,7 +55,48 @@ class Pipeline(OperatorBase):
         return steps, inputs_spec, outputs_spec
 
     @classmethod
-    def _infer_pipeline(cls, steps, inputs, outputs):
+    def _infer_pipeline_inputs(cls, input):
+        pipeline_inputs = set()
+        if isinstance(input, PipelineArtifact):
+            sources = []
+            if input.repeated and input.value:
+                sources = [item for item in input.value]
+            elif not input.repeated and input.from_:
+                sources = [input.from_]
+
+            for item in sources:
+                if isinstance(item, PipelineArtifact) and not item.parent:
+                    pipeline_inputs.add(item)
+                elif (
+                    isinstance(item, PipelineArtifactElement)
+                    and not item.artifact.parent
+                ):
+                    pipeline_inputs.add(item.artifact)
+        elif input.from_ and input.from_.parent:
+            pipeline_inputs.add(input.from_)
+        return pipeline_inputs
+
+    @classmethod
+    def _set_step_artifact_count(cls, steps):
+        for step in steps:
+            for input in step.inputs.artifacts:
+                sources = []
+                if input.repeated and input.value:
+                    sources = input.value
+                elif not input.repeated and input.from_:
+                    sources = [input.from_]
+                artifact_elements = [
+                    i
+                    for i in sources
+                    if isinstance(i, PipelineArtifactElement) and i.artifact.parent
+                ]
+
+                for elem in artifact_elements:
+                    if elem.artifact.count is None or elem.index >= elem.artifact.count:
+                        elem.artifact.count = elem.index + 1
+
+    @classmethod
+    def _infer_pipeline_graph(cls, steps, inputs, outputs):
         inputs = inputs or []
 
         outputs = outputs or []
@@ -66,25 +107,32 @@ class Pipeline(OperatorBase):
         visited_steps = set(
             steps + [output.parent for output in outputs if output.parent]
         )
-        infer_inputs = set()
         cur_steps = visited_steps.copy()
         while cur_steps:
             next_steps = set()
             for step in cur_steps:
-                for ipt in step.inputs:
-                    if ipt.from_ and not ipt.from_.parent:
-                        infer_inputs.add(ipt.from_)
+                for output in step.outputs.artifacts:
+                    if output.repeated:
+                        output.reset_count()
                 for depend in step.depends:
                     if depend not in visited_steps:
                         next_steps.add(depend)
                         visited_steps.add(depend)
             cur_steps = next_steps
 
+        # infer the pipeline inputs from step inputs.
+        infer_inputs = set()
+        for step in visited_steps:
+            for ipt in step.inputs:
+                infer_inputs |= cls._infer_pipeline_inputs(ipt)
+
+        cls._set_step_artifact_count(visited_steps)
+
         if inputs:
             if len(infer_inputs) != len(inputs) or any(
                 ipt for ipt in inputs if ipt not in infer_inputs
             ):
-                raise ValueError("Require complete pipeline inputs list")
+                raise ValueError("please provide complete pipeline inputs list")
         else:
             inputs = sorted(
                 list(infer_inputs),
@@ -111,9 +159,18 @@ class Pipeline(OperatorBase):
             if isinstance(item, PipelineArtifact):
                 results.append(
                     PipelineArtifact(
+                        repeated=item.repeated,
                         name=name,
                         from_=item,
                         metadata=item.metadata,
+                    )
+                )
+            elif isinstance(item, PipelineArtifactElement):
+                results.append(
+                    PipelineArtifact(
+                        name=name,
+                        from_=item,
+                        metadata=item.artifact.metadata,
                     )
                 )
             elif isinstance(item, PipelineParameter):
@@ -179,6 +236,12 @@ class Pipeline(OperatorBase):
             )
 
     def _update_steps(self, steps):
+        """
+        Set the name of step and bind the step to the pipeline.
+
+        Args:
+            steps: List of steps in pipeline.
+        """
         used_names = set([s.name for s in steps])
         used_names = set(used_names)
         for step in steps:

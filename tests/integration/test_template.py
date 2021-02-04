@@ -38,8 +38,8 @@ class TestPipelineService(BaseIntegTestCase):
     #     saved_outputs_names = [item.name for item in saved_pipeline.outputs]
     #     self.assertEqual(outputs_names, saved_outputs_names)
     #
-    #     step_depends = {s.name: sorted([i.name for i in s.depends]) for s in p.steps}
+    #     step_depends = {s.name: sorted([i.name for i in s.depend_steps]) for s in p.steps}
     #     saved_step_depends = {
-    #         s.name: sorted([i.name for i in s.depends]) for s in saved_pipeline.steps
+    #         s.name: sorted([i.name for i in s.depend_steps]) for s in saved_pipeline.steps
     #     }
     #     self.assertEqual(step_depends, saved_step_depends)

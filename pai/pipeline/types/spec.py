@@ -211,6 +211,7 @@ def _load_artifact_spec(p, artifact_spec, io_type):
     value = artifact_spec.get("value", None)
     desc = artifact_spec.get("desc", None)
     required = artifact_spec.get("required", False)
+    repeated = artifact_spec.get("repeated", False)
 
     af = PipelineArtifact(
         name=name,
@@ -221,5 +222,6 @@ def _load_artifact_spec(p, artifact_spec, io_type):
         value=value,
         desc=desc,
         required=required,
+        repeated=repeated,
     )
     return af

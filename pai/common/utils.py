@@ -145,3 +145,11 @@ def makedirs(path_dir, mode=0o777):
     if not os.path.exists(path_dir):
         # argument `exist_ok` not support in Python2
         os.makedirs(path_dir, mode=mode)
+
+
+def is_iterable(arg):
+    try:
+        _ = iter(arg)
+        return True
+    except TypeError:
+        return False

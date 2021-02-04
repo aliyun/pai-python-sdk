@@ -44,7 +44,6 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         self._version = version or _DEFAULT_VERSION
         self._provider = provider or session.provider
         self._initialize_io_spec(inputs, outputs)
-        self._repeated_artifact_config = {}
 
     def _initialize_io_spec(self, inputs, outputs):
         self._inputs = (
@@ -193,16 +192,21 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
                 raise ValueError("provided argument is not required:%s" % name)
 
             variable = name_var_mapping[name]
-            value = variable.to_argument(arg)
+            value = variable.translate_argument(arg)
 
             if variable.variable_category == "artifacts":
                 artifacts.append(value)
             else:
                 parameters.append(value)
 
-        for name, count in self._repeated_artifact_config:
-            if name not in args:
-                artifacts.append({"name": name, "value": [None for _ in range(count)]})
+        repeated_artifacts = [
+            af
+            for af in itertools.chain(self.inputs.artifacts, self.outputs.artifacts)
+            if af.repeated and af.count
+        ]
+        for af in repeated_artifacts:
+            if af.name not in args:
+                artifacts.append({"name": af.name, "value": [None] * af.count})
 
         return parameters, artifacts
 
@@ -218,7 +222,7 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         )
         return run_id
 
-    def add_artifact_config(self, artifact_name, count):
+    def set_artifact_count(self, artifact_name, count):
         """
         Set the count of repeated artifact in operator run.
 
@@ -236,7 +240,8 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
 
         if not artifact.repeated:
             raise ValueError("artifact is not repeated: %s", artifact_name)
-        self._repeated_artifact_config[artifact_name] = count
+
+        artifact.count = count
         return self
 
     def run(
