@@ -28,6 +28,14 @@ requirements = [
     "docker>=4.4.0",
 ]
 
+tea_requires = [
+    "alibabacloud_tea_util_py2>=0.0.2, <1.0.0",
+    "alibabacloud_tea_openapi_py2>=0.0.2, <1.0.0",
+    "alibabacloud_openapi_util_py2>=0.0.4, <1.0.0",
+    "alibabacloud_endpoint_util_py2>=0.0.1, <1.0.0",
+]
+
+requirements.extend(tea_requires)
 
 if sys.version_info < (3, 8):
     requirements.append("importlib_metadata == 2.1.0")

@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import hashlib
 import os
 import re
+
+import time
 import tarfile
 import tempfile
 
@@ -38,7 +40,7 @@ def ensure_str(val):
 
 def ensure_unix_time(t):
     if isinstance(t, datetime):
-        return (t - datetime(1970, 1, 1)).total_seconds()
+        return time.mktime(t.timetuple())
     elif isinstance(t, six.integer_types):
         return t
     else:

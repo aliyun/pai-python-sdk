@@ -2,14 +2,14 @@ from __future__ import absolute_import
 
 import six
 
-from pai.api.base import paginate_service_call, BaseClient
+from pai.api.base import paginate_service_call, BaseClient, BaseTeaClient
+from pai.libs.alibabacloud_aiworkspace20210204.models import ListWorkspacesRequest
 from pai.libs.aliyunsdkaiworkspace.request.v20200814 import (
     CreateWorkspaceRequest,
     CreateResourceRequest,
     CreateTenantRequest,
     ListCommoditiesRequest,
     ListResourceGroupsRequest,
-    ListWorkspacesRequest,
     GetWorkspaceRequest,
     UpdateWorkspaceRequest,
     ListSubUsersRequest,
@@ -22,13 +22,37 @@ from pai.libs.aliyunsdkaiworkspace.request.v20200814 import (
 )
 
 
-class WorkspaceClient(BaseClient):
+class WorkspaceClient(BaseTeaClient):
 
     _ENV_SERVICE_ENDPOINT_KEY = "ALIPAI_AIWORKSPACE_ENDPOINT"
 
-    def __init__(self, acs_client, _is_inner=False):
-        super(WorkspaceClient, self).__init__(acs_client=acs_client)
-        self._inner = _is_inner
+    def __init__(self, base_client):
+        super(WorkspaceClient, self).__init__(base_client=base_client)
+
+    def list_workspaces(
+        self,
+        page_number=None,
+        page_size=None,
+        sort_by=None,
+        order=None,
+        workspace_name=None,
+        module_list=None,
+        status=None,
+        option=None,
+        verbose=None,
+    ):
+        request = ListWorkspacesRequest(
+            page_number=page_number,
+            page_size=None,
+            sort_by=sort_by,
+            order=order,
+            workspace_name=workspace_name,
+            module_list=module_list,
+            status=status,
+            option=option,
+            verbose=verbose,
+        )
+        self.base_client.list_workspaces(request)
 
     def _get_endpoint(self):
         if self._endpoint:
@@ -52,21 +76,9 @@ class WorkspaceClient(BaseClient):
             request.set_Description(description)
         return self._call_service_with_exception(request)
 
-    @paginate_service_call
-    def list(self, name=None, sorted_by=None, sorted_sequence=None):
-        request = self._construct_request(ListWorkspacesRequest.ListWorkspacesRequest)
-        if name is not None:
-            request.set_WorkspaceName(name)
-        if sorted_by is not None:
-            request.set_SortedField(sorted_by)
-        if sorted_sequence is not None:
-            request.set_SortedSequence(sorted_sequence)
-        return request
-
-    def get(self, workspace_id):
-        request = self._construct_request(GetWorkspaceRequest.GetWorkspaceRequest)
-        request.set_WorkspaceId(str(workspace_id))
-        return self._call_service_with_exception(request)
+    def get_workspace(self, workspace_id):
+        resp = self.base_client.get_workspace(workspace_id)
+        return resp.body.to_map()
 
     def update(self, workspace_id, name):
         request = self._construct_request(UpdateWorkspaceRequest.UpdateWorkspaceRequest)

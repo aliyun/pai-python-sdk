@@ -21,10 +21,10 @@ from tests.test_data import SCRIPT_DIR_PATH
 
 class TestScriptOperator(BaseUnitTestCase):
     def test_script(self):
-        entry_point = "main.py"
+        entry_point = "run.py"
         script_templ = ScriptOperator(
             source_dir=SCRIPT_DIR_PATH,
-            entry_file="main.py",
+            entry_file="run.py",
             inputs=[],
             env={
                 "hello": "world",
@@ -50,7 +50,7 @@ class TestScriptOperator(BaseUnitTestCase):
             {
                 "name": "oss_source_case1",
                 "input": {
-                    "entry_file": "oss://test_bucket/main.py",
+                    "entry_file": "oss://test_bucket/run.py",
                     "source_dir": "oss://test_bucket/hello/world",
                 },
                 "expectedErrorMsg": "OSS",
@@ -58,7 +58,7 @@ class TestScriptOperator(BaseUnitTestCase):
             {
                 "name": "oss_source_case2",
                 "input": {
-                    "entry_file": "oss://test_bucket/main.py",
+                    "entry_file": "oss://test_bucket/run.py",
                     "source_dir": "/test_bucket/hello/world",
                 },
                 "expectedErrorMsg": "OSS",
@@ -74,7 +74,7 @@ class TestScriptOperator(BaseUnitTestCase):
             {
                 "name": "source",
                 "input": {
-                    "entry_file": "test_bucket/source_path/dir/main.py",
+                    "entry_file": "test_bucket/source_path/dir/run.py",
                     "source_dir": "/test_bucket/hello/world",
                 },
                 "expectedErrorMsg": "top-level directory",
@@ -91,7 +91,7 @@ class TestScriptOperator(BaseUnitTestCase):
     def test_table_ref(self):
         templ = ScriptOperator(
             source_dir="./scripts",
-            entry_file="main.py",
+            entry_file="run.py",
             inputs=[
                 PipelineParameter(
                     "tableName",

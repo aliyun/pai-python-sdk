@@ -55,7 +55,7 @@ class TestContainerOperator(BaseUnitTestCase):
         }
         env_vars = {
             "PAI_SOURCE_CODE": "oss://hello/world/source-code.gz.tar",
-            "PAI_ENTRY_POINT": "main.py",
+            "PAI_ENTRY_POINT": "run.py",
         }
         image_uri = "registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1"
         command = "train"

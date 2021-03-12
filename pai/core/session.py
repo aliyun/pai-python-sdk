@@ -137,11 +137,20 @@ class Session(object):
         _acs_client = AcsClient(ak=ak, secret=ak_secret, region_id=region_id)
 
         is_inner = self._is_inner_region(region_id)
+        # self.paiflow_client = ClientFactory.create_paiflow_client(
+        #     _acs_client, _is_inner=is_inner
+        # )
+        #
         self.paiflow_client = ClientFactory.create_paiflow_client(
-            _acs_client, _is_inner=is_inner
+            access_key_id=ak,
+            access_key_secret=ak_secret,
+            region_id=region_id,
         )
+
         self.ws_client = ClientFactory.create_workspace_client(
-            _acs_client, _is_inner=is_inner
+            access_key_id=ak,
+            access_key_secret=ak_secret,
+            region_id=region_id,
         )
 
     @classmethod
@@ -210,9 +219,9 @@ class Session(object):
         """
 
         provider = provider or self.provider
-        pipeline_info = self.paiflow_client.get_pipeline(
+        pipeline_info = self.paiflow_client.get_pipeline_by_identifier(
             identifier=identifier, provider=provider, version=version
-        )["Data"]
+        )
 
         return pipeline_info
 

@@ -3,33 +3,20 @@ from __future__ import absolute_import
 from functools import wraps
 
 import six
-import yaml
 
-from pai.api.base import paginate_service_call, BaseClient
-from pai.core.exception import ServiceCallException
-from pai.libs.aliyunsdkpaiflow.request.v20200328 import (
+from pai.api.base import paginate_service_call, BaseTeaClient
+from pai.libs.alibabacloud_paiflow20210202.models import (
+    GetNodeRequest,
     CreatePipelineRequest,
-    DeletePipelineRequest,
-    GetPipelineRequest,
+    CreateRunRequest,
     ListPipelinesRequest,
-    UpdatePipelineRequest,
-    DescribePipelineRequest,
-    UpdatePipelinePrivilegeRequest,
-    TerminateRunRequest,
-    SuspendRunRequest,
-    RetryRunRequest,
-    StartRunRequest,
     ListRunsRequest,
     ListNodeLogsRequest,
-    ResumeRunRequest,
-    GetRunRequest,
-    GetNodeDetailRequest,
-    CreateRunRequest,
     ListNodeOutputsRequest,
-    GetMyProviderRequest,
+    UpdatePipelineRequest,
+    UpdateRunRequest,
+    UpdatePipelinePrivilegesRequest,
 )
-from pai.libs.aliyunsdkpaiflow.request.v20200328 import GetPipelinePrivilegeRequest
-from pai.common.utils import ensure_str, ensure_unix_time
 
 
 def require_workspace(f):
@@ -43,29 +30,17 @@ def require_workspace(f):
     return _
 
 
-class PAIFlowClient(BaseClient):
+class PAIFlowClient(BaseTeaClient):
 
     _ENV_SERVICE_ENDPOINT_KEY = "ALIPAI_PAIFLOW_ENDPOINT"
 
-    def __init__(self, acs_client, _is_inner=False):
+    def __init__(self, base_client):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
         Args:
-            acs_client: Alibaba Cloud Service client.
+            base_client (pai.libs.alibabacloud_paiflow20210202.client.Client):
         """
-        super(PAIFlowClient, self).__init__(acs_client=acs_client)
-        self._inner = _is_inner
-
-    def _call_service_with_exception(self, request):
-        resp = super(PAIFlowClient, self)._call_service_with_exception(request)
-        if resp["Code"] is not None:
-            message = "Service response error, request:%s code:%s, message:%s" % (
-                request,
-                resp["Code"],
-                resp["Message"],
-            )
-            raise ServiceCallException(message)
-        return resp
+        super(PAIFlowClient, self).__init__(base_client=base_client)
 
     def _get_endpoint(self):
         if self._endpoint:
@@ -81,94 +56,84 @@ class PAIFlowClient(BaseClient):
         else:
             return "PAIFlow"
 
-    @property
-    def is_workspace_required(self):
-        if not self._inner:
-            return True
-        return False
+    def get_pipeline_schema(self, pipeline_id):
+        resp = self._call_service_with_exception(
+            self.base_client.get_pipeline_schema, pipeline_id=pipeline_id
+        )
+        return resp.to_map()
 
-    def get_pipeline(
-        self, pipeline_id=None, identifier=None, version=None, provider=None
-    ):
-        request = self._construct_request(GetPipelineRequest.GetPipelineRequest)
-        if pipeline_id is not None:
-            request.set_PipelineId(pipeline_id)
-        elif identifier and provider and version:
-            request.set_PipelineIdentifier(identifier)
-            request.set_PipelineVersion(version)
-            request.set_PipelineProvider(provider)
-        else:
-            raise ValueError(
-                "Please provider pipeline_id or identifier-provider-version to fetch"
-                " the specific Pipeline"
-            )
-        return self._call_service_with_exception(request)
-
-    @paginate_service_call
     def list_pipeline(
-        self, identifier=None, provider=None, fuzzy=None, workspace_id=None, version=""
+        self,
+        identifier=None,
+        provider=None,
+        workspace_id=None,
+        version=None,
+        page_number=None,
+        page_size=None,
     ):
-        request = self._construct_request(ListPipelinesRequest.ListPipelinesRequest)
+        request = ListPipelinesRequest(
+            page_number=page_number,
+            page_size=page_size,
+            pipeline_provider=provider,
+            pipeline_version=version,
+            pipeline_identifier=identifier,
+            workspace_id=workspace_id,
+        )
+        resp = self.base_client.list_pipelines(request).body.to_map()
+        total_count, pipelines = resp["TotalCount"], resp["Pipelines"]
+        return pipelines, total_count
 
-        if workspace_id is not None:
-            request.set_WorkspaceId(workspace_id)
-        if provider is not None:
-            request.set_PipelineProvider(provider)
-        if identifier is not None:
-            request.set_PipelineIdentifier(identifier)
-        if fuzzy is not None:
-            request.set_FuzzyMatching(fuzzy)
-        if version is not None:
-            request.set_PipelineVersion(version)
-
-        return request
+    def list_pipeline_generator(self, **kwargs):
+        return type(self).to_generator(self.list_pipeline)(**kwargs)
 
     @require_workspace
     def create_pipeline(self, manifest, workspace_id=None):
-        request = self._construct_request(CreatePipelineRequest.CreatePipelineRequest)
-        request.set_Manifest(manifest)
-        if workspace_id:
-            request.set_WorkspaceId(workspace_id)
-
-        response = self._call_service_with_exception(request)
-        return response
+        request = CreatePipelineRequest(manifest=manifest, workspace_id=workspace_id)
+        resp = self._call_service_with_exception(
+            self.base_client.create_pipeline,
+            request=request,
+        )
+        return resp.body.pipeline_id
 
     def delete_pipeline(self, pipeline_id):
-        request = self._construct_request(DeletePipelineRequest.DeletePipelineRequest)
-        request.set_PipelineId(pipeline_id)
-        return self._call_service_with_exception(request)
+        self._call_service_with_exception(
+            self.base_client.delete_pipeline, pipeline_id=pipeline_id
+        )
+        return
 
     def update_pipeline(self, pipeline_id, manifest):
-        request = self._construct_request(UpdatePipelineRequest.UpdatePipelineRequest)
-        request.set_PipelineId(pipeline_id)
-        request.set_Manifest(manifest)
-        return self._call_service_with_exception(request)
-
-    def describe_pipeline(self, pipeline_id):
-        request = self._construct_request(
-            DescribePipelineRequest.DescribePipelineRequest
+        request = UpdatePipelineRequest(
+            manifest=manifest,
         )
-        request.set_PipelineId(ensure_str(pipeline_id))
-        return self._call_service_with_exception(request)
+        self._call_service_with_exception(
+            self.base_client.update_pipeline, pipeline_id=pipeline_id, request=request
+        )
+        return
+
+    def get_pipeline(self, pipeline_id):
+        resp = self._call_service_with_exception(
+            self.base_client.get_pipeline, pipeline_id=pipeline_id
+        )
+        return resp.to_map()
 
     def update_pipeline_privilege(self, pipeline_id, user_ids):
-        request = self._construct_request(
-            UpdatePipelinePrivilegeRequest.UpdatePipelinePrivilegeRequest
-        )
-        request.set_PipelineId(pipeline_id)
-        if not user_ids:
-            raise ValueError("Argument 'users' should not be empty.")
         if isinstance(user_ids, six.string_types):
-            user_ids = [user_ids]
-        request.add_body_params("users", user_ids)
-        return self._call_service_with_exception(request)
+            user_ids = user_ids.split(",")
+        if not isinstance(user_ids, (list, tuple)):
+            raise ValueError("Please provide user_ids as list or tuple")
+        request = UpdatePipelinePrivilegesRequest(users=user_ids)
+        self._call_service_with_exception(
+            self.base_client.update_pipeline_privileges,
+            pipeline_id=pipeline_id,
+            request=request,
+        )
+        return
 
     def list_pipeline_privilege(self, pipeline_id):
-        request = self._construct_request(
-            GetPipelinePrivilegeRequest.GetPipelinePrivilegeRequest
+        resp = self._call_service_with_exception(
+            self.base_client.list_pipeline_privileges, pipeline_id=pipeline_id
         )
-        request.set_PipelineId(pipeline_id)
-        return self._call_service_with_exception(request)
+        return resp.to_map()
 
     @require_workspace
     def create_run(
@@ -179,7 +144,9 @@ class PAIFlowClient(BaseClient):
         manifest=None,
         no_confirm_required=False,
         workspace_id=None,
+        source="SDK",
     ):
+
         if not pipeline_id and not manifest:
             raise ValueError(
                 "Create pipeline run require either pipeline_id or manifest."
@@ -191,99 +158,83 @@ class PAIFlowClient(BaseClient):
         if not name:
             raise ValueError("Pipeline run instance need a name.")
 
-        request = self._construct_request(CreateRunRequest.CreateRunRequest)
+        request = CreateRunRequest(
+            pipeline_id=pipeline_id,
+            name=name,
+            pipeline_manifest=manifest,
+            arguments=arguments,
+            no_confirm_required=no_confirm_required,
+            workspace_id=workspace_id,
+            source=source,
+        )
+        resp = self._call_service_with_exception(
+            self.base_client.create_run, request=request
+        )
+        return resp.run_id
 
-        if manifest:
-            if isinstance(manifest, dict):
-                manifest = yaml.dump(manifest)
-            request.set_PipelineManifest(manifest)
-        if pipeline_id:
-            request.set_PipelineId(pipeline_id)
-
-        if isinstance(arguments, dict):
-            arguments = yaml.dump(arguments)
-
-        if workspace_id is not None:
-            request.set_WorkspaceId(workspace_id)
-
-        request.set_Arguments(arguments)
-        request.set_Name(name)
-        request.set_NoConfirmRequired(no_confirm_required)
-        return self._call_service_with_exception(request)
-
-    @paginate_service_call
     def list_run(
         self,
         name=None,
         run_id=None,
         pipeline_id=None,
         status=None,
-        sorted_by=None,
-        sorted_sequence=None,
+        sort_by=None,
+        order=None,
         workspace_id=None,
+        page_number=None,
+        page_size=None,
+        experiment_id=None,
+        source=None,
     ):
-        request = self._construct_request(ListRunsRequest.ListRunsRequest)
-        if name is not None:
-            request.set_Name(name)
+        request = ListRunsRequest(
+            page_number=page_number,
+            page_size=page_size,
+            experiment_id=experiment_id,
+            name=name,
+            pipeline_id=pipeline_id,
+            run_id=run_id,
+            sort_by=sort_by,
+            order=order,
+            source=source,
+            status=status,
+            workspace_id=workspace_id,
+        )
+        resp = self._call_service_with_exception(
+            self.base_client.list_runs, request=request
+        ).to_map()
+        runs, total_count = resp["Runs"], resp["TotalCount"]
+        return runs, total_count
 
-        if run_id is not None:
-            request.set_RunId(run_id)
-
-        if pipeline_id is not None:
-            request.set_PipelineId(run_id)
-
-        if status is not None:
-            request.set_Status(status)
-
-        if sorted_by is not None:
-            request.set_SortedBy(sorted_by)
-
-        if sorted_sequence is not None:
-            request.set_sortedSequence(sorted_sequence)
-
-        if workspace_id is not None:
-            request.set_WorkspaceId(workspace_id)
-
-        return request
+    def list_run_generator(self, **kwargs):
+        return type(self).to_generator(self.list_run)(**kwargs)
 
     def get_run(self, run_id):
-        request = self._construct_request(GetRunRequest.GetRunRequest)
-        request.set_RunId(run_id)
-        return self._call_service_with_exception(request)
-
-    def terminate_run(self, run_id):
-        request = self._construct_request(TerminateRunRequest.TerminateRunRequest)
-        request.set_RunId(run_id)
-        return self._call_service_with_exception(request)
-
-    def suspend_run(self, run_id):
-        request = self._construct_request(SuspendRunRequest.SuspendRunRequest)
-        request.set_RunId(run_id)
-        return self._call_service_with_exception(request)
-
-    def resume_run(self, run_id):
-        request = self._construct_request(ResumeRunRequest.ResumeRunRequest)
-        request.set_RunId(run_id)
-        return self._call_service_with_exception(request)
-
-    def retry_run(self, run_id):
-        request = self._construct_request(RetryRunRequest.RetryRunRequest)
-        request.set_RunId(run_id)
-        return self._call_service_with_exception(request)
+        resp = self._call_service_with_exception(
+            self.base_client.get_run, run_id=run_id
+        )
+        return resp.to_map()
 
     def start_run(self, run_id):
-        request = self._construct_request(StartRunRequest.StartRunRequest)
-        request.set_RunId(run_id)
-        return self._call_service_with_exception(request)
+        self._call_service_with_exception(self.base_client.start_run, run_id=run_id)
+        return
 
-    def get_run_detail(self, run_id, node_id, depth=2):
-        request = self._construct_request(GetNodeDetailRequest.GetNodeDetailRequest)
-        request.set_RunId(run_id)
-        request.set_NodeId(node_id)
-        request.set_Depth(depth)
-        return self._call_service_with_exception(request)
+    def terminate_run(self, run_id):
+        self._call_service_with_exception(self.base_client.terminate_run, run_id=run_id)
+        return
 
-    def list_node_log(
+    def update_run(self, run_id, name):
+        request = UpdateRunRequest(name=name)
+        self._call_service_with_exception(self.base_client.update_run, request=request)
+        return
+
+    def get_node(self, run_id, node_id, depth=2):
+        request = GetNodeRequest(depth=depth)
+        resp = self._call_service_with_exception(
+            self.base_client.get_node, run_id=run_id, node_id=node_id, request=request
+        )
+        return resp.to_map()
+
+    def list_node_logs(
         self,
         run_id,
         node_id,
@@ -294,55 +245,79 @@ class PAIFlowClient(BaseClient):
         page_offset=0,
         page_size=100,
     ):
-        request = self._construct_request(ListNodeLogsRequest.ListNodeLogsRequest)
-        request.set_RunId(run_id)
-        request.set_NodeId(node_id)
+        request = ListNodeLogsRequest(
+            offset=page_offset,
+            page_size=page_size,
+            from_time_in_seconds=from_time,
+            to_time_in_seconds=to_time,
+            keyword=keyword,
+            reverse=reverse,
+        )
 
-        if from_time is not None:
-            request.set_FromTimeInSeconds(ensure_unix_time(from_time))
+        resp = self._call_service_with_exception(
+            self.base_client.list_node_logs,
+            run_id=run_id,
+            node_id=node_id,
+            request=request,
+        ).to_map()
 
-        if to_time is not None:
-            request.set_ToTimeInSeconds(ensure_unix_time(to_time))
+        logs, total_count = resp["Logs"], resp["TotalCount"]
+        return logs, total_count
 
-        if keyword is not None:
-            request.set_Keyword(keyword)
-        if reverse is not None:
-            request.set_Reverse(reverse)
+    def list_node_logs_generator(self, **kwargs):
+        def f(**kwargs):
+            page_offset = kwargs.pop("page_offset", 0)
+            page_size = kwargs.pop("page_size", 1)
 
-        request.set_PageOffset(page_offset)
-        request.set_PageSize(page_size)
-        return self._call_service_with_exception(request)
+            while True:
+                entities, _ = self.list_node_logs(
+                    page_offset=page_offset, page_size=page_size, **kwargs
+                )
+                if not entities:
+                    raise StopIteration
+                for entity in entities:
+                    yield entity
+                page_offset = page_size + page_offset
 
-    def list_run_outputs(
+        return f(**kwargs)
+
+    def list_node_outputs(
         self,
         run_id,
         node_id,
         depth=2,
         name=None,
-        sorted_by=None,
-        sorted_sequence=None,
-        typ=None,
+        sort_by=None,
+        order=None,
+        type=None,
         page_number=1,
         page_size=50,
     ):
-        request = self._construct_request(ListNodeOutputsRequest.ListNodeOutputsRequest)
+        request = ListNodeOutputsRequest(
+            name=name,
+            depth=depth,
+            page_number=page_number,
+            page_size=page_size,
+            sort_by=sort_by,
+            order=order,
+            type=type,
+        )
 
-        request.set_Depth(depth)
-        request.set_NodeId(node_id)
-        request.set_RunId(run_id)
-        request.set_PageNumber(page_number)
-        request.set_PageSize(page_size)
+        resp = self._call_service_with_exception(
+            self.base_client.list_node_outputs,
+            run_id=run_id,
+            node_id=node_id,
+            request=request,
+        )
 
-        if name is not None:
-            request.set_Name(name)
-        if sorted_by is not None:
-            request.set_SortedBy(sorted_by)
-        if sorted_sequence is not None:
-            request.set_sortedSequence(sorted_sequence)
-        if typ is not None:
-            request.set_Type(typ)
-        return self._call_service_with_exception(request)
+        outputs, total_count = resp["Outputs"], resp["TotalCount"]
+        return outputs, total_count
 
-    def get_my_provider(self):
-        request = self._construct_request(GetMyProviderRequest.GetMyProviderRequest)
-        return self._call_service_with_exception(request)
+    def list_node_outputs_generator(self, **kwargs):
+        return type(self).to_generator(self.list_node_outputs)(**kwargs)
+
+    def get_caller_provider(self):
+        resp = self._call_service_with_exception(
+            self.base_client.get_caller_provider,
+        )
+        return resp.provider

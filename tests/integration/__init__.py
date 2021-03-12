@@ -137,6 +137,10 @@ class BaseIntegTestCase(unittest.TestCase):
 
         cls.pai_service_config, cls.oss_config, cls.maxc_config = cls.load_test_config()
 
+        from pai.core.workspace import Workspace
+
+        Workspace.list()
+
         cls.oss_bucket = cls._init_oss_bucket()
         cls.default_session = cls._setup_test_session()
         cls.odps_client = cls._init_maxc_client()

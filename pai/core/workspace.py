@@ -21,7 +21,17 @@ class Workspace(object):
 
     """
 
-    def __init__(self, id, name, creator_id, alias=None, desc=None):
+    def __init__(
+        self,
+        id,
+        name,
+        creator_id,
+        display_name=None,
+        desc=None,
+        status=None,
+        resource_count=None,
+        env_types=None,
+    ):
         """Workspace constructor.
 
         Args:
@@ -33,11 +43,14 @@ class Workspace(object):
         self.id = id
         self.name = name
         self.creator_id = creator_id
-        self.alias = alias
+        self.display_name = display_name
         self.desc = desc
+        self.status = status
+        self.resource_count = resource_count
+        self.env_types = env_types
 
     def __str__(self):
-        return "Workspace:%s:%s:%s" % (self.name, self.alias, self.id)
+        return "Workspace:%s:%s:%s" % (self.name, self.display_name, self.id)
 
     def __repr__(self):
         return self.__str__()
@@ -58,11 +71,17 @@ class Workspace(object):
 
     @classmethod
     def deserialize(cls, obj_dict):
+
         return cls(
             id=obj_dict["WorkspaceId"],
             name=obj_dict["WorkspaceName"],
-            desc=obj_dict["Description"],
-            creator_id=obj_dict["Creator"],
+            display_name=obj_dict.get("DisplayName"),
+            status=obj_dict.get("Status"),
+            desc=obj_dict.get("Description"),
+            creator_id=obj_dict.get("Creator"),
+            resource_count=obj_dict.get("ResourceCount"),
+            env_types=obj_dict.get("EnvTypes"),
+            # admin_names=obj_dict["AdminNames"],
         )
 
     @classmethod
@@ -77,9 +96,9 @@ class Workspace(object):
         ]
 
     @classmethod
-    def get(cls, ws_id):
-        ws = cls._get_service_client().get(workspace_id=ws_id)
-        return cls.deserialize(ws["Data"])
+    def get(cls, workspace_id):
+        resp = cls._get_service_client().get_workspace(workspace_id=workspace_id)
+        return cls.deserialize(resp)
 
     @classmethod
     def get_by_name(cls, name):
@@ -101,7 +120,7 @@ class Workspace(object):
 
     @classmethod
     def list(cls, name=None, sorted_by=None, sorted_sequence=None):
-        for ws in cls._get_service_client().list(
+        for ws in cls._get_service_client().list_workspaces(
             name=name, sorted_by=sorted_by, sorted_sequence=sorted_sequence
         ):
             yield cls.deserialize(ws)

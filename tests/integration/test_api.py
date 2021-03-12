@@ -19,16 +19,22 @@ class TestPaiFlowAPI(BaseIntegTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPaiFlowAPI, cls).setUpClass()
-        session = get_default_session()
-        cls.session = session
+
+        from pai.api.client_factory import ClientFactory
+
+        cls.client = ClientFactory.create_paiflow_client(
+            access_key_id=cls.pai_service_config.access_key_id,
+            access_key_secret=cls.pai_service_config.access_key_secret,
+            region_id=cls.pai_service_config.region_id,
+        )
 
     @classmethod
     def tearDownClass(cls):
         super(TestPaiFlowAPI, cls).tearDownClass()
-        if cls.session:
-            del cls.session
+        if hasattr(cls, "paiflowclient"):
+            del cls.paiflowclient
 
-    def test_get_pipeline(self):
+    def test_get_pipeline_schema(self):
         identifier = "evaluate_1"
         pipeline_info = self.session.get_pipeline(
             identifier=identifier, provider=ProviderAlibabaPAI, version="v1"
@@ -38,40 +44,17 @@ class TestPaiFlowAPI(BaseIntegTestCase):
         self.assertEqual(identifier, manifest["metadata"]["identifier"])
 
     def test_list_pipeline(self):
-        pipeline_infos = list(
-            iter_with_limit(self.session.list_pipeline(provider=ProviderAlibabaPAI), 10)
+        pipelines, count = self.client.list_pipeline(
+            identifier="evaluate_1", provider=ProviderAlibabaPAI, version="v1"
         )
-        self.assertTrue(len(pipeline_infos) == 10)
+        self.assertEqual(count, 1)
+        self.assertEqual(len(pipelines), 1)
+        self.assertEqual(pipelines[0]["Identifier"], "evaluate_1")
+        self.assertEqual(pipelines[0]["Provider"], ProviderAlibabaPAI)
 
-    def test_provider(self):
-        assert self.session.provider is not None
-
-    def test_pipeline_create(self):
-        pass
-
-    def test_pipeline_update_privilege(self):
-        pass
-
-    def test_run_wait(self):
-        pass
-
-    def test_get_run_detail(self):
-        pass
-
-    def test_get_log(self):
-        pass
-
-    def test_manifest_run(self):
-        pass
-
-    def test_composite_pipeline_run(self):
-        pass
-
-    def test_run_status_manager(self):
-        pass
-
-    def test_run_outputs(self):
-        pass
+    def test_list_pipeline_generator(self):
+        for pipeline in self.client.list_pipeline_generator(provider=ProviderAlibabaPAI):
+            print(pipeline)
 
     def test_list_pipelines(self):
         count = 0
@@ -79,6 +62,24 @@ class TestPaiFlowAPI(BaseIntegTestCase):
             count += 1
 
         self.assertTrue(count > 0)
+
+    def test_list_run_generator(self):
+        run_info = next(self.client.list_run_generator(status="Succeeded"))
+        run = self.client.get_run(run_info["RunId"])
+        pprint(run)
+        rs = self.client.get_node(run_id=run_info["RunId"], node_id=run["NodeId"])
+        pprint(rs)
+
+
+
+
+        # for info in self.client.list_run_generator(status="Succeeded"):
+        #     run = self.client.get_run(info["RunId"])
+        #     self.client.list_run_node()
+        #     print(run)
+
+    def test_get_node(self):
+        pass
 
     def test_list_template(self):
         templates = list(

@@ -43,7 +43,7 @@ class TestScriptOperator(BaseIntegTestCase):
 
     def test_local_source_files(self):
         templ = ScriptOperator(
-            entry_file="main.py",
+            entry_file="run.py",
             source_dir=SCRIPT_DIR_PATH,
             inputs=[
                 PipelineParameter(name="foo", typ=str, default="Hello"),
@@ -54,12 +54,12 @@ class TestScriptOperator(BaseIntegTestCase):
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
-        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "run.py")
         templ.run(job_name="HelloWorld")
 
     def test_single_local_file(self):
         templ = ScriptOperator(
-            entry_file=os.path.join(SCRIPT_DIR_PATH, "main.py"),
+            entry_file=os.path.join(SCRIPT_DIR_PATH, "run.py"),
             inputs=[
                 PipelineParameter(name="foo", typ=int, default=10),
                 PipelineParameter(name="bar", typ=int, default=200),
@@ -69,11 +69,11 @@ class TestScriptOperator(BaseIntegTestCase):
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
-        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "run.py")
 
     def test_oss_source_files(self):
         templ = ScriptOperator(
-            entry_file="main.py",
+            entry_file="run.py",
             source_dir="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to_files/source.tar.gz",
         )
         templ.prepare()
@@ -83,25 +83,25 @@ class TestScriptOperator(BaseIntegTestCase):
             env_vars[PAI_SOURCE_CODE_ENV_KEY],
             "oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to_files/source.tar.gz",
         )
-        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "run.py")
 
     def test_oss_single_file(self):
         templ = ScriptOperator(
-            entry_file="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/main.py",
+            entry_file="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/run.py",
         )
         templ.prepare()
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(
             env_vars[PAI_SOURCE_CODE_ENV_KEY],
-            "oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/main.py",
+            "oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/run.py",
         )
-        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
+        self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "run.py")
 
     @skip("Aone dynamic container environment do not support docker in docker.")
     def test_local_run(self):
         templ = ScriptOperator(
-            entry_file="main.py",
+            entry_file="run.py",
             source_dir=MAXC_SQL_TEMPLATE_SCRIPT_PATH,
             inputs=[
                 PipelineParameter("sql"),

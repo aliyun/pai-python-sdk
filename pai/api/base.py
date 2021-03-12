@@ -9,6 +9,8 @@ from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerExcept
 
 from pai.core.exception import ServiceCallException
 
+from Tea.exceptions import TeaException
+
 DefaultPageSize = 50
 
 logger = logging.getLogger(__name__)
@@ -111,3 +113,33 @@ class BaseClient(object):
 
         req.set_protocol_type("https")
         return req
+
+
+class BaseTeaClient(object):
+    def __init__(self, base_client):
+        self.base_client = base_client
+
+    def _call_service_with_exception(self, client_method, **kwargs):
+        try:
+            resp = client_method(**kwargs)
+        except TeaException as e:
+            raise ServiceCallException(e.__str__())
+        return resp.body
+
+    @staticmethod
+    def to_generator(method):
+        def f(**kwargs):
+            page_size = kwargs.pop("page_size", 50)
+            page_number = kwargs.pop("page_number", 1)
+
+            while True:
+                entities, _ = method(
+                    page_size=page_size, page_number=page_number, **kwargs
+                )
+                if not entities:
+                    raise StopIteration
+                for entity in entities:
+                    yield entity
+                page_number += 1
+
+        return f

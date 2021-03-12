@@ -40,33 +40,40 @@ class PipelineRunStatus(object):
 
 
 class PipelineRun(object):
-    def __init__(self, run_id, name, workspace_id=None, pipeline_id=None, session=None):
-        self._run_id = run_id
-        self._name = name
-        self._pipeline_id = pipeline_id
-        self._workspace_id = workspace_id
-        self._session = session or get_default_session()
-
-    @property
-    def run_id(self):
-        return self._run_id
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def pipeline_id(self):
-        return self._pipeline_id
+    def __init__(
+        self,
+        run_id,
+        name,
+        workspace_id=None,
+        status=None,
+        node_id=None,
+        duration=None,
+        started_at=None,
+        finished_at=None,
+        source=None,
+        user_id=None,
+        parent_user_id=None,
+    ):
+        self.run_id = run_id
+        self.name = name
+        self.workspace_id = workspace_id
+        self.status = status
+        self.node_id = node_id
+        self.duration = duration
+        self.started_at = started_at
+        self.finished_at = finished_at
+        self.source = source
+        self.user_id = user_id
+        self.parent_user_id = parent_user_id
 
     @classmethod
-    def _get_pipeline_client(cls):
+    def _get_service_client(cls):
         session = get_default_session()
         return session.paiflow_client
 
     @cached_property
     def workspace(self):
-        return Workspace.get(self._workspace_id) if self._workspace_id else None
+        return Workspace.get(self.workspace_id) if self.workspace_id else None
 
     @classmethod
     def list(
@@ -75,38 +82,36 @@ class PipelineRun(object):
         run_id=None,
         pipeline_id=None,
         status=None,
-        sorted_by=None,
-        sorted_sequence=None,
-        workspace=None,
+        sort_by=None,
+        order=None,
+        workspace_id=None,
+        **kwargs
     ):
-        generator = cls._get_pipeline_client().list_run(
+        generator = cls._get_service_client().list_run_generator(
             name=name,
             run_id=run_id,
             pipeline_id=pipeline_id,
             status=status,
-            sorted_by=sorted_by,
-            sorted_sequence=sorted_sequence,
-            workspace_id=workspace.id if workspace else None,
+            sort_by=sort_by,
+            order=order,
+            workspace_id=workspace_id,
+            **kwargs
         )
         for info in generator:
-            yield cls(
-                run_id=info["RunId"],
-                name=info["Name"],
-                pipeline_id=info["PipelineId"],
-                workspace_id=info.get("WorkspaceId", None),
-            )
+            yield cls.deserialize(info)
 
     @classmethod
-    def deserialize(cls, obj_dict):
-        run_id, name, pipeline_id, workspace_id = (
-            obj_dict["RunId"],
-            obj_dict["Name"],
-            obj_dict["PipelineId"],
-            obj_dict.get("WorkspaceId"),
-        )
-
+    def deserialize(cls, d):
         return cls(
-            run_id=run_id, name=name, pipeline_id=pipeline_id, workspace_id=workspace_id
+            run_id=d["RunId"],
+            node_id=d["NodeId"],
+            name=d["Name"],
+            workspace_id=d["WorkspaceId"],
+            user_id=d.get("UserId"),
+            parent_user_id=d.get("ParentUserId"),
+            source=d.get("Source"),
+            started_at=d.get("StartedAt"),
+            status=d.get("Status"),
         )
 
     def __repr__(self):
@@ -162,10 +167,10 @@ class PipelineRun(object):
         return self._session.run_detail_url(run_id=self.run_id)
 
     def get_run_info(self):
-        return self._session.get_run(self.run_id)
+        return self._get_service_client().get_run(self.run_id)
 
-    def get_run_detail(self, node_id, depth=2):
-        return self._session.get_run_detail(self.run_id, node_id=node_id, depth=depth)
+    def get_run_node_detail(self, node_id, depth=2):
+        return self._get_service_client().get_node(self.run_id, node_id=node_id, depth=depth)
 
     def get_outputs(
         self, name=None, node_id=None, depth=1, typ=None, page_number=1, page_size=200
@@ -196,52 +201,10 @@ class PipelineRun(object):
         return self.get_run_info()["Status"]
 
     def start(self):
-        return self._session.start_run(self.run_id)
+        return self._get_service_client().start_run(self.run_id)
 
     def terminate(self):
-        return self._session.terminate_run(self.run_id)
-
-    def suspend(self):
-        return self._session.suspend_run(self.run_id)
-
-    def resume(self):
-        return self._session.resume_run(self.run_id)
-
-    def retry(self):
-        return self._session.retry_run(self.run_id)
-
-    def get_node_log(
-        self,
-        node_id,
-        pending=False,
-        page_size=100,
-        page_offset=0,
-        from_time=None,
-        to_time=None,
-    ):
-        while True:
-            logs = self._session.get_run_log(
-                self.run_id,
-                node_id,
-                from_time=from_time,
-                to_time=to_time,
-                page_size=page_size,
-                page_offset=page_offset,
-            )
-
-            if logs:
-                for log in logs:
-                    yield log
-                time.sleep(0.2)
-                page_offset += page_size
-            elif not pending:
-                raise StopIteration
-            else:
-                status = PipelineRunStatus(self.get_status())
-                if PipelineRunStatus.is_running(status):
-                    time.sleep(1)
-                else:
-                    raise StopIteration
+        return self._get_service_client().terminate_run(self.run_id)
 
     def _wait_for_init(self, timeout=120, retry_interval=1):
         """Wait for "NodeId" allocated to pipeline run.
@@ -345,8 +308,6 @@ class _RunLogger(object):
         self,
         node_id,
         node_name,
-        from_time=None,
-        to_time=None,
         page_size=100,
         page_offset=0,
     ):
@@ -357,20 +318,22 @@ class _RunLogger(object):
         run_id = self.run_instance.run_id
 
         while True and self._tail:
-            logs = session.get_run_log(
-                run_id,
-                node_id,
-                from_time=from_time,
-                to_time=to_time,
+            logs = self.run_instance._get_service_client().list_node_logs_generator(
+                run_id=self.run_instance.run_id,
+                node_id=node_id,
                 page_size=page_size,
                 page_offset=page_offset,
             )
-            if logs:
-                for log in logs:
-                    print("%s: %s" % (node_name, log))
-                time.sleep(0.5)
-                page_offset += page_size
-            else:
+
+            count = 0
+            for log in logs:
+                print("%s: %s" % (node_name, log))
+                page_offset += 1
+                count += 1
+                if count % page_size == 0:
+                    time.sleep(0.5)
+
+            if count == 0:
                 status = self.run_instance.get_status()
                 if PipelineRunStatus.is_running(status):
                     time.sleep(2)
