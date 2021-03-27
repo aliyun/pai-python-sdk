@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import json
 import os
+import time
 from functools import wraps
 import logging
 
@@ -129,7 +130,7 @@ class BaseTeaClient(object):
     @staticmethod
     def to_generator(method):
         def f(**kwargs):
-            page_size = kwargs.pop("page_size", 50)
+            page_size = kwargs.pop("page_size", 20)
             page_number = kwargs.pop("page_number", 1)
 
             while True:
@@ -137,9 +138,10 @@ class BaseTeaClient(object):
                     page_size=page_size, page_number=page_number, **kwargs
                 )
                 if not entities:
-                    raise StopIteration
+                    return
                 for entity in entities:
                     yield entity
                 page_number += 1
+                time.sleep(0.5)
 
         return f

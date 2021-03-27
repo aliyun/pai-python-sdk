@@ -2,7 +2,7 @@ import six
 import yaml
 
 from pai.core import Workspace
-from pai.core.session import get_default_session
+from pai.core.session import Session
 from pai.pipeline.base import OperatorBase
 from pai.pipeline.types.spec import load_input_output_spec
 
@@ -16,7 +16,7 @@ class SavedOperator(OperatorBase):
 
     """
 
-    def __init__(self, pipeline_id, workspace_id=None, manifest=None):
+    def __init__(self, pipeline_id, manifest=None, workspace_id=None):
         """Template constructor.
 
         Args:
@@ -24,11 +24,11 @@ class SavedOperator(OperatorBase):
             pipeline_id: Unique ID for pipeline in PAI service.
             workspace_id: ID of the workspace which the pipeline belongs to.
         """
-        if not manifest or not workspace_id:
-            session = get_default_session()
+        if not manifest:
+            session = Session.current()
             manifest = session.get_pipeline_by_id(pipeline_id)["Manifest"]
         if isinstance(manifest, six.string_types):
-            manifest = yaml.load(manifest, yaml.FullLoader)
+            manifest = yaml.safe_load(manifest)
 
         self._manifest = manifest
         self._pipeline_id = pipeline_id
@@ -88,19 +88,19 @@ class SavedOperator(OperatorBase):
         """
         return yaml.dump(self._manifest)
 
-    @property
-    def workspace(self):
-        """Workspace of the pipeline operator
-
-        Pipeline operator belongs to a specific workspace in PAI service. Workspace property reveal
-         the workspace which the saved pipeline operator belongs to.
-
-        Returns:
-            pai.core.workspace.Workspace: Workspace of the saved pipeline operator.
-
-        """
-        return Workspace.get(self._workspace_id) if self._workspace_id else None
-
+    # @property
+    # def workspace(self):
+    #     """Workspace of the pipeline operator
+    #
+    #     Pipeline operator belongs to a specific workspace in PAI service. Workspace property reveal
+    #      the workspace which the saved pipeline operator belongs to.
+    #
+    #     Returns:
+    #         pai.core.workspace.Workspace: Workspace of the saved pipeline operator.
+    #
+    #     """
+    #     return Workspace.get(self._workspace_id) if self._workspace_id else None
+    #
     @classmethod
     def get_by_identifier(cls, identifier, provider=None, version="v1"):
         """Get SavedOperator with identifier-provider-version tuple.
@@ -115,19 +115,18 @@ class SavedOperator(OperatorBase):
             pai.pipeline.SavedOperator: SavedOperator instance
 
         """
-        session = get_default_session()
+        session = Session.current()
         pipeline_info = session.get_pipeline(
             identifier=identifier, provider=provider, version=version
         )
         return cls(
             manifest=pipeline_info["Manifest"],
             pipeline_id=pipeline_info["PipelineId"],
-            workspace_id=pipeline_info.get("WorkspaceId", None),
         )
 
     @classmethod
     def list(
-        cls, identifier=None, provider=None, version=None, fuzzy=True, workspace=None
+        cls, identifier=None, provider=None, version=None, workspace_id=None
     ):
         """List the SavedOperator in PAI
 
@@ -138,19 +137,16 @@ class SavedOperator(OperatorBase):
             identifier (str): Pipeline identifier filter.
             provider (str): Pipeline provider filter.
             version (str): Pipeline version.
-            fuzzy (bool): Fuzzy matching will be use to search pipeline operator with the given
-             `identifier` parameter if is True.
-            workspace (pai.core.workspace.Workspace): Workspace filter.
+            workspace_id (str): Workspace id of the pipeline.
 
         Yields:
               pai.operator.SavedOperator: SavedOperator match the query.
         """
-        pl_gen = cls._get_service_client().list_pipeline(
+        pl_gen = cls._get_service_client().list_pipeline_generator(
             identifier=identifier,
             provider=provider,
-            fuzzy=fuzzy,
             version=version,
-            workspace_id=workspace.id if workspace else None,
+            workspace_id=workspace_id,
         )
 
         for info in pl_gen:
@@ -161,7 +157,7 @@ class SavedOperator(OperatorBase):
         manifest, id, workspace_id = (
             obj_dict.get("Manifest"),
             obj_dict["PipelineId"],
-            obj_dict["WorkspaceId"],
+            obj_dict.get("WorkspaceId", None),
         )
         return cls(
             workspace_id=workspace_id,
@@ -227,7 +223,7 @@ class SavedOperator(OperatorBase):
         raise NotImplementedError("SaveTemplate is not savable.")
 
     def _submit(self, job_name, args):
-        session = get_default_session()
+        session = Session.current()
         run_id = session.create_run(
             job_name,
             args,

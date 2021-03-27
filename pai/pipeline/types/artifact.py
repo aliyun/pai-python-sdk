@@ -4,6 +4,8 @@ import json
 import re
 
 import six
+from six import with_metaclass
+from abc import ABCMeta, abstractmethod
 from odps.df import DataFrame as ODPSDataFrame
 from odps.models import (
     Table as ODPSTable,
@@ -184,13 +186,22 @@ class PipelineArtifact(PipelineVariable):
             argument["value"] = self._translate_value(arg)
         return argument
 
-    @classmethod
-    def _translate_value(cls, val):
+    def _translate_value(self, val):
+        if isinstance(self.metadata, ArtifactMetadataBase):
+            metadata = self.metadata.to_dict()
+        else:
+            metadata = self.metadata
+
         try:
             af_value = LocationArtifactValue.from_resource(val)
-            return json.dumps(af_value.to_dict(), sort_keys=True)
+            value = json.dumps(af_value.to_dict(), sort_keys=True)
         except ValueError:
-            return val
+            value = val
+
+        return {
+            "value": value,
+            "metadata": metadata,
+        }
 
     def to_argument(self):
         argument = {"name": self.name}
@@ -265,7 +276,13 @@ class PipelineArtifactElement(object):
         return self.artifact.parent
 
 
-class LocationArtifactMetadata(object):
+class ArtifactMetadataBase(with_metaclass(ABCMeta)):
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+
+class LocationArtifactMetadata(ArtifactMetadataBase):
     def __init__(self, data_type, location_type, type_attributes=None):
         self.data_type = data_type
         self.location_type = location_type

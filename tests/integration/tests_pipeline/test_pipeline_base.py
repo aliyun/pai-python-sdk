@@ -60,16 +60,31 @@ class TestPipelineBase(BaseIntegTestCase):
         expected_artifacts = [
             {
                 "name": "inputTable",
-                "value": '{"location": {"project": "%s", "table": "%s"}}'
-                % (
-                    self.breast_cancer_dataset.default_dataset_project,
-                    self.breast_cancer_dataset.table_name,
-                ),
+                "value": {
+                    "value": '{"location": {"project": "%s", "table": "%s"}}'
+                    % (
+                        self.breast_cancer_dataset.default_dataset_project,
+                        self.breast_cancer_dataset.table_name,
+                    ),
+                    "metadata": {
+                        "type": {"DataSet": {"locationType": "MaxComputeTable"}}
+                    },
+                },
             },
             {
                 "name": "model",
-                "value": '{"location": {"name": "test_iris_model", "project":'
-                ' "%s"}, "name": "test_iris_model"}' % self.odps_client.project,
+                "value": {
+                    "value": '{"location": {"name": "test_iris_model", "project":'
+                    ' "%s"}, "name": "test_iris_model"}' % self.odps_client.project,
+                    "metadata": {
+                        "type": {
+                            "Model": {
+                                "locationType": "MaxComputeOfflineModel",
+                                "modelType": "OfflineModel",
+                            }
+                        }
+                    },
+                },
             },
         ]
 

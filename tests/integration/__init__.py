@@ -157,7 +157,6 @@ class BaseIntegTestCase(unittest.TestCase):
         return {
             "odpsInfoFile": "/share/base/odpsInfo.ini",
             "endpoint": odps_client.endpoint,
-            "logViewHost": odps_client.logview_host,
             "odpsProject": odps_client.project,
         }
 

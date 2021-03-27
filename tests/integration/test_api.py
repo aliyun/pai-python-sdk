@@ -1,18 +1,12 @@
 from __future__ import absolute_import
 
-from pprint import pprint
-
-import os
 import unittest
+from pprint import pprint
 
 import yaml
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline import PipelineRun
-from pai.operator import SavedOperator
-from pai.core.session import get_default_session
-from pai.common.utils import iter_with_limit
-from tests.integration import BaseIntegTestCase, _test_root
+from tests.integration import BaseIntegTestCase
 
 
 class TestPaiFlowAPI(BaseIntegTestCase):
@@ -36,12 +30,18 @@ class TestPaiFlowAPI(BaseIntegTestCase):
 
     def test_get_pipeline_schema(self):
         identifier = "evaluate_1"
-        pipeline_info = self.session.get_pipeline(
-            identifier=identifier, provider=ProviderAlibabaPAI, version="v1"
+        pipeline_info = next(
+            self.client.list_pipeline_generator(
+                identifier=identifier, provider=ProviderAlibabaPAI, version="v1"
+            ),
+            None,
         )
         self.assertIsNotNone(pipeline_info["PipelineId"])
-        manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
+        rs = self.client.get_pipeline_schema(pipeline_info["PipelineId"])
+        manifest = yaml.load(rs["Manifest"], yaml.FullLoader)
         self.assertEqual(identifier, manifest["metadata"]["identifier"])
+        self.assertEqual(ProviderAlibabaPAI, manifest["metadata"]["provider"])
+        self.assertEqual("v1", manifest["metadata"]["version"])
 
     def test_list_pipeline(self):
         pipelines, count = self.client.list_pipeline(
@@ -53,47 +53,29 @@ class TestPaiFlowAPI(BaseIntegTestCase):
         self.assertEqual(pipelines[0]["Provider"], ProviderAlibabaPAI)
 
     def test_list_pipeline_generator(self):
-        for pipeline in self.client.list_pipeline_generator(provider=ProviderAlibabaPAI):
-            print(pipeline)
-
-    def test_list_pipelines(self):
-        count = 0
-        for pl in self.session.list_pipeline(provider=ProviderAlibabaPAI):
-            count += 1
-
-        self.assertTrue(count > 0)
+        pipeline = next(
+            (
+                pipeline
+                for pipeline in self.client.list_pipeline_generator(
+                    provider=ProviderAlibabaPAI
+                )
+            ),
+            None,
+        )
+        self.assertIsNotNone(pipeline)
 
     def test_list_run_generator(self):
         run_info = next(self.client.list_run_generator(status="Succeeded"))
-        run = self.client.get_run(run_info["RunId"])
-        pprint(run)
-        rs = self.client.get_node(run_id=run_info["RunId"], node_id=run["NodeId"])
+        print(run_info)
+        run_id = run_info["RunId"]
+
+        run_info = self.client.get_run(run_id=run_id)
+        print(run_info)
+
+        self.assertIsNotNone(run_id)
+        rs = self.client.get_node(run_id=run_id, node_id=run_info["NodeId"])
         pprint(rs)
-
-
-
-
-        # for info in self.client.list_run_generator(status="Succeeded"):
-        #     run = self.client.get_run(info["RunId"])
-        #     self.client.list_run_node()
-        #     print(run)
-
-    def test_get_node(self):
-        pass
-
-    def test_list_template(self):
-        templates = list(
-            iter_with_limit(SavedOperator.list(provider=ProviderAlibabaPAI), 10)
-        )
-
-        for template in templates:
-            print(template)
-            print(template.inputs)
-            print(template.outputs)
-
-    def test_list_run(self):
-        runs = list(iter_with_limit(PipelineRun.list(), 10))
-        self.assertTrue(len(runs) <= 10)
+        self.assertIsNotNone(rs)
 
     def test_load_pipeline(self):
         # sess = get_default_session()

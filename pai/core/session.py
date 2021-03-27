@@ -157,6 +157,10 @@ class Session(object):
     def get_default_session(cls):
         return cls._default_session
 
+    @classmethod
+    def current(cls):
+        return cls._default_session
+
     @property
     def region_id(self):
         return self._region_id
@@ -194,11 +198,11 @@ class Session(object):
 
     @property
     def console_host(self):
-        return "https://pai.data.aliyun.com/console"
+        return "https://pai.console.aliyun.com/console"
 
     @cached_property
     def provider(self):
-        return six.ensure_str(self.paiflow_client.get_my_provider()["Data"]["Provider"])
+        return six.ensure_str(self.paiflow_client.get_caller_provider())
 
     def get_pipeline(self, identifier, provider=None, version="v1"):
         """Get information of pipeline by identifier, provider and version.
@@ -219,11 +223,14 @@ class Session(object):
         """
 
         provider = provider or self.provider
-        pipeline_info = self.paiflow_client.get_pipeline_by_identifier(
-            identifier=identifier, provider=provider, version=version
-        )
 
-        return pipeline_info
+        pipeline_info, _ = self.paiflow_client.list_pipeline(
+            identifier=identifier, provider=provider, version=version,
+            page_size=1,
+        )
+        if not pipeline_info:
+            return
+        return self.paiflow_client.get_pipeline_schema(pipeline_info[0]["PipelineId"])
 
     def get_pipeline_by_id(self, pipeline_id):
         """Get information of pipeline by pipelineId.
@@ -239,7 +246,7 @@ class Session(object):
             ServiceCallException: Raise if the pipeline not exists.
 
         """
-        return self.paiflow_client.get_pipeline(pipeline_id=pipeline_id)["Data"]
+        return self.paiflow_client.get_pipeline_schema(pipeline_id=pipeline_id)
 
     def list_pipeline(self, identifier=None, provider=None, fuzzy=None, version=None):
         """List metadata information of pipelines using supplied query filter.
@@ -351,7 +358,7 @@ class Session(object):
         """
         run_args = {"arguments": arguments, "env": env}
 
-        resp = self.paiflow_client.create_run(
+        run_id = self.paiflow_client.create_run(
             name,
             run_args,
             pipeline_id=pipeline_id,
@@ -359,8 +366,6 @@ class Session(object):
             no_confirm_required=no_confirm_required,
             workspace_id=workspace.id if workspace else None,
         )
-
-        run_id = resp["Data"]["RunId"]
 
         if not self._is_inner:
             print(
@@ -550,7 +555,7 @@ class Session(object):
 
     def run_detail_url(self, run_id):
         return (
-            "{console_host}?regionId={region_id}#/studio2/task/detail/{run_id}".format(
+            "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
                 console_host=self.console_host, region_id=self.region_id, run_id=run_id
             )
         )

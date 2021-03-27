@@ -1,14 +1,16 @@
 from __future__ import absolute_import
 
+from pprint import pprint
+
 import logging
 import time
 from datetime import datetime
 
 from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
-from pai.core.exception import TimeoutException
+from pai.core.exception import TimeoutException, PAIException
 from pai.core.artifact import ArchivedArtifact
-from pai.core.session import get_default_session
+from pai.core.session import get_default_session, Session
 from pai.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,7 @@ class PipelineRun(object):
         self.source = source
         self.user_id = user_id
         self.parent_user_id = parent_user_id
+        self._bind_session = Session.current()
 
     @classmethod
     def _get_service_client(cls):
@@ -117,16 +120,19 @@ class PipelineRun(object):
     def __repr__(self):
         return "PipelineRun:%s" % self.run_id
 
-    def travel_node_status_info(self, node_id, depth=10):
+    def travel_node_status_info(self, node_id, max_depth=10):
         node_status_info = dict()
 
         def pipelines_travel(curr_node_id, parent=None, cur_depth=1):
-            if cur_depth > depth:
+            if cur_depth > max_depth:
                 return
-            run_node_detail_info = self._session.get_run_detail(
+            run_node_detail_info = self._get_service_client().get_node(
                 self.run_id, curr_node_id
             )
-            if not run_node_detail_info:
+            if (
+                not run_node_detail_info
+                or "StartedAt" not in run_node_detail_info["StatusInfo"]
+            ):
                 return
 
             if parent is None:
@@ -138,7 +144,7 @@ class PipelineRun(object):
             node_status_info[curr_root_name] = self._pipeline_node_info(
                 run_node_detail_info
             )
-            if run_node_detail_info["Metadata"]["NodeType"] != "Dag":
+            if run_node_detail_info["Metadata"].get("NodeType") != "Dag":
                 return
             for sub_pipeline in run_node_detail_info["Spec"]["Pipelines"]:
                 node_name = "{0}.{1}".format(
@@ -159,18 +165,20 @@ class PipelineRun(object):
             "nodeId": pipeline_info["Metadata"]["NodeId"],
             "status": pipeline_info["StatusInfo"]["Status"],
             "startedAt": pipeline_info["StatusInfo"]["StartedAt"],
-            "finishedAt": pipeline_info["StatusInfo"]["FinishedAt"],
+            "finishedAt": pipeline_info["StatusInfo"].get("FinishedAt", None),
         }
 
     @property
     def run_detail_url(self):
-        return self._session.run_detail_url(run_id=self.run_id)
+        return self._bind_session.run_detail_url(run_id=self.run_id)
 
     def get_run_info(self):
         return self._get_service_client().get_run(self.run_id)
 
     def get_run_node_detail(self, node_id, depth=2):
-        return self._get_service_client().get_node(self.run_id, node_id=node_id, depth=depth)
+        return self._get_service_client().get_node(
+            self.run_id, node_id=node_id, depth=depth
+        )
 
     def get_outputs(
         self, name=None, node_id=None, depth=1, typ=None, page_number=1, page_size=200
@@ -181,7 +189,7 @@ class PipelineRun(object):
 
         if not node_id:
             return
-        outputs = self._session.list_run_outputs(
+        outputs = self._bind_session.list_run_outputs(
             run_id=self.run_id,
             node_id=node_id,
             depth=depth,
@@ -217,11 +225,11 @@ class PipelineRun(object):
         while (
             PipelineRunStatus.is_running(run_info["Status"]) and not run_info["NodeId"]
         ):
-            run_info = self.get_run_info()
             time_elapse = datetime.now() - start_time
             if time_elapse.seconds > timeout:
                 raise TimeoutException("")
             time.sleep(retry_interval)
+            run_info = self.get_run_info()
 
         if run_info.get("NodeId", None):
             return run_info["NodeId"]
@@ -232,6 +240,10 @@ class PipelineRun(object):
         """Wait until the pipeline run stop."""
         start_at = datetime.now()
         run_info = self.get_run_info()
+        node_id = run_info["NodeId"]
+        if not node_id:
+            raise ValueError("Expect NodeId in GetRun response")
+
         run_status = run_info["Status"]
         if run_status == PipelineRunStatus.Initialized:
             raise ValueError(
@@ -253,7 +265,6 @@ class PipelineRun(object):
 
         # Wait for Workflow init.
         print("Wait for run workflow init")
-        node_id = self._wait_for_init()
 
         if show_outputs:
             run_logger = _RunLogger(run_instance=self, node_id=node_id)
@@ -262,6 +273,7 @@ class PipelineRun(object):
 
         prev_status_infos = {}
         root_node_status = run_status
+        log_runners = []
         while PipelineRunStatus.is_running(root_node_status):
             curr_time = datetime.now()
             if timeout and (curr_time - start_at).total_seconds() > timeout:
@@ -272,10 +284,12 @@ class PipelineRun(object):
                     node_fullname not in prev_status_infos
                     and status_info["status"] != PipelineRunStatus.Skipped
                 ):
-                    print("Add Logger Node: %s" % node_fullname)
-                    run_logger.submit(
+                    print("Add Logger Node: %s" % node_fullname, status_info["nodeId"])
+                    log_runner = run_logger.submit(
                         node_id=status_info["nodeId"], node_name=node_fullname
                     )
+                    if log_runner:
+                        log_runners.append(log_runner)
             prev_status_infos = curr_status_infos
             root_node_status = (
                 curr_status_infos[self.name]["status"]
@@ -283,7 +297,13 @@ class PipelineRun(object):
                 else root_node_status
             )
 
+            if root_node_status == PipelineRunStatus.Failed:
+                raise PAIException("PipelineRun failed: run_id=%s" % self.run_id)
+
             time.sleep(2)
+
+        for log_runner in log_runners:
+            _ = log_runner.result()
 
         return self
 
@@ -292,6 +312,20 @@ class PipelineRun(object):
 
     def _wait_with_logger(self, node_id):
         pass
+
+    def _list_node_logs_generator(
+        self,
+        run_id,
+        node_id,
+        page_offset=0,
+        page_size=100,
+    ):
+        return self._bind_session.paiflow_client.list_node_logs_generator(
+            run_id=run_id,
+            node_id=node_id,
+            page_offset=page_offset,
+            page_size=page_size,
+        )
 
 
 class _RunLogger(object):
@@ -314,11 +348,9 @@ class _RunLogger(object):
         if node_id in self.running_nodes:
             return
         self.running_nodes.add(node_id)
-        session = self.run_instance._session
-        run_id = self.run_instance.run_id
 
         while True and self._tail:
-            logs = self.run_instance._get_service_client().list_node_logs_generator(
+            logs = self.run_instance._list_node_logs_generator(
                 run_id=self.run_instance.run_id,
                 node_id=node_id,
                 page_size=page_size,
@@ -344,17 +376,15 @@ class _RunLogger(object):
         self,
         node_id,
         node_name,
-        from_time=None,
-        to_time=None,
         page_size=100,
         page_offset=0,
     ):
-        self.executor.submit(
+        if node_id in self.running_nodes:
+            return
+        return self.executor.submit(
             self.tail,
             node_id=node_id,
             node_name=node_name,
-            from_time=from_time,
-            to_time=to_time,
             page_size=page_size,
             page_offset=page_offset,
         )

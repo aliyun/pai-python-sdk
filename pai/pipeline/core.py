@@ -58,6 +58,7 @@ class Pipeline(OperatorBase):
     def _infer_pipeline_inputs(cls, input):
         pipeline_inputs = set()
         if isinstance(input, PipelineArtifact):
+            print("input: %s, input.from_:%s" % (input, input.from_))
             sources = []
             if input.repeated and input.value:
                 sources = [item for item in input.value]
@@ -122,6 +123,7 @@ class Pipeline(OperatorBase):
 
         # infer the pipeline inputs from step inputs.
         infer_inputs = set()
+        print("visited-steps:", visited_steps)
         for step in visited_steps:
             for ipt in step.inputs:
                 infer_inputs |= cls._infer_pipeline_inputs(ipt)
@@ -129,10 +131,17 @@ class Pipeline(OperatorBase):
         cls._set_step_artifact_count(visited_steps)
 
         if inputs:
-            if len(infer_inputs) != len(inputs) or any(
-                ipt for ipt in inputs if ipt not in infer_inputs
-            ):
-                raise ValueError("please provide complete pipeline inputs list")
+            if len(infer_inputs) != len(inputs):
+                raise ValueError(
+                    "Please provide complete pipeline inputs list: expected=%s, given=%s"
+                    % (len(infer_inputs), len(inputs))
+                )
+
+            unexpected = [ipt.name for ipt in inputs if ipt not in infer_inputs]
+            if unexpected:
+                raise ValueError(
+                    "Do not provide inputs which is not required: %s" % unexpected
+                )
         else:
             inputs = sorted(
                 list(infer_inputs),

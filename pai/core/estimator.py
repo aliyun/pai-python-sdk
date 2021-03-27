@@ -78,7 +78,6 @@ class PipelineEstimator(Estimator):
         manifest=None,
         _compiled_args=False,
         pipeline_id=None,
-        workspace_id=None,
     ):
         """
 
@@ -93,13 +92,13 @@ class PipelineEstimator(Estimator):
         self._session = session or get_default_session()
         self._compiled_args = _compiled_args
         self._operator = SavedOperator(
-            manifest=manifest, pipeline_id=pipeline_id, workspace_id=workspace_id
+            manifest=manifest, pipeline_id=pipeline_id
         )
         super(PipelineEstimator, self).__init__(parameters=parameters)
 
     @classmethod
     def from_pipeline_id(cls, pipeline_id, session, parameters=None):
-        pipeline_info = session.get_pipeline_by_id(pipeline_id)
+        pipeline_info = session.get_pipeline(pipeline_id)
         manifest = yaml.load(pipeline_info["Manifest"], yaml.FullLoader)
         pe = PipelineEstimator(
             session=session,

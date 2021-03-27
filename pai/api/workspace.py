@@ -4,22 +4,6 @@ import six
 
 from pai.api.base import paginate_service_call, BaseClient, BaseTeaClient
 from pai.libs.alibabacloud_aiworkspace20210204.models import ListWorkspacesRequest
-from pai.libs.aliyunsdkaiworkspace.request.v20200814 import (
-    CreateWorkspaceRequest,
-    CreateResourceRequest,
-    CreateTenantRequest,
-    ListCommoditiesRequest,
-    ListResourceGroupsRequest,
-    GetWorkspaceRequest,
-    UpdateWorkspaceRequest,
-    ListSubUsersRequest,
-    ListMembersRequest,
-    CreateMemberRequest,
-    ListPermissionsRequest,
-    GetPermissionRequest,
-    GetTenantRequest,
-    ListResourcesRequest,
-)
 
 
 class WorkspaceClient(BaseTeaClient):

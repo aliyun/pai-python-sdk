@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from functools import wraps
 
 import six
+import yaml
 
 from pai.api.base import paginate_service_call, BaseTeaClient
 from pai.libs.alibabacloud_paiflow20210202.models import (
@@ -135,7 +136,6 @@ class PAIFlowClient(BaseTeaClient):
         )
         return resp.to_map()
 
-    @require_workspace
     def create_run(
         self,
         name,
@@ -157,6 +157,9 @@ class PAIFlowClient(BaseTeaClient):
             )
         if not name:
             raise ValueError("Pipeline run instance need a name.")
+
+        if isinstance(arguments, dict):
+            arguments = yaml.dump(arguments)
 
         request = CreateRunRequest(
             pipeline_id=pipeline_id,
@@ -274,7 +277,7 @@ class PAIFlowClient(BaseTeaClient):
                     page_offset=page_offset, page_size=page_size, **kwargs
                 )
                 if not entities:
-                    raise StopIteration
+                    return
                 for entity in entities:
                     yield entity
                 page_offset = page_size + page_offset
