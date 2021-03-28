@@ -6,6 +6,7 @@ import time
 
 from pai.algo.classifier import LogisticRegression
 from pai.core.job import JobStatus
+from pai.pipeline import PipelineRun
 from tests.integration import BaseIntegTestCase
 
 
@@ -24,6 +25,15 @@ class TestLogisticsRegression(BaseIntegTestCase):
         cls.temp_models.append(model_name)
         return model_name
 
+    @staticmethod
+    def _replace_oss_endpoint(endpoint):
+        rs = endpoint.split(".")
+        if rs[0].endswith("internal"):
+            return ".".join(rs)
+
+        rs[0] = "%s-internal" % rs[0]
+        return ".".join(rs)
+
     def test_sync_train(self):
         model_name = self.gen_temp_model_name()
         lr = LogisticRegression(
@@ -32,7 +42,7 @@ class TestLogisticsRegression(BaseIntegTestCase):
             pmml_gen=True,
             pmml_oss_path="/test/",
             pmml_oss_bucket=self.oss_config.bucket_name,
-            pmml_oss_endpoint=self.oss_config.endpoint,
+            pmml_oss_endpoint=self._replace_oss_endpoint(self.oss_config.endpoint),
             pmml_oss_rolearn=self.oss_config.role_arn,
         )
 

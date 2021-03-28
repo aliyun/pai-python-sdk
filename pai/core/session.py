@@ -134,13 +134,6 @@ class Session(object):
         self._workspace = workspace
 
     def _init_clients(self, ak, ak_secret, region_id):
-        _acs_client = AcsClient(ak=ak, secret=ak_secret, region_id=region_id)
-
-        is_inner = self._is_inner_region(region_id)
-        # self.paiflow_client = ClientFactory.create_paiflow_client(
-        #     _acs_client, _is_inner=is_inner
-        # )
-        #
         self.paiflow_client = ClientFactory.create_paiflow_client(
             access_key_id=ak,
             access_key_secret=ak_secret,
@@ -225,7 +218,9 @@ class Session(object):
         provider = provider or self.provider
 
         pipeline_info, _ = self.paiflow_client.list_pipeline(
-            identifier=identifier, provider=provider, version=version,
+            identifier=identifier,
+            provider=provider,
+            version=version,
             page_size=1,
         )
         if not pipeline_info:
@@ -300,10 +295,10 @@ class Session(object):
                 "Not support argument `pipeline_def` type %s, expected dict, Pipeline or str."
             )
 
-        resp = self.paiflow_client.create_pipeline(
+        pipeline_id = self.paiflow_client.create_pipeline(
             manifest=manifest, workspace_id=workspace.id if workspace else None
         )
-        return resp["Data"]["PipelineId"]
+        return pipeline_id
 
     def describe_pipeline(self, pipeline_id):
         """Get detail information of pipeline by pipelineId.

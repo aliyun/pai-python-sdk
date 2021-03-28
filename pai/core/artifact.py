@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from pai.pipeline.types import LocationArtifactMetadata, DataType
 from pai.pipeline.types.artifact import LocationArtifactValue
 
@@ -59,8 +61,9 @@ class ArchivedArtifact(object):
         Returns:
             ArchivedArtifact: ArtifactInfo instance.
         """
-
         name = output["Name"]
+        pprint("output")
+        pprint(output)
         metadata = LocationArtifactMetadata.from_dict(output["Info"]["metadata"])
         value = LocationArtifactValue.from_resource(
             output["Info"]["value"], metadata=metadata

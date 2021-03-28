@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 from datetime import datetime
+from pprint import pprint
+
 from pai.core.engine import ComputeEngineType, ComputeEngine, ResourceGroup
 
 SubUserInfo = namedtuple("SubUserInfo", ["user_id", "name"])
@@ -71,6 +73,9 @@ class Workspace(object):
 
     @classmethod
     def deserialize(cls, obj_dict):
+        print(type(obj_dict))
+        pprint("obj_dict: ")
+        pprint(obj_dict)
 
         return cls(
             id=obj_dict["WorkspaceId"],
@@ -109,7 +114,9 @@ class Workspace(object):
         ws_info = next(
             (
                 ws
-                for ws in cls._get_service_client().list(name=name)
+                for ws in cls._get_service_client().list_workspace_generator(
+                    workspace_name=name, page_size=1
+                )
                 if ws["WorkspaceName"] == name
             ),
             None,
@@ -119,9 +126,11 @@ class Workspace(object):
         return cls.deserialize(ws_info)
 
     @classmethod
-    def list(cls, name=None, sorted_by=None, sorted_sequence=None):
-        for ws in cls._get_service_client().list_workspaces(
-            name=name, sorted_by=sorted_by, sorted_sequence=sorted_sequence
+    def list(cls, name=None, sort_by=None, order=None):
+        for ws in cls._get_service_client().list_workspace_generator(
+            workspace_name=name,
+            sort_by=sort_by,
+            order=order,
         ):
             yield cls.deserialize(ws)
 

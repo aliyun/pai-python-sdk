@@ -22,27 +22,5 @@ class TestWorkspace(BaseIntegTestCase):
 
     def test_get_by_name(self):
         ws = Workspace.get_by_name(name=self.default_workspace.name)
-        self.assertEqual(ws, self.default_workspace)
-
-    def test_list_sub_users(self):
-        sub_users = list(
-            Workspace.list_sub_users(exclude_workspace_id=self.default_workspace.id)
-        )
-        self.assertTrue(len(sub_users) > 0)
-
-    def test_list_members(self):
-        self.assertTrue(
-            len([member for member in self.default_workspace.list_member()]) > 0
-        )
-
-    def test_get_tenant(self):
-        self.assertIsNotNone(self.default_workspace.get_tenant())
-
-    def test_get_compute_engine(self):
-        engines = list(
-            iter_with_limit(self.default_workspace.list_compute_engines(), 10)
-        )
-        self.assertTrue(0 <= len(engines) <= 10)
-
-    def test_get_resource_groups(self):
-        self.assertTrue(len(Workspace.list_resource_groups()) > 0)
+        self.assertEqual(ws.name, self.default_workspace.name)
+        self.assertEqual(ws.id, self.default_workspace.id)

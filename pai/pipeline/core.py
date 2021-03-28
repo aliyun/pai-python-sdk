@@ -58,7 +58,6 @@ class Pipeline(OperatorBase):
     def _infer_pipeline_inputs(cls, input):
         pipeline_inputs = set()
         if isinstance(input, PipelineArtifact):
-            print("input: %s, input.from_:%s" % (input, input.from_))
             sources = []
             if input.repeated and input.value:
                 sources = [item for item in input.value]
@@ -73,7 +72,7 @@ class Pipeline(OperatorBase):
                     and not item.artifact.parent
                 ):
                     pipeline_inputs.add(item.artifact)
-        elif input.from_ and input.from_.parent:
+        elif input.from_ and not input.from_.parent:
             pipeline_inputs.add(input.from_)
         return pipeline_inputs
 
@@ -102,7 +101,7 @@ class Pipeline(OperatorBase):
 
         outputs = outputs or []
         if isinstance(outputs, dict):
-            outputs = outputs.values()
+            outputs = list(outputs.values())
 
         steps = steps or []
         visited_steps = set(
@@ -123,7 +122,6 @@ class Pipeline(OperatorBase):
 
         # infer the pipeline inputs from step inputs.
         infer_inputs = set()
-        print("visited-steps:", visited_steps)
         for step in visited_steps:
             for ipt in step.inputs:
                 infer_inputs |= cls._infer_pipeline_inputs(ipt)
@@ -149,6 +147,7 @@ class Pipeline(OperatorBase):
             )
         sorted_steps = cls._topo_sort(visited_steps)
         cls._check_steps(steps)
+        print("inputs", inputs, outputs, type(outputs))
         cls._check_inputs_outputs_name_conflict(inputs, outputs)
 
         return sorted_steps, inputs, outputs

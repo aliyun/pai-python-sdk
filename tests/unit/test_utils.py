@@ -60,7 +60,7 @@ class TestUtils(BaseUnitTestCase):
             tar_result = tar_source_files(source_files, temp)
             self.assertTrue(tarfile.is_tarfile(tar_result))
 
-            expected = ["run.py", "utils.py", "requirements.txt"]
+            expected = ["main.py", "utils.py", "requirements.txt"]
 
             with tarfile.open(tar_result, "r") as result:
                 self.assertEqual(sorted(result.getnames()), sorted(expected))
@@ -68,7 +68,7 @@ class TestUtils(BaseUnitTestCase):
             os.remove(temp)
 
     def test_file_checksum(self):
-        checksum = file_checksum(os.path.join(SCRIPT_DIR_PATH, "run.py"))
+        checksum = file_checksum(os.path.join(SCRIPT_DIR_PATH, "main.py"))
         self.assertTrue(len(checksum), 32)
 
     def test_to_abs_path(self):
@@ -123,23 +123,23 @@ class TestUtils(BaseUnitTestCase):
         cases = [
             {
                 "name": "case1",
-                "input": "/home/root/run.py",
-                "expected": "run.py",
+                "input": "/home/root/main.py",
+                "expected": "main.py",
             },
             {
                 "name": "case2",
-                "input": "run.py",
-                "expected": "run.py",
+                "input": "main.py",
+                "expected": "main.py",
             },
             {
                 "name": "case3",
-                "input": "relative/path/to/run.py",
-                "expected": "run.py",
+                "input": "relative/path/to/main.py",
+                "expected": "main.py",
             },
             {
                 "name": "case4",
-                "input": "oss://bucket_name/path_to_file/run.py",
-                "expected": "run.py",
+                "input": "oss://bucket_name/path_to_file/main.py",
+                "expected": "main.py",
             },
         ]
 

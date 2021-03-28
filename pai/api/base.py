@@ -130,8 +130,8 @@ class BaseTeaClient(object):
     @staticmethod
     def to_generator(method):
         def f(**kwargs):
-            page_size = kwargs.pop("page_size", 20)
-            page_number = kwargs.pop("page_number", 1)
+            page_size = kwargs.pop("page_size", None) or 20
+            page_number = kwargs.pop("page_number", None) or 1
 
             while True:
                 entities, _ = method(

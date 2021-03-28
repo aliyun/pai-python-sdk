@@ -94,7 +94,7 @@ class PAIFlowClient(BaseTeaClient):
             self.base_client.create_pipeline,
             request=request,
         )
-        return resp.body.pipeline_id
+        return resp.pipeline_id
 
     def delete_pipeline(self, pipeline_id):
         self._call_service_with_exception(
@@ -311,7 +311,7 @@ class PAIFlowClient(BaseTeaClient):
             run_id=run_id,
             node_id=node_id,
             request=request,
-        )
+        ).to_map()
 
         outputs, total_count = resp["Outputs"], resp["TotalCount"]
         return outputs, total_count

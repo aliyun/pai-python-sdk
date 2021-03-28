@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from pprint import pprint
 
 import logging
 import time
@@ -127,7 +126,9 @@ class PipelineRun(object):
             if cur_depth > max_depth:
                 return
             run_node_detail_info = self._get_service_client().get_node(
-                self.run_id, curr_node_id
+                self.run_id,
+                curr_node_id,
+                depth=2,
             )
             if (
                 not run_node_detail_info
@@ -144,9 +145,11 @@ class PipelineRun(object):
             node_status_info[curr_root_name] = self._pipeline_node_info(
                 run_node_detail_info
             )
-            if run_node_detail_info["Metadata"].get("NodeType") != "Dag":
+
+            pipelines = run_node_detail_info["Spec"].get("Pipelines", [])
+            if not pipelines:
                 return
-            for sub_pipeline in run_node_detail_info["Spec"]["Pipelines"]:
+            for sub_pipeline in pipelines:
                 node_name = "{0}.{1}".format(
                     curr_root_name, sub_pipeline["Metadata"]["Name"]
                 )
@@ -180,28 +183,28 @@ class PipelineRun(object):
             self.run_id, node_id=node_id, depth=depth
         )
 
-    def get_outputs(
-        self, name=None, node_id=None, depth=1, typ=None, page_number=1, page_size=200
-    ):
+    def get_outputs(self, name=None, node_id=None, depth=1, type=None):
         if not node_id:
             run_info = self.get_run_info()
             node_id = run_info["NodeId"]
 
         if not node_id:
             return
-        outputs = self._bind_session.list_run_outputs(
-            run_id=self.run_id,
-            node_id=node_id,
-            depth=depth,
-            name=name,
-            typ=typ,
-            page_number=page_number,
-            page_size=page_size,
-        )
+        client = self._bind_session.paiflow_client or type(self)._get_service_client()
+        outputs = [
+            output
+            for output in client.list_node_outputs_generator(
+                name=name,
+                node_id=node_id,
+                run_id=self.run_id,
+                depth=depth,
+                type=type,
+            )
+        ]
 
         logger.info(
             "RunInstance outputs: run_id:%s, node_id:%s, outputs:%s"
-            % (self.run_id, node_id, outputs)
+            % (self.run_id, node_id, len(outputs))
         )
         return [ArchivedArtifact.deserialize(output) for output in outputs]
 

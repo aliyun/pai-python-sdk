@@ -125,9 +125,7 @@ class SavedOperator(OperatorBase):
         )
 
     @classmethod
-    def list(
-        cls, identifier=None, provider=None, version=None, workspace_id=None
-    ):
+    def list(cls, identifier=None, provider=None, version=None, workspace_id=None):
         """List the SavedOperator in PAI
 
         Search the pipeline operator available in remote PAI service. The method return a
@@ -216,7 +214,7 @@ class SavedOperator(OperatorBase):
 
         """
         client = cls._get_service_client()
-        pipeline_info = client.get_pipeline(pipeline_id=pipeline_id)["Data"]
+        pipeline_info = client.get_pipeline_schema(pipeline_id=pipeline_id)
         return cls.deserialize(pipeline_info)
 
     def save(self, identifier=None, version=None):

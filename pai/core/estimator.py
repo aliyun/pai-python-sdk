@@ -91,9 +91,7 @@ class PipelineEstimator(Estimator):
         """
         self._session = session or get_default_session()
         self._compiled_args = _compiled_args
-        self._operator = SavedOperator(
-            manifest=manifest, pipeline_id=pipeline_id
-        )
+        self._operator = SavedOperator(manifest=manifest, pipeline_id=pipeline_id)
         super(PipelineEstimator, self).__init__(parameters=parameters)
 
     @classmethod

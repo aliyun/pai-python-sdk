@@ -151,13 +151,24 @@ class TestArtifact(BaseUnitTestCase):
                     "value": [
                         {
                             "name": "input1_0",
-                            "value": '{"location": {"project": "pai_online_project", "table": '
-                            '"wumai_data"}}',
+                            "value": {
+                                "metadata": {
+                                    "type": {"DataSet": {"locationType": "OSS"}}
+                                },
+                                "value": '{"location": {"project": "pai_online_project", "table": '
+                                '"wumai_data"}}',
+                            },
                         },
                         {
                             "name": "input1_1",
-                            "value": '{"location": {"project": "pai_online_project", "table": '
-                            '"breast_cancer_data"}}',
+                            "value": {
+                                "metadata": {
+                                    "type": {"DataSet": {"locationType": "OSS"}}
+                                },
+                                "value": '{"location": {"project": '
+                                '"pai_online_project", "table": '
+                                '"breast_cancer_data"}}',
+                            },
                         },
                     ],
                 },
