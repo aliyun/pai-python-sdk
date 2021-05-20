@@ -2,9 +2,6 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 from datetime import datetime
-from pprint import pprint
-
-from pai.core.engine import ComputeEngineType, ComputeEngine, ResourceGroup
 
 SubUserInfo = namedtuple("SubUserInfo", ["user_id", "name"])
 
@@ -61,10 +58,6 @@ class Workspace(object):
         return isinstance(other, type(self)) and self.id == other.id
 
     @classmethod
-    def get_tenant(cls):
-        return Tenant.create()
-
-    @classmethod
     def _get_service_client(cls):
         from pai.core.session import get_default_session
 
@@ -73,10 +66,6 @@ class Workspace(object):
 
     @classmethod
     def deserialize(cls, obj_dict):
-        print(type(obj_dict))
-        pprint("obj_dict: ")
-        pprint(obj_dict)
-
         return cls(
             id=obj_dict["WorkspaceId"],
             name=obj_dict["WorkspaceName"],
@@ -167,26 +156,6 @@ class Workspace(object):
     def delete_member(self, member_id):
         self._get_service_client().delete_member(self.id, member_id)
 
-    def list_compute_engines(
-        self, name=None, engine_type=ComputeEngineType.MaxCompute, **kwargs
-    ):
-        obj_dicts = self._get_service_client().list_compute_engines(
-            name=name, workspace_id=self.id, engine_type=engine_type, **kwargs
-        )
-
-        for obj_dict in obj_dicts:
-            yield ComputeEngine.deserialize(obj_dict)
-
-    @classmethod
-    def list_resource_groups(cls):
-        tenant = cls.get_tenant()
-        rs = cls._get_service_client().list_resource_groups(tenant.id)
-        return [ResourceGroup.deserialize(obj_dict) for obj_dict in rs["Data"]]
-
-    @classmethod
-    def list_commodities(cls):
-        return cls._get_service_client().list_commodities()
-
 
 class WorkspaceMember(object):
     def __init__(
@@ -227,29 +196,3 @@ class WorkspaceMember(object):
         )
 
 
-class Tenant(object):
-    def __init__(self, tenant_id, resource_limits):
-        self.id = tenant_id
-        self.resource_limits = resource_limits
-
-    def __str__(self):
-        return "%s:%s" % (type(self), self.id)
-
-    @classmethod
-    def deserialize(cls, obj_dict):
-        return cls(
-            tenant_id=obj_dict["TenantId"], resource_limits=obj_dict["ResourceLimits"]
-        )
-
-    @classmethod
-    def _get_service_client(cls):
-        from pai.core.session import get_default_session
-
-        session = get_default_session()
-        return session.ws_client
-
-    @classmethod
-    def create(cls):
-        client = cls._get_service_client()
-        rs = client.create_tenant()
-        return cls.deserialize(rs["Data"])
