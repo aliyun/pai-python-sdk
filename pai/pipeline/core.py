@@ -138,7 +138,7 @@ class Pipeline(OperatorBase):
             unexpected = [ipt.name for ipt in inputs if ipt not in infer_inputs]
             if unexpected:
                 raise ValueError(
-                    "Do not provide inputs which is not required: %s" % unexpected
+                    "Do not provide inputs which is not used in pipeline: %s" % unexpected
                 )
         else:
             inputs = sorted(
@@ -147,7 +147,6 @@ class Pipeline(OperatorBase):
             )
         sorted_steps = cls._topo_sort(visited_steps)
         cls._check_steps(steps)
-        print("inputs", inputs, outputs, type(outputs))
         cls._check_inputs_outputs_name_conflict(inputs, outputs)
 
         return sorted_steps, inputs, outputs
