@@ -27,4 +27,3 @@ class TestWorkspace(BaseIntegTestCase):
         ws = Workspace.get_by_name(name=self.default_workspace.name)
         self.assertEqual(ws.name, self.default_workspace.name)
         self.assertEqual(ws.id, self.default_workspace.id)
-

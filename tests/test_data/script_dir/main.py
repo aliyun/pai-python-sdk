@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import time
 import sys
 import argparse
 from utils import print_hello
@@ -14,5 +15,7 @@ if __name__ == "__main__":
     print("Param Bar is", args.bar)
 
     print("This message is from stderr", file=sys.stderr)
+
+    time.sleep(10)
 
     print_hello()

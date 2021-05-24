@@ -14,6 +14,9 @@ from Tea.exceptions import TeaException
 
 DefaultPageSize = 50
 
+DefaultGeneratorApiCallInterval = 0.5
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -130,7 +133,7 @@ class BaseTeaClient(object):
     @staticmethod
     def to_generator(method):
         def f(**kwargs):
-            page_size = kwargs.pop("page_size", None) or 20
+            page_size = kwargs.pop("page_size", None) or 100
             page_number = kwargs.pop("page_number", None) or 1
 
             while True:
@@ -142,6 +145,6 @@ class BaseTeaClient(object):
                 for entity in entities:
                     yield entity
                 page_number += 1
-                time.sleep(0.5)
+                time.sleep(DefaultGeneratorApiCallInterval)
 
         return f

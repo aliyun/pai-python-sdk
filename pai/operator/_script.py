@@ -17,7 +17,7 @@ from pai.common.utils import (
 from pai.core.session import get_default_session
 from pai.operator._container import ContainerOperator, LocalContainerRun
 
-ScriptOperatorImage = "registry.{region_id}.aliyuncs.com/paiflow-core/base:1.0.0"
+ScriptOperatorImage = "registry.{region_id}.aliyuncs.com/paiflow-public/python3:v1.0.0"
 
 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND = "launch"
 PAI_SOURCE_CODE_ENV_KEY = "PAI_SOURCE_CODE_URL"

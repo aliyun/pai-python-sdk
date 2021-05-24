@@ -119,6 +119,13 @@ class SavedOperator(OperatorBase):
         pipeline_info = session.get_pipeline(
             identifier=identifier, provider=provider, version=version
         )
+        if not pipeline_info:
+            raise ValueError(
+                "Not found pipeline with specific information: identifier={0}, provider={1}, version={2}".format(
+                    identifier, provider, version
+                )
+            )
+
         return cls(
             manifest=pipeline_info["Manifest"],
             pipeline_id=pipeline_info["PipelineId"],

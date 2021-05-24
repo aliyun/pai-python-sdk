@@ -3,8 +3,10 @@
 
 ## v0.3.0
 
-- feature: Support repeated artifact in Pipeline.
+- feature: Support repeated artifact in Pipeline, add class MetadataBuilder;
+- fix: Fix passing raw artifact value.
 - refactor: Use PaiFlow/AIWorkspace Tea SDK instead of POP SDK.
+- remove experimental Estimator/Transformer API.
 
 ## v0.2.0
 

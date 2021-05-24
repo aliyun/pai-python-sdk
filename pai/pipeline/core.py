@@ -138,7 +138,8 @@ class Pipeline(OperatorBase):
             unexpected = [ipt.name for ipt in inputs if ipt not in infer_inputs]
             if unexpected:
                 raise ValueError(
-                    "Do not provide inputs which is not used in pipeline: %s" % unexpected
+                    "Do not provide inputs which is not used in pipeline: %s"
+                    % unexpected
                 )
         else:
             inputs = sorted(

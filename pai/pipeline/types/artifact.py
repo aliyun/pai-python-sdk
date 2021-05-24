@@ -18,6 +18,27 @@ from pai.common.utils import is_iterable
 from pai.pipeline.types.variable import PipelineVariable
 
 
+class MetadataBuilder(object):
+    @staticmethod
+    def maxc_table():
+        return LocationArtifactMetadata(
+            data_type=DataType.DataSet,
+            location_type=LocationType.MaxComputeTable,
+        )
+
+    @staticmethod
+    def oss_dataset():
+        return LocationArtifactMetadata(
+            data_type=DataType.DataSet, location_type=LocationType.OSS
+        )
+
+    @staticmethod
+    def maxc_offlinemodel():
+        return LocationArtifactMetadata(
+            data_type=DataType.Model, location_type=LocationType.MaxComputeOfflineModel
+        )
+
+
 class DataType(object):
     DataSet = "DataSet"
     Model = "Model"
@@ -183,7 +204,10 @@ class PipelineArtifact(PipelineVariable):
             ]
             argument["value"] = results
         else:
-            argument["value"] = self._translate_value(arg)
+            art_value = self._translate_value(arg)
+            argument["value"] = art_value["value"]
+            argument["metadata"] = art_value["metadata"]
+
         return argument
 
     def _translate_value(self, val):

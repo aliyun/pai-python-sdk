@@ -194,5 +194,3 @@ class WorkspaceMember(object):
             if obj_dict.get("CreateTime")
             else None,
         )
-
-

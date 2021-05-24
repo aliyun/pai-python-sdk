@@ -38,9 +38,7 @@ class ClientConfig(object):
 class ClientFactory(object):
     @staticmethod
     def _is_inner_client(acs_client):
-        if acs_client.get_region_id() == "center":
-            return True
-        return False
+        return acs_client.get_region_id() == "center"
 
     @classmethod
     def create_paiflow_client(

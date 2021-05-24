@@ -6,6 +6,7 @@ from .artifact import (
     LocationType,
     DataType,
     ModelType,
+    MetadataBuilder,
 )
 from .parameter import PipelineParameter, ParameterType
 from .spec import InputsSpec, OutputsSpec, IO_TYPE_OUTPUTS, IO_TYPE_INPUTS
@@ -20,4 +21,5 @@ __all__ = [
     "ParameterType",
     "InputsSpec",
     "OutputsSpec",
+    "MetadataBuilder",
 ]

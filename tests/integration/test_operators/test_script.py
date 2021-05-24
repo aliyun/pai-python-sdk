@@ -1,28 +1,24 @@
-import contextlib
-
 from unittest import skip
 
+import contextlib
 import os
 
+from pai.common.utils import gen_temp_table
 from pai.operator import (
     ScriptOperator,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
 )
-
-from pai.pipeline.types import (
-    PipelineArtifact,
-    LocationArtifactMetadata,
-    DataType,
-    LocationType,
-)
+from pai.pipeline.types import PipelineArtifact, MetadataBuilder
 from pai.pipeline.types.artifact import MaxComputeTableArtifact
 from pai.pipeline.types.parameter import (
     PipelineParameter,
 )
 from tests.integration import BaseIntegTestCase
-from tests.test_data import SCRIPT_DIR_PATH, MAXC_SQL_TEMPLATE_SCRIPT_PATH
-from pai.common.utils import gen_temp_table
+from tests.test_data import (
+    SCRIPT_DIR_PATH,
+    MAXC_SQL_TEMPLATE_SCRIPT_PATH,
+)
 
 
 @contextlib.contextmanager
@@ -110,40 +106,25 @@ class TestScriptOperator(BaseIntegTestCase):
                 PipelineParameter("lifeCycle", typ=int, default=7),
                 PipelineArtifact(
                     "t1",
-                    LocationArtifactMetadata(
-                        data_type=DataType.DataSet,
-                        location_type=LocationType.MaxComputeTable,
-                    ),
+                    metadata=MetadataBuilder.maxc_table(),
                 ),
                 PipelineArtifact(
                     "t2",
-                    LocationArtifactMetadata(
-                        data_type=DataType.DataSet,
-                        location_type=LocationType.MaxComputeTable,
-                    ),
+                    metadata=MetadataBuilder.maxc_table(),
                 ),
                 PipelineArtifact(
                     "t3",
-                    LocationArtifactMetadata(
-                        data_type=DataType.DataSet,
-                        location_type=LocationType.MaxComputeTable,
-                    ),
+                    metadata=MetadataBuilder.maxc_table(),
                 ),
                 PipelineArtifact(
                     "t4",
-                    LocationArtifactMetadata(
-                        data_type=DataType.DataSet,
-                        location_type=LocationType.MaxComputeTable,
-                    ),
+                    metadata=MetadataBuilder.maxc_table(),
                 ),
             ],
             outputs=[
                 PipelineArtifact(
                     "outputTable",
-                    metadata=LocationArtifactMetadata(
-                        data_type=DataType.DataSet,
-                        location_type=LocationType.MaxComputeTable,
-                    ),
+                    metadata=MetadataBuilder.maxc_table(),
                     value=MaxComputeTableArtifact.value_from_param("outputTable"),
                 )
             ],

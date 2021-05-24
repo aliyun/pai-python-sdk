@@ -7,9 +7,7 @@ from pai.common.utils import gen_run_node_scoped_placeholder
 from pai.pipeline import PipelineRunStatus, PipelineStep
 from pai.pipeline.core import Pipeline
 from pai.pipeline.types.artifact import (
-    DataType,
-    LocationType,
-    LocationArtifactMetadata,
+    MetadataBuilder,
     PipelineArtifact,
 )
 from pai.pipeline.types.parameter import ParameterType, PipelineParameter
@@ -30,10 +28,7 @@ class TestAlgo(BaseIntegTestCase):
             execution = PipelineParameter("execution", ParameterType.Map)
             dataset_input = PipelineArtifact(
                 "dataset-table",
-                metadata=LocationArtifactMetadata(
-                    data_type=DataType.DataSet,
-                    location_type=LocationType.MaxComputeTable,
-                ),
+                metadata=MetadataBuilder.maxc_table(),
                 required=True,
             )
 
@@ -207,6 +202,7 @@ class TestAlgo(BaseIntegTestCase):
                 "pmml_oss_endpoint": pmml_oss_endpoint,
                 "dataset-table": dataset.to_url(),
             },
+            wait=True,
         )
 
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
