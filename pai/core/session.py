@@ -80,6 +80,7 @@ def setup_default_session(
         workspace = Workspace.get_by_name(name=workspace_name)
         if not workspace:
             raise ValueError("Workspace not found, workspace_name=%s" % workspace_name)
+        session.set_workspace(workspace=workspace)
 
     return session
 
