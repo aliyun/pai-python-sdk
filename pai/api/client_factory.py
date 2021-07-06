@@ -44,10 +44,6 @@ class ClientFactory(object):
     def create_paiflow_client(
         cls, access_key_id, access_key_secret, region_id, endpoint=None
     ):
-        from pai.libs.alibabacloud_paiflow20210202.client import Client
-
-        if not endpoint:
-            endpoint = cls.build_paiflow_endpoint(region_id=region_id)
 
         config = Config(
             access_key_id=access_key_id,
@@ -55,7 +51,12 @@ class ClientFactory(object):
             region_id=region_id,
             endpoint=endpoint,
         )
-        return PAIFlowClient(base_client=Client(config))
+        return PAIFlowClient(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region_id=region_id,
+            endpoint=endpoint,
+        )
 
     @classmethod
     def create_sts_client(cls, acs_client):
@@ -65,19 +66,12 @@ class ClientFactory(object):
     def create_workspace_client(
         cls, access_key_id, access_key_secret, region_id, endpoint=None
     ):
-        from pai.libs.alibabacloud_aiworkspace20210204.client import Client
-
-        if not endpoint:
-            endpoint = cls.build_workspace_endpoint(region_id=region_id)
-
-        config = Config(
+        return WorkspaceClient(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             region_id=region_id,
             endpoint=endpoint,
         )
-
-        return WorkspaceClient(base_client=Client(config))
 
     @classmethod
     def build_workspace_endpoint(cls, region_id):

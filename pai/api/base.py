@@ -8,6 +8,8 @@ import logging
 
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
 
+from alibabacloud_tea_openapi.models import Config
+
 from pai.core.exception import ServiceCallException
 
 from Tea.exceptions import TeaException
@@ -89,9 +91,6 @@ class BaseClient(object):
     def region_id(self):
         return self._acs_client.get_region_id()
 
-    def _get_endpoint(self):
-        pass
-
     def _get_product(self):
         pass
 
@@ -120,8 +119,41 @@ class BaseClient(object):
 
 
 class BaseTeaClient(object):
-    def __init__(self, base_client):
-        self.base_client = base_client
+
+    _ENV_SERVICE_ENDPOINT_KEY = None
+    _PRODUCT_NAME = None
+
+    def __init__(
+        self,
+        access_key_id,
+        access_key_secret,
+        client_cls,
+        region_id=None,
+        endpoint=None,
+    ):
+        if endpoint is None:
+            endpoint = type(self)._get_endpoint(region_id=region_id)
+
+        config = Config(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region_id=region_id,
+            endpoint=endpoint,
+        )
+        self.base_client = client_cls(config)
+
+    @classmethod
+    def _get_endpoint(cls, region_id):
+        if cls._ENV_SERVICE_ENDPOINT_KEY and os.environ.get(
+            cls._ENV_SERVICE_ENDPOINT_KEY
+        ):
+            return os.environ.get(cls._ENV_SERVICE_ENDPOINT_KEY)
+        if not region_id or not cls._PRODUCT_NAME:
+            raise ValueError(
+                "Please provide region_id and product_name to build service endpoint: region_id=%s, product_name=%s"
+                % (region_id, cls._PRODUCT_NAME)
+            )
+        return "{}.{}.aliyuncs.com".format(cls._PRODUCT_NAME.lower(), region_id)
 
     def _call_service_with_exception(self, client_method, **kwargs):
         try:

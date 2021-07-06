@@ -5,7 +5,8 @@ from functools import wraps
 import six
 import yaml
 
-from pai.api.base import paginate_service_call, BaseTeaClient
+from pai.api.base import BaseTeaClient
+from pai.libs.alibabacloud_paiflow20210202.client import Client
 from pai.libs.alibabacloud_paiflow20210202.models import (
     GetNodeRequest,
     CreatePipelineRequest,
@@ -33,29 +34,23 @@ def require_workspace(f):
 
 class PAIFlowClient(BaseTeaClient):
 
-    _ENV_SERVICE_ENDPOINT_KEY = "ALIPAI_PAIFLOW_ENDPOINT"
+    _ENV_SERVICE_ENDPOINT_KEY = "PAI_PAIFLOW_SERVICE_ENDPOINT"
 
-    def __init__(self, base_client):
+    _PRODUCT_NAME = "paiflow"
+
+    def __init__(self, access_key_id, access_key_secret, region_id=None, endpoint=None):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
         Args:
             base_client (pai.libs.alibabacloud_paiflow20210202.client.Client):
         """
-        super(PAIFlowClient, self).__init__(base_client=base_client)
-
-    def _get_endpoint(self):
-        if self._endpoint:
-            return self._endpoint
-        if self._inner:
-            return "paiflowinner-share.aliyuncs.com"
-        else:
-            return "paiflow.{region_id}.aliyuncs.com".format(region_id=self.region_id)
-
-    def _get_product(self):
-        if self._inner:
-            return "PAIFlowInner"
-        else:
-            return "PAIFlow"
+        super(PAIFlowClient, self).__init__(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            client_cls=Client,
+            region_id=region_id,
+            endpoint=endpoint,
+        )
 
     def get_pipeline_schema(self, pipeline_id):
         resp = self._call_service_with_exception(

@@ -1,27 +1,27 @@
 from __future__ import absolute_import
 
-import six
-
-from pai.api.base import paginate_service_call, BaseClient, BaseTeaClient
+from pai.api.base import BaseTeaClient
 from pai.libs.alibabacloud_aiworkspace20210204.models import (
     ListWorkspacesRequest,
-    ListResourcesRequest,
-    ListMembersRequest,
-    ListProductsRequest,
-    ListOperationLogsRequest,
     CreateWorkspaceRequest,
-    CreateWorkspaceResourceRequest,
-    CreateMemberRequest,
-    DeleteMembersRequest,
 )
+
+from pai.libs.alibabacloud_aiworkspace20210204.client import Client
 
 
 class WorkspaceClient(BaseTeaClient):
 
-    _ENV_SERVICE_ENDPOINT_KEY = "ALIPAI_AIWORKSPACE_ENDPOINT"
+    _ENV_SERVICE_ENDPOINT_KEY = "PAI_AIWORKSPACE_SERVICE_ENDPOINT"
+    _PRODUCT_NAME = "aiworkspace"
 
-    def __init__(self, base_client):
-        super(WorkspaceClient, self).__init__(base_client=base_client)
+    def __init__(self, access_key_id, access_key_secret, region_id=None, endpoint=None):
+        super(WorkspaceClient, self).__init__(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region_id=region_id,
+            client_cls=Client,
+            endpoint=endpoint,
+        )
 
     def list_workspace(
         self,
@@ -77,19 +77,6 @@ class WorkspaceClient(BaseTeaClient):
             option=option,
             verbose=verbose,
         )
-
-    def _get_endpoint(self):
-        if self._endpoint:
-            return self._endpoint
-        elif self._inner:
-            return "aiworkspaceinner-inner.aliyuncs.com"
-        else:
-            return "aiworkspace.{region_id}.aliyuncs.com".format(
-                region_id=self.region_id
-            )
-
-    def _get_product(self):
-        return "AIWorkSpace"
 
     def create(self, name, display_name=None, description=None, env_types=None):
         request = CreateWorkspaceRequest(
