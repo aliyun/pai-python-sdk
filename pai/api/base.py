@@ -123,6 +123,8 @@ class BaseTeaClient(object):
     _ENV_SERVICE_ENDPOINT_KEY = None
     _PRODUCT_NAME = None
 
+    _inner_region_id = "center"
+
     def __init__(
         self,
         access_key_id,
@@ -153,6 +155,9 @@ class BaseTeaClient(object):
                 "Please provide region_id and product_name to build service endpoint: region_id=%s, product_name=%s"
                 % (region_id, cls._PRODUCT_NAME)
             )
+
+        if region_id == cls._inner_region_id:
+            return "{}inner-share.aliyuncs.com".format(cls._PRODUCT_NAME.lower())
         return "{}.{}.aliyuncs.com".format(cls._PRODUCT_NAME.lower(), region_id)
 
     def _call_service_with_exception(self, client_method, **kwargs):

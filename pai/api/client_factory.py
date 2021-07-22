@@ -45,12 +45,6 @@ class ClientFactory(object):
         cls, access_key_id, access_key_secret, region_id, endpoint=None
     ):
 
-        config = Config(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region_id=region_id,
-            endpoint=endpoint,
-        )
         return PAIFlowClient(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,

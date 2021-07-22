@@ -549,9 +549,11 @@ class Session(object):
         resp = self.paiflow_client.start_run(run_id)
         return resp["Data"]
 
-    def run_detail_url(self, run_id):
-        return (
-            "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
+    def run_detail_url(self, run_id, is_inner=False):
+        if not is_inner:
+            return "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
                 console_host=self.console_host, region_id=self.region_id, run_id=run_id
             )
+        return "https://pai-next.alibaba-inc.com/#/studio/task/detail/{run_id}".format(
+            run_id=run_id
         )
