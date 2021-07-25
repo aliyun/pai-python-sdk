@@ -363,16 +363,11 @@ class Session(object):
             workspace_id=workspace.id if workspace else None,
         )
 
-        if not self._is_inner:
-            print(
-                "Create pipeline run success (run_id: {run_id}), please visit the link below to"
-                " view the run detail.".format(run_id=run_id)
-            )
-            print(self.run_detail_url(run_id))
-        else:
-            print(
-                "Create pipeline run success (run_id: {run_id})".format(run_id=run_id)
-            )
+        print(
+            "Create pipeline run success (run_id: {run_id}), please visit the link below to"
+            " view the run detail.".format(run_id=run_id)
+        )
+        print(self.run_detail_url(run_id, is_inner=self._is_inner))
 
         return run_id
 

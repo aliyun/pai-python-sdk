@@ -67,6 +67,10 @@ class PublicMaxComputeTableDataSet(object):
             type(self).default_dataset_project, self.table_name
         )
 
+    @classmethod
+    def set_dataset_project(cls, dataset_project):
+        cls.default_dataset_project = dataset_project
+
 
 class BaseIntegTestCase(unittest.TestCase):
     """
@@ -137,12 +141,11 @@ class BaseIntegTestCase(unittest.TestCase):
 
         cls.pai_service_config, cls.oss_config, cls.maxc_config = cls.load_test_config()
 
-        from pai.core.workspace import Workspace
-
-        Workspace.list()
-
         cls.oss_bucket = cls._init_oss_bucket()
         cls.default_session = cls._setup_test_session()
+        if cls.default_session._is_inner:
+            PublicMaxComputeTableDataSet.set_dataset_project("pai_inner_project")
+
         cls.odps_client = cls._init_maxc_client()
 
     @classmethod
