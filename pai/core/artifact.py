@@ -1,5 +1,5 @@
-from pai.pipeline.types import LocationArtifactMetadata, DataType
-from pai.pipeline.types.artifact import LocationArtifactValue
+from pai.operator.types.artifact import LocationArtifactMetadata, DataType
+from pai.operator.types.artifact import LocationArtifactValue
 
 
 class ArchivedArtifact(object):

@@ -1,20 +1,20 @@
 from pprint import pprint
 
-from pai.pipeline import PipelineParameter
+from pai.operator.types import PipelineParameter
 from pai.operator import (
     ScriptOperator,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
 )
-from pai.pipeline.types import (
+from pai.operator.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
     DataType,
     LocationType,
 )
 
-from pai.pipeline.types.artifact import MaxComputeTableArtifact
+from pai.operator.types.artifact import MaxComputeTableArtifact
 from tests.unit import BaseUnitTestCase
 from tests.test_data import SCRIPT_DIR_PATH
 

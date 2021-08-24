@@ -2,14 +2,14 @@ from __future__ import absolute_import
 
 import os
 
-from pai.pipeline.types.artifact import (
+from pai.operator.types import (
     DataType,
     LocationArtifactMetadata,
     PipelineArtifact,
     LocationType,
 )
-from pai.pipeline.types.parameter import PipelineParameter
-from pai.pipeline.types.spec import InputsSpec, split_variable_by_category
+from pai.operator.types import PipelineParameter, InputsSpec
+from pai.operator.types.spec import split_variable_by_category
 from tests.unit import BaseUnitTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))

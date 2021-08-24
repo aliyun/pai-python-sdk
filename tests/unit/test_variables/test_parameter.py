@@ -3,12 +3,11 @@ from __future__ import absolute_import
 import unittest
 from decimal import Decimal
 
-from pai.pipeline.types.parameter import (
-    Interval,
-    ParameterValidator,
+from pai.operator.types import (
     ParameterType,
     PipelineParameter,
 )
+from pai.operator.types.parameter import Interval, ParameterValidator
 from tests.unit import BaseUnitTestCase
 
 

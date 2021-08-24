@@ -6,11 +6,11 @@ from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_run_node_scoped_placeholder
 from pai.pipeline import PipelineRunStatus, PipelineStep
 from pai.pipeline.core import Pipeline
-from pai.pipeline.types.artifact import (
+from pai.operator.types import (
     MetadataBuilder,
     PipelineArtifact,
 )
-from pai.pipeline.types.parameter import ParameterType, PipelineParameter
+from pai.operator.types import ParameterType, PipelineParameter
 from tests.integration import BaseIntegTestCase
 
 
@@ -42,7 +42,7 @@ class TestAlgo(BaseIntegTestCase):
                 " when 'fix' then 1 else 2 end) as thal, (case status when 'sick' then 1 else "
                 "0 end) as ifHealth from ${t1};"
             )
-            sql_step = PipelineStep(
+            sql_step = PipelineStep.from_registered_op(
                 "sql",
                 name="sql-1",
                 provider=ProviderAlibabaPAI,
@@ -57,7 +57,7 @@ class TestAlgo(BaseIntegTestCase):
                 },
             )
 
-            type_transform_step = PipelineStep(
+            type_transform_step = PipelineStep.from_registered_op(
                 "type_transform",
                 name="type-transform-1",
                 provider=ProviderAlibabaPAI,
@@ -72,7 +72,7 @@ class TestAlgo(BaseIntegTestCase):
                 },
             )
 
-            normalize_step = PipelineStep(
+            normalize_step = PipelineStep.from_registered_op(
                 "normalize_1",
                 name="normalize-1",
                 provider=ProviderAlibabaPAI,
@@ -91,7 +91,7 @@ class TestAlgo(BaseIntegTestCase):
                 },
             )
 
-            split_step = PipelineStep(
+            split_step = PipelineStep.from_registered_op(
                 identifier="split",
                 name="split-1",
                 provider=ProviderAlibabaPAI,
@@ -113,7 +113,7 @@ class TestAlgo(BaseIntegTestCase):
                 random.randint(0, 999999)
             )
 
-            lr_step = PipelineStep(
+            lr_step = PipelineStep.from_registered_op(
                 identifier="logisticregression_binary",
                 name="logisticregression-1",
                 provider=ProviderAlibabaPAI,
@@ -136,7 +136,7 @@ class TestAlgo(BaseIntegTestCase):
                 },
             )
 
-            offline_model_pred_step = PipelineStep(
+            offline_model_pred_step = PipelineStep.from_registered_op(
                 identifier="Prediction_1",
                 name="offlinemodel-pred",
                 provider=ProviderAlibabaPAI,
@@ -153,7 +153,7 @@ class TestAlgo(BaseIntegTestCase):
                 },
             )
 
-            evaluate_step = PipelineStep(
+            evaluate_step = PipelineStep.from_registered_op(
                 identifier="evaluate_1",
                 name="evaluate-1",
                 provider=ProviderAlibabaPAI,

@@ -1,11 +1,10 @@
 from __future__ import absolute_import
 
-from pprint import pprint
-
 from pai.operator import ContainerOperator
-from pai.pipeline import PipelineParameter
-from pai.pipeline.types.artifact import (
-    MaxComputeResourceArtifact,
+from pai.operator.types import PipelineParameter
+
+from pai.operator.types.artifact import MaxComputeResourceArtifact
+from pai.operator.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
     DataType,

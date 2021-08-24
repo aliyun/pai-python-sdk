@@ -1,11 +1,43 @@
-import copy
+from __future__ import absolute_import
+
 import itertools
 
 import six
 
-from .types.spec import load_input_output_spec
-from .types.variable import PipelineVariable
-from ..common.utils import is_iterable
+from pai.operator.types.spec import load_input_output_spec
+from pai.operator.types.variable import PipelineVariable
+
+
+class _OpRef(object):
+    def __init__(self):
+        pass
+
+    def to_dict(self):
+        pass
+
+
+class RegisteredOperatorRef(_OpRef):
+    def __init__(self, identifier, provider, version):
+        super(RegisteredOperatorRef, self).__init__()
+        self.identifier = identifier
+        self.provider = provider
+        self.version = version
+
+    def to_dict(self):
+        return {
+            "identifier": self.identifier,
+            "provider": self.provider,
+            "version": self.version,
+        }
+
+
+class UnRegisteredOperatorRef(_OpRef):
+    def __init__(self, guid):
+        super(UnRegisteredOperatorRef, self).__init__()
+        self.guid = guid
+
+    def to_dict(self):
+        return {"guid": self.guid}
 
 
 class PipelineStep(object):
@@ -18,25 +50,32 @@ class PipelineStep(object):
 
     def __init__(
         self,
-        identifier,
-        provider=None,
-        version="v1",
         inputs=None,
         name=None,
         depends=None,
+        operator=None,
     ):
+        from ..operator import SavedOperator
+
         self._depends = depends or set()
         self._assigned = set()
-        operator = self.get_operator(
-            identifier=identifier, provider=provider, version=version
-        )
-        self._metadata = self._parse_raw_metadata(operator.manifest["metadata"])
+
+        if isinstance(operator, SavedOperator):
+            self.op_ref = RegisteredOperatorRef(
+                identifier=operator.identifier,
+                version=operator.version,
+                provider=operator.provider,
+            )
+        else:
+            self.op_ref = UnRegisteredOperatorRef(guid=operator.guid)
+
         self._name = name
+        self._operator = operator
 
         (
             inputs_spec,
             outputs_spec,
-        ) = load_input_output_spec(self, operator.manifest["spec"])
+        ) = load_input_output_spec(self, operator.io_spec_to_dict())
         self.parent = None
         self.inputs = inputs_spec
         self.outputs = outputs_spec
@@ -44,15 +83,56 @@ class PipelineStep(object):
         self.assign_inputs(inputs)
         self._repeated_artifact_config = {}
 
+    @property
+    def is_op_registered(self):
+        if isinstance(self.op_ref, RegisteredOperatorRef):
+            return True
+        return False
+
+    @property
+    def operator(self):
+        return self._operator
+
+    def gen_name_prefix(self):
+        if self.is_op_registered:
+            return self.op_ref.identifier
+        return self.operator.name
+
     @classmethod
-    def _parse_raw_metadata(cls, raw_metadata):
-        metadata = {
-            "identifier": raw_metadata["identifier"],
-            "provider": raw_metadata["provider"],
-            "uuid": raw_metadata["uuid"],
-            "version": raw_metadata["version"],
-        }
-        return metadata
+    def from_registered_op(
+        cls, identifier, provider, version, inputs, name=None, depends=None
+    ):
+        """Build the PipelineStep from the given registered operator reference: identifier, version, provider.
+
+        Args:
+            identifier: Identifier of the registered operator.
+            provider: Provider of the registered operator.
+            version: Version of the registered operator.
+            inputs: Inputs for the building step.
+            name: Name for the building step.
+            depends: Depended steps of the building step.
+
+        Returns:
+            PipelineStep: The built step instantiates from the given registered operator and inputs.
+        """
+        from ..operator import SavedOperator
+
+        op = SavedOperator.get_by_identifier(
+            identifier=identifier, provider=provider, version=version
+        )
+
+        if not op:
+            raise ValueError(
+                "Specific register operator not found: identifier={0}, provider={1}, version={2}".format(
+                    identifier, provider, version
+                )
+            )
+        return cls(
+            inputs=inputs,
+            name=name,
+            depends=depends,
+            operator=op,
+        )
 
     @property
     def repeated_io_config(self):
@@ -101,7 +181,7 @@ class PipelineStep(object):
                 values.append(ipt)
 
         def _depend_step(input):
-            from pai.pipeline.types.artifact import PipelineArtifactElement
+            from pai.operator.types.artifact import PipelineArtifactElement
 
             if isinstance(input, PipelineVariable) and input.parent:
                 return input.parent
@@ -111,18 +191,6 @@ class PipelineStep(object):
         input_steps = set(filter(None, [_depend_step(val) for val in values]))
 
         self._depends = input_steps.union(self._depends)
-
-    @property
-    def metadata(self):
-        return self._metadata
-
-    @property
-    def identifier(self):
-        return self._metadata["identifier"]
-
-    @property
-    def provider(self):
-        return self._metadata["provider"]
 
     @property
     def depends(self):
@@ -138,7 +206,7 @@ class PipelineStep(object):
 
     @classmethod
     def get_operator(cls, identifier, provider, version):
-        from pai.operator import SavedOperator
+        from ..operator import SavedOperator
 
         operator = SavedOperator.get_by_identifier(
             identifier=identifier, provider=provider, version=version
@@ -191,8 +259,9 @@ class PipelineStep(object):
         return spec
 
     def to_dict(self):
-        metadata = copy.copy(self._metadata)
-        metadata["name"] = self.name
+        metadata = {"name": self.name}
+        metadata.update(self.op_ref.to_dict())
+
         d = {
             "metadata": metadata,
             "spec": self._convert_spec_to_json(),

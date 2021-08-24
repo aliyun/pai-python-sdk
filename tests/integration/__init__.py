@@ -152,6 +152,11 @@ class BaseIntegTestCase(unittest.TestCase):
     def tearDownClass(cls):
         super(BaseIntegTestCase, cls).tearDownClass()
 
+    def get_python_image(self):
+        if self.default_session._is_inner:
+            return "reg.docker.alibaba-inc.com/pai-sdk/python:3.6"
+        return "python:3.6"
+
     @classmethod
     def get_default_maxc_execution(cls, odps_client=None):
         if not odps_client:

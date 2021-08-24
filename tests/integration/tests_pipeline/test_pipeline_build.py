@@ -8,13 +8,13 @@ from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_temp_table
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.run import PipelineRunStatus
-from pai.pipeline.types.artifact import (
+from pai.operator.types import (
     DataType,
     LocationType,
     LocationArtifactMetadata,
     PipelineArtifact,
 )
-from pai.pipeline.types.parameter import PipelineParameter
+from pai.operator.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
 
@@ -87,7 +87,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             ),
         )
 
-        split_step_1 = PipelineStep(
+        split_step_1 = PipelineStep.from_registered_op(
             name="split-step",
             identifier="split",
             provider=ProviderAlibabaPAI,
@@ -100,7 +100,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
                 "output2TableName": gen_temp_table(),
             },
         )
-        split_step_2 = PipelineStep(
+        split_step_2 = PipelineStep.from_registered_op(
             name="split-step",
             identifier="split",
             provider=ProviderAlibabaPAI,
@@ -126,7 +126,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             ),
         )
 
-        split_step_1 = PipelineStep(
+        split_step_1 = PipelineStep.from_registered_op(
             name="split-step-1",
             identifier="split",
             provider=ProviderAlibabaPAI,
@@ -139,7 +139,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
                 "output2TableName": gen_temp_table(),
             },
         )
-        split_step_2 = PipelineStep(
+        split_step_2 = PipelineStep.from_registered_op(
             identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -160,7 +160,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str)
         table_input = PipelineParameter(name="table_name", typ=str)
 
-        data_source_step = PipelineStep(
+        data_source_step = PipelineStep.from_registered_op(
             identifier="data_source",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -172,7 +172,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             },
         )
 
-        type_transform_step = PipelineStep(
+        type_transform_step = PipelineStep.from_registered_op(
             identifier="type_transform",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -204,7 +204,7 @@ class TestPipelineBuild(BaseIntegTestCase):
         def create_saved_base_pipeline():
             execution_input = PipelineParameter(name="execution", typ="map")
 
-            data_source_step = PipelineStep(
+            data_source_step = PipelineStep.from_registered_op(
                 identifier="data_source",
                 provider=ProviderAlibabaPAI,
                 version="v1",
@@ -216,7 +216,7 @@ class TestPipelineBuild(BaseIntegTestCase):
                 },
             )
 
-            type_transform_step = PipelineStep(
+            type_transform_step = PipelineStep.from_registered_op(
                 identifier="type_transform",
                 provider=ProviderAlibabaPAI,
                 version="v1",
@@ -228,7 +228,7 @@ class TestPipelineBuild(BaseIntegTestCase):
                     "cols_to_double": ",".join(dataset.columns),
                 },
             )
-            split_step = PipelineStep(
+            split_step = PipelineStep.from_registered_op(
                 identifier="split",
                 provider=ProviderAlibabaPAI,
                 version="v1",
@@ -258,7 +258,7 @@ class TestPipelineBuild(BaseIntegTestCase):
         prev_pipeline = pipeline
         for idx in range(1, 10):
             execution_input = PipelineParameter(name="execution", typ="map")
-            inner_step = PipelineStep(
+            inner_step = PipelineStep.from_registered_op(
                 identifier=prev_pipeline.identifier,
                 version=prev_pipeline.version,
                 provider=prev_pipeline.provider,

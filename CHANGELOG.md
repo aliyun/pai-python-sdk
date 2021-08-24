@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.3.1
+- feature: use unregistered-operator in Pipeline.
+
 
 ## v0.3.0
 

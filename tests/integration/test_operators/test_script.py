@@ -9,9 +9,9 @@ from pai.operator import (
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
 )
-from pai.pipeline.types import PipelineArtifact, MetadataBuilder
-from pai.pipeline.types.artifact import MaxComputeTableArtifact
-from pai.pipeline.types.parameter import (
+from pai.operator.types import PipelineArtifact, MetadataBuilder
+from pai.operator.types.artifact import MaxComputeTableArtifact
+from pai.operator.types import (
     PipelineParameter,
 )
 from tests.integration import BaseIntegTestCase

@@ -15,7 +15,7 @@ from odps.models import (
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 
 from pai.common.utils import is_iterable
-from pai.pipeline.types.variable import PipelineVariable
+from pai.operator.types.variable import PipelineVariable
 
 
 class MetadataBuilder(object):
@@ -418,7 +418,7 @@ class LocationArtifactValue(object):
 
     @classmethod
     def get_param_ref(cls, param):
-        from pai.pipeline import PipelineParameter
+        from pai.operator.types import PipelineParameter
 
         if not param:
             return

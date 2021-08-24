@@ -1,8 +1,8 @@
 from pprint import pprint
 
-from pai.pipeline import PipelineParameter
+from pai.operator.types import PipelineParameter
 from pai.operator import ContainerOperator
-from pai.pipeline.types import (
+from pai.operator.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
     DataType,

@@ -6,7 +6,7 @@ from decimal import Decimal
 import six
 from enum import Enum
 
-from pai.pipeline.types.variable import PipelineVariable
+from pai.operator.types.variable import PipelineVariable
 
 _int_float_types = tuple(list(six.integer_types) + list([float]))
 

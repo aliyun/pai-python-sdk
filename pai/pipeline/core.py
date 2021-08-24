@@ -3,20 +3,17 @@ from __future__ import absolute_import
 import logging
 from collections import defaultdict, Counter
 
-from graphviz import Digraph
 
-from .base import OperatorBase
-from ..core.session import get_default_session
-from .types.artifact import PipelineArtifact, PipelineArtifactElement
-from .types.parameter import PipelineParameter
-from .types.spec import OutputsSpec, InputsSpec
-
+from pai.operator._base import UnRegisteredOperator
+from pai.operator.types import OutputsSpec, InputsSpec
+from pai.operator.types import PipelineParameter
+from pai.operator.types.artifact import PipelineArtifact, PipelineArtifactElement
 
 logger = logging.getLogger(__name__)
 
 
-class Pipeline(OperatorBase):
-    """Represents pipeline instance in PAI Machine Learning pipeline.
+class Pipeline(UnRegisteredOperator):
+    """Represents pipeline instance in PAI Machine Learning pipeliner service.
 
     Pipeline can be constructed from multiple pipeline steps, or single container implementation.
     It is shareable and reusable workflow, present as YAML format in backend pipeline service.
@@ -26,9 +23,12 @@ class Pipeline(OperatorBase):
     def __init__(self, steps=None, inputs=None, outputs=None, **kwargs):
         """Pipeline initializer."""
 
-        self._steps, inputs, outputs = self._build_pipeline(steps, inputs, outputs)
+        steps, inputs, outputs, unregistered_ops = self._build_pipeline(
+            steps, inputs, outputs
+        )
 
-        self._session = get_default_session()
+        self._steps = steps
+        self._unregistered_ops = unregistered_ops
         super(Pipeline, self).__init__(inputs=inputs, outputs=outputs, **kwargs)
 
     @property
@@ -49,10 +49,37 @@ class Pipeline(OperatorBase):
         steps, inputs, _ = self._infer_pipeline_graph(steps, inputs, outputs)
         inputs_spec = InputsSpec(inputs) if isinstance(inputs, list) else inputs
         outputs_spec = OutputsSpec(self._build_outputs(outputs))
+        unregistered_ops = self._get_unregistered_ops(steps)
 
         self._update_steps(steps)
 
-        return steps, inputs_spec, outputs_spec
+        return (
+            steps,
+            inputs_spec,
+            outputs_spec,
+            unregistered_ops,
+        )
+
+    @classmethod
+    def _get_unregistered_ops(cls, steps):
+        """Get the unregistered operators used by the step in the pipeline.
+
+        Args:
+            steps: Steps in the pipeline.
+
+        Returns:
+            List[OperatorBase]: Return unregistered operators using in the pipeline.
+        """
+
+        unregistered_ops = [
+            step.operator for step in steps if not step.is_op_registered
+        ]
+        seen = set()
+        return [
+            op
+            for op in unregistered_ops
+            if op.guid not in seen and not seen.add(op.guid)
+        ]
 
     @classmethod
     def _infer_pipeline_inputs(cls, input):
@@ -78,6 +105,11 @@ class Pipeline(OperatorBase):
 
     @classmethod
     def _set_step_artifact_count(cls, steps):
+        """The expanded count of the repeated artifact should be fixed while using in the pipeline.
+
+        Args:
+            steps: All the steps used in the pipeline.
+        """
         for step in steps:
             for input in step.inputs.artifacts:
                 sources = []
@@ -97,12 +129,26 @@ class Pipeline(OperatorBase):
 
     @classmethod
     def _infer_pipeline_graph(cls, steps, inputs, outputs):
+        """Inference the DAG graph of pipeline by pipelines inputs, steps and outputs. The
+         function walks through the pipeline graph bottom-up from outputs and steps,
+          finding out all the required steps and inputs of the pipeline.
+
+        Args:
+            steps: steps used in the pipeline graph.
+            inputs: inputs used in the pipeline.
+            outputs: outputs definition of the pipeline.
+
+        Returns:
+            Tuple: Returns all the required steps, inputs and outputs.
+
+        """
         inputs = inputs or []
 
         outputs = outputs or []
         if isinstance(outputs, dict):
             outputs = list(outputs.values())
 
+        # find out all steps in the pipeline by topological sort.
         steps = steps or []
         visited_steps = set(
             steps + [output.parent for output in outputs if output.parent]
@@ -263,7 +309,7 @@ class Pipeline(OperatorBase):
     @classmethod
     def _gen_step_name(cls, step, used_names, search_limit=100):
         for i in range(search_limit):
-            candidate = "%s-%s" % (step.identifier, i)
+            candidate = "%s-%s" % (step.gen_name_prefix(), i)
             if candidate not in used_names:
                 return candidate
         raise ValueError("No available name for the step")
@@ -278,6 +324,8 @@ class Pipeline(OperatorBase):
         return name
 
     def dot(self):
+        from graphviz import Digraph
+
         graph = Digraph()
         for step in self.steps:
             graph.node(step.name)
@@ -286,6 +334,12 @@ class Pipeline(OperatorBase):
         return graph
 
     def to_dict(self):
-        d = super(Pipeline, self).to_dict()
-        d["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
-        return d
+        entrypoint = super(Pipeline, self).to_dict()
+        entrypoint["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
+        if not self._unregistered_ops:
+            return entrypoint
+
+        res = [op.to_dict() for op in self._unregistered_ops]
+        res.append(entrypoint)
+
+        return res

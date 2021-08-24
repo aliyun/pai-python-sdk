@@ -1,12 +1,12 @@
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline import Pipeline
-from pai.pipeline.step import PipelineStep
-from pai.pipeline.types import (
+from pai.operator.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
     LocationType,
     DataType,
 )
+from pai.pipeline import Pipeline
+from pai.pipeline.step import PipelineStep
 from tests.unit import BaseUnitTestCase
 
 
@@ -23,14 +23,14 @@ class TestPipelineBuild(BaseUnitTestCase):
             ),
         )
 
-        step1 = PipelineStep(
+        step1 = PipelineStep.from_registered_op(
             identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
             inputs={"inputTable": input_table},
         )
 
-        step2 = PipelineStep(
+        step2 = PipelineStep.from_registered_op(
             identifier=self.RepeatedArtifactExampleIdentifier,
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -43,7 +43,7 @@ class TestPipelineBuild(BaseUnitTestCase):
             },
         )
 
-        step3 = PipelineStep(
+        step3 = PipelineStep.from_registered_op(
             identifier=self.RepeatedArtifactExampleIdentifier,
             provider=ProviderAlibabaPAI,
             version="v1",

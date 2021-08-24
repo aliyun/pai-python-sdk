@@ -2,7 +2,9 @@ from __future__ import absolute_import
 
 import hashlib
 import os
+import random
 import re
+import string
 
 import time
 import tarfile
@@ -155,3 +157,18 @@ def is_iterable(arg):
         return True
     except TypeError:
         return False
+
+
+def random_str(n):
+    """Random string generation with lower case letters and digits.
+
+    Args:
+        n: Size of generated random string.
+
+    Returns:
+        str: generated random string.
+
+    """
+    return "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(n)
+    )

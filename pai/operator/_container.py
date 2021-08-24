@@ -4,13 +4,13 @@ from __future__ import print_function
 import json
 import os
 import tempfile
+import uuid
 
 import shutil
 
 from pai.common.utils import makedirs
-from pai.pipeline.base import OperatorBase
-from pai.pipeline.types.artifact import PipelineArtifact
-from pai.pipeline.types.spec import IO_TYPE_OUTPUTS
+from pai.operator._base import UnRegisteredOperator
+from pai.operator.types import IO_TYPE_OUTPUTS
 
 PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
 PAI_MANIFEST_SPEC_INPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_INPUTS"
@@ -18,30 +18,27 @@ PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
 
 
-class ContainerOperator(OperatorBase):
+class ContainerOperator(UnRegisteredOperator):
     def __init__(
         self,
         image_uri,
         command,
+        args=None,
         image_registry_config=None,
         inputs=None,
         outputs=None,
         env=None,
-        identifier=None,
-        version=None,
-        provider=None,
     ):
         self.image_uri = image_uri
         self.image_registry_config = image_registry_config
         self.command = command
+        self.args = args
         self.env = env
+        self._guid = uuid.uuid4().hex
 
         super(ContainerOperator, self).__init__(
             inputs=inputs,
             outputs=outputs,
-            identifier=identifier,
-            version=version,
-            provider=provider,
         )
 
     def to_dict(self):
@@ -54,6 +51,7 @@ class ContainerOperator(OperatorBase):
             self.image_registry_config or dict()
         )
         d["spec"]["container"]["envs"] = self.env or dict()
+        d["spec"]["container"]["args"] = self.args
         return d
 
     def run(self, job_name, arguments=None, local_mode=False, **kwargs):

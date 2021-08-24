@@ -2,13 +2,13 @@
 
 from pai.operator import ContainerOperator
 
-from pai.pipeline.types import (
+from pai.operator.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
     DataType,
     LocationType,
 )
-from pai.pipeline.types.parameter import (
+from pai.operator.types import (
     PipelineParameter,
 )
 from tests.integration import BaseIntegTestCase
@@ -35,7 +35,7 @@ class TestContainerOperator(BaseIntegTestCase):
         ]
 
         container_templ = ContainerOperator(
-            image_uri="python:3",
+            image_uri=self.get_python_image(),
             inputs=inputs,
             outputs=outputs,
             command=[
