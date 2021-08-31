@@ -1,9 +1,14 @@
 # coding: utf-8
 from __future__ import print_function
 
+import logging
 import json
 import os
+import shlex
+import subprocess
 import tempfile
+import textwrap
+
 import uuid
 
 import shutil
@@ -11,11 +16,14 @@ import shutil
 from pai.common.utils import makedirs
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import IO_TYPE_OUTPUTS
+from pai.operator.types.variable import PipelineVariable
 
 PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
 PAI_MANIFEST_SPEC_INPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_INPUTS"
 PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
+
+_logger = logging.getLogger(__name__)
 
 
 class ContainerOperator(UnRegisteredOperator):
@@ -41,17 +49,36 @@ class ContainerOperator(UnRegisteredOperator):
             outputs=outputs,
         )
 
+    @classmethod
+    def _transform_env(cls, env):
+        if not env:
+            return dict()
+        return {
+            k: v.fullname if isinstance(v, PipelineVariable) else str(v)
+            for k, v in env.items()
+        }
+
+    @classmethod
+    def _transform_commands(cls, commands):
+        if not commands:
+            return []
+
+        return [c.fullname if isinstance(c, PipelineVariable) else c for c in commands]
+
     def to_dict(self):
         d = super(ContainerOperator, self).to_dict()
         d["spec"]["container"] = {
             "image": self.image_uri,
-            "command": self.command,
+            "command": self._transform_commands(self.command),
         }
         d["spec"]["container"]["imageRegistryConfig"] = (
             self.image_registry_config or dict()
         )
-        d["spec"]["container"]["envs"] = self.env or dict()
-        d["spec"]["container"]["args"] = self.args
+        if self.env:
+            d["spec"]["container"]["envs"] = self._transform_env(self.env or dict())
+
+        if self.args:
+            d["spec"]["container"]["args"] = self._transform_commands(self.args)
         return d
 
     def run(self, job_name, arguments=None, local_mode=False, **kwargs):
@@ -61,6 +88,128 @@ class ContainerOperator(UnRegisteredOperator):
             return super(ContainerOperator, self).run(
                 job_name=job_name, arguments=arguments, **kwargs
             )
+
+    @classmethod
+    def from_scripts(
+        cls,
+        source_dir,
+        entry_file,
+        inputs,
+        outputs,
+        image_uri,
+        base_image=None,
+        install_packages=None,
+    ):
+        """Build image
+
+        Args:
+            source_dir: Source script files use in Operator run.
+            entry_file:
+            inputs:
+            outputs:
+            image_uri: Image tag for the output image.
+            base_image: Base image used to build the image use in Operator.
+            install_packages: Required packages that will be installed in the image.
+
+        Returns:
+            ContainerOperator:
+        """
+        cls.build_and_push_image(
+            source_dir,
+            base_image=base_image or cls.get_default_image(),
+            image_uri=image_uri,
+            install_packages=install_packages,
+            entry_file=entry_file,
+        )
+
+        return cls(
+            image_uri=image_uri,
+            command=shlex.split("python {}".format(entry_file)),
+            inputs=inputs,
+            outputs=outputs,
+        )
+
+    @classmethod
+    def get_default_image(cls):
+        return "python:3"
+
+    @classmethod
+    def build_and_push_image(
+        cls, source_dir, entry_file, base_image, image_uri, install_packages=None
+    ):
+        """Build a docker image that contains the script file and install the required packages.
+
+        Args:
+            source_dir: source script files use in Operator run.
+            base_image: Base image used to build the image use in Operator.
+            image_uri: Image tag for the output image.
+            install_packages: Required packages that will be installed in the image.
+        """
+        cls._build_image(
+            source_dir,
+            entry_file,
+            base_image,
+            install_packages=install_packages,
+            image_uri=image_uri,
+        )
+        cls._push_image(image_uri)
+
+    @classmethod
+    def _build_image(
+        cls, source_dir, entry_file, base_image, install_packages, image_uri
+    ):
+        build_dir = tempfile.mkdtemp()
+        tmp_source_dir = os.path.join(build_dir, "__source_dir")
+        shutil.copytree(source_dir, tmp_source_dir)
+        install_packages = install_packages or []
+
+        # append pip requirements read from file.
+        requirement_file = os.path.join(tmp_source_dir, "requirements.txt")
+        if os.path.isfile(requirement_file):
+            with open(requirement_file, "r") as f:
+                install_packages.extend(f.readlines())
+
+        dockerfile = textwrap.dedent(
+            """\
+        # Build an image that run in PAI.
+        FROM {base_image}
+
+        RUN mkdir -p /work/code/
+        COPY __source_dir/* /work/code/
+
+        {install_packages}
+        {entry_point}
+        """
+        ).format(
+            base_image=base_image,
+            install_packages=cls._get_install_packages_step(install_packages),
+            entry_point=cls._get_entry_point(entry_file),
+        )
+
+        with open(os.path.join(build_dir, "Dockerfile"), "w") as f:
+            f.write(dockerfile)
+
+        command = "docker build . -t {}".format(image_uri)
+
+        subprocess.check_call(shlex.split(command), cwd=build_dir, env=os.environ)
+
+    @classmethod
+    def _push_image(cls, image_uri):
+        command = "docker push {}".format(image_uri)
+        subprocess.check_call(shlex.split(command))
+
+    @classmethod
+    def _get_install_packages_step(cls, install_packages):
+        if not install_packages:
+            return ""
+        packages = " ".join(install_packages)
+        return "RUN PIP_DISABLE_PIP_VERSION_CHECK=1 python -m pip --quiet install {0}".format(
+            packages
+        )
+
+    @classmethod
+    def _get_entry_point(cls, entry_file):
+        return "ENTRYPOINT {0}".format(json.dumps(["python", entry_file]))
 
     def _local_run(self, job_name, arguments=None):
         return LocalContainerRun(

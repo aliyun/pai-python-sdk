@@ -1,4 +1,5 @@
 # coding: utf-8
+import yaml
 
 from pai.operator import ContainerOperator
 
@@ -52,3 +53,17 @@ class TestContainerOperator(BaseIntegTestCase):
                 "xflow_name": "abcd",
             },
         )
+
+    def test_from_scripts(self):
+        # op = ContainerOperator.from_scripts(
+        #     source_dir="/Users/liangquan/code/pypai/tests/test_data/script_dir",
+        #     entry_file="main.py",
+        #     inputs=[],
+        #     outputs=[],
+        #     image_uri="test_image",
+        #     install_packages=["requests"],
+        # )
+
+        print(PipelineParameter("x").fullname)
+
+        # op.as_step()

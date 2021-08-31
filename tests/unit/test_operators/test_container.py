@@ -1,4 +1,5 @@
 from pprint import pprint
+import yaml
 
 from pai.operator.types import PipelineParameter
 from pai.operator import ContainerOperator
@@ -69,7 +70,7 @@ class TestContainerOperator(BaseUnitTestCase):
             env=env_vars,
         )
         manifest = templ.to_dict()
-        pprint(manifest)
+        print(yaml.dump(manifest))
 
         input_params_spec = manifest["spec"]["inputs"]["parameters"]
         input_artifacts_spec = manifest["spec"]["inputs"]["artifacts"]
