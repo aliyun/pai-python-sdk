@@ -2,6 +2,7 @@
 
 ## v0.3.1
 - feature: use unregistered-operator in Pipeline.
+- feature: add a convenient method (ContainerOperator.from_scripts) to build Operator from scripts.
 
 
 ## v0.3.0

@@ -1,4 +1,6 @@
 # coding: utf-8
+from pprint import pprint
+
 import yaml
 
 from pai.operator import ContainerOperator
@@ -54,16 +56,40 @@ class TestContainerOperator(BaseIntegTestCase):
             },
         )
 
-    def test_from_scripts(self):
-        # op = ContainerOperator.from_scripts(
-        #     source_dir="/Users/liangquan/code/pypai/tests/test_data/script_dir",
-        #     entry_file="main.py",
-        #     inputs=[],
-        #     outputs=[],
-        #     image_uri="test_image",
-        #     install_packages=["requests"],
-        # )
+    def test_from_source_files(self):
+        script_dir = "../../test_data/script_dir"
+        op = ContainerOperator.from_scripts(
+            source_dir=script_dir,
+            entry_file="main.py",
+            inputs=[PipelineParameter("foo")],
+            outputs=[],
+            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow_custom_image/mlflow-serve-test:v1.0",
+            install_packages=["requests"],
+        )
 
-        print(PipelineParameter("x").fullname)
+        print(op.to_dict())
 
-        # op.as_step()
+        op.run("hello", arguments={"foo": "Hello"})
+
+    def test_from_script(self):
+        op = ContainerOperator.from_script(
+            script_file="../../test_data/script_dir/main.py",
+            inputs=[PipelineParameter("foo")],
+            outputs=[],
+            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow_custom_image/mlflow-serve-test:v1.0",
+            install_packages=["requests"],
+        )
+
+        pprint(op.to_dict())
+        op.run("hello", arguments={"foo": "Hello"})
+
+    def test_from_script(self):
+        op = ContainerOperator.from_script(
+            script_file="../../test_data/shell_scripts/job.sh",
+            inputs=[PipelineParameter("foo")],
+            outputs=[],
+            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow_custom_image/mlflow-serve-test:v1.0",
+            install_packages=["requests"],
+        )
+
+        print(yaml.dump(op.to_dict()))
