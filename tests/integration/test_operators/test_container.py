@@ -88,8 +88,26 @@ class TestContainerOperator(BaseIntegTestCase):
             script_file="../../test_data/shell_scripts/job.sh",
             inputs=[PipelineParameter("foo")],
             outputs=[],
-            image_uri="registry.cn-shanghai.aliyuncs.com/paiflow_custom_image/mlflow-serve-test:v1.0",
+            image_uri="python3",
             install_packages=["requests"],
         )
 
         print(yaml.dump(op.to_dict()))
+
+        step1 = op.as_step(
+            inputs={
+                "foo": "alice",
+            }
+        )
+
+        step2 = op.as_step(
+            inputs={
+                "foo": "bob",
+            }
+        )
+
+        step2.after(step1)
+
+        p = Pipeline(steps=[step1, step2])
+
+        p.save(job_name="test")

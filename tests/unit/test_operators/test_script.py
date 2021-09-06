@@ -1,37 +1,29 @@
-from pprint import pprint
+import os
 
-from pai.operator.types import PipelineParameter
 from pai.operator import (
     ScriptOperator,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
 )
-from pai.operator.types import (
-    PipelineArtifact,
-    LocationArtifactMetadata,
-    DataType,
-    LocationType,
-)
-
-from pai.operator.types.artifact import MaxComputeTableArtifact
-from tests.unit import BaseUnitTestCase
 from tests.test_data import SCRIPT_DIR_PATH
+from tests.unit import BaseUnitTestCase
 
 
 class TestScriptOperator(BaseUnitTestCase):
     def test_script(self):
         entry_point = "run.py"
-        script_templ = ScriptOperator(
+        script_op = ScriptOperator.create_with_oss_snapshot(
             source_dir=SCRIPT_DIR_PATH,
             entry_file="run.py",
             inputs=[],
+            install_packages="requests",
             env={
                 "hello": "world",
             },
         )
-        script_templ.prepare()
-        manifest = script_templ.to_dict()
+
+        manifest = script_op.to_dict()
         manifest_env = manifest["spec"]["container"]["envs"]
 
         self.assertTrue(manifest_env.get(PAI_SOURCE_CODE_ENV_KEY).startswith("oss://"))
@@ -41,8 +33,8 @@ class TestScriptOperator(BaseUnitTestCase):
         self.assertEqual(manifest_env.get("hello", ""), "world")
 
         self.assertEqual(
-            manifest["spec"]["container"]["command"],
-            [PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND],
+            manifest["spec"]["container"]["command"][-1],
+            PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
         )
 
     def test_check_script_source_files(self):
@@ -83,32 +75,14 @@ class TestScriptOperator(BaseUnitTestCase):
 
         for case in cases:
             with self.assertRaisesRegexp(ValueError, case["expectedErrorMsg"]):
-                ScriptOperator.check_source_file(
+                ScriptOperator._check_source_file(
                     entry_file=case["input"]["entry_file"],
                     source_dir=case["input"]["source_dir"],
                 )
 
-    def test_table_ref(self):
-        templ = ScriptOperator(
-            source_dir="./scripts",
-            entry_file="run.py",
-            inputs=[
-                PipelineParameter(
-                    "tableName",
-                ),
-                PipelineParameter("partition", default=""),
-            ],
-            outputs=[
-                PipelineArtifact(
-                    "outputTable",
-                    LocationArtifactMetadata(
-                        data_type=DataType.DataSet,
-                        location_type=LocationType.MaxComputeTable,
-                    ),
-                    value=MaxComputeTableArtifact.value_from_param(
-                        "tableName", "partition"
-                    ),
-                )
-            ],
+    def test_snapshot_with_literal(self):
+        script_file = os.path.join(SCRIPT_DIR_PATH, "main.py")
+        op = ScriptOperator.create_with_literal_snapshot(
+            script_file=script_file, install_packages="requests"
         )
-        pprint(templ.to_dict())
+        print(op.to_dict())

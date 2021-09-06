@@ -1,22 +1,19 @@
 # coding: utf-8
 from __future__ import print_function
 
-import logging
 import json
 import os
-import shlex
-import subprocess
 import tempfile
-import textwrap
 
-import uuid
-
+import logging
 import shutil
+import six
+import uuid
 
 from pai.common.utils import makedirs
 from pai.core.session import get_default_session
 from pai.operator._base import UnRegisteredOperator
-from pai.operator.types import IO_TYPE_OUTPUTS, PipelineParameter
+from pai.operator.types import IO_TYPE_OUTPUTS
 from pai.operator.types.variable import PipelineVariable
 
 PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
@@ -25,6 +22,24 @@ PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
 
 _logger = logging.getLogger(__name__)
+
+_PIP_INSTALL_TEMPLATE = '''\
+(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet {pkgs} \
+|| PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \
+ {pkgs} --user) && "$0" "$@"'''
+
+_DOCKERFILE_TEMPLATE = """\
+# Build an image that run in PAI.
+FROM {base_image}
+
+RUN mkdir -p /work/code/
+COPY __source_dir/* /work/code/
+
+WORKDIR /work/code
+{install_packages_step}
+{install_requirements_step}
+
+"""
 
 
 class ContainerOperator(UnRegisteredOperator):
@@ -61,6 +76,8 @@ class ContainerOperator(UnRegisteredOperator):
 
     @classmethod
     def _transform_commands(cls, commands):
+        if isinstance(commands, six.string_types):
+            return commands
         if not commands:
             return []
 
@@ -94,233 +111,11 @@ class ContainerOperator(UnRegisteredOperator):
             )
 
     @classmethod
-    def from_scripts(
-        cls,
-        source_dir,
-        entry_file,
-        image_uri,
-        inputs=None,
-        outputs=None,
-        base_image=None,
-        install_packages=None,
-    ):
-        """Construct a ContainerOperator using given scripts.
-
-        The method will build a new docker image using the docker cli tool. Files in source_dir
-        will be added to the image at "/work/code" and the required pip packages will be installed.
-        Operator use the new image to run the job.
-
-        Args:
-            source_dir: Source script files use in Operator run.
-            entry_file: Entry point file use in Operator run.
-            inputs: Inputs spec of the Operator.
-            outputs: Outputs spec of the Operator.
-            image_uri: Image tag for the output image.
-            base_image: Base image used to build the image use in Operator.
-            install_packages: Required packages that will be installed in the image.
-
-        Returns:
-            ContainerOperator:
-        """
-        cls.build_and_push_image(
-            source_dir,
-            base_image=base_image or cls.get_default_image(),
-            image_uri=image_uri,
-            install_packages=install_packages,
-        )
-
-        commands, args = cls._build_commands(source_dir, entry_file, inputs)
-
-        return cls(
-            image_uri=image_uri,
-            command=commands,
-            args=args,
-            inputs=inputs,
-            outputs=outputs,
-        )
-
-    @classmethod
-    def from_script(
-        cls,
-        script_file,
-        image_uri,
-        inputs=None,
-        outputs=None,
-        install_packages=None,
-        **kwargs
-    ):
-        """
-
-        Args:
-            script_file:
-            image_uri:
-            inputs:
-            outputs:
-            install_packages:
-
-        Returns:
-
-        """
-
-        commands, args = cls._build_script_commands(
-            script_file=script_file, install_packages=install_packages, inputs=inputs
-        )
-
-        return ContainerOperator(
-            image_uri=image_uri,
-            inputs=inputs,
-            outputs=outputs,
-            command=commands,
-            args=args,
-            **kwargs
-        )
-
-    @classmethod
-    def _build_script_commands(cls, script_file, install_packages, inputs):
-        _, ext = os.path.splitext(script_file)
-        if ext not in [".py", ".sh"]:
-            raise ValueError(
-                "Not support script file, please provide Shell(.sh) or Python(.py) script."
-            )
-        with open(script_file, "r") as f:
-            source = f.read()
-
-        def _install_packages_commands(packages):
-            pkgs = "".join(["'%s'" % p for p in packages])
-            pip_install_template = textwrap.dedent(
-                '''\
-            (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet {install_packages} \
-            || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \
-             {install_packages} --user) && "$0" "$@"'''
-            )
-
-            return ["sh", "-c", pip_install_template.format(install_packages=pkgs)]
-
-        commands = (
-            _install_packages_commands(packages=install_packages)
-            if install_packages
-            else []
-        )
-
-
-        if ext == ".sh":
-            run_commands = ["sh", "-ec", source]
-        else:
-            run_commands = ["python", "-u", "-c", source]
-
-        args = []
-        for p in inputs:
-            if isinstance(p, PipelineParameter):
-                args.append("--%s" % p.name)
-                args.append(p)
-        commands.extend(run_commands)
-        return commands, args
-
-    @classmethod
-    def _build_commands(cls, source_dir, entry_file, inputs):
-        filename, file_extension = os.path.splitext(entry_file)
-        if file_extension == ".py":
-            commands = ["python", entry_file]
-        elif file_extension == ".sh":
-            commands = ["sh", entry_file]
-        else:
-            commands = ["./%s" % entry_file]
-
-        if not inputs:
-            return commands
-
-        args = []
-        for p in inputs:
-            if isinstance(p, PipelineParameter):
-                args.append("--%s" % p.name)
-                args.append(p)
-        return commands, args
-
-    @classmethod
     def get_default_image(cls):
         sess = get_default_session()
         if sess and sess._is_inner:
             return "reg.docker.alibaba-inc.com/pai-sdk/python:3.6"
         return "python:3"
-
-    @classmethod
-    def build_and_push_image(
-        cls, source_dir, base_image, image_uri, install_packages=None
-    ):
-        """Build a docker image that contains the script file and install the required packages.
-
-        Args:
-            source_dir: source script files use in Operator run.
-            base_image: Base image used to build the image use in Operator.
-            image_uri: Image tag for the output image.
-            install_packages: Required packages that will be installed in the image.
-        """
-        print("build and push image: %s" % image_uri)
-        cls._build_image(
-            source_dir,
-            base_image,
-            install_packages=install_packages,
-            image_uri=image_uri,
-        )
-        cls._push_image(image_uri)
-
-    @classmethod
-    def _build_image(cls, source_dir, base_image, install_packages, image_uri):
-        build_dir = tempfile.mkdtemp()
-        tmp_source_dir = os.path.join(build_dir, "__source_dir")
-        shutil.copytree(source_dir, tmp_source_dir)
-        install_packages = install_packages or []
-
-        dockerfile = textwrap.dedent(
-            """\
-        # Build an image that run in PAI.
-        FROM {base_image}
-
-        RUN mkdir -p /work/code/
-        COPY __source_dir/* /work/code/
-        
-        WORKDIR /work/code
-        {install_packages_step}
-        {install_requirements_step}
-        
-        """
-        ).format(
-            base_image=base_image,
-            install_packages_step=cls._get_install_packages_step(install_packages),
-            install_requirements_step=cls._get_install_requirements_step(
-                tmp_source_dir
-            ),
-        )
-
-        with open(os.path.join(build_dir, "Dockerfile"), "w") as f:
-            f.write(dockerfile)
-
-        command = "docker build . -t {}".format(image_uri)
-
-        subprocess.check_call(shlex.split(command), cwd=build_dir, env=os.environ)
-
-    @classmethod
-    def _push_image(cls, image_uri):
-        command = "docker push {}".format(image_uri)
-        subprocess.check_call(shlex.split(command))
-
-    @classmethod
-    def _get_install_packages_step(cls, install_packages):
-        if not install_packages:
-            return ""
-        packages = " ".join(install_packages)
-        return "RUN python -m pip install {0}".format(packages)
-
-    @classmethod
-    def _get_install_requirements_step(cls, source_dir):
-        requirement_file = os.path.join(source_dir, "requirements.txt")
-        if not os.path.isfile(requirement_file):
-            return ""
-        return "RUN python -m pip install -r requirements.txt"
-
-    @classmethod
-    def _get_entry_point(cls, entry_file):
-        return "ENTRYPOINT {0}".format(json.dumps(["python", entry_file]))
 
     def _local_run(self, job_name, arguments=None):
         return LocalContainerRun(
@@ -482,4 +277,29 @@ class LocalContainerRun(object):
         ]
         self.env.update(
             {PAI_INPUTS_PARAMETERS_ENV_KEY: json.dumps(parameter_arguments)}
+        )
+
+    @classmethod
+    def from_scripts(
+        cls,
+        source_dir,
+        entry_file,
+        inputs=None,
+        outputs=None,
+        image_uri=None,
+        install_packages=None,
+        base_image=None,
+        **kwargs
+    ):
+        from pai.operator._script import ScriptOperator
+
+        return ScriptOperator.create_with_image_snapshot(
+            entry_file=entry_file,
+            source_dir=source_dir,
+            inputs=inputs,
+            outputs=outputs,
+            image_uri=image_uri,
+            base_image=base_image,
+            install_packages=install_packages,
+            **kwargs
         )

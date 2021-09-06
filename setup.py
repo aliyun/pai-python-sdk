@@ -24,7 +24,7 @@ requirements = [
     "pyodps>=0.9.3.2",
     "pyyaml>=5.3.1",
     "six>=1.15.0",
-    "importlib_metadata==2.0.0",
+    "importlib_metadata>=2.0.0, <=2.1.0",
     "docker>=4.4.0",
 ]
 

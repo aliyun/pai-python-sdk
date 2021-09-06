@@ -1,7 +1,7 @@
+import os
 from unittest import skip
 
 import contextlib
-import os
 
 from pai.common.utils import gen_temp_table
 from pai.operator import (
@@ -10,14 +10,16 @@ from pai.operator import (
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
 )
 from pai.operator.types import PipelineArtifact, MetadataBuilder
-from pai.operator.types.artifact import MaxComputeTableArtifact
 from pai.operator.types import (
     PipelineParameter,
 )
+from pai.operator.types.artifact import MaxComputeTableArtifact
+from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
 from tests.test_data import (
     SCRIPT_DIR_PATH,
     MAXC_SQL_TEMPLATE_SCRIPT_PATH,
+    SHELL_SCRIPT_DIR_PATH,
 )
 
 
@@ -38,7 +40,7 @@ class TestScriptOperator(BaseIntegTestCase):
         return maxc_config
 
     def test_local_source_files(self):
-        templ = ScriptOperator(
+        templ = ScriptOperator.create_with_oss_snapshot(
             entry_file="main.py",
             source_dir=SCRIPT_DIR_PATH,
             inputs=[
@@ -46,7 +48,6 @@ class TestScriptOperator(BaseIntegTestCase):
                 PipelineParameter(name="bar", typ=int, default=200),
             ],
         )
-        templ.prepare()
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
@@ -54,25 +55,24 @@ class TestScriptOperator(BaseIntegTestCase):
         templ.run(job_name="HelloWorld")
 
     def test_single_local_file(self):
-        templ = ScriptOperator(
+        templ = ScriptOperator.create_with_oss_snapshot(
             entry_file=os.path.join(SCRIPT_DIR_PATH, "main.py"),
             inputs=[
                 PipelineParameter(name="foo", typ=int, default=10),
                 PipelineParameter(name="bar", typ=int, default=200),
             ],
         )
-        templ.prepare()
+        # templ.prepare()
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(PAI_SOURCE_CODE_ENV_KEY in env_vars)
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
 
     def test_oss_source_files(self):
-        templ = ScriptOperator(
+        templ = ScriptOperator.create_with_oss_snapshot(
             entry_file="main.py",
             source_dir="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to_files/source.tar.gz",
         )
-        templ.prepare()
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(
@@ -82,10 +82,9 @@ class TestScriptOperator(BaseIntegTestCase):
         self.assertEqual(env_vars[PAI_PROGRAM_ENTRY_POINT_ENV_KEY], "main.py")
 
     def test_oss_single_file(self):
-        templ = ScriptOperator(
+        templ = ScriptOperator.create_with_oss_snapshot(
             entry_file="oss://oss_bucket.oss-cn-hangzhou.aliyuncs.com/path/to/main.py",
         )
-        templ.prepare()
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
         self.assertTrue(
@@ -96,7 +95,7 @@ class TestScriptOperator(BaseIntegTestCase):
 
     @skip("Aone dynamic container environment do not support docker in docker.")
     def test_local_run(self):
-        templ = ScriptOperator(
+        templ = ScriptOperator.create_with_oss_snapshot(
             entry_file="main.py",
             source_dir=MAXC_SQL_TEMPLATE_SCRIPT_PATH,
             inputs=[
@@ -150,3 +149,58 @@ class TestScriptOperator(BaseIntegTestCase):
             },
         )
         self.assertEqual(local_run_container.attrs["State"]["ExitCode"], 0)
+
+    def test_image_snapshot(self):
+        op = ScriptOperator.create_with_image_snapshot(
+            entry_file="main.py",
+            source_dir=SCRIPT_DIR_PATH,
+            inputs=[PipelineParameter("foo")],
+            outputs=[],
+            image_uri="reg.docker.alibaba-inc.com/lq_test/test_image",
+        )
+
+        op.to_dict()
+        op.run(
+            "test_image_snapshot",
+            arguments={
+                "foo": "ArgumentsFoo",
+            },
+        )
+
+    def test_literal_snapshot(self):
+        script_file = os.path.join(SHELL_SCRIPT_DIR_PATH, "job.sh")
+        op = ScriptOperator.create_with_literal_snapshot(
+            script_file=script_file, inputs=[PipelineParameter("foo")]
+        )
+
+        op.run(
+            "test_literal_snapshot",
+            arguments={
+                "foo": "FooFromLiteralSnapshot",
+            },
+            local_mode=True,
+        )
+
+        def create_pipeline():
+            x = PipelineParameter("x")
+            step1 = op.as_step(
+                name="step1",
+                inputs={
+                    "foo": x,
+                },
+            )
+
+            step2 = op.as_step(
+                name="step2",
+                inputs={
+                    "foo": "HardCodeParam",
+                },
+            )
+
+            step2.after(step1)
+
+            return Pipeline(steps=[step2])
+
+        p = create_pipeline()
+
+        p.run("literal_pipeline_job", arguments={"x": "ParameterX"})

@@ -75,6 +75,10 @@ class MockSession(object):
                 return manifest, uuid
         return None, None
 
+    @property
+    def _is_inner(self):
+        return False
+
 
 def get_mock_session():
     return MockSession()
