@@ -60,10 +60,8 @@ class ArchivedArtifact(object):
             ArchivedArtifact: ArtifactInfo instance.
         """
         name = output["Name"]
-        metadata = LocationArtifactMetadata.from_dict(output["Info"]["metadata"])
-        value = LocationArtifactValue.from_resource(
-            output["Info"]["value"], metadata=metadata
-        )
+        metadata = output["Info"]["metadata"]
+        value = output["Info"]["value"]
         producer_id = output["Producer"]
         artifact_id = output["Id"]
         return ArchivedArtifact(

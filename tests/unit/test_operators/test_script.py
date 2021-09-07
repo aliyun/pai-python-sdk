@@ -82,7 +82,7 @@ class TestScriptOperator(BaseUnitTestCase):
 
     def test_snapshot_with_literal(self):
         script_file = os.path.join(SCRIPT_DIR_PATH, "main.py")
-        op = ScriptOperator.create_with_literal_snapshot(
+        op = ScriptOperator.create_with_source_snapshot(
             script_file=script_file, install_packages="requests"
         )
         print(op.to_dict())

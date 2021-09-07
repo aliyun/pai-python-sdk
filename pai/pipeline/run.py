@@ -78,6 +78,10 @@ class PipelineRun(object):
         return Workspace.get(self.workspace_id) if self.workspace_id else None
 
     @classmethod
+    def get(cls, run_id):
+        return next(cls.list(run_id=run_id), None)
+
+    @classmethod
     def list(
         cls,
         name=None,

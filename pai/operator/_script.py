@@ -31,9 +31,11 @@ ProgramSourceFiles = namedtuple("ProgramSourceFiles", ["entry_point", "source_fi
 
 
 _PRE_PIP_INSTALL_TEMPLATE = '''\
-(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet {pkgs} \
-|| PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \
+(PIP_DISABLE_PIP_VERSION_CHECK=1 {pip_index_url_env} python3 -m pip install --quiet {pkgs} \
+|| PIP_DISABLE_PIP_VERSION_CHECK=1 {pip_index_url_env} python3 -m pip install --quiet \
  {pkgs} --user) && "$0" "$@"'''
+
+_DEFAULT_PIP_INDEX_URL = "https://mirrors.aliyun.com/pypi/simple/"
 
 
 _DOCKERFILE_TEMPLATE = """\
@@ -145,18 +147,23 @@ class ScriptOperator(ContainerOperator):
         return oss_url
 
     @classmethod
-    def _build_pre_install_package_command(cls, install_packages):
+    def _build_pre_install_package_command(cls, install_packages, pip_index_url=None):
         install_packages = (
             [install_packages]
             if isinstance(install_packages, six.string_types)
             else install_packages
+        )
+
+        pip_index_url_env = (
+            "PIP_INDEX_URL={}".format(pip_index_url) if pip_index_url else ""
         )
         commands = (
             [
                 "sh",
                 "-c",
                 _PRE_PIP_INSTALL_TEMPLATE.format(
-                    pkgs="".join(["'%s'" % p for p in install_packages])
+                    pkgs="".join(["'%s'" % p for p in install_packages]),
+                    pip_index_url_env=pip_index_url_env,
                 ),
             ]
             if install_packages
@@ -166,7 +173,12 @@ class ScriptOperator(ContainerOperator):
 
     @classmethod
     def _build_and_push_image(
-        cls, source_dir, base_image, image_uri, install_packages=None
+        cls,
+        source_dir,
+        base_image,
+        image_uri,
+        install_packages=None,
+        pip_index_url=None,
     ):
         """Build a docker image that contains the script file and install the required packages.
 
@@ -181,12 +193,15 @@ class ScriptOperator(ContainerOperator):
             source_dir,
             base_image,
             install_packages=install_packages,
+            pip_index_url=None,
             image_uri=image_uri,
         )
         cls._push_image(image_uri)
 
     @classmethod
-    def _build_image(cls, source_dir, base_image, install_packages, image_uri):
+    def _build_image(
+        cls, source_dir, base_image, install_packages, image_uri, pip_index_url=None
+    ):
         build_dir = tempfile.mkdtemp()
         tmp_source_dir = os.path.join(build_dir, "__source_dir")
         shutil.copytree(source_dir, tmp_source_dir)
@@ -247,6 +262,7 @@ class ScriptOperator(ContainerOperator):
         outputs=None,
         image_uri=None,
         install_packages=None,
+        pip_index_url=None,
         env=None,
         **kwargs
     ):
@@ -280,7 +296,8 @@ class ScriptOperator(ContainerOperator):
         )
 
         commands = cls._build_pre_install_package_command(
-            install_packages=install_packages
+            install_packages=install_packages,
+            pip_index_url=pip_index_url,
         )
 
         commands.extend(
@@ -288,6 +305,10 @@ class ScriptOperator(ContainerOperator):
                 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
             ]
         )
+
+        if not image_uri:
+            # sess = get_default_session()
+            image_uri = ScriptOperatorImage.format(region_id="cn-hangzhou")
 
         return ContainerOperator(
             inputs=inputs,
@@ -308,6 +329,7 @@ class ScriptOperator(ContainerOperator):
         outputs=None,
         base_image=None,
         install_packages=None,
+        pip_index_url=_DEFAULT_PIP_INDEX_URL,
         **kwargs
     ):
         """Construct Operator that uses snapshot code in image.
@@ -324,6 +346,7 @@ class ScriptOperator(ContainerOperator):
             image_uri: Image tag for the output image.
             base_image: Base image used to build the image use in Operator.
             install_packages: Required packages that will be installed in the image.
+            pip_index_url:
 
         Returns:
             ContainerOperator:
@@ -348,13 +371,14 @@ class ScriptOperator(ContainerOperator):
         )
 
     @classmethod
-    def create_with_literal_snapshot(
+    def create_with_source_snapshot(
         cls,
         script_file,
         inputs=None,
         outputs=None,
-        install_packages=None,
         image_uri=None,
+        install_packages=None,
+        pip_index_url=_DEFAULT_PIP_INDEX_URL,
         **kwargs
     ):
         """Construct Operator that uses snapshot code in image.
@@ -369,13 +393,17 @@ class ScriptOperator(ContainerOperator):
             inputs:
             outputs:
             install_packages:
+            pip_index_url:
 
         Returns:
 
         """
 
         commands, args = cls._build_script_commands(
-            script_file=script_file, install_packages=install_packages, inputs=inputs
+            script_file=script_file,
+            install_packages=install_packages,
+            pip_index_url=pip_index_url,
+            inputs=inputs,
         )
 
         return ContainerOperator(
@@ -388,7 +416,9 @@ class ScriptOperator(ContainerOperator):
         )
 
     @classmethod
-    def _build_script_commands(cls, script_file, install_packages, inputs):
+    def _build_script_commands(
+        cls, script_file, install_packages, inputs, pip_index_url=None
+    ):
         install_packages = (
             [install_packages]
             if isinstance(install_packages, six.string_types)
@@ -403,12 +433,16 @@ class ScriptOperator(ContainerOperator):
         with open(script_file, "r") as f:
             source = f.read()
 
+        pip_index_url_env = (
+            "PIP_INDEX_URL={}".format(pip_index_url) if pip_index_url else ""
+        )
         commands = (
             [
                 "sh",
                 "-c",
                 _PRE_PIP_INSTALL_TEMPLATE.format(
-                    pkgs="".join(["'%s'" % p for p in install_packages])
+                    pkgs="".join(["'%s'" % p for p in install_packages]),
+                    pip_index_url_env=pip_index_url_env,
                 ),
             ]
             if install_packages
@@ -432,11 +466,15 @@ class ScriptOperator(ContainerOperator):
         return commands, args
 
     @classmethod
-    def _get_install_packages_step(cls, install_packages):
+    def _get_install_packages_step(cls, install_packages, pip_index_url=None):
         if not install_packages:
             return ""
         packages = " ".join(install_packages)
-        return "RUN python -m pip install {0}".format(packages)
+        if not pip_index_url:
+            return "RUN python -m pip install {0}".format(packages)
+        return "RUN PIP_INDEX_URL={0} python -m pip install {1}".format(
+            pip_index_url, packages
+        )
 
     @classmethod
     def _get_install_requirements_step(cls, source_dir):

@@ -1,7 +1,8 @@
+import contextlib
 import os
 from unittest import skip
 
-import contextlib
+import yaml
 
 from pai.common.utils import gen_temp_table
 from pai.operator import (
@@ -14,12 +15,13 @@ from pai.operator.types import (
     PipelineParameter,
 )
 from pai.operator.types.artifact import MaxComputeTableArtifact
-from pai.pipeline import Pipeline
+from pai.pipeline import Pipeline, PipelineRun
 from tests.integration import BaseIntegTestCase
 from tests.test_data import (
     SCRIPT_DIR_PATH,
     MAXC_SQL_TEMPLATE_SCRIPT_PATH,
     SHELL_SCRIPT_DIR_PATH,
+    RAW_ARTIFACT_RW_DIR_PATH,
 )
 
 
@@ -169,17 +171,16 @@ class TestScriptOperator(BaseIntegTestCase):
 
     def test_literal_snapshot(self):
         script_file = os.path.join(SHELL_SCRIPT_DIR_PATH, "job.sh")
-        op = ScriptOperator.create_with_literal_snapshot(
+        op = ScriptOperator.create_with_source_snapshot(
             script_file=script_file, inputs=[PipelineParameter("foo")]
         )
 
-        op.run(
-            "test_literal_snapshot",
-            arguments={
-                "foo": "FooFromLiteralSnapshot",
-            },
-            local_mode=True,
-        )
+        # op.run(
+        #     "test_literal_snapshot",
+        #     arguments={
+        #         "foo": "FooFromLiteralSnapshot",
+        #     },
+        # )
 
         def create_pipeline():
             x = PipelineParameter("x")
@@ -204,3 +205,65 @@ class TestScriptOperator(BaseIntegTestCase):
         p = create_pipeline()
 
         p.run("literal_pipeline_job", arguments={"x": "ParameterX"})
+
+    def test_read_raw_artifact(self):
+        script_file = os.path.join(RAW_ARTIFACT_RW_DIR_PATH, "main.py")
+        op = ScriptOperator.create_with_source_snapshot(
+            script_file=script_file,
+            inputs=[
+                PipelineArtifact(
+                    name="input1",
+                    metadata=MetadataBuilder.raw(),
+                ),
+            ],
+            outputs=[
+                PipelineArtifact(
+                    name="output1",
+                    metadata=MetadataBuilder.raw(),
+                )
+            ],
+        )
+
+        run = op.run("rawArtifactAppend", arguments={"input1": "helloWorld"})
+        self.assertEqual(run.get_outputs()[0].value, "helloWorld:End")
+
+        def create_pipeline():
+            step1 = op.as_step(name="step1", inputs={"input1": "helloWorld"})
+
+            step2 = op.as_step(
+                name="step2",
+                inputs={
+                    "input1": step1.outputs["output1"],
+                },
+            )
+
+            return Pipeline(steps=[step1, step2], outputs=step2.outputs[:])
+
+        p = create_pipeline()
+        pipeline_run = p.run("rawArtifactPassing")
+
+        self.assertEqual(pipeline_run.get_outputs()[0].value, "helloWorld:End:End")
+
+    def test_rw_raw_artifact(self):
+        script_file = os.path.join(RAW_ARTIFACT_RW_DIR_PATH, "pai_running_example.py")
+
+        op = ScriptOperator.create_with_source_snapshot(
+            script_file=script_file,
+            inputs=[
+                PipelineArtifact(
+                    name="input1",
+                    metadata=MetadataBuilder.raw(),
+                ),
+            ],
+            outputs=[
+                PipelineArtifact(
+                    name="output1",
+                    metadata=MetadataBuilder.raw(),
+                )
+            ],
+            install_packages=[
+                "https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai_running_utils/dist/pai_running_utils-0.2.5.post2-py2.py3-none-any.whl"
+            ],
+        )
+
+        op.run("rawArtifactExample", arguments={"input1": "helloWorld"})

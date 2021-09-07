@@ -38,6 +38,10 @@ class MetadataBuilder(object):
             data_type=DataType.Model, location_type=LocationType.MaxComputeOfflineModel
         )
 
+    @staticmethod
+    def raw():
+        return RawArtifactMetadata()
+
 
 class DataType(object):
     DataSet = "DataSet"
@@ -59,6 +63,24 @@ class ModelType(object):
 
 
 class PipelineArtifact(PipelineVariable):
+    """Input/output artifact definition of the Pipeline and operator.
+
+    Examples:
+
+        from pai.operator.types import MetadataBuilder, PipelineArtifact
+        from pai.operator import ContainerOperator
+
+        op = ContainerOperator(
+            image_uri="python:3",
+            inputs=[
+                PipelineArtifact(name="foo", metadata=MetadataBuilder.to_dict()),
+            ]
+
+        )
+        pass
+
+    """
+
     variable_category = "artifacts"
 
     def __init__(
@@ -304,6 +326,11 @@ class ArtifactMetadataBase(with_metaclass(ABCMeta)):
     @abstractmethod
     def to_dict(self):
         pass
+
+
+class RawArtifactMetadata(ArtifactMetadataBase):
+    def to_dict(self):
+        return {"type": {"Any": {}}}
 
 
 class LocationArtifactMetadata(ArtifactMetadataBase):

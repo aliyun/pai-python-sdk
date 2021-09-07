@@ -6,6 +6,8 @@ SCRIPT_DIR_PATH = os.path.join(test_data_dir, "script_dir")
 
 SHELL_SCRIPT_DIR_PATH = os.path.join(test_data_dir, "shell_scripts")
 
+RAW_ARTIFACT_RW_DIR_PATH = os.path.join(test_data_dir, "read_write_raw_artifact")
+
 MAXC_SQL_TEMPLATE_SCRIPT_PATH = os.path.join(test_data_dir, "maxc_sql_scripts")
 
 OPERATOR_MANIFEST_DIR = os.path.join(test_data_dir, "manifests")
