@@ -10,7 +10,11 @@ import shutil
 import six
 from datetime import date
 
-from pai.common.oss_utils import is_oss_url, OssNotFoundException
+from oss2.exceptions import NotFound, ServerError
+
+
+from pai.core.exception import PAIException
+from pai.common.oss_utils import is_oss_url
 from pai.common.utils import (
     tar_source_files,
     file_checksum,
@@ -136,8 +140,15 @@ class ScriptOperator(ContainerOperator):
         oss_bucket = cls._get_oss_bucket()
         try:
             oss_bucket.head_object(object_key)
-        except OssNotFoundException:
+        except NotFound:
             oss_bucket.put_object_from_file(object_key, src)
+        except ServerError as e:
+            if e.status == 403:
+                raise PAIException(
+                    "Permission denied, please check credentials for the OSS bucket: %s"
+                    % oss_bucket.bucket_name
+                )
+            raise PAIException("Unexpected OSS server exception: %s" % e.__str__())
 
         oss_url = "oss://{bucket_name}/{oss_key}?endpoint={endpoint}".format(
             bucket_name=oss_bucket.bucket_name,
@@ -193,7 +204,7 @@ class ScriptOperator(ContainerOperator):
             source_dir,
             base_image,
             install_packages=install_packages,
-            pip_index_url=None,
+            pip_index_url=pip_index_url,
             image_uri=image_uri,
         )
         cls._push_image(image_uri)
@@ -209,9 +220,12 @@ class ScriptOperator(ContainerOperator):
 
         dockerfile = _DOCKERFILE_TEMPLATE.format(
             base_image=base_image,
-            install_packages_step=cls._get_install_packages_step(install_packages),
+            install_packages_step=cls._get_install_packages_step(
+                install_packages, pip_index_url
+            ),
             install_requirements_step=cls._get_install_requirements_step(
-                tmp_source_dir
+                tmp_source_dir,
+                pip_index_url,
             ),
         )
 
@@ -357,6 +371,7 @@ class ScriptOperator(ContainerOperator):
             base_image=base_image or cls.get_default_image(),
             image_uri=image_uri,
             install_packages=install_packages,
+            pip_index_url=pip_index_url,
         )
 
         commands, args = cls._build_commands_for_image_snapshot(entry_file, inputs)
@@ -477,8 +492,12 @@ class ScriptOperator(ContainerOperator):
         )
 
     @classmethod
-    def _get_install_requirements_step(cls, source_dir):
+    def _get_install_requirements_step(cls, source_dir, pip_index_url=None):
         requirement_file = os.path.join(source_dir, "requirements.txt")
         if not os.path.isfile(requirement_file):
             return ""
-        return "RUN python -m pip install -r requirements.txt"
+        if not pip_index_url:
+            return "RUN  python -m pip install -r requirements.txt"
+        return "RUN PIP_INDEX_URL={0} python -m pip install -r requirements.txt".format(
+            pip_index_url
+        )

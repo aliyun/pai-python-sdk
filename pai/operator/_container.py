@@ -10,6 +10,8 @@ import shutil
 import six
 import uuid
 
+import yaml
+
 from pai.common.utils import makedirs
 from pai.core.session import get_default_session
 from pai.operator._base import UnRegisteredOperator
@@ -86,8 +88,14 @@ class ContainerOperator(UnRegisteredOperator):
             for c in commands
         ]
 
-    def to_dict(self):
+    def to_dict(self, identifier=None, version=None):
         d = super(ContainerOperator, self).to_dict()
+
+        if identifier is not None:
+            d["metadata"]["identifier"] = identifier
+        if version is not None:
+            d["metadata"]["version"] = version
+
         d["spec"]["container"] = {
             "image": self.image_uri,
             "command": self._transform_commands(self.command),
@@ -102,13 +110,8 @@ class ContainerOperator(UnRegisteredOperator):
             d["spec"]["container"]["args"] = self._transform_commands(self.args)
         return d
 
-    def run(self, job_name, arguments=None, local_mode=False, **kwargs):
-        if local_mode:
-            return self._local_run(job_name, arguments=arguments)
-        else:
-            return super(ContainerOperator, self).run(
-                job_name=job_name, arguments=arguments, **kwargs
-            )
+    def to_manifest(self, identifier, version):
+        return yaml.dump(self.to_dict(identifier=identifier, version=version))
 
     @classmethod
     def get_default_image(cls):

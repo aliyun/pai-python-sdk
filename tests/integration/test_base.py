@@ -1,9 +1,11 @@
 from __future__ import absolute_import
 
 import random
+import unittest
 
 from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_run_node_scoped_placeholder
+from pai.core.session import EnvType
 from pai.pipeline import PipelineRunStatus, PipelineStep
 from pai.pipeline.core import Pipeline
 from pai.operator.types import (
@@ -12,8 +14,13 @@ from pai.operator.types import (
 )
 from pai.operator.types import ParameterType, PipelineParameter
 from tests.integration import BaseIntegTestCase
+from tests.integration.utils import t_context
 
 
+@unittest.skipIf(
+    t_context.env_type == EnvType.Light,
+    "Light Env do not contain operator provide by PAI",
+)
 class TestAlgo(BaseIntegTestCase):
     def test_heart_disease_prediction_pipeline(self):
         dataset = type(self).heart_disease_prediction_dataset

@@ -1,13 +1,20 @@
 from __future__ import absolute_import
 
+import unittest
 
 from pai.common import ProviderAlibabaPAI
+from pai.core.session import EnvType
 from pai.operator import SavedOperator
 from pai.pipeline import PipelineRunStatus
 from tests.integration import BaseIntegTestCase
 from pai.common.utils import iter_with_limit
+from tests.integration.utils import t_context
 
 
+@unittest.skipIf(
+    t_context.env_type == EnvType.Light,
+    "Light Environment do not hold PAI provide SavedOperator.",
+)
 class TestSavedOperator(BaseIntegTestCase):
     def test_list_operator(self):
         operators = list(

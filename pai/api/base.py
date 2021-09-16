@@ -1,18 +1,17 @@
 from __future__ import absolute_import
 
 import json
-import os
-import time
-from functools import wraps
 import logging
+import os
+from functools import wraps
 
+import time
+from Tea.exceptions import TeaException
+from alibabacloud_tea_openapi.models import Config
+from alibabacloud_tea_util import models as util_models
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
 
-from alibabacloud_tea_openapi.models import Config
-
 from pai.core.exception import ServiceCallException
-
-from Tea.exceptions import TeaException
 
 DefaultPageSize = 50
 
@@ -132,17 +131,32 @@ class BaseTeaClient(object):
         client_cls,
         region_id=None,
         endpoint=None,
+        **kwargs
     ):
         if endpoint is None:
             endpoint = type(self)._get_endpoint(region_id=region_id)
+
+        self.region_id = region_id
+        self.endpoint = endpoint
+        self._access_key_id = access_key_id
+        self._access_key_secret = access_key_secret
 
         config = Config(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             region_id=region_id,
             endpoint=endpoint,
+            **kwargs
         )
         self.base_client = client_cls(config)
+
+    @classmethod
+    def _get_runtime(cls):
+        return util_models.RuntimeOptions()
+
+    @classmethod
+    def _get_headers(cls):
+        return {"x-acs-caller-uid": "10"}
 
     @classmethod
     def _get_endpoint(cls, region_id):

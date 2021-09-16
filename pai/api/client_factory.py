@@ -4,6 +4,10 @@ from pai.api.paiflow import PAIFlowClient
 from pai.api.sts import StsClient
 from pai.api.workspace import WorkspaceClient
 from alibabacloud_tea_openapi.models import Config
+import logging
+
+
+_logger = logging.getLogger(__name__)
 
 
 class ClientConfig(object):
@@ -42,7 +46,7 @@ class ClientFactory(object):
 
     @classmethod
     def create_paiflow_client(
-        cls, access_key_id, access_key_secret, region_id, endpoint=None
+        cls, access_key_id, access_key_secret, region_id=None, endpoint=None, **kwargs
     ):
 
         return PAIFlowClient(
@@ -50,6 +54,7 @@ class ClientFactory(object):
             access_key_secret=access_key_secret,
             region_id=region_id,
             endpoint=endpoint,
+            **kwargs,
         )
 
     @classmethod
@@ -60,6 +65,10 @@ class ClientFactory(object):
     def create_workspace_client(
         cls, access_key_id, access_key_secret, region_id, endpoint=None
     ):
+        if not region_id and not endpoint:
+            _logger.info("Workspace client not initialized.")
+            return None
+
         return WorkspaceClient(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,

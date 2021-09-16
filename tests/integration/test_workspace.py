@@ -1,10 +1,18 @@
 from __future__ import absolute_import
 
+import unittest
+
 from pai.common.utils import iter_with_limit
+from pai.core.session import EnvType
 from pai.core.workspace import Workspace
 from tests.integration import BaseIntegTestCase
+from tests.integration.utils import t_context
 
 
+@unittest.skipIf(
+    t_context.env_type == EnvType.Light,
+    "Light Environment do not provide Workspace service .",
+)
 class TestWorkspace(BaseIntegTestCase):
 
     default_workspace = None

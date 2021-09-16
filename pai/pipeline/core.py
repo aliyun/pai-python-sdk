@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 from collections import defaultdict, Counter
 
+import yaml
 
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import OutputsSpec, InputsSpec
@@ -333,8 +334,14 @@ class Pipeline(UnRegisteredOperator):
                 graph.edge(head.name, step.name)
         return graph
 
-    def to_dict(self):
+    def to_dict(self, identifier=None, version=None):
         entrypoint = super(Pipeline, self).to_dict()
+
+        if identifier is not None:
+            entrypoint["metadata"]["identifier"] = identifier
+        if version is not None:
+            entrypoint["metadata"]["version"] = version
+
         entrypoint["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
         if not self._unregistered_ops:
             return entrypoint
@@ -343,3 +350,9 @@ class Pipeline(UnRegisteredOperator):
         res.append(entrypoint)
 
         return res
+
+    def to_manifest(self, identifier, version):
+        d = self.to_dict(identifier, version)
+        if isinstance(d, list):
+            return yaml.dump_all(d)
+        return yaml.dump(d)

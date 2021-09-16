@@ -100,7 +100,13 @@ class PipelineStep(object):
 
     @classmethod
     def from_registered_op(
-        cls, identifier, provider, version, inputs, name=None, depends=None
+        cls,
+        identifier,
+        provider=None,
+        version="v1",
+        inputs=None,
+        name=None,
+        depends=None,
     ):
         """Build the PipelineStep from the given registered operator reference: identifier, version, provider.
 
@@ -116,7 +122,9 @@ class PipelineStep(object):
             PipelineStep: The built step instantiates from the given registered operator and inputs.
         """
         from ..operator import SavedOperator
+        from ..core.session import get_default_session
 
+        provider = provider or get_default_session().provider
         op = SavedOperator.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )
@@ -128,7 +136,7 @@ class PipelineStep(object):
                 )
             )
         return cls(
-            inputs=inputs,
+            inputs=inputs or [],
             name=name,
             depends=depends,
             operator=op,

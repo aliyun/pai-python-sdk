@@ -1,7 +1,7 @@
 import itertools
 import logging
 import uuid
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 import six
 import yaml
@@ -179,7 +179,7 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         )
 
 
-class UnRegisteredOperator(OperatorBase):
+class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
     def __init__(self, inputs, outputs):
         super(UnRegisteredOperator, self).__init__(inputs=inputs, outputs=outputs)
         self._guid = uuid.uuid4().hex
@@ -220,19 +220,14 @@ class UnRegisteredOperator(OperatorBase):
         """
         from pai.operator import SavedOperator
 
-        session = get_default_session()
-        provider = session.provider
-
         if not identifier or not version:
             raise ValueError(
                 "Please provide the identifier and version for the operator."
             )
 
-        manifest = self.to_dict()
+        manifest = self.to_manifest(identifier=identifier, version=version)
 
-        manifest["metadata"]["provider"] = provider
-        manifest["metadata"]["identifier"] = identifier
-        manifest["metadata"]["version"] = version
+        session = get_default_session()
         id = session.create_pipeline(manifest, workspace=session.workspace)
 
         return SavedOperator.get(id)
@@ -274,3 +269,7 @@ class UnRegisteredOperator(OperatorBase):
             "inputs": self.inputs.to_dict(),
             "outputs": self.outputs.to_dict(),
         }
+
+    @abstractmethod
+    def to_manifest(self, identifier, version):
+        pass

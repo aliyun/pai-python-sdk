@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import six
-from oss2.exceptions import NotFound as OssNotFoundException
 
 
 def is_oss_url(url):

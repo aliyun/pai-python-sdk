@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import os
 from functools import wraps
 
 import six
@@ -39,7 +38,9 @@ class PAIFlowClient(BaseTeaClient):
 
     _PRODUCT_NAME = "paiflow"
 
-    def __init__(self, access_key_id, access_key_secret, region_id=None, endpoint=None):
+    def __init__(
+        self, access_key_id, access_key_secret, region_id=None, endpoint=None, **kwargs
+    ):
         """Class to wrap APIs provided by PaiFlow pipeline service.
 
         Args:
@@ -51,11 +52,15 @@ class PAIFlowClient(BaseTeaClient):
             client_cls=Client,
             region_id=region_id,
             endpoint=endpoint,
+            **kwargs,
         )
 
     def get_pipeline_schema(self, pipeline_id):
         resp = self._call_service_with_exception(
-            self.base_client.get_pipeline_schema, pipeline_id=pipeline_id
+            self.base_client.get_pipeline_schema_with_options,
+            pipeline_id=pipeline_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.to_map()
 
@@ -76,25 +81,35 @@ class PAIFlowClient(BaseTeaClient):
             pipeline_identifier=identifier,
             workspace_id=workspace_id,
         )
-        resp = self.base_client.list_pipelines(request).body.to_map()
+
+        resp = self._call_service_with_exception(
+            self.base_client.list_pipelines_with_options,
+            request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
+        ).to_map()
         total_count, pipelines = resp["TotalCount"], resp["Pipelines"]
         return pipelines, total_count
 
     def list_pipeline_generator(self, **kwargs):
         return type(self).to_generator(self.list_pipeline)(**kwargs)
 
-    @require_workspace
     def create_pipeline(self, manifest, workspace_id=None):
         request = CreatePipelineRequest(manifest=manifest, workspace_id=workspace_id)
         resp = self._call_service_with_exception(
-            self.base_client.create_pipeline,
+            self.base_client.create_pipeline_with_options,
             request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.pipeline_id
 
     def delete_pipeline(self, pipeline_id):
         self._call_service_with_exception(
-            self.base_client.delete_pipeline, pipeline_id=pipeline_id
+            self.base_client.delete_pipeline_with_options,
+            pipeline_id=pipeline_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return
 
@@ -103,13 +118,20 @@ class PAIFlowClient(BaseTeaClient):
             manifest=manifest,
         )
         self._call_service_with_exception(
-            self.base_client.update_pipeline, pipeline_id=pipeline_id, request=request
+            self.base_client.update_pipeline_with_options,
+            pipeline_id=pipeline_id,
+            request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return
 
     def get_pipeline(self, pipeline_id):
         resp = self._call_service_with_exception(
-            self.base_client.get_pipeline, pipeline_id=pipeline_id
+            self.base_client.get_pipeline_with_options,
+            pipeline_id=pipeline_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.to_map()
 
@@ -120,15 +142,20 @@ class PAIFlowClient(BaseTeaClient):
             raise ValueError("Please provide user_ids as list or tuple")
         request = UpdatePipelinePrivilegesRequest(users=user_ids)
         self._call_service_with_exception(
-            self.base_client.update_pipeline_privileges,
+            self.base_client.update_pipeline_privileges_with_options,
             pipeline_id=pipeline_id,
             request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return
 
     def list_pipeline_privilege(self, pipeline_id):
         resp = self._call_service_with_exception(
-            self.base_client.list_pipeline_privileges, pipeline_id=pipeline_id
+            self.base_client.list_pipeline_privileges_with_options,
+            pipeline_id=pipeline_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.to_map()
 
@@ -167,7 +194,10 @@ class PAIFlowClient(BaseTeaClient):
             source=source,
         )
         resp = self._call_service_with_exception(
-            self.base_client.create_run, request=request
+            self.base_client.create_run_with_options,
+            request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.run_id
 
@@ -199,7 +229,10 @@ class PAIFlowClient(BaseTeaClient):
             workspace_id=workspace_id,
         )
         resp = self._call_service_with_exception(
-            self.base_client.list_runs, request=request
+            self.base_client.list_runs_with_options,
+            request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         ).to_map()
         runs, total_count = resp["Runs"], resp["TotalCount"]
         return runs, total_count
@@ -209,27 +242,51 @@ class PAIFlowClient(BaseTeaClient):
 
     def get_run(self, run_id):
         resp = self._call_service_with_exception(
-            self.base_client.get_run, run_id=run_id
+            self.base_client.get_run_with_options,
+            run_id=run_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.to_map()
 
     def start_run(self, run_id):
-        self._call_service_with_exception(self.base_client.start_run, run_id=run_id)
+        self._call_service_with_exception(
+            self.base_client.start_run_with_options,
+            run_id=run_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
+        )
         return
 
     def terminate_run(self, run_id):
-        self._call_service_with_exception(self.base_client.terminate_run, run_id=run_id)
+        self._call_service_with_exception(
+            self.base_client.terminate_run_with_options,
+            run_id=run_id,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
+        )
         return
 
     def update_run(self, run_id, name):
         request = UpdateRunRequest(name=name)
-        self._call_service_with_exception(self.base_client.update_run, request=request)
+        self._call_service_with_exception(
+            self.base_client.update_run_with_options,
+            run_id=run_id,
+            request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
+        )
         return
 
     def get_node(self, run_id, node_id, depth=2):
         request = GetNodeRequest(depth=depth)
         resp = self._call_service_with_exception(
-            self.base_client.get_node, run_id=run_id, node_id=node_id, request=request
+            self.base_client.get_node_with_options,
+            run_id=run_id,
+            node_id=node_id,
+            request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.to_map()
 
@@ -254,10 +311,12 @@ class PAIFlowClient(BaseTeaClient):
         )
 
         resp = self._call_service_with_exception(
-            self.base_client.list_node_logs,
+            self.base_client.list_node_logs_with_options,
             run_id=run_id,
             node_id=node_id,
             request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         ).to_map()
 
         logs, total_count = resp["Logs"], resp["TotalCount"]
@@ -303,10 +362,12 @@ class PAIFlowClient(BaseTeaClient):
         )
 
         resp = self._call_service_with_exception(
-            self.base_client.list_node_outputs,
+            self.base_client.list_node_outputs_with_options,
             run_id=run_id,
             node_id=node_id,
             request=request,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         ).to_map()
 
         outputs, total_count = resp["Outputs"], resp["TotalCount"]
@@ -317,6 +378,8 @@ class PAIFlowClient(BaseTeaClient):
 
     def get_caller_provider(self):
         resp = self._call_service_with_exception(
-            self.base_client.get_caller_provider,
+            self.base_client.get_caller_provider_with_options,
+            headers=self._get_headers(),
+            runtime=self._get_runtime(),
         )
         return resp.provider

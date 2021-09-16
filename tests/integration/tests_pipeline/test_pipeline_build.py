@@ -6,6 +6,7 @@ import uuid
 
 from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_temp_table
+from pai.core.session import EnvType
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.run import PipelineRunStatus
 from pai.operator.types import (
@@ -17,8 +18,13 @@ from pai.operator.types import (
 from pai.operator.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
+from tests.integration.utils import t_context
 
 
+@unittest.skipIf(
+    t_context.env_type == EnvType.Light,
+    "Light Environment do not hold PAI provide SavedOperator.",
+)
 class TestSimpleCompositePipeline(BaseIntegTestCase):
     def test_run_composite_pipeline(self):
         (
@@ -192,13 +198,16 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             )
 
 
+@unittest.skipIf(
+    t_context.env_type == EnvType.Light,
+    "Light Environment do not hold PAI provide SavedOperator.",
+)
 class TestPipelineBuild(BaseIntegTestCase):
     def setUp(self):
         super(TestPipelineBuild, self).setUp()
         self.maxDiff = None
 
     def test_nested_pipeline(self):
-
         dataset = self.wumai_dataset
 
         def create_saved_base_pipeline():

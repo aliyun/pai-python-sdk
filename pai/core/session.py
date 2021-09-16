@@ -1,17 +1,55 @@
 from __future__ import absolute_import
 
 import logging
-import oss2
+from enum import Enum
 
+from six.moves.urllib import parse
+
+import oss2
 import six
 import yaml
-from aliyunsdkcore.client import AcsClient
 
 from pai.api.client_factory import ClientFactory
 from pai.core.workspace import Workspace
 from pai.decorator import cached_property
 
 logger = logging.getLogger(__name__)
+
+
+class EnvType(Enum):
+    PublicCloud = "PublicCloud"
+    Light = "Light"
+
+
+def setup_light_default_session(
+    username,
+    endpoint,
+    token=None,
+    protocol="http",
+    **kwargs,
+):
+
+    """
+
+    Args:
+        username:
+        token:
+        endpoint:
+        protocol:
+
+    Returns:
+
+    """
+
+    sess = LightSession(
+        username=username,
+        token=token,
+        endpoint=endpoint,
+        protocol=protocol,
+    )
+
+    Session._default_session = sess
+    return sess
 
 
 def setup_default_session(
@@ -107,6 +145,8 @@ class Session(object):
     _default_session = None
     _inner_region_ids = ["center"]
 
+    env_type = EnvType.PublicCloud
+
     def __init__(
         self,
         access_key_id=None,
@@ -125,20 +165,22 @@ class Session(object):
                  https://help.aliyun.com/document_detail/40654.html
         """
 
-        if not access_key_id or not access_key_secret or not region_id:
+        if not access_key_id or not access_key_secret:
             raise ValueError("Please provide access_key, access_secret and region")
 
-        self._init_clients(access_key_id, access_key_secret, region_id)
+        self._init_clients(access_key_id, access_key_secret, region_id, **kwargs)
 
         self._region_id = region_id
         self._oss_bucket = oss_bucket
         self._workspace = workspace
 
-    def _init_clients(self, ak, ak_secret, region_id):
+    def _init_clients(self, ak, ak_secret, region_id, **kwargs):
+        pipeline_config = kwargs.pop("pipeline_config", {})
         self.paiflow_client = ClientFactory.create_paiflow_client(
             access_key_id=ak,
             access_key_secret=ak_secret,
             region_id=region_id,
+            **pipeline_config,
         )
 
         self.ws_client = ClientFactory.create_workspace_client(
@@ -191,8 +233,11 @@ class Session(object):
         return self._oss_bucket
 
     @property
-    def console_host(self):
-        return "https://pai.console.aliyun.com/console"
+    def console_url(self):
+        if self._is_inner:
+            return "https://pai-next.alibaba-inc.com"
+        else:
+            return "https://pai.console.aliyun.com/console"
 
     @cached_property
     def provider(self):
@@ -354,20 +399,27 @@ class Session(object):
         """
         run_args = {"arguments": arguments, "env": env}
 
+        if workspace:
+            workspace_id = workspace.id
+        elif self.env_type == EnvType.Light:
+            workspace_id = 0
+        else:
+            workspace_id = 0
+
         run_id = self.paiflow_client.create_run(
             name,
             run_args,
             pipeline_id=pipeline_id,
             manifest=manifest,
             no_confirm_required=no_confirm_required,
-            workspace_id=workspace.id if workspace else None,
+            workspace_id=workspace_id,
         )
 
         print(
             "Create pipeline run success (run_id: {run_id}), please visit the link below to"
             " view the run detail.".format(run_id=run_id)
         )
-        print(self.run_detail_url(run_id, is_inner=self._is_inner))
+        print(self.run_detail_url(run_id))
 
         return run_id
 
@@ -544,11 +596,65 @@ class Session(object):
         resp = self.paiflow_client.start_run(run_id)
         return resp["Data"]
 
-    def run_detail_url(self, run_id, is_inner=False):
-        if not is_inner:
-            return "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
-                console_host=self.console_host, region_id=self.region_id, run_id=run_id
+    def run_detail_url(self, run_id, pipeline_id=None):
+        if self.env_type == EnvType.Light:
+            return (
+                "{console_host}/#/pipeline/detail/{pipeline_id}#runId={run_id}".format(
+                    console_host=self.console_url,
+                    pipeline_id=pipeline_id or 0,
+                    run_id=run_id,
+                )
             )
-        return "https://pai-next.alibaba-inc.com/#/studio/task/detail/{run_id}".format(
-            run_id=run_id
+
+        if self.env_type == EnvType.PublicCloud:
+            if not self._is_inner:
+                return "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
+                    console_host=self.console_url,
+                    region_id=self.region_id,
+                    run_id=run_id,
+                )
+            return "{console_host}/#/studio/task/detail/{run_id}".format(
+                console_host=self.console_url, run_id=run_id
+            )
+
+
+class LightSession(Session):
+
+    env_type = EnvType.Light
+
+    def __init__(self, username, token, endpoint=None, protocol=None):
+        prs = parse.urlparse(endpoint)
+        if prs.scheme and protocol is None:
+            protocol = prs.scheme
+            endpoint = prs.netloc
+
+        self.protocol = protocol
+        self.endpoint = endpoint
+        super(LightSession, self).__init__(
+            access_key_id=username,
+            access_key_secret=token,
+        )
+
+    def _init_clients(self, ak, ak_secret, region_id, **kwargs):
+        self.paiflow_client = ClientFactory.create_paiflow_client(
+            access_key_id=ak,
+            access_key_secret=ak_secret,
+            endpoint=self.endpoint,
+            protocol=self.protocol,
+        )
+
+    def _build_console_endpoint(self):
+        s = self.endpoint.split(".")
+        s[0] = "pai-console"
+        return ".".join(s)
+
+    @property
+    def console_url(self):
+        return "http://{0}".format(self._build_console_endpoint())
+
+    def run_detail_url(self, run_id, pipeline_id=None):
+        return "{console_host}/#/pipeline/detail/{pipeline_id}#runId={run_id}".format(
+            console_host=self.console_url,
+            pipeline_id=pipeline_id or 0,
+            run_id=run_id,
         )
