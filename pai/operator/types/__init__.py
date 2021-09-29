@@ -22,4 +22,6 @@ __all__ = [
     "InputsSpec",
     "OutputsSpec",
     "MetadataBuilder",
+    "IO_TYPE_OUTPUTS",
+    "IO_TYPE_INPUTS",
 ]

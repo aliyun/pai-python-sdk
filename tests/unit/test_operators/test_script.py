@@ -5,6 +5,7 @@ from pai.operator import (
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
+    ContainerOperator,
 )
 from tests.test_data import SCRIPT_DIR_PATH
 from tests.unit import BaseUnitTestCase
@@ -82,7 +83,6 @@ class TestScriptOperator(BaseUnitTestCase):
 
     def test_snapshot_with_literal(self):
         script_file = os.path.join(SCRIPT_DIR_PATH, "main.py")
-        op = ScriptOperator.create_with_source_snapshot(
+        op = ContainerOperator.create_with_source_snapshot(
             script_file=script_file, install_packages="requests"
         )
-        print(op.to_dict())

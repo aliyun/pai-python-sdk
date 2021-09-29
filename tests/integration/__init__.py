@@ -117,7 +117,7 @@ class BaseIntegTestCase(unittest.TestCase):
 
         cls.oss_bucket = cls._init_oss_bucket()
         cls.default_session = cls._setup_test_session()
-        if cls.default_session._is_inner:
+        if cls.default_session.is_inner:
             PublicMaxComputeTableDataSet.set_dataset_project("pai_inner_project")
         cls.odps_client = cls._init_maxc_client()
 
@@ -128,7 +128,7 @@ class BaseIntegTestCase(unittest.TestCase):
     def get_python_image(self):
         if self.default_session.env_type == EnvType.Light:
             return "master0:5000/paiflow/python:3.7"
-        if self.default_session._is_inner:
+        if self.default_session.is_inner:
             return "reg.docker.alibaba-inc.com/pai-sdk/python:3.6"
         return "python:3.6"
 

@@ -151,7 +151,6 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         """
         from pai.pipeline import PipelineRun
 
-        session = get_default_session()
         parameters, artifacts = self.translate_arguments(arguments)
         pipeline_args = {
             "parameters": parameters,
@@ -159,11 +158,8 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         }
 
         run_id = self._submit(job_name=job_name, args=pipeline_args)
-        run_instance = PipelineRun(
-            run_id=run_id,
-            name=job_name,
-            workspace_id=session.workspace.id if session.workspace else None,
-        )
+
+        run_instance = PipelineRun.get(run_id=run_id)
         if not wait:
             return run_instance
         run_instance.wait_for_completion(show_outputs=show_outputs)
@@ -273,3 +269,8 @@ class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
     @abstractmethod
     def to_manifest(self, identifier, version):
         pass
+
+    def export_manifest(self, file_path, identifier, version):
+        manifest = self.to_manifest(identifier=identifier, version=version)
+        with open(file_path, "w") as f:
+            f.write(manifest)

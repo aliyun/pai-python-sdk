@@ -1,19 +1,13 @@
 # coding: utf-8
 
 import os
-import shlex
-import subprocess
 import tempfile
 from collections import namedtuple
-
-import shutil
-import six
 from datetime import date
 
+import six
 from oss2.exceptions import NotFound, ServerError
 
-
-from pai.core.exception import PAIException
 from pai.common.oss_utils import is_oss_url
 from pai.common.utils import (
     tar_source_files,
@@ -21,39 +15,20 @@ from pai.common.utils import (
     to_abs_path,
     extract_file_name,
 )
-from pai.core.session import get_default_session
-from pai.operator._container import ContainerOperator
-from pai.operator.types import PipelineParameter
-
-ScriptOperatorImage = "registry.{region_id}.aliyuncs.com/paiflow-public/python3:v1.0.0"
+from pai.core.exception import PAIException
+from pai.core.session import get_default_session, EnvType
+from pai.operator._container import (
+    ContainerOperator,
+    _PRE_PIP_INSTALL_TEMPLATE,
+    _DefaultScriptOperatorImageLight,
+    _DefaultScriptOperatorImagePublic,
+)
 
 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND = "launch"
 PAI_SOURCE_CODE_ENV_KEY = "PAI_SOURCE_CODE_URL"
 PAI_PROGRAM_ENTRY_POINT_ENV_KEY = "PAI_PROGRAM_ENTRY_POINT"
 
 ProgramSourceFiles = namedtuple("ProgramSourceFiles", ["entry_point", "source_files"])
-
-
-_PRE_PIP_INSTALL_TEMPLATE = '''\
-(PIP_DISABLE_PIP_VERSION_CHECK=1 {pip_index_url_env} python3 -m pip install --quiet {pkgs} \
-|| PIP_DISABLE_PIP_VERSION_CHECK=1 {pip_index_url_env} python3 -m pip install --quiet \
- {pkgs} --user) && "$0" "$@"'''
-
-_DEFAULT_PIP_INDEX_URL = "https://mirrors.aliyun.com/pypi/simple/"
-
-
-_DOCKERFILE_TEMPLATE = """\
-# Build an image that run in PAI.
-FROM {base_image}
-
-RUN mkdir -p /work/code/
-COPY __source_dir/* /work/code/
-
-WORKDIR /work/code
-{install_packages_step}
-{install_requirements_step}
-
-"""
 
 
 class ScriptOperator(ContainerOperator):
@@ -89,11 +64,6 @@ class ScriptOperator(ContainerOperator):
     @classmethod
     def _get_default_command(cls):
         return [PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND]
-
-    @classmethod
-    def _get_default_image_uri(cls):
-        region_id = get_default_session().region_id
-        return ScriptOperatorImage.format(region_id=region_id)
 
     @classmethod
     def _get_oss_bucket(cls):
@@ -158,110 +128,6 @@ class ScriptOperator(ContainerOperator):
         return oss_url
 
     @classmethod
-    def _build_pre_install_package_command(cls, install_packages, pip_index_url=None):
-        install_packages = (
-            [install_packages]
-            if isinstance(install_packages, six.string_types)
-            else install_packages
-        )
-
-        pip_index_url_env = (
-            "PIP_INDEX_URL={}".format(pip_index_url) if pip_index_url else ""
-        )
-        commands = (
-            [
-                "sh",
-                "-c",
-                _PRE_PIP_INSTALL_TEMPLATE.format(
-                    pkgs="".join(["'%s'" % p for p in install_packages]),
-                    pip_index_url_env=pip_index_url_env,
-                ),
-            ]
-            if install_packages
-            else []
-        )
-        return commands
-
-    @classmethod
-    def _build_and_push_image(
-        cls,
-        source_dir,
-        base_image,
-        image_uri,
-        install_packages=None,
-        pip_index_url=None,
-    ):
-        """Build a docker image that contains the script file and install the required packages.
-
-        Args:
-            source_dir: source script files use in Operator run.
-            base_image: Base image used to build the image use in Operator.
-            image_uri: Image tag for the output image.
-            install_packages: Required packages that will be installed in the image.
-        """
-        print("build and push image: %s" % image_uri)
-        cls._build_image(
-            source_dir,
-            base_image,
-            install_packages=install_packages,
-            pip_index_url=pip_index_url,
-            image_uri=image_uri,
-        )
-        cls._push_image(image_uri)
-
-    @classmethod
-    def _build_image(
-        cls, source_dir, base_image, install_packages, image_uri, pip_index_url=None
-    ):
-        build_dir = tempfile.mkdtemp()
-        tmp_source_dir = os.path.join(build_dir, "__source_dir")
-        shutil.copytree(source_dir, tmp_source_dir)
-        install_packages = install_packages or []
-
-        dockerfile = _DOCKERFILE_TEMPLATE.format(
-            base_image=base_image,
-            install_packages_step=cls._get_install_packages_step(
-                install_packages, pip_index_url
-            ),
-            install_requirements_step=cls._get_install_requirements_step(
-                tmp_source_dir,
-                pip_index_url,
-            ),
-        )
-
-        with open(os.path.join(build_dir, "Dockerfile"), "w") as f:
-            f.write(dockerfile)
-
-        command = "docker build . -t {}".format(image_uri)
-
-        subprocess.check_call(shlex.split(command), cwd=build_dir, env=os.environ)
-
-    @classmethod
-    def _push_image(cls, image_uri):
-        command = "docker push {}".format(image_uri)
-        subprocess.check_call(shlex.split(command))
-
-    @classmethod
-    def _build_commands_for_image_snapshot(cls, entry_file, inputs):
-        filename, file_extension = os.path.splitext(entry_file)
-        if file_extension == ".py":
-            commands = ["python", entry_file]
-        elif file_extension == ".sh":
-            commands = ["sh", entry_file]
-        else:
-            commands = ["./%s" % entry_file]
-
-        if not inputs:
-            return commands
-
-        args = []
-        for p in inputs:
-            if isinstance(p, PipelineParameter):
-                args.append("--%s" % p.name)
-                args.append(p)
-        return commands, args
-
-    @classmethod
     def _create_oss_code_snapshot(cls, source_dir, entry_file):
         entry_point = extract_file_name(entry_file)
         source_code_url = cls.upload_source_files(source_dir, entry_file)
@@ -321,8 +187,7 @@ class ScriptOperator(ContainerOperator):
         )
 
         if not image_uri:
-            # sess = get_default_session()
-            image_uri = ScriptOperatorImage.format(region_id="cn-hangzhou")
+            image_uri = cls._get_default_image_uri()
 
         return ContainerOperator(
             inputs=inputs,
@@ -334,119 +199,12 @@ class ScriptOperator(ContainerOperator):
         )
 
     @classmethod
-    def create_with_image_snapshot(
-        cls,
-        entry_file,
-        source_dir,
-        image_uri,
-        inputs=None,
-        outputs=None,
-        base_image=None,
-        install_packages=None,
-        pip_index_url=_DEFAULT_PIP_INDEX_URL,
-        **kwargs
-    ):
-        """Construct Operator that uses snapshot code in image.
-
-        The method will build a new docker image using the docker cli tool. Files in source_dir
-        will be added to the image at "/work/code" and the required pip packages will be installed.
-        Operator use the new image to run the job.
-
-        Args:
-            source_dir: Source script files use in Operator run.
-            entry_file: Entry point file use in Operator run.
-            inputs: Inputs spec of the Operator.
-            outputs: Outputs spec of the Operator.
-            image_uri: Image tag for the output image.
-            base_image: Base image used to build the image use in Operator.
-            install_packages: Required packages that will be installed in the image.
-            pip_index_url:
-
-        Returns:
-            ContainerOperator:
-        """
-
-        cls._build_and_push_image(
-            source_dir,
-            base_image=base_image or cls.get_default_image(),
-            image_uri=image_uri,
-            install_packages=install_packages,
-            pip_index_url=pip_index_url,
-        )
-
-        commands, args = cls._build_commands_for_image_snapshot(entry_file, inputs)
-
-        return ContainerOperator(
-            image_uri=image_uri,
-            command=commands,
-            args=args,
-            inputs=inputs,
-            outputs=outputs,
-            **kwargs
-        )
-
-    @classmethod
-    def create_with_source_snapshot(
-        cls,
-        script_file,
-        inputs=None,
-        outputs=None,
-        image_uri=None,
-        install_packages=None,
-        pip_index_url=_DEFAULT_PIP_INDEX_URL,
-        **kwargs
-    ):
-        """Construct Operator that uses snapshot code in image.
-
-        Given `script_file` will be passed to the command as literal source code and
-        executed by Shell or Python.
-
-
-        Args:
-            script_file:
-            image_uri:
-            inputs:
-            outputs:
-            install_packages:
-            pip_index_url:
-
-        Returns:
-
-        """
-
-        commands, args = cls._build_script_commands(
-            script_file=script_file,
-            install_packages=install_packages,
-            pip_index_url=pip_index_url,
-            inputs=inputs,
-        )
-
-        return ContainerOperator(
-            image_uri=image_uri or cls.get_default_image(),
-            inputs=inputs,
-            outputs=outputs,
-            command=commands,
-            args=args,
-            **kwargs
-        )
-
-    @classmethod
-    def _build_script_commands(
-        cls, script_file, install_packages, inputs, pip_index_url=None
-    ):
+    def _build_pre_install_package_command(cls, install_packages, pip_index_url=None):
         install_packages = (
             [install_packages]
             if isinstance(install_packages, six.string_types)
             else install_packages
         )
-
-        _, ext = os.path.splitext(script_file)
-        if ext not in [".py", ".sh"]:
-            raise ValueError(
-                "Not support script file, please provide Shell(.sh) or Python(.py) script."
-            )
-        with open(script_file, "r") as f:
-            source = f.read()
 
         pip_index_url_env = (
             "PIP_INDEX_URL={}".format(pip_index_url) if pip_index_url else ""
@@ -463,41 +221,18 @@ class ScriptOperator(ContainerOperator):
             if install_packages
             else []
         )
+        return commands
 
-        if ext == ".sh":
-            run_commands = ["sh", "-ec", source]
+    @classmethod
+    def _get_default_image_uri(cls):
+        session = get_default_session()
+        if session.env_type == EnvType.Light:
+            return _DefaultScriptOperatorImageLight
         else:
-            run_commands = ["python", "-u", "-c", source]
-
-        commands.extend(run_commands)
-        args = []
-        if not inputs:
-            return commands, args
-
-        for p in inputs:
-            if isinstance(p, PipelineParameter):
-                args.append("--%s" % p.name)
-                args.append(p)
-        return commands, args
-
-    @classmethod
-    def _get_install_packages_step(cls, install_packages, pip_index_url=None):
-        if not install_packages:
-            return ""
-        packages = " ".join(install_packages)
-        if not pip_index_url:
-            return "RUN python -m pip install {0}".format(packages)
-        return "RUN PIP_INDEX_URL={0} python -m pip install {1}".format(
-            pip_index_url, packages
-        )
-
-    @classmethod
-    def _get_install_requirements_step(cls, source_dir, pip_index_url=None):
-        requirement_file = os.path.join(source_dir, "requirements.txt")
-        if not os.path.isfile(requirement_file):
-            return ""
-        if not pip_index_url:
-            return "RUN  python -m pip install -r requirements.txt"
-        return "RUN PIP_INDEX_URL={0} python -m pip install -r requirements.txt".format(
-            pip_index_url
-        )
+            return (
+                _DefaultScriptOperatorImagePublic
+                if session.is_inner
+                else _DefaultScriptOperatorImagePublic.format(
+                    region_id=session.region_id
+                )
+            )

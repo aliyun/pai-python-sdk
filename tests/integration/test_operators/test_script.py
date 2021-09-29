@@ -250,21 +250,7 @@ class TestScriptOperatorSourceSnapshot(BaseIntegTestCase):
         self.assertEqual(run.get_outputs()[0].value, "helloWorld:End")
 
     def test_list_logs(self):
-        from pai.pipeline import PipelineRun
-
-        run = PipelineRun.get("flow-cybsxubgupkei7sve1")
-
-        print("NodeLog: ", run.node_id)
-        for log in run._list_node_logs_generator(
-            run_id=run.run_id, node_id=run.node_id
-        ):
-            print(log)
-
-        run_node_detail_info = run._get_service_client().get_node(
-            run.run_id, run.node_id, depth=2
-        )
-
-        print(run_node_detail_info)
+        pass
 
         # def create_pipeline():
         #     step1 = op.as_step(name="step1", inputs={"input1": "helloWorld"})

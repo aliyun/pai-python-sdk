@@ -206,7 +206,7 @@ class Session(object):
         return region_id in cls._inner_region_ids
 
     @property
-    def _is_inner(self):
+    def is_inner(self):
         return self._region_id in self._inner_region_ids
 
     @property
@@ -234,7 +234,7 @@ class Session(object):
 
     @property
     def console_url(self):
-        if self._is_inner:
+        if self.is_inner:
             return "https://pai-next.alibaba-inc.com"
         else:
             return "https://pai.console.aliyun.com/console"
@@ -419,7 +419,7 @@ class Session(object):
             "Create pipeline run success (run_id: {run_id}), please visit the link below to"
             " view the run detail.".format(run_id=run_id)
         )
-        print(self.run_detail_url(run_id))
+        print(self.run_detail_url(run_id, pipeline_id=pipeline_id))
 
         return run_id
 
@@ -607,7 +607,7 @@ class Session(object):
             )
 
         if self.env_type == EnvType.PublicCloud:
-            if not self._is_inner:
+            if not self.is_inner:
                 return "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
                     console_host=self.console_url,
                     region_id=self.region_id,
@@ -653,7 +653,7 @@ class LightSession(Session):
         return "http://{0}".format(self._build_console_endpoint())
 
     def run_detail_url(self, run_id, pipeline_id=None):
-        return "{console_host}/#/pipeline/detail/{pipeline_id}#runId={run_id}".format(
+        return "{console_host}/#/pipeline/detail/{pipeline_id}?runId={run_id}".format(
             console_host=self.console_url,
             pipeline_id=pipeline_id or 0,
             run_id=run_id,

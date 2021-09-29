@@ -2,6 +2,7 @@ import six
 import yaml
 
 from pai.core import Session
+from pai.core.session import get_default_session
 from pai.operator._base import OperatorBase
 from pai.operator.types.spec import load_input_output_spec
 
@@ -52,6 +53,9 @@ class SavedOperator(OperatorBase):
             self.version,
         )
 
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and other.pipeline_id == self.pipeline_id
+
     @property
     def identifier(self):
         return self._identifier
@@ -65,7 +69,7 @@ class SavedOperator(OperatorBase):
         return self._version
 
     @property
-    def id(self):
+    def pipeline_id(self):
         return self._pipeline_id
 
     @property
@@ -123,6 +127,11 @@ class SavedOperator(OperatorBase):
             pai.pipeline.SavedOperator: SavedOperator instance
 
         """
+
+        if not provider:
+            sess = get_default_session()
+            provider = sess.provider
+
         session = Session.current()
         pipeline_info = session.get_pipeline(
             identifier=identifier, provider=provider, version=version
@@ -155,6 +164,11 @@ class SavedOperator(OperatorBase):
         Yields:
               pai.operator.SavedOperator: SavedOperator match the query.
         """
+
+        if not provider:
+            sess = get_default_session()
+            provider = sess.provider if sess else None
+
         pl_gen = cls._get_service_client().list_pipeline_generator(
             identifier=identifier,
             provider=provider,

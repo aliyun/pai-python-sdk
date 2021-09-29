@@ -156,7 +156,7 @@ class BaseTeaClient(object):
 
     @classmethod
     def _get_headers(cls):
-        return {"x-acs-caller-uid": "10"}
+        return {}
 
     @classmethod
     def _get_endpoint(cls, region_id):

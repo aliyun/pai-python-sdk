@@ -278,36 +278,55 @@ class PipelineRun(object):
         else:
             run_logger = _MockRunLogger(run_instance=self, node_id=node_id)
 
-        prev_status_infos = {}
-        root_node_status = run_status
-        log_runners = []
-        while PipelineRunStatus.is_running(root_node_status):
-            curr_time = datetime.now()
-            if timeout and (curr_time - start_at).total_seconds() > timeout:
-                raise TimeoutException("RunInstance wait_for_completion timeout.")
-            curr_status_infos = self.travel_node_status_info(node_id)
-            for node_fullname, status_info in curr_status_infos.items():
-                if (
-                    node_fullname not in prev_status_infos
-                    and status_info["status"] != PipelineRunStatus.Skipped
-                ):
-                    print("Add Logger Node: %s" % node_fullname, status_info["nodeId"])
-                    log_runner = run_logger.submit(
-                        node_id=status_info["nodeId"], node_name=node_fullname
+        try:
+            prev_status_infos = {}
+            root_node_status = run_status
+            log_runners = []
+            while PipelineRunStatus.is_running(root_node_status):
+                curr_time = datetime.now()
+                if timeout and (curr_time - start_at).total_seconds() > timeout:
+                    raise TimeoutException("RunInstance wait_for_completion timeout.")
+                curr_status_infos = self.travel_node_status_info(node_id)
+                for node_fullname, status_info in curr_status_infos.items():
+                    if (
+                        node_fullname not in prev_status_infos
+                        and status_info["status"] != PipelineRunStatus.Skipped
+                    ):
+                        log_runner = run_logger.submit(
+                            node_id=status_info["nodeId"], node_name=node_fullname
+                        )
+                        if log_runner:
+                            log_runners.append(log_runner)
+                prev_status_infos = curr_status_infos
+                root_node_status = (
+                    curr_status_infos[self.name]["status"]
+                    if self.name in curr_status_infos
+                    else root_node_status
+                )
+
+                if root_node_status == PipelineRunStatus.Failed:
+                    raise PAIException(
+                        "PipelineRun failed: run_id={}, run_status_info={}".format(
+                            self.run_id, curr_status_infos
+                        )
                     )
-                    if log_runner:
-                        log_runners.append(log_runner)
-            prev_status_infos = curr_status_infos
-            root_node_status = (
-                curr_status_infos[self.name]["status"]
-                if self.name in curr_status_infos
-                else root_node_status
-            )
+                failed_nodes = {
+                    name: status_info
+                    for name, status_info in curr_status_infos.items()
+                    if PipelineRunStatus.Failed == status_info["status"]
+                }
+                if failed_nodes:
+                    raise PAIException(
+                        "PipelineRun failed: run_id={}, failed_nodes={}".format(
+                            self.run_id, failed_nodes
+                        )
+                    )
 
-            if root_node_status == PipelineRunStatus.Failed:
-                raise PAIException("PipelineRun failed: run_id=%s" % self.run_id)
-
-            time.sleep(2)
+                time.sleep(2)
+        except (KeyboardInterrupt, PAIException) as e:
+            logger.debug("catch expections, %s", e)
+            run_logger.stop_tail()
+            raise e
 
         for log_runner in log_runners:
             _ = log_runner.result()
@@ -386,6 +405,7 @@ class _RunLogger(object):
         page_size=100,
         page_offset=0,
     ):
+        print("Add Node Logger: {}, {}".format(node_name, node_id))
         if node_id in self.running_nodes:
             return
         return self.executor.submit(
@@ -410,4 +430,7 @@ class _MockRunLogger(object):
         pass
 
     def submit(self, *args, **kwargs):
+        pass
+
+    def stop_tail(self):
         pass
