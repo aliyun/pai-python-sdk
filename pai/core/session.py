@@ -22,18 +22,17 @@ class EnvType(Enum):
 
 
 def setup_light_default_session(
-    username,
+    access_key_id,
+    access_key_secret,
     endpoint,
-    token=None,
     protocol="http",
-    **kwargs,
 ):
 
     """
 
     Args:
-        username:
-        token:
+        access_key_id:
+        access_key_secret:
         endpoint:
         protocol:
 
@@ -42,13 +41,13 @@ def setup_light_default_session(
     """
 
     sess = LightSession(
-        username=username,
-        token=token,
+        access_key_id=access_key_id,
+        access_key_secret=access_key_secret,
         endpoint=endpoint,
         protocol=protocol,
     )
 
-    Session._default_session = sess
+    Session.set_default_session(sess)
     return sess
 
 
@@ -102,7 +101,12 @@ def setup_default_session(
     session = Session(
         access_key_id, access_key_secret, region_id, oss_bucket=oss_bucket, **kwargs
     )
-    Session._default_session = session
+
+    if Session.current():
+        Session.set_default_session(session)
+        session._default_sessions[0] = session
+    else:
+        session._default_sessions.append(session)
 
     if workspace_name and workspace_id:
         raise ValueError(
@@ -123,16 +127,6 @@ def setup_default_session(
     return session
 
 
-def get_default_session():
-    """Get the default session.
-
-    Returns:
-        pai.core.session.Session: Default session used by program.
-
-    """
-    return Session.get_default_session()
-
-
 class Session(object):
     """Wrap functionality provided by Alibaba Cloud PAI services
 
@@ -142,7 +136,7 @@ class Session(object):
 
     """
 
-    _default_session = None
+    _default_sessions = []
     _inner_region_ids = ["center"]
 
     env_type = EnvType.PublicCloud
@@ -175,12 +169,15 @@ class Session(object):
         self._workspace = workspace
 
     def _init_clients(self, ak, ak_secret, region_id, **kwargs):
-        pipeline_config = kwargs.pop("pipeline_config", {})
+        endpoint = kwargs.pop("endpoint", None)
+        protocol = kwargs.pop("protocol", None)
+
         self.paiflow_client = ClientFactory.create_paiflow_client(
             access_key_id=ak,
             access_key_secret=ak_secret,
             region_id=region_id,
-            **pipeline_config,
+            endpoint=endpoint,
+            protocol=protocol,
         )
 
         self.ws_client = ClientFactory.create_workspace_client(
@@ -189,13 +186,33 @@ class Session(object):
             region_id=region_id,
         )
 
-    @classmethod
-    def get_default_session(cls):
-        return cls._default_session
+    def __enter__(self):
+        Session.push_session_stack(self)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        Session.pop_session_stack()
 
     @classmethod
     def current(cls):
-        return cls._default_session
+        return cls._default_sessions[-1] if cls._default_sessions else None
+
+    @classmethod
+    def set_default_session(cls, s):
+        if len(cls._default_sessions) == 0:
+            cls._default_sessions = [s]
+        else:
+            cls._default_sessions[0] = s
+
+    @classmethod
+    def push_session_stack(cls, sess):
+        cls._default_sessions.append(sess)
+
+    @classmethod
+    def pop_session_stack(cls):
+        if not cls._default_sessions:
+            raise ValueError("Session stack is empty")
+        return cls._default_sessions.pop(-1)
 
     @property
     def region_id(self):
@@ -622,7 +639,7 @@ class LightSession(Session):
 
     env_type = EnvType.Light
 
-    def __init__(self, username, token, endpoint=None, protocol=None):
+    def __init__(self, access_key_id, access_key_secret, endpoint=None, protocol=None):
         prs = parse.urlparse(endpoint)
         if prs.scheme and protocol is None:
             protocol = prs.scheme
@@ -631,8 +648,8 @@ class LightSession(Session):
         self.protocol = protocol
         self.endpoint = endpoint
         super(LightSession, self).__init__(
-            access_key_id=username,
-            access_key_secret=token,
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
         )
 
     def _init_clients(self, ak, ak_secret, region_id, **kwargs):

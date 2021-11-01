@@ -9,7 +9,7 @@ from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
 from pai.core.exception import TimeoutException, PAIException
 from pai.core.artifact import ArchivedArtifact
-from pai.core.session import get_default_session, Session
+from pai.core.session import Session
 from pai.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class PipelineRun(object):
 
     @classmethod
     def _get_service_client(cls):
-        session = get_default_session()
+        session = Session.current()
         return session.paiflow_client
 
     @cached_property

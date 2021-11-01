@@ -15,7 +15,7 @@ import six
 import yaml
 
 from pai.common.utils import makedirs
-from pai.core.session import get_default_session, EnvType
+from pai.core.session import Session, EnvType
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import IO_TYPE_OUTPUTS, PipelineParameter
 from pai.operator.types.variable import PipelineVariable
@@ -35,7 +35,7 @@ _PIP_INSTALL_TEMPLATE = '''\
 _DefaultScriptOperatorImagePublic = (
     "registry.{region_id}.aliyuncs.com/paiflow-public/python3:v1.0.0"
 )
-_DefaultScriptOperatorImageLight = "master0:5000/paiflow/python3:v1.0.0-eflops2109"
+_DefaultScriptOperatorImageLight = "master0:5000/eflops/python3:v0.1.0"
 
 
 PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND = "launch"
@@ -245,7 +245,7 @@ class ContainerOperator(UnRegisteredOperator):
 
     @classmethod
     def _get_default_image_uri(cls):
-        session = get_default_session()
+        session = Session.current()
         if session.env_type == EnvType.Light:
             return _DefaultScriptOperatorImageLight
         else:

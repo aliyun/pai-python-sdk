@@ -59,9 +59,9 @@ class Workspace(object):
 
     @classmethod
     def _get_service_client(cls):
-        from pai.core.session import get_default_session
+        from pai.core.session import Session
 
-        session = get_default_session()
+        session = Session.current()
         return session.ws_client
 
     @classmethod

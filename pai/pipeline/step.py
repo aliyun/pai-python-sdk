@@ -122,9 +122,9 @@ class PipelineStep(object):
             PipelineStep: The built step instantiates from the given registered operator and inputs.
         """
         from ..operator import SavedOperator
-        from ..core.session import get_default_session
+        from ..core.session import Session
 
-        provider = provider or get_default_session().provider
+        provider = provider or Session.current().provider
         op = SavedOperator.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )

@@ -2,7 +2,6 @@ import six
 import yaml
 
 from pai.core import Session
-from pai.core.session import get_default_session
 from pai.operator._base import OperatorBase
 from pai.operator.types.spec import load_input_output_spec
 
@@ -129,7 +128,7 @@ class SavedOperator(OperatorBase):
         """
 
         if not provider:
-            sess = get_default_session()
+            sess = Session.current()
             provider = sess.provider
 
         session = Session.current()
@@ -166,7 +165,7 @@ class SavedOperator(OperatorBase):
         """
 
         if not provider:
-            sess = get_default_session()
+            sess = Session.current()
             provider = sess.provider if sess else None
 
         pl_gen = cls._get_service_client().list_pipeline_generator(

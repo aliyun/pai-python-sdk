@@ -5,7 +5,7 @@ import unittest
 import yaml
 
 from pai.common import ProviderAlibabaPAI
-from pai.core.session import get_default_session, EnvType
+from pai.core.session import Session, EnvType
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context
 
@@ -14,7 +14,7 @@ class TestPaiFlowAPI(BaseIntegTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPaiFlowAPI, cls).setUpClass()
-        session = get_default_session()
+        session = Session.current()
         cls.client = session.paiflow_client
 
     @classmethod

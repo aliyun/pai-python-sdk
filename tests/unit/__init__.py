@@ -23,7 +23,9 @@ class BaseUnitTestCase(unittest.TestCase):
 
     @classmethod
     def patch_mock_session(cls):
-        patch("pai.core.session.Session._default_session", get_mock_session()).start()
+        patch(
+            "pai.core.session.Session._default_sessions", [get_mock_session()]
+        ).start()
 
     @classmethod
     def tearDownClass(cls):

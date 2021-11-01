@@ -16,7 +16,7 @@ from pai.common.utils import (
     extract_file_name,
 )
 from pai.core.exception import PAIException
-from pai.core.session import get_default_session, EnvType
+from pai.core.session import Session, EnvType
 from pai.operator._container import (
     ContainerOperator,
     _PRE_PIP_INSTALL_TEMPLATE,
@@ -67,7 +67,7 @@ class ScriptOperator(ContainerOperator):
 
     @classmethod
     def _get_oss_bucket(cls):
-        session = get_default_session()
+        session = Session.current()
         return session.oss_bucket
 
     @classmethod
@@ -225,7 +225,7 @@ class ScriptOperator(ContainerOperator):
 
     @classmethod
     def _get_default_image_uri(cls):
-        session = get_default_session()
+        session = Session.current()
         if session.env_type == EnvType.Light:
             return _DefaultScriptOperatorImageLight
         else:

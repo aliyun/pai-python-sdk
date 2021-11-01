@@ -8,7 +8,7 @@ import yaml
 
 
 from pai.common.utils import random_str
-from pai.core.session import get_default_session
+from pai.core.session import Session
 from pai.operator.types import InputsSpec, IO_TYPE_INPUTS, OutputsSpec, IO_TYPE_OUTPUTS
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
 
     @classmethod
     def _get_service_client(cls):
-        return get_default_session().paiflow_client
+        return Session.current().paiflow_client
 
     @property
     def inputs(self):
@@ -165,7 +165,7 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         run_instance.wait_for_completion(show_outputs=show_outputs)
         return run_instance
 
-    def as_step(self, inputs=None, name=None):
+    def as_step(self, name=None, inputs=None):
         from pai.pipeline import PipelineStep
 
         return PipelineStep(
@@ -223,7 +223,7 @@ class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
 
         manifest = self.to_manifest(identifier=identifier, version=version)
 
-        session = get_default_session()
+        session = Session.current()
         id = session.create_pipeline(manifest, workspace=session.workspace)
 
         return SavedOperator.get(id)
@@ -239,7 +239,7 @@ class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
         return pipeline_spec
 
     def _submit(self, job_name, args):
-        session = get_default_session()
+        session = Session.current()
         pipeline_spec = self._patch_metadata(self.to_dict())
         if isinstance(pipeline_spec, dict):
             manifest = yaml.dump(pipeline_spec)

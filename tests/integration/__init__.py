@@ -126,12 +126,11 @@ class BaseIntegTestCase(unittest.TestCase):
         super(BaseIntegTestCase, cls).tearDownClass()
 
     def get_python_image(self):
-        if self.default_session.env_type == EnvType.Light:
-            return "master0:5000/paiflow/python:3.7"
         if self.default_session.is_inner:
             return "reg.docker.alibaba-inc.com/pai-sdk/python:3.6"
         return "python:3.6"
 
+    #
     @classmethod
     def get_default_maxc_execution(cls, odps_client=None):
         if not odps_client:
@@ -147,8 +146,8 @@ class BaseIntegTestCase(unittest.TestCase):
     def _setup_test_session(cls):
         if cls.pai_service_config.env_type == EnvType.Light:
             return setup_light_default_session(
-                username=cls.pai_service_config.access_key_id,
-                token=cls.pai_service_config.access_key_secret,
+                access_key_id=cls.pai_service_config.access_key_id,
+                access_key_secret=cls.pai_service_config.access_key_secret,
                 endpoint=cls.pai_service_config.endpoint,
             )
         else:

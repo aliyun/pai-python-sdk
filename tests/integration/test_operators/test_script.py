@@ -1,6 +1,6 @@
 import contextlib
 import os
-from unittest import skipUnless, skipIf
+from unittest import skipUnless, skipIf, skip
 
 from pai.common.utils import gen_temp_table
 from pai.core.session import EnvType
@@ -48,7 +48,7 @@ class TestScriptOperatorOssSnapshot(BaseIntegTestCase):
                 PipelineParameter(name="foo", typ=str, default="Hello"),
                 PipelineParameter(name="bar", typ=int, default=200),
             ],
-            image_uri=self.get_python_image(),
+            # image_uri=self.get_python_image(),
         )
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
@@ -159,9 +159,7 @@ class TestScriptOperatorOssSnapshot(BaseIntegTestCase):
     #     self.assertEqual(local_run_container.attrs["State"]["ExitCode"], 0)
 
 
-@skipUnless(
-    t_context.has_docker and t_context.has_docker, "Do not found docker cli tool"
-)
+@skip("Require docker registry && docker cli")
 class TestScriptOperatorImageSnapshot(BaseIntegTestCase):
     def test_image_snapshot(self):
         op = ScriptOperator.create_with_image_snapshot(
@@ -193,7 +191,7 @@ class TestScriptOperatorSourceSnapshot(BaseIntegTestCase):
         op = ScriptOperator.create_with_source_snapshot(
             script_file=script_file,
             inputs=[PipelineParameter("foo")],
-            image_uri=self.get_python_image(),
+            # image_uri=self.get_python_image(),
         )
 
         op.run(
@@ -243,7 +241,7 @@ class TestScriptOperatorSourceSnapshot(BaseIntegTestCase):
                     metadata=MetadataBuilder.raw(),
                 )
             ],
-            image_uri=self.get_python_image(),
+            # image_uri=self.get_python_image(),
         )
 
         run = op.run("rawArtifactAppend", arguments={"input1": "helloWorld"})
@@ -289,7 +287,7 @@ class TestScriptOperatorSourceSnapshot(BaseIntegTestCase):
             install_packages=[
                 "https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai_running_utils/dist/pai_running_utils-0.2.5.post2-py2.py3-none-any.whl"
             ],
-            image_uri=self.get_python_image(),
+            # image_uri=self.get_python_image(),
         )
 
         op.run("rawArtifactExample", arguments={"input1": "helloWorld"})
