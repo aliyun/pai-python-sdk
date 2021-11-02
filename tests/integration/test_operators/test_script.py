@@ -1,8 +1,7 @@
 import contextlib
 import os
-from unittest import skipUnless, skipIf, skip
+from unittest import skipUnless, skip
 
-from pai.common.utils import gen_temp_table
 from pai.core.session import EnvType
 from pai.operator import (
     ScriptOperator,
@@ -13,13 +12,11 @@ from pai.operator.types import PipelineArtifact, MetadataBuilder
 from pai.operator.types import (
     PipelineParameter,
 )
-from pai.operator.types.artifact import MaxComputeTableArtifact
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context
 from tests.test_data import (
     SCRIPT_DIR_PATH,
-    MAXC_SQL_TEMPLATE_SCRIPT_PATH,
     SHELL_SCRIPT_DIR_PATH,
     RAW_ARTIFACT_RW_DIR_PATH,
 )

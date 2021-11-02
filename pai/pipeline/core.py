@@ -5,6 +5,7 @@ from collections import defaultdict, Counter
 
 import yaml
 
+from pai.core import Session
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import OutputsSpec, InputsSpec
 from pai.operator.types import PipelineParameter
@@ -341,6 +342,8 @@ class Pipeline(UnRegisteredOperator):
             entrypoint["metadata"]["identifier"] = identifier
         if version is not None:
             entrypoint["metadata"]["version"] = version
+        if Session.current():
+            entrypoint["metadata"]["provider"] = Session.current().provider
 
         entrypoint["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
         if not self._unregistered_ops:

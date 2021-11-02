@@ -118,6 +118,9 @@ class ContainerOperator(UnRegisteredOperator):
         if version is not None:
             d["metadata"]["version"] = version
 
+        if Session.current():
+            d["metadata"]["provider"] = Session.current().provider
+
         d["spec"]["container"] = {
             "image": self.image_uri,
             "command": self._transform_commands(self.command),

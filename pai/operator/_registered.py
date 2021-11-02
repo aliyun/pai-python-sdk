@@ -2,7 +2,7 @@ import six
 import yaml
 
 from pai.core import Session
-from pai.operator._base import OperatorBase
+from pai.operator._base import OperatorBase, UnRegisteredOperator
 from pai.operator.types.spec import load_input_output_spec
 
 
@@ -177,6 +177,32 @@ class SavedOperator(OperatorBase):
 
         for info in pl_gen:
             yield cls.deserialize(info)
+
+    def update(self, op):
+        """Update current registered operator/pipeline using the manifest of given operator/pipeline.
+
+        Args:
+            op (Union[UnRegisteredOperator, str, dict]): New pipeline/operator spec,
+            could by a unregistered operator, dict or yaml in str.
+        """
+        client = Session.current().paiflow_client
+        if isinstance(op, UnRegisteredOperator):
+            manifest = op.to_manifest(identifier=self.identifier, version=self.version)
+        elif isinstance(op, str):
+            manifest = op
+        elif isinstance(op, dict):
+            manifest = yaml.dump(op)
+
+        else:
+            raise ValueError(
+                "Please provider ContainerOperator, Pipeline or Manifest in string to update the registered operator."
+            )
+        client.update_pipeline(self._pipeline_id, manifest)
+
+    def delete(self):
+        """Delete this registered operator/pipeline."""
+        client = Session.current().paiflow_client
+        client.delete_pipeline(self.pipeline_id)
 
     @classmethod
     def deserialize(cls, obj_dict):
