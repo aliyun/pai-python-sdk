@@ -101,7 +101,7 @@ class ContainerOperator(UnRegisteredOperator):
     @classmethod
     def _transform_commands(cls, commands):
         if isinstance(commands, six.string_types):
-            return commands
+            return [commands]
         if not commands:
             return []
 
@@ -293,14 +293,15 @@ class ContainerOperator(UnRegisteredOperator):
             if install_packages
             else []
         )
+        args = []
 
         if ext == ".sh":
             run_commands = ["sh", "-ec", source]
+            args.append("--")
         else:
             run_commands = ["python", "-u", "-c", source]
 
         commands.extend(run_commands)
-        args = []
         if not inputs:
             return commands, args
 

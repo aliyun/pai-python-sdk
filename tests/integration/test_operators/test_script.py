@@ -45,7 +45,6 @@ class TestScriptOperatorOssSnapshot(BaseIntegTestCase):
                 PipelineParameter(name="foo", typ=str, default="Hello"),
                 PipelineParameter(name="bar", typ=int, default=200),
             ],
-            # image_uri=self.get_python_image(),
         )
         manifest = templ.to_dict()
         env_vars = manifest["spec"]["container"]["envs"]
@@ -55,7 +54,7 @@ class TestScriptOperatorOssSnapshot(BaseIntegTestCase):
             job_name="HelloWorld",
             arguments={
                 "foo": "Hello",
-                "bar": "World",
+                "bar": 100,
             },
         )
 

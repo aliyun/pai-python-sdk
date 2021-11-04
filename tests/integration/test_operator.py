@@ -38,8 +38,10 @@ class TestSavedOperator(BaseIntegTestCase):
             job_name="integ_test_save_op_run",
             arguments={
                 "execution": self.get_default_maxc_execution(),
-                "inputTable": "odps://pai_online_project/tables/%s"
-                % self.breast_cancer_dataset.table_name,
+                "inputTable": "odps://{}/tables/{}".format(
+                    self.breast_cancer_dataset.default_dataset_project,
+                    self.breast_cancer_dataset.table_name,
+                ),
                 "fraction": 0.7,
             },
         )

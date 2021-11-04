@@ -59,7 +59,7 @@ class TestContainerOperator(BaseUnitTestCase):
             "PAI_ENTRY_POINT": "run.py",
         }
         image_uri = "registry.cn-shanghai.aliyuncs.com/paiflow-core/xflow_base:v1.1"
-        command = "train"
+        command = ["train"]
 
         templ = ContainerOperator(
             image_uri=image_uri,
