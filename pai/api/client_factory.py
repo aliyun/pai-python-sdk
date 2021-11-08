@@ -54,7 +54,7 @@ class ClientFactory(object):
             access_key_secret=access_key_secret,
             region_id=region_id,
             endpoint=endpoint,
-            **kwargs,
+            **kwargs
         )
 
     @classmethod

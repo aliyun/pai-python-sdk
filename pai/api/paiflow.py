@@ -52,7 +52,7 @@ class PAIFlowClient(BaseTeaClient):
             client_cls=Client,
             region_id=region_id,
             endpoint=endpoint,
-            **kwargs,
+            **kwargs
         )
 
     def get_pipeline_schema(self, pipeline_id):

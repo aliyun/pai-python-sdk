@@ -69,10 +69,6 @@ class SavedOperator(OperatorBase):
 
     @property
     def pipeline_id(self):
-        return self._pipeline_id
-
-    @property
-    def pipeline_id(self):
         """Unique ID of the pipeline in PAI pipeline service.
 
         Returns:
