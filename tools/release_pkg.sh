@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# This shell script is used for build and publish package to PyPI.
-# note: Username/password is required to login PyPI server.
+# This shell script is used for build and publish package to PyPI/OSS.
+# note: username/password is required to login PyPI server while oss config is
+# required to upload package to OSS bucket.
 #
 # usage:
 #
