@@ -18,12 +18,13 @@ from tests.integration import BaseIntegTestCase
 class TestContainerOperator(BaseIntegTestCase):
     def test_component_base(self):
         inputs = [
-            PipelineParameter(name="xflow_name", typ=str),
+            PipelineParameter(name="xflow_name", typ=str, desc="ExampleParam"),
             PipelineArtifact(
                 name="inputs1",
                 metadata=LocationArtifactMetadata(
                     data_type=DataType.DataSet, location_type=LocationType.OSS
                 ),
+                desc="ExampleInputArtifact",
             ),
         ]
         outputs = [
@@ -32,6 +33,7 @@ class TestContainerOperator(BaseIntegTestCase):
                 metadata=LocationArtifactMetadata(
                     data_type=DataType.DataSet, location_type=LocationType.OSS
                 ),
+                desc="ExampleOutputArtifact",
             ),
         ]
 
@@ -47,12 +49,18 @@ class TestContainerOperator(BaseIntegTestCase):
             env={"HelloWorld": '"{{inputs.parameters}}"'},
         )
 
+        version = "v-%s" % int(time.time())
+        registered_op = container_templ.save(identifier="ExampleOp", version=version)
+        self.assertEqual(registered_op.inputs["xflow_name"].desc, "ExampleParam")
+        self.assertEqual(registered_op.inputs["inputs1"].desc, "ExampleInputArtifact")
+        self.assertEqual(registered_op.outputs["output1"].desc, "ExampleOutputArtifact")
         container_templ.run(
             job_name="hello-world",
             arguments={
                 "xflow_name": "abcd",
             },
         )
+        registered_op.delete()
 
     def test_container_op_crud(self):
         op1 = ContainerOperator(

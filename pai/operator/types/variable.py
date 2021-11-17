@@ -134,6 +134,8 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
         if self.validator:
             d["feasible"] = self.validator.to_dict()
+        if self.desc:
+            d["desc"] = self.desc
 
         elif self.from_ is not None:
             if isinstance(self.from_, PipelineVariable):
