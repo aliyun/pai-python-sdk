@@ -51,6 +51,10 @@ class Pipeline(UnRegisteredOperator):
         steps, inputs, _ = self._infer_pipeline_graph(steps, inputs, outputs)
         inputs_spec = InputsSpec(inputs) if isinstance(inputs, list) else inputs
         outputs_spec = OutputsSpec(self._build_outputs(outputs))
+
+        self._check_inputs_outputs_name_conflict(
+            inputs_spec=inputs_spec, outputs_spec=outputs_spec
+        )
         unregistered_ops = self._get_unregistered_ops(steps)
 
         self._update_steps(steps)
@@ -196,7 +200,6 @@ class Pipeline(UnRegisteredOperator):
             )
         sorted_steps = cls._topo_sort(visited_steps)
         cls._check_steps(steps)
-        cls._check_inputs_outputs_name_conflict(inputs, outputs)
 
         return sorted_steps, inputs, outputs
 
@@ -273,7 +276,7 @@ class Pipeline(UnRegisteredOperator):
         """
 
         if any(step.parent for step in steps):
-            raise ValueError("Pipeline step has been")
+            raise ValueError("Pipeline step has been used")
 
         step_names = [step.name for step in steps if step.name]
         conflicts = [k for k, v in Counter(step_names).items() if v > 1]
@@ -283,8 +286,8 @@ class Pipeline(UnRegisteredOperator):
             )
 
     @classmethod
-    def _check_inputs_outputs_name_conflict(cls, inputs, outputs):
-        names = [v.name for v in inputs + outputs]
+    def _check_inputs_outputs_name_conflict(cls, inputs_spec, outputs_spec):
+        names = [v.name for v in inputs_spec.items + outputs_spec.items]
         conflicts = [name for name, c in Counter(names).items() if c > 1]
         if conflicts:
             raise ValueError(
