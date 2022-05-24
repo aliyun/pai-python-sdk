@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from pai.operator import ContainerOperator
 from pai.operator.types import PipelineParameter
 
-from pai.operator.types.artifact import MaxComputeResourceArtifact
+from pai.operator.types.artifact import MaxComputeResourceArtifact, OSSArtifact
 from pai.operator.types import (
     PipelineArtifact,
     LocationArtifactMetadata,
@@ -85,7 +85,9 @@ class TestArtifact(BaseUnitTestCase):
             },
         ]
         for case in cases:
-            max_compute_af = MaxComputeResourceArtifact.from_resource_url(case["input"])
+            max_compute_af, metadata = MaxComputeResourceArtifact.from_resource_url(
+                case["input"]
+            )
             self.assertEqual(
                 case["expected"],
                 max_compute_af.to_dict(),
@@ -175,4 +177,22 @@ class TestArtifact(BaseUnitTestCase):
                 {"name": "output1", "value": [None, None, None]},
             ],
             artifacts,
+        )
+
+    def test_oss_artifact(self):
+        artifact, metadata = OSSArtifact.from_resource_url(
+            "oss://bucket-name.oss-host/path-to-file/file-name"
+        )
+        self.assertEqual(
+            artifact.to_dict(),
+            {
+                "location": {
+                    "endpoint": "oss-host",
+                    "bucket": "bucket-name",
+                    "key": "/path-to-file/file-name",
+                }
+            },
+        )
+        self.assertEqual(
+            metadata.to_dict(), {"type": {"DataSet": {"locationType": "OSS"}}}
         )

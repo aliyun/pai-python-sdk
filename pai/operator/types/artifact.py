@@ -4,6 +4,7 @@ import json
 import re
 
 import six
+from pai.common.oss_utils import parse_oss_url
 from six import with_metaclass
 from abc import ABCMeta, abstractmethod
 from odps.df import DataFrame as ODPSDataFrame
@@ -39,8 +40,14 @@ class MetadataBuilder(object):
         )
 
     @staticmethod
+    def maxc_volume():
+        return LocationArtifactMetadata(
+            data_type=DataType.DataSet, location_type=LocationType.MaxComputeVolume
+        )
+
+    @staticmethod
     def raw():
-        return RawArtifactMetadata()
+        return LocationArtifactMetadata(data_type=DataType.Any)
 
 
 class DataType(object):
@@ -234,9 +241,9 @@ class PipelineArtifact(PipelineVariable):
 
     def _translate_value(self, val):
         if isinstance(self.metadata, ArtifactMetadataBase):
-            metadata = self.metadata.to_dict()
+            md_val = self.metadata.to_dict()
         else:
-            metadata = self.metadata
+            md_val = self.metadata
 
         try:
             af_value = LocationArtifactValue.from_resource(val)
@@ -244,9 +251,17 @@ class PipelineArtifact(PipelineVariable):
         except ValueError:
             value = val
 
+        if (
+            isinstance(self.metadata, LocationArtifactMetadata)
+            and self.metadata.is_raw()
+        ):
+            metadata = LocationArtifactValue.metadata_from_value(val)
+            if metadata:
+                md_val = metadata.to_dict()
+
         return {
             "value": value,
-            "metadata": metadata,
+            "metadata": md_val,
         }
 
     def to_argument(self):
@@ -328,13 +343,8 @@ class ArtifactMetadataBase(with_metaclass(ABCMeta)):
         pass
 
 
-class RawArtifactMetadata(ArtifactMetadataBase):
-    def to_dict(self):
-        return {"type": {"Any": {}}}
-
-
 class LocationArtifactMetadata(ArtifactMetadataBase):
-    def __init__(self, data_type, location_type, type_attributes=None):
+    def __init__(self, data_type, location_type=None, type_attributes=None):
         self.data_type = data_type
         self.location_type = location_type
         self.type_attributes = type_attributes or dict()
@@ -345,6 +355,9 @@ class LocationArtifactMetadata(ArtifactMetadataBase):
             self.data_type,
             self.location_type,
         )
+
+    def is_raw(self):
+        return self.data_type == DataType.Any and self.location_type is None
 
     def to_dict(self):
         d = {
@@ -399,13 +412,25 @@ class LocationArtifactValue(object):
 
     @classmethod
     def from_resource(cls, resource, metadata=None):
+        """Get artifact value from input resource and artifact metadata.
+
+        Args:
+            resource: Input resource which can be ODPS url, OSS url, PyODPS table object, etc.
+            metadata: Metadata for the input artifact.
+
+        Returns:
+            LocationArtifactValue: A artifact value parsed from input resource.
+
+        """
         from pai.core.artifact import ArchivedArtifact
 
         if isinstance(resource, six.string_types):
             if resource.startswith("odps://"):
-                return MaxComputeResourceArtifact.from_resource_url(resource)
+                val, _ = MaxComputeResourceArtifact.from_resource_url(resource)
+                return val
             elif resource.startswith("oss://"):
-                return OSSArtifact.from_resource_url(resource)
+                val, _ = OSSArtifact.from_resource_url(resource)
+                return val
             else:
                 try:
                     resource_dict = json.loads(resource)
@@ -421,7 +446,38 @@ class LocationArtifactValue(object):
         elif isinstance(resource, LocationArtifactValue):
             return resource
 
-        raise ValueError("Not support artifact resource:%s", type(resource))
+        raise ValueError("Not supported artifact resource:%s", type(resource))
+
+    @classmethod
+    def metadata_from_value(cls, resource):
+        """Try to get metadata from raw input for the artifact.
+
+        Args:
+            resource: Input for the artifact.
+
+        Returns:
+            (ArtifactMetadataBase): Metadata for the input artifact value.
+
+        """
+        from pai.core.artifact import ArchivedArtifact
+
+        if isinstance(resource, six.string_types):
+            if resource.startswith("odps://"):
+                _, metadata = MaxComputeResourceArtifact.from_resource_url(resource)
+            elif resource.startswith("oss://"):
+                _, metadata = OSSArtifact.from_resource_url(resource)
+            else:
+                return None
+        elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame)):
+            metadata = MetadataBuilder.maxc_table()
+        elif isinstance(resource, ArchivedArtifact):
+            try:
+                metadata = LocationArtifactMetadata.from_dict(resource.metadata)
+            except (KeyError, ValueError):
+                return None
+        else:
+            return None
+        return metadata
 
     @classmethod
     def from_raw_value(cls, value, metadata):
@@ -460,6 +516,9 @@ class LocationArtifactValue(object):
             )
         return ref
 
+    def to_dict(self):
+        pass
+
 
 class MaxComputeResourceArtifact(LocationArtifactValue):
     MaxComputeResourceUrlPattern = re.compile(
@@ -484,6 +543,15 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
 
     @classmethod
     def from_resource_url(cls, resource_url):
+        """Parse MaxCompute(ODPS) resource in url schema and returns artifact value and metadata.
+
+        Args:
+            resource_url: An ODPS(MaxCompute) table, tablePartition, offline-model or volume in url schema.
+
+        Returns:
+            tuple: A tuple of  MaxCompute artifact value and aritfact metadata.
+
+        """
         matches = cls.MaxComputeResourceUrlPattern.match(resource_url)
         if not matches:
             raise ValueError("Not support MaxCompute resource url format.")
@@ -492,10 +560,13 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
         if resource_type == "tables":
             table = matches.group("resource_name")
             partition = matches.group("sub_resource")
-            return MaxComputeTableArtifact(
-                project=project,
-                table=table,
-                partition=partition.strip("/") if partition else None,
+            return (
+                MaxComputeTableArtifact(
+                    project=project,
+                    table=table,
+                    partition=partition.strip("/") if partition else None,
+                ),
+                MetadataBuilder.maxc_table(),
             )
         elif resource_type == "volumes":
             volume = matches.group("resource_name")
@@ -503,18 +574,24 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
             idx = sub_resource.find("/")
             partition = sub_resource[:idx]
             file_name = sub_resource[idx + 1 :]
-            return MaxComputeVolumeArtifact(
-                project=project,
-                volume=volume,
-                partition=partition,
-                file_name=file_name,
+            return (
+                MaxComputeVolumeArtifact(
+                    project=project,
+                    volume=volume,
+                    partition=partition,
+                    file_name=file_name,
+                ),
+                MetadataBuilder.maxc_volume(),
             )
 
         elif resource_type == "offlinemodels":
             name = matches.group("resource_name")
-            return MaxComputeOfflineModelArtifact(
-                project=project,
-                offline_model=name,
+            return (
+                MaxComputeOfflineModelArtifact(
+                    project=project,
+                    offline_model=name,
+                ),
+                MetadataBuilder.maxc_offlinemodel(),
             )
         else:
             raise ValueError("Not support MaxCompute resource type :%s" % resource_type)
@@ -650,11 +727,11 @@ class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
 
 
 class OSSArtifact(LocationArtifactValue):
-    def __init__(self, bucket, key, endpoint, rolearn):
+    def __init__(self, bucket, key, endpoint, role_arn=None):
         super(OSSArtifact, self).__init__()
         self.bucket = bucket
         self.endpoint = endpoint
-        self.rolearn = rolearn
+        self.role_arn = role_arn
         self.key = key
 
     def to_dict(self):
@@ -663,15 +740,29 @@ class OSSArtifact(LocationArtifactValue):
                 "endpoint": self.endpoint,
                 "bucket": self.bucket,
                 "key": self.key,
-                "rolearn": self.rolearn,
             }
         }
+
+        if self.role_arn:
+            d["location"]["rolearn"] = self.role_arn
+
         return d
 
-    # TODO: OSS Artifact Implementation
     @classmethod
-    def from_resource_url(cls):
-        pass
+    def from_resource_url(cls, resource):
+        """Initialize a OSSArtifact instance from URL in OSS schema.
+        Args:
+            resource: URL in OSS schema.
+        Returns:
+            OSSArtifact instance.
+        """
+        bucket_name, object_key, endpoint, role_arn = parse_oss_url(resource)
+        return (
+            cls(
+                bucket=bucket_name, key=object_key, endpoint=endpoint, role_arn=role_arn
+            ),
+            MetadataBuilder.oss_dataset(),
+        )
 
     @classmethod
     def from_dict(cls, d):
@@ -681,4 +772,4 @@ class OSSArtifact(LocationArtifactValue):
         key = d["location"]["key"]
         endpoint = d["location"].get("endpoint")
         rolearn = d["location"].get("rolearn")
-        return OSSArtifact(bucket=bucket, key=key, endpoint=endpoint, rolearn=rolearn)
+        return OSSArtifact(bucket=bucket, key=key, endpoint=endpoint, role_arn=rolearn)

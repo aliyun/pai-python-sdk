@@ -4,10 +4,10 @@ import uuid
 from abc import ABCMeta, abstractmethod
 
 import six
-import yaml
 
 
 from pai.common.utils import random_str
+from pai.common.yaml_utils import dump as yaml_dump, dump_all as yaml_dump_all
 from pai.core.session import Session
 from pai.operator.types import InputsSpec, IO_TYPE_INPUTS, OutputsSpec, IO_TYPE_OUTPUTS
 
@@ -242,10 +242,10 @@ class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
         session = Session.current()
         pipeline_spec = self._patch_metadata(self.to_dict())
         if isinstance(pipeline_spec, dict):
-            manifest = yaml.dump(pipeline_spec)
+            manifest = yaml_dump(pipeline_spec)
         # A Pipeline spec may contain unregistered operators. Such a pipeline spec is a list format.
         elif isinstance(pipeline_spec, list):
-            manifest = yaml.dump_all(pipeline_spec)
+            manifest = yaml_dump_all(pipeline_spec)
         else:
             raise ValueError(
                 "No support pipeline spec value type: %s" % (type(pipeline_spec))

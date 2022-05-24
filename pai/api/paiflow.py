@@ -3,8 +3,8 @@ from __future__ import absolute_import
 from functools import wraps
 
 import six
-import yaml
 
+from pai.common.yaml_utils import dump as yaml_dump
 from pai.api.base import BaseTeaClient
 from pai.libs.alibabacloud_paiflow20210202.client import Client
 from pai.libs.alibabacloud_paiflow20210202.models import (
@@ -182,7 +182,7 @@ class PAIFlowClient(BaseTeaClient):
             raise ValueError("Pipeline run instance need a name.")
 
         if isinstance(arguments, dict):
-            arguments = yaml.dump(arguments)
+            arguments = yaml_dump(arguments)
 
         request = CreateRunRequest(
             pipeline_id=pipeline_id,

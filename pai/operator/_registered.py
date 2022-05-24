@@ -1,6 +1,6 @@
 import six
-import yaml
 
+from pai.common.yaml_utils import safe_load as yaml_safe_load, dump as yaml_dump
 from pai.core import Session
 from pai.operator._base import OperatorBase, UnRegisteredOperator
 from pai.operator.types.spec import load_input_output_spec
@@ -27,7 +27,7 @@ class SavedOperator(OperatorBase):
             session = Session.current()
             manifest = session.get_pipeline_by_id(pipeline_id)["Manifest"]
         if isinstance(manifest, six.string_types):
-            manifest = yaml.safe_load(manifest)
+            manifest = yaml_safe_load(manifest)
 
         self._manifest = manifest
         self._pipeline_id = pipeline_id
@@ -93,7 +93,7 @@ class SavedOperator(OperatorBase):
         Returns:
             str: Pipeline manifest.
         """
-        return yaml.dump(self._manifest)
+        return yaml_dump(self._manifest)
 
     # @property
     # def workspace(self):
@@ -187,7 +187,7 @@ class SavedOperator(OperatorBase):
         elif isinstance(op, str):
             manifest = op
         elif isinstance(op, dict):
-            manifest = yaml.dump(op)
+            manifest = yaml_dump(op)
 
         else:
             raise ValueError(
@@ -216,7 +216,7 @@ class SavedOperator(OperatorBase):
     @classmethod
     def _has_impl(cls, manifest):
         if isinstance(manifest, six.string_types):
-            manifest = yaml.load(manifest, yaml.FullLoader)
+            manifest = yaml_safe_load(manifest)
 
         if "spec" not in manifest:
             return False

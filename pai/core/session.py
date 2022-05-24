@@ -7,11 +7,11 @@ from six.moves.urllib import parse
 
 import oss2
 import six
-import yaml
 
 from pai.api.client_factory import ClientFactory
 from pai.core.workspace import Workspace
 from pai.decorator import cached_property
+from pai.common.yaml_utils import dump as yaml_dump
 
 logger = logging.getLogger(__name__)
 
@@ -348,9 +348,9 @@ class Session(object):
         from pai.pipeline import Pipeline
 
         if isinstance(pipeline_def, dict):
-            manifest = yaml.dump(pipeline_def)
+            manifest = yaml_dump(pipeline_def)
         elif isinstance(pipeline_def, Pipeline):
-            manifest = yaml.dump(pipeline_def.to_dict())
+            manifest = yaml_dump(pipeline_def.to_dict())
         elif isinstance(pipeline_def, six.string_types):
             manifest = pipeline_def
         else:

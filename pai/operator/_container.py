@@ -1,20 +1,20 @@
 # coding: utf-8
 from __future__ import print_function
 
+import shlex
+from collections import namedtuple
+
 import json
 import logging
 import os
-import shlex
 import shutil
+import six
 import subprocess
 import tempfile
 import uuid
-from collections import namedtuple
-
-import six
-import yaml
 
 from pai.common.utils import makedirs
+from pai.common.yaml_utils import dump as yaml_dump
 from pai.core.session import Session, EnvType
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import IO_TYPE_OUTPUTS, PipelineParameter
@@ -136,7 +136,7 @@ class ContainerOperator(UnRegisteredOperator):
         return d
 
     def to_manifest(self, identifier, version):
-        return yaml.dump(self.to_dict(identifier=identifier, version=version))
+        return yaml_dump(self.to_dict(identifier=identifier, version=version))
 
     def _local_run(self, job_name, arguments=None):
         return LocalContainerRun(

@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import logging
 from collections import defaultdict, Counter
 
-import yaml
 
+from pai.common.yaml_utils import dump_all as yaml_dump_all, dump as yaml_dump
 from pai.core import Session
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import OutputsSpec, InputsSpec
@@ -360,5 +360,5 @@ class Pipeline(UnRegisteredOperator):
     def to_manifest(self, identifier, version):
         d = self.to_dict(identifier, version)
         if isinstance(d, list):
-            return yaml.dump_all(d)
-        return yaml.dump(d)
+            return yaml_dump_all(d)
+        return yaml_dump(d)
