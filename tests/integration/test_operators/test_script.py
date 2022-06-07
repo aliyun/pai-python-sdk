@@ -9,9 +9,7 @@ from pai.operator import (
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
 )
 from pai.operator.types import PipelineArtifact, MetadataBuilder
-from pai.operator.types import (
-    PipelineParameter,
-)
+from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context

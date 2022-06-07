@@ -66,7 +66,7 @@ class TestContext(object):
 
     @classmethod
     def _load_test_config(cls):
-        test_config = os.environ.get("PAI_TEST_CONFIG", "test.ini")
+        test_config = os.environ.get("PAI_TEST_CONFIG", "test_public.ini")
         cfg_parser = configparser.ConfigParser()
         cfg_parser.read(os.path.join(_test_root, test_config))
 

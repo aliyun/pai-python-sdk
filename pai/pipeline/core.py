@@ -3,13 +3,14 @@ from __future__ import absolute_import
 import logging
 from collections import defaultdict, Counter
 
-
+from pai.common.utils import is_iterable
 from pai.common.yaml_utils import dump_all as yaml_dump_all, dump as yaml_dump
 from pai.core import Session
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import OutputsSpec, InputsSpec
 from pai.operator.types import PipelineParameter
 from pai.operator.types.artifact import PipelineArtifact, PipelineArtifactElement
+from pai.operator.types.variable import PipelineVariable
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,19 @@ class Pipeline(UnRegisteredOperator):
 
     """
 
-    def __init__(self, steps=None, inputs=None, outputs=None, **kwargs):
+    def __init__(self, steps, inputs=None, outputs=None, **kwargs):
         """Pipeline initializer."""
+        from pai.pipeline import PipelineStep
+
+        # check parameter steps.
+        if not steps:
+            raise ValueError("Required at least one step in the pipeline")
+        if not isinstance(steps, list) or any(
+            x for x in steps if not isinstance(x, PipelineStep)
+        ):
+            raise ValueError(
+                "Parameter steps must be a list of PipelineStep instances."
+            )
 
         steps, inputs, outputs, unregistered_ops = self._build_pipeline(
             steps, inputs, outputs
@@ -105,7 +117,11 @@ class Pipeline(UnRegisteredOperator):
                     and not item.artifact.parent
                 ):
                     pipeline_inputs.add(item.artifact)
-        elif input.from_ and not input.from_.parent:
+        elif (
+            input.from_
+            and isinstance(input.from_, PipelineVariable)
+            and not input.from_.parent
+        ):
             pipeline_inputs.add(input.from_)
         return pipeline_inputs
 

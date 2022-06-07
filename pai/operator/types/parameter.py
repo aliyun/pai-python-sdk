@@ -6,6 +6,7 @@ from decimal import Decimal
 import six
 from enum import Enum
 
+from pai.common.utils import is_iterable
 from pai.operator.types.variable import PipelineVariable
 
 _int_float_types = tuple(list(six.integer_types) + list([float]))
@@ -21,7 +22,97 @@ _NEGATIVE_INFINITY = Decimal("-infinity")
 _POSITIVE_INFINITY = Decimal("infinity")
 
 
+class Variable(object):
+    pass
+
+
+class LoopItemPlaceholder(object):
+    @property
+    def enclosed_fullname(self):
+        return "{{item}}"
+
+    @property
+    def fullname(self):
+        return "item"
+
+
+class ConditionExpr(object):
+    """Represent condition which used in ConditionStep."""
+
+    def __init__(self, op, left, right):
+        self.op = op
+        self.left = left
+        self.right = right
+
+    def to_expr(self):
+        left_str = (
+            self.left.enclosed_fullname
+            if isinstance(self.left, PipelineParameter)
+            else str(self.left)
+        )
+        right_str = (
+            self.right if isinstance(self.right, PipelineParameter) else str(self.right)
+        )
+        return "{} {} {}".format(left_str, self.op, right_str)
+
+    def get_depends_steps(self):
+        from pai.pipeline import PipelineStep
+
+        def _get_step(item):
+            if (
+                isinstance(item, PipelineParameter)
+                and item.parent
+                and isinstance(item.parent, PipelineStep)
+            ):
+                return item.parent
+
+        return list(filter(None, [_get_step(self.left), _get_step(self.right)]))
+
+
+class LoopItems(object):
+
+    LOOP_ITEM_LIST = 0
+    LOOP_RANGE = 1
+    LOOP_PARAMETER = 2
+
+    def __init__(self, items):
+        if isinstance(items, range):
+            if items.step == 1:
+                self.type = self.LOOP_RANGE
+                self.items = items
+            else:
+                self.type = self.LOOP_RANGE
+                self.items = list(items)
+        elif isinstance(items, PipelineParameter):
+            self.type = type(self).LOOP_PARAMETER
+            self.items = items
+        elif is_iterable(items):
+            self.items = list(iter(items))
+            self.type = self.LOOP_ITEM_LIST
+        else:
+            raise ValueError("Not supported loop item type: %s", type(items))
+
+    def to_dict(self):
+        if self.type == self.LOOP_RANGE:
+            d = {
+                "withSequence": {
+                    "start": self.items.start,
+                    "end": self.items.stop,
+                }
+            }
+        elif self.type == self.LOOP_PARAMETER:
+            d = {
+                "withParam": self.items.enclosed_fullname,
+            }
+        else:
+            d = {"withItems": self.items}
+
+        return d
+
+
 class PipelineParameter(PipelineVariable):
+    """Definition of the input/output parameter using in pipeline."""
+
     variable_category = "parameters"
 
     def __init__(
@@ -94,10 +185,28 @@ class PipelineParameter(PipelineVariable):
         if self.value is not None:
             d["value"] = self.value
 
-        # if self.required:
-        #     d["required"] = self.required
-
         return d
+
+    def __hash__(self):
+        return id(self)
+
+    def __eq__(self, other):
+        return ConditionExpr("==", self, other)
+
+    def __ne__(self, other):
+        return ConditionExpr("!=", self, other)
+
+    def __lt__(self, other):
+        return ConditionExpr("<", self, other)
+
+    def __le__(self, other):
+        return ConditionExpr("<=", self, other)
+
+    def __gt__(self, other):
+        return ConditionExpr(">", self, other)
+
+    def __ge__(self, other):
+        return ConditionExpr(">=", self, other)
 
 
 class ParameterValidator(object):

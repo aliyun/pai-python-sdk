@@ -42,7 +42,7 @@ class TestSavedOperator(BaseIntegTestCase):
                     self.breast_cancer_dataset.default_dataset_project,
                     self.breast_cancer_dataset.table_name,
                 ),
-                "fraction": 0.7,
+                "fraction": "0.7",
             },
         )
 

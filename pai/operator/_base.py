@@ -165,13 +165,40 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
         run_instance.wait_for_completion(show_outputs=show_outputs)
         return run_instance
 
-    def as_step(self, name=None, inputs=None):
+    def as_step(self, name=None, inputs=None, depends=None):
+        """Create a PipelineStep instance using the operator."""
         from pai.pipeline import PipelineStep
 
         return PipelineStep(
             inputs=inputs,
             operator=self,
             name=name,
+            depends=depends,
+        )
+
+    def as_loop_step(self, name, items, parallelism=None, inputs=None, depends=None):
+        """Create a LoopStep instance using the operator."""
+        from pai.pipeline.step import LoopStep
+
+        return LoopStep(
+            operator=self,
+            name=name,
+            parallelism=parallelism,
+            items=items,
+            inputs=inputs,
+            depends=depends,
+        )
+
+    def as_condition_step(self, name, condition, inputs=None, depends=None):
+        """Create a conditional step using the operator."""
+        from pai.pipeline.step import ConditionStep
+
+        return ConditionStep(
+            operator=self,
+            name=name,
+            condition=condition,
+            inputs=inputs,
+            depends=depends,
         )
 
 

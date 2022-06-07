@@ -42,6 +42,9 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
         self.parent = parent
         self.validator = validator
 
+    def __hash__(self):
+        return id(self)
+
     # TODO: validate if pipeline variable attribute is legal
     def _validate_spec(self):
         pass
@@ -56,8 +59,11 @@ class PipelineVariable(with_metaclass(ABCMeta, object)):
 
     def assign(self, arg):
         from .artifact import PipelineArtifactElement
+        from .parameter import LoopItemPlaceholder
 
-        if not isinstance(arg, (PipelineVariable, PipelineArtifactElement)):
+        if isinstance(arg, LoopItemPlaceholder):
+            self.value = arg.enclosed_fullname
+        elif not isinstance(arg, (PipelineVariable, PipelineArtifactElement)):
             if not self.validate_value(arg):
                 raise ValueError("Arg:%s is invalid value for %s" % (arg, self))
             self.value = arg

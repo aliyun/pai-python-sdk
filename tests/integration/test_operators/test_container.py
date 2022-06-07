@@ -8,9 +8,7 @@ from pai.operator.types import (
     DataType,
     LocationType,
 )
-from pai.operator.types import (
-    PipelineParameter,
-)
+from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
 

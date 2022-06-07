@@ -4,6 +4,7 @@ import itertools
 
 import six
 
+from pai.operator.types.parameter import ConditionExpr, LoopItems, PipelineParameter
 from pai.operator.types.spec import load_input_output_spec
 from pai.operator.types.variable import PipelineVariable
 
@@ -55,9 +56,22 @@ class PipelineStep(object):
         depends=None,
         operator=None,
     ):
+        """Construct a step which represent operator execution in pipeline.
+
+        Args:
+            inputs (dict): Inputs for the step in dict: key is the operator input name, value
+                could be the output artifact/parameter from other step, input of the pipeline,
+                or actual value for the step.
+            name (str): Name of the step in pipeline, must be unique in the pipeline.
+            depends (list): A list of PipelineStep which step depends.
+            operator (OperatorBase): The operator used by the constructed step.
+        """
         from ..operator import SavedOperator
 
         self._depends = depends or set()
+        if any([type(x) for x in self._depends if not isinstance(x, PipelineStep)]):
+            raise ValueError("Invalid variable in depends, expected PipelineStep")
+
         self._assigned = set()
 
         if isinstance(operator, SavedOperator):
@@ -274,4 +288,91 @@ class PipelineStep(object):
             "metadata": metadata,
             "spec": self._convert_spec_to_json(),
         }
+        return d
+
+
+class ConditionStep(PipelineStep):
+    """Represent a conditional execution step in pipeline."""
+
+    def __init__(self, condition, inputs=None, name=None, depends=None, operator=None):
+        """Construct a ConditionStep to support conditional execution in pipeline.
+
+        A ConditionStep only execute if condition evaluate to true.
+
+        Args:
+            condition (Union[str, ConditionExpr]): Condition expression used to determine
+                if the step should be executed, could be ConditionExpr or str.
+            inputs (dict): Inputs for the step in dict: key is the operator input name, value
+                could be the output artifact/parameter from other step, input of the pipeline,
+                or actual value for the step.
+            name (str): Name of the step in pipeline, must be unique in the pipeline.
+            depends (list): A list of PipelineStep which step depends.
+            operator (OperatorBase): The operator used by the constructed step.
+        """
+        if not isinstance(condition, (ConditionExpr, str)):
+            raise ValueError("Not supported condition type: %s" % type(condition))
+        elif isinstance(condition, ConditionExpr):
+            condition_depends = condition.get_depends_steps()
+            depends = list(filter(None, (depends or []) + condition_depends))
+
+        super().__init__(inputs=inputs, name=name, depends=depends, operator=operator)
+        self.condition = condition
+
+    def to_dict(self):
+        d = super(ConditionStep, self).to_dict()
+        d["spec"]["when"] = (
+            self.condition.to_expr()
+            if isinstance(self.condition, ConditionExpr)
+            else str(self.condition)
+        )
+        return d
+
+
+class LoopStep(PipelineStep):
+    """Represent a parallel execution step in pipeline."""
+
+    DEFAULT_PARALLELISM_COUNT = 5
+
+    def __init__(
+        self,
+        items,
+        parallelism=None,
+        inputs=None,
+        name=None,
+        depends=None,
+        operator=None,
+    ):
+        """Construct a LoopStep to support for-loop execution in pipeline.
+
+        A LoopStep invoke the operator in for-loop execution style.
+
+        Args:
+            items (Union[str, ConditionExpr]): Condition expression used to determine
+                if the step should be executed, could be ConditionExpr or str.
+            parallelism (int): Max execution parallelism of the step.
+            inputs (dict): Inputs for the step in dict: key is the operator input name, value
+                could be the output artifact/parameter from other step, input of the pipeline,
+                or actual value for the step.
+            name (str): Name of the step in pipeline, must be unique in the pipeline.
+            depends (list): A list of PipelineStep which step depends.
+            operator (OperatorBase): The operator used by the constructed step.
+        """
+        if (
+            isinstance(items, PipelineParameter)
+            and items.parent
+            and isinstance(items.parent, PipelineStep)
+        ):
+            depends = depends or []
+            depends.append(items.parent)
+
+        super().__init__(inputs=inputs, name=name, depends=depends, operator=operator)
+        self.items = LoopItems(items)
+        self.parallelism = int(parallelism or type(self).DEFAULT_PARALLELISM_COUNT)
+
+    def to_dict(self):
+        d = super(LoopStep, self).to_dict()
+        d["spec"].update(self.items.to_dict())
+        if self.parallelism:
+            d["spec"]["parallelism"] = self.parallelism
+
         return d

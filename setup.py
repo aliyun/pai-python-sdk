@@ -18,8 +18,10 @@ def read_version():
 requirements = [
     "aliyun-python-sdk-core==2.13.25",
     "aliyun-python-sdk-sts>=3.0.2",
-    "graphviz>=0.14",
-    "numpy>=1.16.0",
+    # graphviz drop Python2 support in 0.17, drop Python3.6 support in 0.19.1
+    # https://graphviz.readthedocs.io/en/latest/changelog.html#version-0-17
+    "graphviz<0.17",
+    "numpy>=1.16.0, <=1.18.0",
     "oss2>=2.8.0",
     "pyodps>=0.9.3.2",
     "pyyaml>=5.3.1",

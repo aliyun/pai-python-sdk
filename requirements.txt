@@ -1,6 +1,6 @@
 aliyun-python-sdk-core==2.13.25
 aliyun-python-sdk-sts>=3.0.2
-graphviz>=0.14
+graphviz>=0.14,<=0.19.1
 numpy>=1.16.0
 oss2>=2.8.0
 pyodps>=0.9.3.2
