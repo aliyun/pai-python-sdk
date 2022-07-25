@@ -77,11 +77,11 @@ class ContainerOperator(UnRegisteredOperator):
         outputs=None,
         env=None,
     ):
-        self.image_uri = image_uri
-        self.image_registry_config = image_registry_config
-        self.command = command
-        self.args = args
-        self.env = env
+        self._image_uri = image_uri
+        self._image_registry_config = image_registry_config
+        self._command = command
+        self._args = args
+        self._env = env
         self._guid = uuid.uuid4().hex
 
         super(ContainerOperator, self).__init__(
@@ -122,17 +122,17 @@ class ContainerOperator(UnRegisteredOperator):
             d["metadata"]["provider"] = Session.current().provider
 
         d["spec"]["container"] = {
-            "image": self.image_uri,
-            "command": self._transform_commands(self.command),
+            "image": self._image_uri,
+            "command": self._transform_commands(self._command),
         }
         d["spec"]["container"]["imageRegistryConfig"] = (
-            self.image_registry_config or dict()
+            self._image_registry_config or dict()
         )
-        if self.env:
-            d["spec"]["container"]["envs"] = self._transform_env(self.env or dict())
+        if self._env:
+            d["spec"]["container"]["envs"] = self._transform_env(self._env or dict())
 
-        if self.args:
-            d["spec"]["container"]["args"] = self._transform_commands(self.args)
+        if self._args:
+            d["spec"]["container"]["args"] = self._transform_commands(self._args)
         return d
 
     def to_manifest(self, identifier, version):
@@ -143,10 +143,10 @@ class ContainerOperator(UnRegisteredOperator):
             job_name=job_name,
             inputs=self.inputs,
             outputs=self.outputs,
-            image_uri=self.image_uri,
-            command=self.command,
+            image_uri=self._image_uri,
+            command=self._command,
             arguments=arguments,
-            env=self.env.copy() if self.env else None,
+            env=self._env.copy() if self._env else None,
         ).run()
 
     @classmethod
@@ -540,7 +540,7 @@ class LocalContainerRun(object):
                 f.write(artifact_raw_value)
 
     def _prepare_parameters(self):
-        parameters_spec = self.inputs.parameters
+        parameters_spec = self.inputs.job_parameters
         names = [param_spec.name for param_spec in parameters_spec]
 
         def parameter_transform(arg):

@@ -1,14 +1,14 @@
 ======================
-Pipeline 工作流
+构建和运行工作流
 ======================
 
-PAIFlow，是PAI平台研发的ML Pipeline Service，提供了机器学习工作流编排和运行管理的功能, 支持通过SDK编排和运行pipeline。
+PAIFlow，是PAI平台研发的Workflow Service，提供了机器学习工作流编排和运行管理的功能, 支持通过SDK编排和运行Workflow。
 
-Operator
+组件
 ----------------------
 
 
-Operator对象是PAI Pipeline Service中的算法组件, 也是一个PAI Flow中可运行的组件定义, 包含了组件的输入输出信息，以及具体执行的实现（可能是一个DAG执行或是一个单独的镜像执行）。
+Operator是PAI Pipeline Service中的算法组件, 也是一个PAIFlow中可运行的组件定义, 包含了组件的输入输出信息，以及具体执行的实现（可能是一个DAG执行或是一个单独的镜像执行）。
 
 用户可以从PAI服务获取保存在PAI后端的算法组件，也可以使用从本地构造的Pipeline/Operator对象中抽取出对应的算法组件。 通过operator的raw_manifest属性可以获得YAML格式定义的算法组件的schema。
 
@@ -64,7 +64,7 @@ PAI提供了一些公共的算法组件，在SavedOperator.list方法中, 通过
     print(pipeline_run.outputs)
 
 
-Pipeline Build
+构建工作流
 ----------------------
 
 

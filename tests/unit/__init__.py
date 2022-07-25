@@ -15,17 +15,18 @@ class BaseUnitTestCase(unittest.TestCase):
     Base class for unittest, any test case class should inherit this.
     """
 
+    mock_session = True
+
     @classmethod
     def setUpClass(cls):
         super(BaseUnitTestCase, cls).setUpClass()
         cls._log_config()
-        cls.patch_mock_session()
+        if cls.mock_session:
+            cls.patch_mock_session()
 
     @classmethod
     def patch_mock_session(cls):
-        patch(
-            "pai.core.session.Session._default_sessions", [get_mock_session()]
-        ).start()
+        patch("pai.core.session.Session._default_session", get_mock_session()).start()
 
     @classmethod
     def tearDownClass(cls):

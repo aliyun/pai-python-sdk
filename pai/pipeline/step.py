@@ -94,7 +94,7 @@ class PipelineStep(object):
         self.inputs = inputs_spec
         self.outputs = outputs_spec
 
-        self.assign_inputs(inputs)
+        self._assign_inputs(inputs)
         self._repeated_artifact_config = {}
 
     @property
@@ -186,7 +186,15 @@ class PipelineStep(object):
         if len(name) > 30:
             raise ValueError("Given invalid pipeline step name.")
 
-    def assign_inputs(self, inputs):
+    def _assign_inputs(self, inputs):
+        """Assign inputs to the step.
+
+        Inputs could be inputs definition of pipeline, output of other steps or actual value.
+
+        Args:
+            inputs: Inputs for the step.
+
+        """
         if not inputs:
             return
         assign_items = self.inputs.assign(inputs)

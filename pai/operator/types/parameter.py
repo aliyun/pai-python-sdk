@@ -125,6 +125,7 @@ class PipelineParameter(PipelineVariable):
         from_=None,
         parent=None,
         feasible=None,
+        path=None,
     ):
         """
 
@@ -152,6 +153,7 @@ class PipelineParameter(PipelineVariable):
             validator=validator,
         )
         self.typ = typ
+        self.path = path
 
     @property
     def default(self):
@@ -185,7 +187,21 @@ class PipelineParameter(PipelineVariable):
         if self.value is not None:
             d["value"] = self.value
 
+        if self.path is not None:
+            d["path"] = self.path
+
+        # if self.required:
+        #     d["required"] = self.required
+
         return d
+
+    def translate_argument(self, value):
+        arguments = {
+            "name": self.name,
+            "value": value,
+        }
+
+        return arguments
 
     def __hash__(self):
         return id(self)

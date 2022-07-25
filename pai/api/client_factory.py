@@ -3,9 +3,9 @@ from __future__ import absolute_import
 from pai.api.paiflow import PAIFlowClient
 from pai.api.sts import StsClient
 from pai.api.workspace import WorkspaceClient
+from pai.api.dlc import DlcClient
 from alibabacloud_tea_openapi.models import Config
 import logging
-
 
 _logger = logging.getLogger(__name__)
 
@@ -70,6 +70,21 @@ class ClientFactory(object):
             return None
 
         return WorkspaceClient(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region_id=region_id,
+            endpoint=endpoint,
+        )
+
+    @classmethod
+    def create_dlc_client(
+        cls, access_key_id, access_key_secret, region_id, endpoint=None
+    ):
+        if not region_id and not endpoint:
+            _logger.info("DLC client not initialized.")
+            return None
+
+        return DlcClient(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             region_id=region_id,

@@ -40,6 +40,8 @@ OssConfig = namedtuple(
         "bucket_name",
         "endpoint",
         "role_arn",
+        # ForGroupInner only，which is required for OSS dataset mount in PAI-DLC job.
+        "aliyun_uid",
     ],
 )
 
@@ -89,11 +91,24 @@ class TestContext(object):
         )
 
         oss_config = OssConfig(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
+            access_key_id=cfg_parser.get(
+                "oss",
+                "access_key_id",
+                fallback=None,
+            ),
+            access_key_secret=cfg_parser.get(
+                "oss",
+                "access_key_secret",
+                fallback=None,
+            ),
             bucket_name=cfg_parser.get("oss", "bucket"),
             endpoint=cfg_parser.get("oss", "endpoint"),
             role_arn=cfg_parser.get("oss", "rolearn"),
+            aliyun_uid=cfg_parser.get(
+                "oss",
+                "aliyun_uid",
+                fallback=None,
+            ),
         )
 
         maxc_config = MaxcConfig(

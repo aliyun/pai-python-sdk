@@ -11,37 +11,18 @@ IO_TYPE_INPUTS = "inputs"
 IO_TYPE_OUTPUTS = "outputs"
 
 
-def split_variable_by_category(items):
+def sort_variable_by_category(items):
+    """Sort variables by category."""
     if not items:
-        return [], []
+        return [], [], []
     counter = Counter((item.name for item in items))
     conflicts = {key for key, count in counter.items() if count > 1}
     if conflicts:
         raise ValueError("Parameter/Artifact names conflict:%s" % (",".join(conflicts)))
 
-    # ensure parameters is prior to artifacts in list
-    af_pos = next(
-        (
-            idx
-            for idx, item in enumerate(items)
-            if item.variable_category == "artifacts"
-        ),
-        len(items),
-    )
-
-    idx = next(
-        (
-            idx
-            for idx in range(af_pos, len(items))
-            if items[idx].variable_category == "parameters"
-        ),
-        len(items),
-    )
-    if idx != len(items):
-        raise ValueError(
-            "Please ensure parameters is prior to artifacts in the spec list"
-        )
-    return items[0:af_pos], items[af_pos:]
+    arts = [item for item in items if item.variable_category == "artifacts"]
+    params = [item for item in items if item.variable_category == "parameters"]
+    return params, arts, params + arts
 
 
 class IndexedItemMixin(six.with_metaclass(ABCMeta, object)):
@@ -68,13 +49,14 @@ class IndexedItemMixin(six.with_metaclass(ABCMeta, object)):
         pass
 
 
-class SpecBase(IndexedItemMixin):
+class IOSpecBase(IndexedItemMixin):
+    """Inputs/Outputs spec base."""
+
     def __init__(self, items):
-        items = items or []
-        parameter_items, artifact_items = split_variable_by_category(items)
+        parameter_items, artifact_items, items = sort_variable_by_category(items)
         self._parameters = Parameters(parameter_items)
         self._artifacts = Artifacts(artifact_items)
-        super(SpecBase, self).__init__(items)
+        super(IOSpecBase, self).__init__(items)
 
     @staticmethod
     def sort_items(items):
@@ -120,7 +102,9 @@ class SpecBase(IndexedItemMixin):
         return item.name
 
 
-class InputsSpec(SpecBase):
+class InputsSpec(IOSpecBase):
+    """Inputs spec for"""
+
     def __init__(self, inputs):
         super(InputsSpec, self).__init__(items=inputs)
 
@@ -147,7 +131,7 @@ class InputsSpec(SpecBase):
         return assign_items
 
 
-class OutputsSpec(SpecBase):
+class OutputsSpec(IOSpecBase):
     def __init__(self, outputs):
         super(OutputsSpec, self).__init__(items=outputs)
         for item in self.items:
@@ -206,6 +190,7 @@ def _load_parameter_spec(p, param_spec, io_type):
 def _load_artifact_spec(p, artifact_spec, io_type):
     assert io_type in ("inputs", "outputs")
     metadata = LocationArtifactMetadata.from_dict(artifact_spec.get("metadata", None))
+
     name = artifact_spec.get("name", None)
     from_ = artifact_spec.get("from", None)
     value = artifact_spec.get("value", None)

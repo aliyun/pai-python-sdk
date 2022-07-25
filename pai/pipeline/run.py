@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pai.libs.futures import ThreadPoolExecutor
 from pai.decorator import cached_property
-from pai.core.exception import TimeoutException, PAIException
+from pai.exception import TimeoutException, PAIException
 from pai.core.artifact import ArchivedArtifact
 from pai.core.session import Session
 from pai.core.workspace import Workspace

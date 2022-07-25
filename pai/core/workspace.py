@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from collections import namedtuple
 from datetime import datetime
 
+
 SubUserInfo = namedtuple("SubUserInfo", ["user_id", "name"])
 
 
@@ -90,8 +91,20 @@ class Workspace(object):
         ]
 
     @classmethod
-    def get(cls, workspace_id):
-        resp = cls._get_service_client().get_workspace(workspace_id=workspace_id)
+    def get(cls, workspace_id, session=None):
+        """Get a Workspace instance by workspace_id.
+
+        Args:
+            workspace_id: Id of the workspace.
+            session: Session used for get the workspace client.
+
+        Returns:
+            Workspace: None if specific workspace not exists.
+        """
+        from pai.core import Session
+
+        sess = session or Session.current()
+        resp = sess.ws_client.get_workspace(workspace_id=workspace_id)
         return cls.deserialize(resp)
 
     @classmethod

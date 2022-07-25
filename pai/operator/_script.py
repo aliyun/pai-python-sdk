@@ -15,7 +15,7 @@ from pai.common.utils import (
     to_abs_path,
     extract_file_name,
 )
-from pai.core.exception import PAIException
+from pai.exception import PAIException
 from pai.core.session import Session, EnvType
 from pai.operator._container import (
     ContainerOperator,

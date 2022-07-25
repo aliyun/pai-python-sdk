@@ -12,9 +12,6 @@ Welcome to Alibaba PAI SDK documentation!
 
 **Alibaba PAI SDK** 是由阿里云计算平台的PAI团队开发，用户能够在阿里云的Data Science Workshop(DSW)/或是其他Python环境使用SDK访问PAI提供的服务。
 
-SDK目前处于Preview阶段，用户可以通过SDK访问PAI提供的PAIFlow (PAI提供的ML Pipeline Service)，SDK对于PAI EAS (Elastic Algorithm Service, 算法在线服务)，以及PAI Blade (模型优化服务)的支持目前正在开发中。
-
-
 
 .. toctree::
    :maxdepth: 1

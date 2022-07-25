@@ -9,7 +9,7 @@ from pai.operator.types import (
     LocationType,
 )
 from pai.operator.types import PipelineParameter, InputsSpec
-from pai.operator.types.spec import split_variable_by_category
+from pai.operator.types.spec import sort_variable_by_category
 from tests.unit import BaseUnitTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -104,7 +104,7 @@ class TestInputOutputSpec(BaseUnitTestCase):
         ]
 
         for case in success_cases:
-            _ = split_variable_by_category(case["inputs"])
+            _ = sort_variable_by_category(case["inputs"])
 
         error_cases = [
             {
@@ -113,7 +113,7 @@ class TestInputOutputSpec(BaseUnitTestCase):
             },
             {
                 "name": "error_order_2",
-                "inputs": [af_d, af_e, param_b],
+                "inputs": [af_d, af_e, param_b, af_d],
             },
             {
                 "name": "name_conflict_1",
@@ -121,10 +121,10 @@ class TestInputOutputSpec(BaseUnitTestCase):
             },
             {
                 "name": "name_conflict_2",
-                "inputs": [param_a, af_a],
+                "inputs": [param_a, param_a],
             },
         ]
 
         for case in error_cases:
             with self.assertRaises(ValueError):
-                split_variable_by_category(case["inputs"])
+                sort_variable_by_category(case["inputs"])

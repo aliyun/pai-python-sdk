@@ -1,19 +1,27 @@
 from __future__ import absolute_import
 
-import logging
+import json
+import os.path
 from enum import Enum
 
-from six.moves.urllib import parse
-
+import logging
 import oss2
 import six
+from six.moves.urllib import parse
 
 from pai.api.client_factory import ClientFactory
+from pai.common.utils import makedirs
+from pai.common.consts import INNER_REGION_IDS
 from pai.core.workspace import Workspace
 from pai.decorator import cached_property
 from pai.common.yaml_utils import dump as yaml_dump
 
 logger = logging.getLogger(__name__)
+
+
+# Environment variable indicates where config path located.
+# If not present, "~/.pai/config.json" is used as default config path.
+ENV_PAI_CONFIG_PATH = "PAI_CONFIG_PATH"
 
 
 class EnvType(Enum):
@@ -27,7 +35,6 @@ def setup_light_default_session(
     endpoint,
     protocol="http",
 ):
-
     """
 
     Args:
@@ -52,10 +59,9 @@ def setup_light_default_session(
 
 
 def setup_default_session(
-    access_key_id=None,
-    access_key_secret=None,
-    region_id=None,
-    oss_bucket=None,
+    access_key_id,
+    access_key_secret,
+    region_id,
     oss_bucket_name=None,
     oss_endpoint=None,
     workspace_id=None,
@@ -72,9 +78,8 @@ def setup_default_session(
         access_key_secret (str): Alibaba Cloud access key secret.
         region_id (str): Alibaba Cloud region id, Please visit below url to view the detail:
              https://help.aliyun.com/document_detail/40654.html
-        oss_bucket (oss2.Bucket): oss2.Bucket object.
-        oss_endpoint:
-        oss_bucket_name:
+        oss_bucket_name: OSS bucket name.
+        oss_endpoint (str): Endpoint for the OSS bucket.
         workspace_id: Id of workspace use in the default session.
         workspace_name: Name of workspace in the default session.
         **kwargs:
@@ -83,47 +88,18 @@ def setup_default_session(
         pai.core.session.Session: Initialized default session.
 
     """
-    if oss_bucket_name and oss_bucket:
-        raise ValueError(
-            "both bucket_name and oss_bucket are provided, only one is required."
-        )
-    if oss_bucket_name and not oss_endpoint:
-        raise ValueError("please provide oss endpoint")
-
-    if oss_bucket_name and oss_endpoint:
-        auth = oss2.Auth(
-            access_key_id=access_key_id, access_key_secret=access_key_secret
-        )
-        oss_bucket = oss2.Bucket(
-            auth=auth, endpoint=oss_endpoint, bucket_name=oss_bucket_name
-        )
-
     session = Session(
-        access_key_id, access_key_secret, region_id, oss_bucket=oss_bucket, **kwargs
+        access_key_id,
+        access_key_secret,
+        region_id,
+        oss_bucket_name=oss_bucket_name,
+        oss_endpoint=oss_endpoint,
+        workspace_id=workspace_id,
+        workspace_name=workspace_name,
+        **kwargs
     )
 
-    if Session.current():
-        Session.set_default_session(session)
-        session._default_sessions[0] = session
-    else:
-        session._default_sessions.append(session)
-
-    if workspace_name and workspace_id:
-        raise ValueError(
-            "both workspace_name and workspace_id are provided, only one is required."
-        )
-
-    if workspace_id:
-        workspace = Workspace.get(workspace_id)
-        if not workspace:
-            raise ValueError("Workspace not found, workspace_id=%s" % workspace_id)
-        session.set_workspace(workspace=workspace)
-    elif workspace_name:
-        workspace = Workspace.get_by_name(name=workspace_name)
-        if not workspace:
-            raise ValueError("Workspace not found, workspace_name=%s" % workspace_name)
-        session.set_workspace(workspace=workspace)
-
+    Session.set_default_session(session)
     return session
 
 
@@ -136,18 +112,20 @@ class Session(object):
 
     """
 
-    _default_sessions = []
-    _inner_region_ids = ["center"]
+    _default_session = None
+    _session_stack = []
 
     env_type = EnvType.PublicCloud
 
     def __init__(
         self,
-        access_key_id=None,
-        access_key_secret=None,
-        region_id=None,
-        oss_bucket=None,
-        workspace=None,
+        access_key_id,
+        access_key_secret,
+        region_id,
+        oss_bucket_name=None,
+        oss_endpoint=None,
+        workspace_id=None,
+        workspace_name=None,
         **kwargs
     ):
         """PAI Session Initializer.
@@ -162,11 +140,83 @@ class Session(object):
         if not access_key_id or not access_key_secret:
             raise ValueError("Please provide access_key, access_secret and region")
 
-        self._init_clients(access_key_id, access_key_secret, region_id, **kwargs)
-
         self._region_id = region_id
-        self._oss_bucket = oss_bucket
+        self._access_key_id = access_key_id
+        self._access_key_secret = access_key_secret
+
+        self._init_clients(access_key_id, access_key_secret, region_id, **kwargs)
+        self._init_oss_bucket(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            region_id=region_id,
+            oss_bucket_name=oss_bucket_name,
+            oss_endpoint=oss_endpoint,
+            **kwargs
+        )
+        self._init_workspace(workspace_id, workspace_name)
+
+    def _init_workspace(self, workspace_id, workspace_name):
+        """Init workspace instance for the session using given workspace_id/workspace_name."""
+        if workspace_name and workspace_id:
+            raise ValueError(
+                "both workspace_name and workspace_id are provided, only one is required."
+            )
+        if workspace_id:
+            workspace = Workspace.get(workspace_id, self)
+            if not workspace:
+                raise ValueError("Workspace not found, workspace_id=%s" % workspace_id)
+        elif workspace_name:
+            workspace = Workspace.get_by_name(name=workspace_name)
+            if not workspace:
+                raise ValueError(
+                    "Workspace not found, workspace_name=%s" % workspace_name
+                )
+        else:
+            workspace = None
         self._workspace = workspace
+
+    def _init_oss_bucket(
+        self,
+        access_key_id,
+        access_key_secret,
+        region_id,
+        oss_bucket_name,
+        oss_endpoint=None,
+        **kwargs
+    ):
+        """Initialize an OSS bucket instance."""
+        oss_bucket = None
+        if oss_bucket_name and not oss_endpoint:
+            oss_endpoint = "oss-{}.aliyuncs.com".format(region_id)
+            logger.info(
+                "Note: OSS endpoint not given, use default endpoint of the region: oss_endpoint=%s",
+                oss_endpoint,
+            )
+        if oss_bucket_name and oss_endpoint:
+
+            # Use specific credential for OSS bucket if it is provided.
+            if "oss_access_key_id" in kwargs and "oss_access_key_secret" in kwargs:
+                access_key_id = kwargs.pop("oss_access_key_id", None) or access_key_id
+                access_key_secret = (
+                    kwargs.pop("oss_access_key_secret", None) or access_key_secret
+                )
+                self._oss_access_key_id = access_key_id
+                self._oss_access_key_secret = access_key_secret
+            else:
+                self._oss_access_key_id = None
+                self._oss_access_key_secret = None
+
+            # Group-inner job requires oss_role_arn to support mount OSS.
+            self._oss_role_arn = kwargs.pop("oss_role_arn", None)
+            self._oss_aliyun_uid = kwargs.pop("oss_aliyun_uid", None)
+
+            auth = oss2.Auth(
+                access_key_id=access_key_id, access_key_secret=access_key_secret
+            )
+            oss_bucket = oss2.Bucket(
+                auth=auth, endpoint=oss_endpoint, bucket_name=oss_bucket_name
+            )
+        self._oss_bucket = oss_bucket
 
     def _init_clients(self, ak, ak_secret, region_id, **kwargs):
         endpoint = kwargs.pop("endpoint", None)
@@ -185,6 +235,11 @@ class Session(object):
             access_key_secret=ak_secret,
             region_id=region_id,
         )
+        self.dlc_client = ClientFactory.create_dlc_client(
+            access_key_id=ak,
+            access_key_secret=ak_secret,
+            region_id=region_id,
+        )
 
     def __enter__(self):
         Session.push_session_stack(self)
@@ -195,24 +250,115 @@ class Session(object):
 
     @classmethod
     def current(cls):
-        return cls._default_sessions[-1] if cls._default_sessions else None
+        """Read get current active PAI session."""
+        if cls._session_stack:
+            return cls._session_stack[-1]
+        elif cls._default_session:
+            return cls._default_session
+        else:
+            # try to load config file and init a default session
+            cls._default_session = cls.init_from_file_config()
+            return cls._default_session
+
+    def persist_config(self, config_path=None):
+        """Persist configuration used by the session"""
+        if not config_path:
+            default_config_path = os.path.join(
+                os.path.expanduser("~"), ".pai", "config.json"
+            )
+            config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
+        config = {
+            "access_key_id": self._access_key_id,
+            "access_key_secret": self._access_key_secret,
+            "region_id": self._region_id,
+        }
+
+        if self._oss_bucket:
+            config.update(
+                {
+                    "oss_bucket_name": self._oss_bucket.bucket_name,
+                    "oss_endpoint": self._oss_bucket.endpoint,
+                }
+            )
+
+        if self._workspace:
+            config.update(
+                {
+                    "workspace_id": self.workspace.id,
+                }
+            )
+
+        # Support specific OSS credentials.
+        if self._oss_access_key_id and self._oss_access_key_secret:
+            config.update(
+                {
+                    "oss_access_key_id": self._oss_access_key_id,
+                    "oss_access_key_secret": self._oss_access_key_secret,
+                }
+            )
+        # Support OSS RoleARN config which is required by OSS mount in group inner.
+        if self._oss_role_arn:
+            config.update(
+                {
+                    "oss_role_arn": self._oss_role_arn,
+                }
+            )
+
+        # OSS Dataset in GroupInner requires.
+        if self._oss_aliyun_uid:
+            config.update(
+                {
+                    "oss_aliyun_uid": self._oss_aliyun_uid,
+                }
+            )
+
+        makedirs(os.path.dirname(config_path))
+
+        with open(config_path, "w") as f:
+            f.write(json.dumps(config, indent=4))
+        print("Write config succeed: config_path=%s" % config_path)
+
+    @classmethod
+    def init_from_file_config(cls):
+        """Read config file and construct a default session.
+
+        Returns:
+            Session: Session instance init from config file.
+        """
+
+        default_config_path = os.path.join(
+            os.path.expanduser("~"), ".pai", "config.json"
+        )
+        config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
+        # Lookup config path silently, not raise exception if default config path is not exists.
+        if not os.path.exists(config_path):
+            logger.warning("Config path not exists: %s", config_path)
+            return
+
+        logger.info("Reading config from file: %s", config_path)
+        with open(config_path, "r") as f:
+            config = json.load(f)
+
+        sess = Session(**config)
+
+        return sess
 
     @classmethod
     def set_default_session(cls, s):
-        if len(cls._default_sessions) == 0:
-            cls._default_sessions = [s]
-        else:
-            cls._default_sessions[0] = s
+        """Set default session"""
+        cls._default_session = s
 
     @classmethod
     def push_session_stack(cls, sess):
-        cls._default_sessions.append(sess)
+        """Push a session to stack top."""
+        cls._session_stack.append(sess)
 
     @classmethod
     def pop_session_stack(cls):
-        if not cls._default_sessions:
+        """Pop a session from stack"""
+        if len(cls._session_stack) == 0:
             raise ValueError("Session stack is empty")
-        return cls._default_sessions.pop(-1)
+        return cls._session_stack.pop(-1)
 
     @property
     def region_id(self):
@@ -220,14 +366,15 @@ class Session(object):
 
     @classmethod
     def _is_inner_region(cls, region_id):
-        return region_id in cls._inner_region_ids
+        return region_id in INNER_REGION_IDS
 
     @property
     def is_inner(self):
-        return self._region_id in self._inner_region_ids
+        return self._region_id in INNER_REGION_IDS
 
     @property
     def workspace(self):
+        """Workspace current session work in."""
         return self._workspace
 
     @property
@@ -336,7 +483,7 @@ class Session(object):
 
         Create_pipeline submit pipeline manifest to PAI pipeline service. Identifier-
         provider-version triple in metadata of manifest is unique identifier of the Pipeline.
-         The same triple combination will result overwrite of original pipeline.
+        The same triple combination will result overwrite of original pipeline.
 
         Args:
             pipeline_def (dict or str): pipeline definition manifest, support types Pipeline,
@@ -636,7 +783,6 @@ class Session(object):
 
 
 class LightSession(Session):
-
     env_type = EnvType.Light
 
     def __init__(self, access_key_id, access_key_secret, endpoint=None, protocol=None):

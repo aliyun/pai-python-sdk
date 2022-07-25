@@ -151,6 +151,10 @@ class BaseIntegTestCase(unittest.TestCase):
                 endpoint=cls.pai_service_config.endpoint,
             )
         else:
+            oss_access_key_id = cls.oss_config.access_key_id or None
+            oss_access_key_secret = cls.oss_config.access_key_secret or None
+            oss_role_arn = cls.oss_config.role_arn or None
+
             return setup_default_session(
                 access_key_id=cls.pai_service_config.access_key_id,
                 access_key_secret=cls.pai_service_config.access_key_secret,
@@ -158,6 +162,10 @@ class BaseIntegTestCase(unittest.TestCase):
                 workspace_id=cls.pai_service_config.workspace_id,
                 oss_bucket_name=cls.oss_config.bucket_name,
                 oss_endpoint=cls.oss_config.endpoint,
+                oss_access_key_id=oss_access_key_id,
+                oss_access_key_secret=oss_access_key_secret,
+                oss_role_arn=oss_role_arn,
+                oss_aliyun_uid=cls.oss_config.aliyun_uid,
             )
 
     @classmethod
@@ -175,8 +183,10 @@ class BaseIntegTestCase(unittest.TestCase):
         if not cls.oss_config.bucket_name:
             return
         oss_auth = oss2.Auth(
-            access_key_id=cls.oss_config.access_key_id,
-            access_key_secret=cls.oss_config.access_key_secret,
+            access_key_id=cls.oss_config.access_key_id
+            or cls.pai_service_config.access_key_id,
+            access_key_secret=cls.oss_config.access_key_secret
+            or cls.pai_service_config.access_key_secret,
         )
         oss_bucket = oss2.Bucket(
             oss_auth,
@@ -192,4 +202,18 @@ class BaseIntegTestCase(unittest.TestCase):
             format="[%(asctime)s] %(pathname)s:%(lineno)d %(levelname)s "
             "- %(message)s",
             datefmt="%Y/%m/%d %H:%M:%S",
+        )
+
+    @classmethod
+    def upload_file(cls, oss_bucket, location, file):
+        file_name = os.path.basename(file)
+        key = location + file_name
+
+        if not oss_bucket.object_exists(key):
+            oss_bucket.put_object_from_file(key, file)
+
+        return "oss://{bucket_name}.{endpoint}/{key}".format(
+            bucket_name=oss_bucket.bucket_name,
+            key=key,
+            endpoint=oss_bucket.endpoint.lstrip("https://"),
         )

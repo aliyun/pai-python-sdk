@@ -93,3 +93,41 @@ class TestPipelineWithSavedOp(BaseIntegTestCase):
             sorted(expected_artifacts, key=lambda x: x["name"]),
             sorted(artifacts, key=lambda x: x["name"]),
         )
+
+    def test_alink_op(self):
+        op = SavedOperator.get_by_identifier(
+            identifier="alink_pyalink", provider=ProviderAlibabaPAI, version="v1"
+        )
+
+        compute_resource = {
+            "endpoint": "http://service.cn-hangzhou.maxcompute.aliyun.com/api",
+            "odpsProject": "abk_test_1",
+        }
+
+        mc_compute = compute_resource.copy()
+        pyalink_script = """
+        import itertools
+        from pyalink.alink import *
+
+        def main(sources, sinks, parameter):
+            raw_data = sources[0]
+            # split the raw dataset
+            spliter = SplitBatchOp().setFraction(0.8).linkFrom(raw_data)
+            train_data = spliter
+            valid_data = spliter.getSideOutput(0)
+
+            train_data.link(sinks[0])
+            valid_data.link(sinks[1])
+            BatchOperator.execute()
+        """
+
+        op.run(
+            job_name="pyalink-demo",
+            arguments={
+                "execution": compute_resource,
+                "execution_maxcompute": mc_compute,
+                "input-0": "odps://pai_online_project/tables/heart_disease_prediction",
+                "computeTarget": "MaxCompute",
+                "literalPythonScript": pyalink_script,
+            },
+        )

@@ -1,24 +1,36 @@
 # Changelog
 
+## v0.3.4
+- Feature: add CustomJobOperator && CustomJob.
+- Feature: Support conditon/for-loop/output-parameters.
+
+## v0.3.3
+- BugFix: Support ODPS URI as input for RawArtifact.
+
+## v0.3.2
+
+- Feature: PAIFlow SDK support PAI-Light environment.
+- BugFix
+
 ## v0.3.1
-- feature: use unregistered-operator in Pipeline.
-- feature: add a convenient method (ContainerOperator.from_scripts) to build Operator from scripts.
+- Feature: use unregistered-operator in Pipeline.
+- Feature: add a convenient method (ContainerOperator.from_scripts) to build Operator from scripts.
 
 
 ## v0.3.0
 
-- feature: Support repeated artifact in Pipeline, add class MetadataBuilder;
-- fix: Fix passing raw artifact value.
-- refactor: Use PaiFlow/AIWorkspace Tea SDK instead of POP SDK.
-- remove experimental Estimator/Transformer API.
+- Feature: Support repeated artifact in Pipeline, add class MetadataBuilder;
+- Fix: Fix passing raw artifact value.
+- Refactor: Use PaiFlow/AIWorkspace Tea SDK instead of POP SDK.
+- Remove experimental Estimator/Transformer API.
 
 ## v0.2.0
 
-- feature: Support custom pipeline components with ScriptTemplate and ContainerTemplate.
-- feature: Integrate with AI Workspace service.
-- bugfix.
+- Feature: Support custom pipeline components with ScriptTemplate and ContainerTemplate.
+- Feature: Integrate with AI Workspace service.
+- Bugfix.
 
 
 ## v0.1.7
 
-- feature: Base PAI pipeline service (PaiFlow) support.
+- Feature: Base PAI pipeline service (PaiFlow) support.

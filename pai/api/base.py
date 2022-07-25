@@ -3,20 +3,17 @@ from __future__ import absolute_import
 import json
 import logging
 import os
-from functools import wraps
-
 import time
 from Tea.exceptions import TeaException
 from alibabacloud_tea_openapi.models import Config
 from alibabacloud_tea_util import models as util_models
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
+from functools import wraps
 
-from pai.core.exception import ServiceCallException
 
 DefaultPageSize = 50
 
 DefaultGeneratorApiCallInterval = 0.5
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +46,8 @@ class BaseClient(object):
             self._endpoint = None
 
     def _call_service_with_exception(self, request):
+        from pai.exception import ServiceCallException
+
         logger.debug(
             "Request:%s, path_params:%s, uri_params:%s, query_params:%s, body_params:%s",
             type(request),
@@ -118,20 +117,13 @@ class BaseClient(object):
 
 
 class BaseTeaClient(object):
-
     _ENV_SERVICE_ENDPOINT_KEY = None
     _PRODUCT_NAME = None
 
     _inner_region_id = "center"
 
     def __init__(
-        self,
-        access_key_id,
-        access_key_secret,
-        client_cls,
-        region_id=None,
-        endpoint=None,
-        **kwargs
+        self, access_key_id, access_key_secret, region_id=None, endpoint=None, **kwargs
     ):
         if endpoint is None:
             endpoint = type(self)._get_endpoint(region_id=region_id)
@@ -141,14 +133,15 @@ class BaseTeaClient(object):
         self._access_key_id = access_key_id
         self._access_key_secret = access_key_secret
 
-        config = Config(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region_id=region_id,
-            endpoint=endpoint,
+    def build_client_config(self, **kwargs):
+        return Config(
+            access_key_id=self._access_key_id,
+            access_key_secret=self._access_key_secret,
+            region_id=self.region_id,
+            endpoint=self.endpoint,
+            signature_algorithm="v2",
             **kwargs
         )
-        self.base_client = client_cls(config)
 
     @classmethod
     def _get_runtime(cls):
@@ -159,7 +152,15 @@ class BaseTeaClient(object):
         return {}
 
     @classmethod
+    def _construct_endpoint_by_region(cls, region_id):
+        """Construct Product endpoint with given region_id"""
+        if region_id == cls._inner_region_id:
+            return "{}inner-share.aliyuncs.com".format(cls._PRODUCT_NAME.lower())
+        return "{}.{}.aliyuncs.com".format(cls._PRODUCT_NAME.lower(), region_id)
+
+    @classmethod
     def _get_endpoint(cls, region_id):
+        """Get service endpoint."""
         if cls._ENV_SERVICE_ENDPOINT_KEY and os.environ.get(
             cls._ENV_SERVICE_ENDPOINT_KEY
         ):
@@ -169,12 +170,11 @@ class BaseTeaClient(object):
                 "Please provide region_id and product_name to build service endpoint: region_id=%s, product_name=%s"
                 % (region_id, cls._PRODUCT_NAME)
             )
-
-        if region_id == cls._inner_region_id:
-            return "{}inner-share.aliyuncs.com".format(cls._PRODUCT_NAME.lower())
-        return "{}.{}.aliyuncs.com".format(cls._PRODUCT_NAME.lower(), region_id)
+        return cls._construct_endpoint_by_region(region_id)
 
     def _call_service_with_exception(self, client_method, **kwargs):
+        from pai.exception import ServiceCallException
+
         try:
             resp = client_method(**kwargs)
         except TeaException as e:

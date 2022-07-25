@@ -8,7 +8,7 @@ from pai.operator import (
     PAI_SOURCE_CODE_ENV_KEY,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
 )
-from pai.operator.types import PipelineArtifact, MetadataBuilder
+from pai.operator.types import PipelineArtifact, ArtifactMetadataUtils
 from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
@@ -226,13 +226,13 @@ class TestScriptOperatorSourceSnapshot(BaseIntegTestCase):
             inputs=[
                 PipelineArtifact(
                     name="input1",
-                    metadata=MetadataBuilder.raw(),
+                    metadata=ArtifactMetadataUtils.raw(),
                 ),
             ],
             outputs=[
                 PipelineArtifact(
                     name="output1",
-                    metadata=MetadataBuilder.raw(),
+                    metadata=ArtifactMetadataUtils.raw(),
                 )
             ],
             # image_uri=self.get_python_image(),
@@ -269,13 +269,13 @@ class TestScriptOperatorSourceSnapshot(BaseIntegTestCase):
             inputs=[
                 PipelineArtifact(
                     name="input1",
-                    metadata=MetadataBuilder.raw(),
+                    metadata=ArtifactMetadataUtils.raw(),
                 ),
             ],
             outputs=[
                 PipelineArtifact(
                     name="output1",
-                    metadata=MetadataBuilder.raw(),
+                    metadata=ArtifactMetadataUtils.raw(),
                 )
             ],
             install_packages=[

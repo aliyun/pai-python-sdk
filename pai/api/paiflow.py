@@ -33,7 +33,6 @@ def require_workspace(f):
 
 
 class PAIFlowClient(BaseTeaClient):
-
     _ENV_SERVICE_ENDPOINT_KEY = "PAI_PAIFLOW_SERVICE_ENDPOINT"
 
     _PRODUCT_NAME = "paiflow"
@@ -49,11 +48,11 @@ class PAIFlowClient(BaseTeaClient):
         super(PAIFlowClient, self).__init__(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
-            client_cls=Client,
             region_id=region_id,
+            client_cls=Client,
             endpoint=endpoint,
-            **kwargs
         )
+        self.base_client = Client(config=self.build_client_config(**kwargs))
 
     def get_pipeline_schema(self, pipeline_id):
         resp = self._call_service_with_exception(

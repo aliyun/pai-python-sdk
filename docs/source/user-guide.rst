@@ -13,10 +13,10 @@ PAI SDK封装了PAI在阿里云上提供的服务，使得用户能够在代码�
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    guide/initialization
    guide/pipeline
-   guide/operator
-   guide/estimator
-
+   guide/custom_job
+   guide/custom_operator
+   guide/conditional_workflow

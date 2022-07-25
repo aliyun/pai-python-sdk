@@ -21,9 +21,9 @@ requirements = [
     # graphviz drop Python2 support in 0.17, drop Python3.6 support in 0.19.1
     # https://graphviz.readthedocs.io/en/latest/changelog.html#version-0-17
     "graphviz<0.17",
-    "numpy>=1.16.0, <=1.18.0",
+    "numpy>=1.16.0",
     "oss2>=2.8.0",
-    "pyodps>=0.9.3.2",
+    "pyodps>=0.11.0",
     "pyyaml>=5.3.1",
     "six>=1.15.0",
     "importlib_metadata>=2.0.0, <=2.1.0",

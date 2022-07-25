@@ -9,7 +9,7 @@ from pai.core.session import EnvType
 from pai.pipeline import PipelineRunStatus, PipelineStep
 from pai.pipeline.core import Pipeline
 from pai.operator.types import (
-    MetadataBuilder,
+    ArtifactMetadataUtils,
     PipelineArtifact,
 )
 from pai.operator.types import ParameterType, PipelineParameter
@@ -35,7 +35,7 @@ class TestAlgo(BaseIntegTestCase):
             execution = PipelineParameter("execution", ParameterType.Map)
             dataset_input = PipelineArtifact(
                 "dataset-table",
-                metadata=MetadataBuilder.maxc_table(),
+                metadata=ArtifactMetadataUtils.maxc_table(),
                 required=True,
             )
 

@@ -113,12 +113,30 @@ def iter_with_limit(iterator, limit):
 
 
 def tar_source_files(source_files, target=None):
+    if isinstance(source_files, six.string_types):
+        source_files = [source_files]
     if target is None:
         target = tempfile.mktemp()
 
     with tarfile.open(target, "w:gz") as tar:
         for name in source_files:
             tar.add(name, arcname=os.path.basename(name))
+    return target
+
+
+def tar_file(source_file, target=None):
+    source_file = to_abs_path(source_file)
+    if not os.path.exists(source_file):
+        raise ValueError("source file not exists: %s", source_file)
+    if os.path.isdir(source_file):
+        arcname = ""
+    else:
+        arcname = os.path.basename(source_file)
+
+    if not target:
+        target = tempfile.mktemp()
+    with tarfile.open(target, "w:gz") as tar:
+        tar.add(name=source_file, arcname=arcname)
     return target
 
 

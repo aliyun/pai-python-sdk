@@ -189,7 +189,7 @@ class TestArtifact(BaseUnitTestCase):
                 "location": {
                     "endpoint": "oss-host",
                     "bucket": "bucket-name",
-                    "key": "/path-to-file/file-name",
+                    "key": "path-to-file/file-name",
                 }
             },
         )

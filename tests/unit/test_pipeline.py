@@ -6,7 +6,7 @@ from pai.operator.types import (
     LocationType,
     DataType,
     PipelineParameter,
-    MetadataBuilder,
+    ArtifactMetadataUtils,
 )
 from pai.pipeline import Pipeline
 from pai.pipeline.step import PipelineStep
@@ -67,8 +67,8 @@ class TestPipelineBuild(BaseUnitTestCase):
             PipelineParameter(name="input2", default="world"),
         ]
         output_artifacts = [
-            PipelineArtifact(name="output1", metadata=MetadataBuilder.raw()),
-            PipelineArtifact(name="output2", metadata=MetadataBuilder.raw()),
+            PipelineArtifact(name="output1", metadata=ArtifactMetadataUtils.raw()),
+            PipelineArtifact(name="output2", metadata=ArtifactMetadataUtils.raw()),
         ]
 
         op = ContainerOperator(

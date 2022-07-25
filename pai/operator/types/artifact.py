@@ -2,11 +2,9 @@ from __future__ import absolute_import
 
 import json
 import re
+from abc import ABCMeta, abstractmethod
 
 import six
-from pai.common.oss_utils import parse_oss_url
-from six import with_metaclass
-from abc import ABCMeta, abstractmethod
 from odps.df import DataFrame as ODPSDataFrame
 from odps.models import (
     Table as ODPSTable,
@@ -14,14 +12,19 @@ from odps.models import (
     Volume as ODPSVolume,
 )
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
+from six import with_metaclass
 
+from pai.common.oss_utils import parse_oss_url
 from pai.common.utils import is_iterable
 from pai.operator.types.variable import PipelineVariable
 
 
-class MetadataBuilder(object):
+class ArtifactMetadataUtils(object):
+    """Util class using for create artifact metadata."""
+
     @staticmethod
     def maxc_table():
+        """Return metadata represent a MaxComputeTable."""
         return LocationArtifactMetadata(
             data_type=DataType.DataSet,
             location_type=LocationType.MaxComputeTable,
@@ -183,7 +186,9 @@ class PipelineArtifact(PipelineVariable):
             if isinstance(arg, (PipelineArtifact, PipelineArtifactElement)):
                 self.from_ = arg
             else:
-                self.value = arg
+                # We need to transform artifact input value input to standard artifact value
+                # which PAIFlow service recognized.
+                self.value = self._translate_value(arg)["value"]
 
     def __getitem__(self, key):
         if not self.repeated:
@@ -469,7 +474,7 @@ class LocationArtifactValue(object):
             else:
                 return None
         elif isinstance(resource, (ODPSTable, ODPSPartition, ODPSDataFrame)):
-            metadata = MetadataBuilder.maxc_table()
+            metadata = ArtifactMetadataUtils.maxc_table()
         elif isinstance(resource, ArchivedArtifact):
             try:
                 metadata = LocationArtifactMetadata.from_dict(resource.metadata)
@@ -566,7 +571,7 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
                     table=table,
                     partition=partition.strip("/") if partition else None,
                 ),
-                MetadataBuilder.maxc_table(),
+                ArtifactMetadataUtils.maxc_table(),
             )
         elif resource_type == "volumes":
             volume = matches.group("resource_name")
@@ -581,7 +586,7 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
                     partition=partition,
                     file_name=file_name,
                 ),
-                MetadataBuilder.maxc_volume(),
+                ArtifactMetadataUtils.maxc_volume(),
             )
 
         elif resource_type == "offlinemodels":
@@ -591,7 +596,7 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
                     project=project,
                     offline_model=name,
                 ),
-                MetadataBuilder.maxc_offlinemodel(),
+                ArtifactMetadataUtils.maxc_offlinemodel(),
             )
         else:
             raise ValueError("Not support MaxCompute resource type :%s" % resource_type)
@@ -727,7 +732,17 @@ class MaxComputeVolumeArtifact(MaxComputeResourceArtifact):
 
 
 class OSSArtifact(LocationArtifactValue):
+    """OSSArtifact instance represent a OSS artifact value."""
+
     def __init__(self, bucket, key, endpoint, role_arn=None):
+        """
+
+        Args:
+            bucket: OSS bucket name.
+            key: OSS object key.
+            endpoint: Endpoint for the OSS bucket.
+            role_arn: RoleArn used for OSS access.
+        """
         super(OSSArtifact, self).__init__()
         self.bucket = bucket
         self.endpoint = endpoint
@@ -761,7 +776,7 @@ class OSSArtifact(LocationArtifactValue):
             cls(
                 bucket=bucket_name, key=object_key, endpoint=endpoint, role_arn=role_arn
             ),
-            MetadataBuilder.oss_dataset(),
+            ArtifactMetadataUtils.oss_dataset(),
         )
 
     @classmethod
