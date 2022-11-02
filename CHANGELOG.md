@@ -1,8 +1,14 @@
 # Changelog
 
+# v0.3.6
+- Feature: Support Model Management/EasService.
+
+# v0.3.5
+- Feature: Add Resource based API.
+
 ## v0.3.4
-- Feature: add CustomJobOperator && CustomJob.
-- Feature: Support conditon/for-loop/output-parameters.
+- Feature: Add CustomJob/CustomJobOperator that support run a custom PAI-DLC job in workflow.
+- Feature: Pipeline support conditional/for-loop/output-parameters.
 
 ## v0.3.3
 - BugFix: Support ODPS URI as input for RawArtifact.

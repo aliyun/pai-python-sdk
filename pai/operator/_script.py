@@ -10,16 +10,16 @@ from oss2.exceptions import NotFound, ServerError
 
 from pai.common.oss_utils import is_oss_url
 from pai.common.utils import (
-    tar_source_files,
-    file_checksum,
-    to_abs_path,
     extract_file_name,
+    file_checksum,
+    tar_source_files,
+    to_abs_path,
 )
+from pai.core.session import EnvType, Session, get_default_session
 from pai.exception import PAIException
-from pai.core.session import Session, EnvType
 from pai.operator._container import (
-    ContainerOperator,
     _PRE_PIP_INSTALL_TEMPLATE,
+    ContainerOperator,
     _DefaultScriptOperatorImageLight,
     _DefaultScriptOperatorImagePublic,
 )
@@ -67,7 +67,7 @@ class ScriptOperator(ContainerOperator):
 
     @classmethod
     def _get_oss_bucket(cls):
-        session = Session.current()
+        session = get_default_session()
         return session.oss_bucket
 
     @classmethod
@@ -144,7 +144,7 @@ class ScriptOperator(ContainerOperator):
         install_packages=None,
         pip_index_url=None,
         env=None,
-        **kwargs
+        **kwargs,
     ):
 
         """Construct Operator that uses snapshot code in OSS.
@@ -195,7 +195,7 @@ class ScriptOperator(ContainerOperator):
             image_uri=image_uri,
             command=commands,
             env=env,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -225,7 +225,7 @@ class ScriptOperator(ContainerOperator):
 
     @classmethod
     def _get_default_image_uri(cls):
-        session = Session.current()
+        session = get_default_session()
         if session.env_type == EnvType.Light:
             return _DefaultScriptOperatorImageLight
         else:

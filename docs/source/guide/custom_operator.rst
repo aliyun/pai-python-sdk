@@ -20,13 +20,13 @@
 
     # 初始化Session
     import pai
-    
+
     print(pai.__version__)
-    
-    from pai.core.session import setup_default_session, Session
-    
-    sess = Session.current()
-    
+
+    from pai.core.session import setup_default_session, Session, get_default_session
+
+    sess = get_default_session()
+
     if not sess:
         print("config session")
         sess = setup_default_session(
@@ -38,7 +38,7 @@
         )
         # 将当前的配置持久化到 ~/.pai/config.json，SDK默认从对应的路径读取配置初始化默认session。
         sess.persist_config()
-    
+
     assert sess.oss_bucket is not None
 
 
@@ -60,29 +60,29 @@
     from sklearn.model_selection import train_test_split
     import pandas as pd
     import numpy as np
-    
+
     oss_bucket = sess.oss_bucket  # type: oss2.Bucket
-    
+
     iris = datasets.load_iris()
     df = pd.DataFrame(
         data=np.c_[iris["data"], iris["target"]],
         columns=iris["feature_names"] + ["target"],
     )
-    
+
     train, test = train_test_split(df, test_size=0.3)
-    
+
     # 上传训练数据集
     train.to_csv("train.csv", sep=",", index=False)
     oss_bucket.put_object_from_file(
         "custom-job-example/train-data/train.csv", filename="train.csv"
     )
-    
+
     # 上传测试数据集
     test.to_csv("test.csv", sep=",", index=False)
     oss_bucket.put_object_from_file(
         "custom-job-example/test-data/test.csv", filename="test.csv"
     )
-    
+
     train_data_uri = (
         "oss://{bucket_name}.{endpoint}/custom-job-example/train-data/train.csv".format(
             bucket_name=oss_bucket.bucket_name,
@@ -95,10 +95,10 @@
             endpoint=oss_bucket.endpoint.strip("https://"),
         )
     )
-    
+
     print("train_data_uri", train_data_uri)
     print("test_data_uri", test_data_uri)
-    
+
     output_path_uri = "oss://{bucket_name}.{endpoint}/custom-job-example/output/".format(
         bucket_name=oss_bucket.bucket_name,
         endpoint=oss_bucket.endpoint.strip("https://"),
@@ -136,24 +136,24 @@
 
     import argparse
     import os
-    
+
     import pandas as pd
     from joblib import dump
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import accuracy_score
-    
+
     TRAINING_BASE_DIR = "/ml/"
     TRAINING_OUTPUT_MODEL_DIR = os.path.join(TRAINING_BASE_DIR, "output/model/")
-    
+
     TRAINING_OUTPUT_ACCURACY_PATH = os.path.join(
         TRAINING_BASE_DIR, "output/output_parameters/test-accuracy"
     )
-    
-    
+
+
     def load_dataset(path):
         if not os.path.exists(path):
             raise ValueError("Input data path not exists: {}".format(path))
-    
+
         if os.path.isfile(path):
             file_path = path
         else:
@@ -171,12 +171,12 @@
             filepath_or_buffer=file_path,
             sep=",",
         )
-    
+
         y = df["target"]
         x = df.drop(["target"], axis=1)
         return x, y
-    
-    
+
+
     def main():
         parser = argparse.ArgumentParser(description="RandomForest train.")
         parser.add_argument(
@@ -189,14 +189,14 @@
             choices=["gini", "entropy"],
             help="The function to measure the quality of a split, supported criteria: {'gini', 'entropy'}",
         )
-    
+
         parser.add_argument(
             "--max_depth",
             type=int,
             default=10,
             help="The maximum depth of the tree.",
         )
-    
+
         parser.add_argument(
             "--train",
             type=str,
@@ -209,9 +209,9 @@
             default=None,
             help="Input train data path.",
         )
-    
+
         args, _ = parser.parse_known_args()
-    
+
         estimator = RandomForestClassifier(
             n_estimators=args.n_estimator,
             criterion=args.criterion,
@@ -225,7 +225,7 @@
                 estimator.oob_score_
             )
         )
-    
+
         # 使用测试集评估模型，将模型在测试集上的精度到 /ml/output/output_parameters/test_accuracy 文件
         if args.test:
             print("Score the model with test dataset: {}".format(args.test))
@@ -236,14 +236,14 @@
             os.makedirs(os.path.dirname(TRAINING_OUTPUT_ACCURACY_PATH), exist_ok=True)
             with open(TRAINING_OUTPUT_ACCURACY_PATH, "w") as f:
                 f.write(str(accuracy))
-    
+
         # 将训练获得的模型写出到 /ml/output/model/model.pkl
         os.makedirs(TRAINING_OUTPUT_MODEL_DIR, exist_ok=True)
         model_path = os.path.join(TRAINING_OUTPUT_MODEL_DIR, "model.pkl")
         dump(estimator, model_path)
         print(f"model dump succeed: {model_path}")
-    
-    
+
+
     if __name__ == "__main__":
         main()
 
@@ -257,16 +257,16 @@
         PipelineParameter,
         ArtifactMetadataUtils,
     )
-    
+
     from pai.job.common import JobConfig
-    
-    
+
+
     # 我们使用了PAI仓库内的社区版本的XGBoost镜像，作为作业执行的镜像.
     image_uri = "registry.{}.aliyuncs.com/pai-dlc/xgboost-training:1.6.0-cpu-py36-ubuntu18.04".format(
         sess.region_id
     )
-    
-    
+
+
     # 构建作业组件.
     operator = CustomJobOperator(
         # 作业组件的EntryPoint，相应的脚本会以 python <entry_point> --arg1 value1 --arg2 value2 的方式拉起。
@@ -295,7 +295,7 @@
         # 这个组件的输出参数
         outputs=[PipelineParameter("test-accuracy")],
     )
-    
+
     # 查看组件的输入输出
     print(operator.inputs)
     print(operator.outputs)
@@ -325,7 +325,7 @@
 .. code:: python
 
     from pai.pipeline import Pipeline
-    
+
     step_train_1 = operator.as_step(
         name="TrainStep1",
         inputs={
@@ -340,7 +340,7 @@
             "max_depth": 20,
         },
     )
-    
+
     step_train_2 = operator.as_step(
         name="TrainStep2",
         inputs={
@@ -354,11 +354,11 @@
             "max_depth": 200,
         },
     )
-    
+
     step_train_2.after(step_train_1)
-    
+
     p = Pipeline(steps=[step_train_2, step_train_1])
-    
+
     run = p.run("ExamplePipeline")
 
 
@@ -368,6 +368,3 @@
 当前示例Notebook下载链接:
 
 :download:`Notebook下载 <../resources/custom_operator.ipynb>`
-
-
-

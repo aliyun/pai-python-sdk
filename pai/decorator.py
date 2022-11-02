@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from typing import Callable
+
 
 class _Missing(object):
     def __repr__(self):
@@ -35,7 +37,7 @@ class cached_property(property):
     # expected because the lookup logic is replicated in __get__ for
     # manual invocation.
 
-    def __init__(self, func, name=None, doc=None):
+    def __init__(self, func: Callable, name: None = None, doc: None = None) -> None:
         self.__name__ = name or func.__name__
         self.__module__ = func.__module__
         self.__doc__ = doc or func.__doc__
@@ -52,3 +54,15 @@ class cached_property(property):
             value = self.func(obj)
             obj.__dict__[self.__name__] = value
         return value
+
+
+def config_default_session(f: Callable) -> Callable:
+    def _(*args, **kwargs):
+        from pai.core.session import get_default_session
+
+        if not kwargs.get("session"):
+            kwargs["session"] = get_default_session()
+
+        return f(*args, **kwargs)
+
+    return _

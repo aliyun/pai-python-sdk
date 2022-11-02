@@ -1,8 +1,8 @@
 import copy
+from abc import ABCMeta, abstractmethod
 from collections import Counter
 
 import six
-from abc import ABCMeta, abstractmethod
 
 from .artifact import LocationArtifactMetadata, PipelineArtifact
 from .parameter import PipelineParameter

@@ -1,7 +1,8 @@
 import six
 
-from pai.common.yaml_utils import safe_load as yaml_safe_load, dump as yaml_dump
-from pai.core import Session
+from pai.common.yaml_utils import dump as yaml_dump
+from pai.common.yaml_utils import safe_load as yaml_safe_load
+from pai.core.session import get_default_session
 from pai.operator._base import OperatorBase, UnRegisteredOperator
 from pai.operator.types.spec import load_input_output_spec
 
@@ -24,7 +25,7 @@ class SavedOperator(OperatorBase):
             workspace_id: ID of the workspace which the pipeline belongs to.
         """
         if not manifest:
-            session = Session.current()
+            session = get_default_session()
             manifest = session.get_pipeline_by_id(pipeline_id)["Manifest"]
         if isinstance(manifest, six.string_types):
             manifest = yaml_safe_load(manifest)
@@ -122,12 +123,12 @@ class SavedOperator(OperatorBase):
             pai.pipeline.SavedOperator: SavedOperator instance
 
         """
+        session = get_default_session()
 
         if not provider:
-            sess = Session.current()
+            sess = get_default_session()
             provider = sess.provider
 
-        session = Session.current()
         pipeline_info = session.get_pipeline(
             identifier=identifier, provider=provider, version=version
         )
@@ -161,7 +162,7 @@ class SavedOperator(OperatorBase):
         """
 
         if not provider:
-            sess = Session.current()
+            sess = get_default_session()
             provider = sess.provider if sess else None
 
         pl_gen = cls._get_service_client().list_pipeline_generator(
@@ -179,9 +180,9 @@ class SavedOperator(OperatorBase):
 
         Args:
             op (Union[UnRegisteredOperator, str, dict]): New pipeline/operator spec,
-            could by a unregistered operator, dict or yaml in str.
+            could be an unregistered operator, dict or yaml in str.
         """
-        client = Session.current().paiflow_client
+        client = get_default_session().paiflow_client
         if isinstance(op, UnRegisteredOperator):
             manifest = op.to_manifest(identifier=self.identifier, version=self.version)
         elif isinstance(op, str):
@@ -197,7 +198,7 @@ class SavedOperator(OperatorBase):
 
     def delete(self):
         """Delete this registered operator/pipeline."""
-        client = Session.current().paiflow_client
+        client = get_default_session().paiflow_client
         client.delete_pipeline(self.pipeline_id)
 
     @classmethod
@@ -245,7 +246,7 @@ class SavedOperator(OperatorBase):
         raise NotImplementedError("SaveTemplate is not savable.")
 
     def _submit(self, job_name, args):
-        session = Session.current()
+        session = get_default_session()
         run_id = session.create_run(
             job_name,
             args,

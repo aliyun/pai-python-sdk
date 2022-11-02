@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. important:: 
+.. important::
    SDK is in development, API interface is not determined until v1.0.
 
 

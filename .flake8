@@ -1,0 +1,21 @@
+# flake8 config
+[flake8]
+max-line-length = 88
+extend-ignore = E203
+exclude =
+    .git,
+    .tox,
+    .nox,
+    __pycache__,
+    docs/source/conf.py,
+    old,
+    build,
+    tests,
+    setup.py
+    dist/*
+    pai/libs/*
+
+ignore =
+    E501
+    W503
+    F401

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+    <Header copyright="Copyright (c) 2014, Alibaba Inc." description="">
+        <Application name="ODPS/PMML" version="0.1.0"/>
+        <Timestamp>Wed, 08 Sep 2021 07:21:08 GMT</Timestamp>
+    </Header>
+    <DataDictionary numberOfFields="5">
+        <DataField name="pm10" optype="continuous" dataType="double"/>
+        <DataField name="so2" optype="continuous" dataType="double"/>
+        <DataField name="co" optype="continuous" dataType="double"/>
+        <DataField name="no2" optype="continuous" dataType="double"/>
+        <DataField name="_c2" optype="categorical" dataType="integer">
+            <Value value="1"/>
+            <Value value="0"/>
+        </DataField>
+    </DataDictionary>
+    <RegressionModel modelName="model_flow_vhndmr3oa1x4kvvs9w_node_ksqe5z1g3je376zt2m_model"
+                     functionName="classification" algorithmName="LogisticRegression" normalizationMethod="logit">
+        <MiningSchema>
+            <MiningField name="pm10" usageType="active"/>
+            <MiningField name="so2" usageType="active"/>
+            <MiningField name="co" usageType="active"/>
+            <MiningField name="no2" usageType="active"/>
+            <MiningField name="_c2" usageType="target"/>
+        </MiningSchema>
+        <Output>
+            <OutputField name="p_1" optype="continuous" dataType="double" feature="probability" value="1"/>
+            <OutputField name="p_0" optype="continuous" dataType="double" feature="probability" value="0"/>
+        </Output>
+        <RegressionTable intercept="-16.89823252736313" targetCategory="1">
+            <NumericPredictor name="pm10" exponent="1" coefficient="18.25811359934353"/>
+            <NumericPredictor name="so2" exponent="1" coefficient="2.051957330416824"/>
+            <NumericPredictor name="co" exponent="1" coefficient="-0.5280526237281141"/>
+            <NumericPredictor name="no2" exponent="1" coefficient="11.60497429920501"/>
+        </RegressionTable>
+        <RegressionTable intercept="0.0" targetCategory="0"/>
+    </RegressionModel>
+</PMML>

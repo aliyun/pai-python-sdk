@@ -1,16 +1,15 @@
 from __future__ import absolute_import
 
-
 import logging
 import time
 from datetime import datetime
 
-from pai.libs.futures import ThreadPoolExecutor
-from pai.decorator import cached_property
-from pai.exception import TimeoutException, PAIException
 from pai.core.artifact import ArchivedArtifact
-from pai.core.session import Session
-from pai.core.workspace import Workspace
+from pai.core.session import Session, get_default_session
+from pai.decorator import cached_property, config_default_session
+from pai.exception import PAIException, TimeoutException
+from pai.libs.futures import ThreadPoolExecutor
+from pai.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +40,7 @@ class PipelineRunStatus(object):
 
 
 class PipelineRun(object):
+    @config_default_session
     def __init__(
         self,
         run_id,
@@ -54,6 +54,7 @@ class PipelineRun(object):
         source=None,
         user_id=None,
         parent_user_id=None,
+        session=None,
     ):
         self.run_id = run_id
         self.name = name
@@ -66,11 +67,11 @@ class PipelineRun(object):
         self.source = source
         self.user_id = user_id
         self.parent_user_id = parent_user_id
-        self._bind_session = Session.current()
+        self.session = session
 
     @classmethod
     def _get_service_client(cls):
-        session = Session.current()
+        session = get_default_session()
         return session.paiflow_client
 
     @cached_property
@@ -91,7 +92,7 @@ class PipelineRun(object):
         sort_by=None,
         order=None,
         workspace_id=None,
-        **kwargs
+        **kwargs,
     ):
         generator = cls._get_service_client().list_run_generator(
             name=name,
@@ -101,7 +102,7 @@ class PipelineRun(object):
             sort_by=sort_by,
             order=order,
             workspace_id=workspace_id,
-            **kwargs
+            **kwargs,
         )
         for info in generator:
             yield cls.deserialize(info)
@@ -177,7 +178,11 @@ class PipelineRun(object):
 
     @property
     def run_detail_url(self):
-        return self._bind_session.run_detail_url(run_id=self.run_id)
+        return self.session.run_detail_url(run_id=self.run_id)
+
+    @property
+    def dashboard_uri(self):
+        return self.session.run_detail_url(run_id=self.run_id)
 
     def get_run_info(self):
         return self._get_service_client().get_run(self.run_id)
@@ -194,7 +199,7 @@ class PipelineRun(object):
 
         if not node_id:
             return
-        client = self._bind_session.paiflow_client or type(self)._get_service_client()
+        client = self.session.paiflow_client or type(self)._get_service_client()
         outputs = [
             output
             for output in client.list_node_outputs_generator(
@@ -346,7 +351,7 @@ class PipelineRun(object):
         page_offset=0,
         page_size=100,
     ):
-        return self._bind_session.paiflow_client.list_node_logs_generator(
+        return self.session.paiflow_client.list_node_logs_generator(
             run_id=run_id,
             node_id=node_id,
             page_offset=page_offset,

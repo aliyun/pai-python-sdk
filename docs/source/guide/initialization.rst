@@ -26,14 +26,12 @@ Bucket，请确认使用的OSS region和工作空间是一致的。
 
 .. code-block:: python
 
-    from pai.core.session import setup_default_session
+    from pai.core.session import setup_default_session, get_default_session
     from pai.pipeline.run import PipelineRun
     from pai.common import ProviderAlibabaPAI
     from pai.operator import SavedOperator
 
-    sess = Session.current()
-
-    sess = Session.current()
+    sess = get_default_session()
 
     if not sess:
         print("config session")
@@ -49,6 +47,6 @@ Bucket，请确认使用的OSS region和工作空间是一致的。
 
     for run_instance in PipelineRun.list():
         print(run_instance)
-    
+
     for templ in SavedOperator.list(provider=ProviderAlibabaPAI):
         print(templ)

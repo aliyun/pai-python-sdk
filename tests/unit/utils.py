@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+
 import yaml
 
 from pai.core.session import EnvType

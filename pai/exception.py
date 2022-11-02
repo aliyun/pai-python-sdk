@@ -33,3 +33,14 @@ class ServiceCallException(PAIException):
     @property
     def message(self):
         return self._message
+
+
+class UnExpectedStatusException(PAIException):
+    def __init__(self, message, status):
+        super(UnExpectedStatusException, self).__init__(message)
+        self.status = status
+
+    def __str__(self):
+        return "UnExpectedStatusException: {} status={}".format(
+            self.message, self.status
+        )

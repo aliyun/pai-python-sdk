@@ -6,11 +6,9 @@ from abc import ABCMeta, abstractmethod
 
 import six
 from odps.df import DataFrame as ODPSDataFrame
-from odps.models import (
-    Table as ODPSTable,
-    Partition as ODPSPartition,
-    Volume as ODPSVolume,
-)
+from odps.models import Partition as ODPSPartition
+from odps.models import Table as ODPSTable
+from odps.models import Volume as ODPSVolume
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 from six import with_metaclass
 

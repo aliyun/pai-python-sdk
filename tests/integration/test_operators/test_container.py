@@ -3,12 +3,12 @@ import time
 
 from pai.operator import ContainerOperator, SavedOperator
 from pai.operator.types import (
-    PipelineArtifact,
-    LocationArtifactMetadata,
     DataType,
+    LocationArtifactMetadata,
     LocationType,
+    PipelineArtifact,
+    PipelineParameter,
 )
-from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
 

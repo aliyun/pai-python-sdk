@@ -1,0 +1,39 @@
+# Install pre-commit hooks via `pip install pre-commit && pre-commit install`
+exclude: ^pai/libs
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+        exclude: pai/libs
+      - id: trailing-whitespace
+
+  - repo: https://github.com/psf/black
+    rev: 22.8.0
+    hooks:
+      - id: black
+        # Exclude third-party libs.
+        exclude: ^pai/libs
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
+        args:
+          - --config
+          - .flake8
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: [ "--profile", "black", "--filter-files" ]
+
+  # remove useless import using autoflake
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v1.5.3
+    hooks:
+      - id: autoflake

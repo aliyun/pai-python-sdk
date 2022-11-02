@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 from pai.common import ProviderAlibabaPAI
-from pai.pipeline import PipelineStep, Pipeline
-from pai.operator.types import PipelineParameter
 from pai.common.utils import gen_run_node_scoped_placeholder
+from pai.operator.types import PipelineParameter
+from pai.pipeline import Pipeline, PipelineStep
 
 
 def create_simple_composite_pipeline():

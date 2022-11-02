@@ -7,9 +7,8 @@ import unittest
 import oss2
 from odps import ODPS
 
-from pai.core import setup_default_session
-from pai.core.session import setup_light_default_session, setup_default_session
-from pai.core.session import EnvType
+from pai.core.session import EnvType, setup_default_session, setup_light_default_session
+
 from .utils import TestContext
 
 _test_root = os.path.dirname(os.path.abspath(__file__))

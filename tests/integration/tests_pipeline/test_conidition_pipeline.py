@@ -48,4 +48,4 @@ class TestConditionPipeline(BaseIntegTestCase):
         run_output = io.StringIO()
         with contextlib.redirect_stdout(run_output):
             p.run(job_name="test_condition_pipeline")
-        self.assertTrue(f"foo=GreatThanStep" in run_output.getvalue())
+        self.assertTrue("foo=GreatThanStep" in run_output.getvalue())

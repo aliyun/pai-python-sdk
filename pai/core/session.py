@@ -1,20 +1,21 @@
 from __future__ import absolute_import
 
 import json
+import logging
 import os.path
 from enum import Enum
 
-import logging
 import oss2
 import six
 from six.moves.urllib import parse
 
 from pai.api.client_factory import ClientFactory
-from pai.common.utils import makedirs
 from pai.common.consts import INNER_REGION_IDS
-from pai.core.workspace import Workspace
-from pai.decorator import cached_property
+from pai.common.utils import makedirs
 from pai.common.yaml_utils import dump as yaml_dump
+from pai.decorator import cached_property
+
+from ._resource_api import ResourceAPIsContainerMixin
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,8 @@ logger = logging.getLogger(__name__)
 # Environment variable indicates where config path located.
 # If not present, "~/.pai/config.json" is used as default config path.
 ENV_PAI_CONFIG_PATH = "PAI_CONFIG_PATH"
+
+_default_session = None
 
 
 class EnvType(Enum):
@@ -66,7 +69,7 @@ def setup_default_session(
     oss_endpoint=None,
     workspace_id=None,
     workspace_name=None,
-    **kwargs
+    **kwargs,
 ):
     """Setup the default session used by the program.
 
@@ -96,14 +99,21 @@ def setup_default_session(
         oss_endpoint=oss_endpoint,
         workspace_id=workspace_id,
         workspace_name=workspace_name,
-        **kwargs
+        **kwargs,
     )
 
     Session.set_default_session(session)
     return session
 
 
-class Session(object):
+def get_default_session(config_path=None):
+    global _default_session
+    if not _default_session:
+        _default_session = Session.from_config(config_path=config_path)
+    return _default_session
+
+
+class Session(ResourceAPIsContainerMixin):
     """Wrap functionality provided by Alibaba Cloud PAI services
 
     This class encapsulates convenient methods to access PAI services, currently focus
@@ -122,11 +132,12 @@ class Session(object):
         access_key_id,
         access_key_secret,
         region_id,
+        security_token=None,
         oss_bucket_name=None,
         oss_endpoint=None,
         workspace_id=None,
         workspace_name=None,
-        **kwargs
+        **kwargs,
     ):
         """PAI Session Initializer.
 
@@ -143,6 +154,8 @@ class Session(object):
         self._region_id = region_id
         self._access_key_id = access_key_id
         self._access_key_secret = access_key_secret
+        self._security_token = security_token
+        self._workspace_id = workspace_id
 
         self._init_clients(access_key_id, access_key_secret, region_id, **kwargs)
         self._init_oss_bucket(
@@ -151,18 +164,22 @@ class Session(object):
             region_id=region_id,
             oss_bucket_name=oss_bucket_name,
             oss_endpoint=oss_endpoint,
-            **kwargs
+            **kwargs,
         )
+        super(Session, self).__init__()
+
         self._init_workspace(workspace_id, workspace_name)
 
     def _init_workspace(self, workspace_id, workspace_name):
+        from ..workspace import Workspace
+
         """Init workspace instance for the session using given workspace_id/workspace_name."""
         if workspace_name and workspace_id:
             raise ValueError(
                 "both workspace_name and workspace_id are provided, only one is required."
             )
         if workspace_id:
-            workspace = Workspace.get(workspace_id, self)
+            workspace = Workspace.get(workspace_id, session=self)
             if not workspace:
                 raise ValueError("Workspace not found, workspace_id=%s" % workspace_id)
         elif workspace_name:
@@ -182,7 +199,7 @@ class Session(object):
         region_id,
         oss_bucket_name,
         oss_endpoint=None,
-        **kwargs
+        **kwargs,
     ):
         """Initialize an OSS bucket instance."""
         oss_bucket = None
@@ -193,7 +210,6 @@ class Session(object):
                 oss_endpoint,
             )
         if oss_bucket_name and oss_endpoint:
-
             # Use specific credential for OSS bucket if it is provided.
             if "oss_access_key_id" in kwargs and "oss_access_key_secret" in kwargs:
                 access_key_id = kwargs.pop("oss_access_key_id", None) or access_key_id
@@ -230,23 +246,27 @@ class Session(object):
             protocol=protocol,
         )
 
-        self.ws_client = ClientFactory.create_workspace_client(
-            access_key_id=ak,
-            access_key_secret=ak_secret,
-            region_id=region_id,
-        )
-        self.dlc_client = ClientFactory.create_dlc_client(
-            access_key_id=ak,
-            access_key_secret=ak_secret,
-            region_id=region_id,
-        )
-
     def __enter__(self):
         Session.push_session_stack(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         Session.pop_session_stack()
+
+    @classmethod
+    def from_config(cls, config_path=None):
+        """Initialize session from config file.
+
+        If config_path is not given, "~/.pai/config" is used as the default.
+
+        Args:
+            config_path:
+
+        Returns:
+            Session:
+
+        """
+        return cls._init_from_file_config(config_path=config_path)
 
     @classmethod
     def current(cls):
@@ -257,10 +277,10 @@ class Session(object):
             return cls._default_session
         else:
             # try to load config file and init a default session
-            cls._default_session = cls.init_from_file_config()
+            cls._default_session = cls._init_from_file_config()
             return cls._default_session
 
-    def persist_config(self, config_path=None):
+    def save_config(self, config_path=None):
         """Persist configuration used by the session"""
         if not config_path:
             default_config_path = os.path.join(
@@ -319,23 +339,22 @@ class Session(object):
         print("Write config succeed: config_path=%s" % config_path)
 
     @classmethod
-    def init_from_file_config(cls):
+    def _init_from_file_config(cls, config_path=None):
         """Read config file and construct a default session.
 
         Returns:
             Session: Session instance init from config file.
         """
-
-        default_config_path = os.path.join(
-            os.path.expanduser("~"), ".pai", "config.json"
-        )
-        config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
+        if not config_path:
+            default_config_path = os.path.join(
+                os.path.expanduser("~"), ".pai", "config.json"
+            )
+            config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
         # Lookup config path silently, not raise exception if default config path is not exists.
         if not os.path.exists(config_path):
-            logger.warning("Config path not exists: %s", config_path)
-            return
+            raise ValueError("Config file not exists: %s", config_path)
 
-        logger.info("Reading config from file: %s", config_path)
+        logger.debug("Reading config from file: %s", config_path)
         with open(config_path, "r") as f:
             config = json.load(f)
 
@@ -346,7 +365,9 @@ class Session(object):
     @classmethod
     def set_default_session(cls, s):
         """Set default session"""
-        cls._default_session = s
+
+        global _default_session
+        _default_session = s
 
     @classmethod
     def push_session_stack(cls, sess):
@@ -382,6 +403,8 @@ class Session(object):
         return self._workspace.name
 
     def set_workspace(self, workspace):
+        from ..workspace import Workspace
+
         if isinstance(workspace, six.string_types):
             workspace = Workspace.get_by_name(workspace)
         if not isinstance(workspace, Workspace):
@@ -395,6 +418,10 @@ class Session(object):
         if not self._oss_bucket:
             raise ValueError("Default OSS bucket not provided")
         return self._oss_bucket
+
+    @property
+    def workspace_id(self):
+        return self._workspace_id
 
     @property
     def console_url(self):
@@ -796,6 +823,7 @@ class LightSession(Session):
         super(LightSession, self).__init__(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
+            region_id=None,
         )
 
     def _init_clients(self, ak, ak_secret, region_id, **kwargs):

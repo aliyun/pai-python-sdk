@@ -2,9 +2,9 @@ from __future__ import absolute_import
 
 import re
 from decimal import Decimal
+from enum import Enum
 
 import six
-from enum import Enum
 
 from pai.common.utils import is_iterable
 from pai.operator.types.variable import PipelineVariable

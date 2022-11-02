@@ -1,21 +1,21 @@
 # coding: utf-8
 from __future__ import print_function
 
-import shlex
-from collections import namedtuple
-
 import json
 import logging
 import os
+import shlex
 import shutil
-import six
 import subprocess
 import tempfile
 import uuid
+from collections import namedtuple
+
+import six
 
 from pai.common.utils import makedirs
 from pai.common.yaml_utils import dump as yaml_dump
-from pai.core.session import Session, EnvType
+from pai.core.session import EnvType, Session, get_default_session
 from pai.operator._base import UnRegisteredOperator
 from pai.operator.types import IO_TYPE_OUTPUTS, PipelineParameter
 from pai.operator.types.variable import PipelineVariable
@@ -118,8 +118,8 @@ class ContainerOperator(UnRegisteredOperator):
         if version is not None:
             d["metadata"]["version"] = version
 
-        if Session.current():
-            d["metadata"]["provider"] = Session.current().provider
+        if get_default_session():
+            d["metadata"]["provider"] = get_default_session().provider
 
         d["spec"]["container"] = {
             "image": self._image_uri,
@@ -158,7 +158,7 @@ class ContainerOperator(UnRegisteredOperator):
         image_uri=None,
         install_packages=None,
         pip_index_url=_DEFAULT_PIP_INDEX_URL,
-        **kwargs
+        **kwargs,
     ):
         """Construct Operator that uses snapshot code in image.
 
@@ -191,7 +191,7 @@ class ContainerOperator(UnRegisteredOperator):
             outputs=outputs,
             command=commands,
             args=args,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -205,7 +205,7 @@ class ContainerOperator(UnRegisteredOperator):
         base_image=None,
         install_packages=None,
         pip_index_url=_DEFAULT_PIP_INDEX_URL,
-        **kwargs
+        **kwargs,
     ):
         """Construct Operator that uses snapshot code in image.
 
@@ -243,12 +243,12 @@ class ContainerOperator(UnRegisteredOperator):
             args=args,
             inputs=inputs,
             outputs=outputs,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
     def _get_default_image_uri(cls):
-        session = Session.current()
+        session = get_default_session()
         if session.env_type == EnvType.Light:
             return _DefaultScriptOperatorImageLight
         else:

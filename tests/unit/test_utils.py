@@ -1,23 +1,22 @@
 # coding=utf-8
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
+import os
 import tarfile
 import tempfile
-import os
+
 from mock import patch
 
 from pai.common.oss_utils import is_oss_url
-
 from pai.common.utils import (
-    extract_odps_table_info,
-    tar_source_files,
-    file_checksum,
-    to_abs_path,
     extract_file_name,
+    extract_odps_table_info,
+    file_checksum,
+    tar_source_files,
+    to_abs_path,
 )
-from tests.unit import BaseUnitTestCase
 from tests.test_data import SCRIPT_DIR_PATH
+from tests.unit import BaseUnitTestCase
 
 
 class TestUtils(BaseUnitTestCase):

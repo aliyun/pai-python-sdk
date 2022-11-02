@@ -12,8 +12,20 @@ MAXC_SQL_TEMPLATE_SCRIPT_PATH = os.path.join(test_data_dir, "maxc_sql_scripts")
 
 OPERATOR_MANIFEST_DIR = os.path.join(test_data_dir, "manifests")
 
-CUSOMT_JOB_SCRIPT_PATH = os.path.join(test_data_dir, "custom_job")
+CUSTOM_JOB_SCRIPT_PATH = os.path.join(test_data_dir, "custom_job")
 
 CUSTOM_JOB_XGB_PATH = os.path.join(test_data_dir, "custom_job_xgb")
 
 IRIS_DATA_PATH = os.path.join(test_data_dir, "iris_train_test")
+
+PMML_MODEL_PATH = os.path.join(test_data_dir, "pmml_model/regression_model.xml")
+
+TF_MNIST_MODEL_PATH = os.path.join(test_data_dir, "tf_mnist_model")
+
+KERAS_MNIST_SCRIPT_PATH = os.path.join(test_data_dir, "keras_mnist_script")
+
+TORCH_MNIST_SCRIPT_PATH = os.path.join(test_data_dir, "torch_mnist_script")
+
+PYTORCH_MNIST_MODEL_PATH = os.path.join(
+    test_data_dir, "pytorch_1_8_mnist_model/torch_mnist.pt"
+)

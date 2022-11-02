@@ -1,15 +1,14 @@
 import os
 
+from pai.common.consts import JobType
 from pai.core import Session
-from pai.job.common import JobConfig, JobType
+from pai.core.session import get_default_session
+from pai.entity.common import JobConfig
 from pai.operator._custom_job import CustomJobOperator
-from pai.operator.types import (
-    ArtifactMetadataUtils,
-    PipelineArtifact,
-)
+from pai.operator.types import ArtifactMetadataUtils, PipelineArtifact
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
-from tests.test_data import CUSOMT_JOB_SCRIPT_PATH, IRIS_DATA_PATH
+from tests.test_data import CUSTOM_JOB_SCRIPT_PATH, IRIS_DATA_PATH
 
 
 class TestCustomJobOperator(BaseIntegTestCase):
@@ -21,7 +20,7 @@ class TestCustomJobOperator(BaseIntegTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestCustomJobOperator, cls).setUpClass()
-        oss_bucket = Session.current().oss_bucket  # type oss2.Bucket
+        oss_bucket = get_default_session().oss_bucket  # type oss2.Bucket
 
         cls.iris_train_data_path = cls.upload_file(
             oss_bucket=oss_bucket,
@@ -43,18 +42,18 @@ class TestCustomJobOperator(BaseIntegTestCase):
     @classmethod
     def prepare_job(cls):
         """Prepare custom job for test"""
-        sess = Session.current()
+        sess = get_default_session()
         if not sess.is_inner:
             image_uri = "registry.{}.aliyuncs.com/pai-dlc/xgboost-training:1.6.0-cpu-py36-ubuntu18.04".format(
                 sess.region_id
             )
 
-            job_config = JobConfig.create(
+            job_config = JobConfig.from_instance_type(
                 worker_instance_type="ecs.c6.large", worker_count=1
             )
         else:
             image_uri = "reg.docker.alibaba-inc.com/pai-dlc/xgboost-training:1.6.0-cpu-py36-ubuntu18.04"
-            job_config = JobConfig.create(
+            job_config = JobConfig.from_instance_type(
                 worker_instance_type="pai.1x2.xsmall",
                 worker_count=1,
                 workspace_id="36",
@@ -62,21 +61,21 @@ class TestCustomJobOperator(BaseIntegTestCase):
                 priority=9,
             )
 
-        job_operator = CustomJobOperator(
-            image_uri=image_uri,
-            source_code=CUSOMT_JOB_SCRIPT_PATH,
-            entry_point="train.py",
-            parameters={
-                "n_estimator": 100,
-                "criterion": "gini",
-                "max_depth": 5,
-            },
-            code_path="custom-job-test/",
-            # Group inner XGBoostJob not support OSS Dataset (PAI DLC Service: bug)
-            # job_type=JobType.XGBoostJob,
-            job_type=JobType.TFJob,
-            # outputs=[PipelineParameter("test-accuracy")],
-        )
+        # job_operator = CustomJobOperator(
+        #     image_uri=image_uri,
+        #     source_code=CUSOMT_JOB_SCRIPT_PATH,
+        #     entry_point="train.py",
+        #     parameters={
+        #         "n_estimator": 100,
+        #         "criterion": "gini",
+        #         "max_depth": 5,
+        #     },
+        #     code_path="custom-job-test/",
+        #     # Group inner XGBoostJob not support OSS Dataset (PAI DLC Service: bug)
+        #     # job_type=JobType.XGBoostJob,
+        #     job_type=JobType.TFJob,
+        #     # outputs=[PipelineParameter("test-accuracy")],
+        # )
 
         return image_uri, job_config
 
@@ -84,7 +83,7 @@ class TestCustomJobOperator(BaseIntegTestCase):
         image_uri, job_config = self.prepare_job()
         job_operator = CustomJobOperator(
             image_uri=image_uri,
-            source_code=CUSOMT_JOB_SCRIPT_PATH,
+            source_code=CUSTOM_JOB_SCRIPT_PATH,
             entry_point="train.py",
             parameters={
                 "n_estimator": 100,
@@ -113,7 +112,7 @@ class TestCustomJobOperator(BaseIntegTestCase):
 
         op = CustomJobOperator(
             image_uri=image_uri,
-            source_code=CUSOMT_JOB_SCRIPT_PATH,
+            source_code=CUSTOM_JOB_SCRIPT_PATH,
             entry_point="train.py",
             parameters={
                 "n_estimator": 100,

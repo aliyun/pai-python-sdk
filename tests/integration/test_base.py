@@ -1,18 +1,20 @@
 from __future__ import absolute_import
 
 import random
+import re
 import unittest
 
 from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_run_node_scoped_placeholder
 from pai.core.session import EnvType
-from pai.pipeline import PipelineRunStatus, PipelineStep
-from pai.pipeline.core import Pipeline
 from pai.operator.types import (
     ArtifactMetadataUtils,
+    ParameterType,
     PipelineArtifact,
+    PipelineParameter,
 )
-from pai.operator.types import ParameterType, PipelineParameter
+from pai.pipeline import PipelineRunStatus, PipelineStep
+from pai.pipeline.core import Pipeline
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context
 
@@ -194,7 +196,7 @@ class TestAlgo(BaseIntegTestCase):
         p = create_pipeline()
         p.dot()
 
-        pmml_oss_endpoint = self.oss_config.endpoint
+        pmml_oss_endpoint = self.to_internal_endpoint(self.oss_config.endpoint)
         pmml_oss_path = "/test/pai/model_transfer2oss_test/"
         pmml_oss_bucket = self.oss_config.bucket_name
         pmml_oss_rolearn = self.oss_config.role_arn
@@ -213,3 +215,15 @@ class TestAlgo(BaseIntegTestCase):
         )
 
         self.assertEqual(PipelineRunStatus.Succeeded, run_instance.get_status())
+
+    @classmethod
+    def to_internal_endpoint(cls, oss_endpoint):
+        """Transform OSS endpoint to internal endpoint."""
+        OssEndpointPattern = re.compile(
+            r"oss-(.[a-zA-Z0-9\-]+?)(?:-internal)?\.aliyuncs\.com"
+        )
+        m = OssEndpointPattern.match(oss_endpoint)
+        if not m:
+            return oss_endpoint
+        region = m.groups()[0]
+        return "oss-{}-internal.aliyuncs.com".format(region)

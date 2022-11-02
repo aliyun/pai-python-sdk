@@ -1,9 +1,8 @@
 from __future__ import absolute_import
 
-import sys
 import os
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 pkg_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,22 +27,18 @@ requirements = [
     "six>=1.15.0",
     "importlib_metadata>=2.0.0, <=2.1.0",
     "docker>=4.4.0",
+    "marshmallow",
+    "marshmallow-oneofschema==3.0.1",
+    "eas_prediction<=0.13",
 ]
 
 tea_requires = [
-    "alibabacloud_tea_util_py2>=0.0.2, <1.0.0",
-    "alibabacloud_tea_openapi_py2>=0.0.2, <1.0.0",
-    "alibabacloud_openapi_util_py2>=0.0.4, <1.0.0",
-    "alibabacloud_endpoint_util_py2>=0.0.1, <1.0.0",
+    "alibabacloud_tea_util>=0.3.6, <1.0.0",
+    "alibabacloud_tea_openapi>=0.3.3, <1.0.0",
+    "alibabacloud_openapi_util>=0.1.6, <1.0.0",
+    "alibabacloud_endpoint_util>=0.0.3, <1.0.0",
 ]
-
 requirements.extend(tea_requires)
-
-if sys.version_info < (3, 8):
-    requirements.append("importlib_metadata == 2.1.0")
-
-if sys.version_info < (3, 4):
-    requirements.append("enum34 >= 1.1.6")
 
 long_description = None
 if os.path.exists("README.md"):
@@ -52,7 +47,7 @@ if os.path.exists("README.md"):
 
 setup(
     name="alipai",
-    python_requires=">=2.7",
+    python_requires=">=3.6",
     version=read_version(),
     description="Alibaba Cloud PAI Python SDK",
     long_description=long_description,

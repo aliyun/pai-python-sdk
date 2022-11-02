@@ -1,9 +1,10 @@
 import configparser
+import datetime
 import os
 import shutil
 from collections import namedtuple
 
-
+from pai.common.utils import random_str
 from pai.core.session import EnvType
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
@@ -134,3 +135,24 @@ class TestContext(object):
 
 
 t_context = TestContext.load_test_config()
+
+
+def make_resource_name(case_name, resource_type=None, sep="-", time_suffix=True):
+    """Make a test resource name."""
+    return sep.join(
+        filter(
+            None,
+            [
+                "sdktest",
+                resource_type,
+                case_name,
+                datetime.datetime.now().isoformat(timespec="seconds")
+                if time_suffix
+                else random_str(10),
+            ],
+        )
+    )
+
+
+def make_eas_service_name(case_name):
+    return make_resource_name(case_name=case_name, sep="_", time_suffix=False)

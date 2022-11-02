@@ -4,11 +4,12 @@ import os
 
 from pai.operator.types import (
     DataType,
+    InputsSpec,
     LocationArtifactMetadata,
-    PipelineArtifact,
     LocationType,
+    PipelineArtifact,
+    PipelineParameter,
 )
-from pai.operator.types import PipelineParameter, InputsSpec
 from pai.operator.types.spec import sort_variable_by_category
 from tests.unit import BaseUnitTestCase
 
@@ -68,12 +69,12 @@ class TestInputOutputSpec(BaseUnitTestCase):
                 data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
             ),
         )
-        af_a = PipelineArtifact(
-            name="A",
-            metadata=LocationArtifactMetadata(
-                data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
-            ),
-        )
+        # af_a = PipelineArtifact(
+        #     name="A",
+        #     metadata=LocationArtifactMetadata(
+        #         data_type=DataType.DataSet, location_type=LocationType.MaxComputeTable
+        #     ),
+        # )
 
         success_cases = [
             {

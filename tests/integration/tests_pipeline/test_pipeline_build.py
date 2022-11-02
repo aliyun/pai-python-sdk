@@ -7,15 +7,15 @@ import uuid
 from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_temp_table
 from pai.core.session import EnvType
-from pai.pipeline import Pipeline, PipelineStep
-from pai.pipeline.run import PipelineRunStatus
 from pai.operator.types import (
     DataType,
-    LocationType,
     LocationArtifactMetadata,
+    LocationType,
     PipelineArtifact,
+    PipelineParameter,
 )
-from pai.operator.types import PipelineParameter
+from pai.pipeline import Pipeline, PipelineStep
+from pai.pipeline.run import PipelineRunStatus
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
 from tests.integration.utils import t_context

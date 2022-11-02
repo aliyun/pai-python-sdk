@@ -1,0 +1,7 @@
+[run]
+include = pai/*
+omit = pai/libs*
+
+[report]
+include = pai/*
+omit = pai/libs*

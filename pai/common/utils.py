@@ -5,15 +5,13 @@ import os
 import random
 import re
 import string
-
-import time
 import tarfile
 import tempfile
-
+import time
+import uuid
 from datetime import datetime
 
 import six
-import uuid
 from odps import DataFrame as ODPSDataFrame
 from odps.models import Table
 from odps.models.partition import Partition
@@ -190,3 +188,18 @@ def random_str(n):
     return "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(n)
     )
+
+
+def camel_to_snake(name):
+    """Convert a name from camel case to snake case."""
+    name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
+
+
+def snake_to_camel(name):
+    """Convert a name from snake case to camel case."""
+    return "".join([w.title() for w in name.split("_")])
+
+
+def print_msg(msg: str, *args, **kwargs):
+    print(msg.format(*args, **kwargs))

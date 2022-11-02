@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 88
-target-version = ['py27','py36','py37']
+target-version = ['py36','py37']
 include = '\.pyi?$'
 exclude = '''
 (
@@ -9,6 +9,7 @@ exclude = '''
     | \.hg
     | \.mypy_cache
     | \.tox
+    | \.nox
     | \.venv
     | buck-out
     | build
@@ -17,3 +18,8 @@ exclude = '''
   )/
 )
 '''
+
+[tool.isort]
+profile = "black"
+src_paths = ["pai", "tests"]
+#known_first_party = ["pai", "tests"]

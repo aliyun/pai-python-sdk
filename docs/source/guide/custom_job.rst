@@ -24,7 +24,7 @@ SDK，使用本地Python脚本和自定义镜像在PAI-DLC上执行一个训练�
 
     print(pai.__version__)
 
-    from pai.core.session import setup_default_session, Session
+    from pai.core.session import setup_default_session, Session, get_default_session
     from pai.job.common import JobConfig
     import oss2
 
@@ -33,7 +33,7 @@ SDK，使用本地Python脚本和自定义镜像在PAI-DLC上执行一个训练�
 
 .. code:: python
 
-    sess = Session.current()
+    sess = get_default_session()
 
     if not sess:
         print("config session")
@@ -423,6 +423,3 @@ DAG，以下的样例中，使用了上述的脚本构建了包含条件分支�
 当前示例Notebook下载链接:
 
 :download:`Notebook下载 <../resources/custom_job.ipynb>`
-
-
-

@@ -6,7 +6,6 @@ from pai.operator import ContainerOperator
 from pai.operator.types import PipelineParameter
 from pai.operator.types.parameter import LoopItemPlaceholder
 from pai.pipeline import Pipeline
-
 from tests.integration import BaseIntegTestCase
 
 
@@ -41,7 +40,7 @@ class TestLoopPipeline(BaseIntegTestCase):
         with contextlib.redirect_stdout(run_output):
             p.run(job_name="test_loop_with_sequence")
         print(run_output)
-        self.assertTrue(f"foo=1" in run_output.getvalue())
+        self.assertTrue("foo=1" in run_output.getvalue())
 
     def test_loop_with_param(self):
         output_param_name = "outputparam"
@@ -89,8 +88,8 @@ class TestLoopPipeline(BaseIntegTestCase):
         with contextlib.redirect_stdout(run_output):
             p.run(job_name="test_loop_with_param")
         print(run_output.getvalue())
-        self.assertTrue(f"foo=hello" in run_output.getvalue())
-        self.assertTrue(f"foo=world" in run_output.getvalue())
+        self.assertTrue("foo=hello" in run_output.getvalue())
+        self.assertTrue("foo=world" in run_output.getvalue())
 
     def test_loop_with_items(self):
         op = ContainerOperator(
@@ -118,6 +117,6 @@ class TestLoopPipeline(BaseIntegTestCase):
         print(p.to_manifest(identifier="example", version="v1"))
         run_output = io.StringIO()
         with contextlib.redirect_stdout(run_output):
-            run = p.run(job_name="test_loop_with_items")
+            p.run(job_name="test_loop_with_items")
         print(run_output.getvalue())
-        self.assertTrue(f"foo=hello" in run_output.getvalue())
+        self.assertTrue("foo=hello" in run_output.getvalue())

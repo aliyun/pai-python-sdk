@@ -1,100 +1,142 @@
 from __future__ import absolute_import
 
-from pai.api.paiflow import PAIFlowClient
-from pai.api.sts import StsClient
-from pai.api.workspace import WorkspaceClient
-from pai.api.dlc import DlcClient
-from alibabacloud_tea_openapi.models import Config
 import logging
+import os
+from typing import Optional
+
+from alibabacloud_tea_openapi.models import Config
+
+from pai.api.client.paiflow import PAIFlowClient
+from pai.common.consts import PAIServiceName
+from pai.libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
+from pai.libs.alibabacloud_eas20210701.client import Client as EasClient
+from pai.libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
+from pai.libs.alibabacloud_paiflow20210202.client import Client as FlowClient
+from pai.libs.alibabacloud_paistudio20220112.client import Client as TrainingClient
 
 _logger = logging.getLogger(__name__)
 
+PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN = "{}_SERVICE_ENDPOINT"
 
-class ClientConfig(object):
-    def __init__(
-        self,
-        access_key_id,
-        access_key_secret,
-        region_id=None,
-        endpoint=None,
-        security_token=None,
-        **kwargs
-    ):
-        self.access_key_id = access_key_id
-        self.access_key_secret = access_key_secret
-        self.security_token = security_token
-        self.region_id = region_id
-        self.endpoint = endpoint
-        self.kwargs = kwargs
+PAI_SERVICE_ENDPOINT_BY_REGION_ID_PATTERN = "{}.{}.aliyuncs.com"
 
-    def to_tea_config(self):
-        config = Config(
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
-            region_id=self.region_id,
-            endpoint=self.endpoint,
-            security_token=self.security_token,
-            **self.kwargs
-        )
-        return config
+PAI_SERVICE_NAME_POP_PRODUCT_NAME_MAPPING = {
+    PAIServiceName.PAI_DLC: "pai-dlc",
+    PAIServiceName.PAI_EAS: "pai-eas",
+    PAIServiceName.AIWORKSPACE: "aiworkspace",
+    PAIServiceName.PAIFLOW: "paiflow",
+    PAIServiceName.TRAINING_SERVICE: "pai",
+}
+
+
+_DLC_PRODUCT_NAME = "pai-dlc"
+_WORKSPACE_PRODUCT_NAME = "aiworkspace"
+
+_INNER_REGION_ID = "center"
 
 
 class ClientFactory(object):
+    ClientClsByServiceName = {
+        PAIServiceName.PAI_DLC: DlcClient,
+        PAIServiceName.PAI_EAS: EasClient,
+        PAIServiceName.AIWORKSPACE: WorkspaceClient,
+        PAIServiceName.PAIFLOW: FlowClient,
+        PAIServiceName.TRAINING_SERVICE: TrainingClient,
+    }
+
     @staticmethod
     def _is_inner_client(acs_client):
         return acs_client.get_region_id() == "center"
 
     @classmethod
     def create_paiflow_client(
-        cls, access_key_id, access_key_secret, region_id=None, endpoint=None, **kwargs
-    ):
+        cls,
+        access_key_id: str,
+        access_key_secret: str,
+        region_id: Optional[str] = None,
+        endpoint: None = None,
+        **kwargs,
+    ) -> PAIFlowClient:
 
         return PAIFlowClient(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             region_id=region_id,
             endpoint=endpoint,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
-    def create_sts_client(cls, acs_client):
-        return StsClient(acs_client)
-
-    @classmethod
-    def create_workspace_client(
-        cls, access_key_id, access_key_secret, region_id, endpoint=None
+    def create_client(
+        cls,
+        service_name,
+        access_key_id: str,
+        access_key_secret: str,
+        region_id: str,
+        security_token: str = None,
+        endpoint: str = None,
+        **kwargs,
     ):
-        if not region_id and not endpoint:
-            _logger.info("Workspace client not initialized.")
-            return None
+        """Create an OpenAPI client which is responsible to interacted with the PAI service.
 
-        return WorkspaceClient(
+        Args:
+            service_name:  PAI Service name.
+            access_key_id:
+            access_key_secret:
+            region_id:
+            security_token:
+            endpoint:
+            **kwargs:
+
+        Returns:
+
+        """
+        config = Config(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             region_id=region_id,
-            endpoint=endpoint,
+            security_token=security_token,
+            endpoint=cls.get_endpoint(
+                service_name=service_name,
+                region_id=region_id,
+                endpoint=endpoint,
+            ),
+            signature_algorithm="v2",
+            **kwargs,
         )
+        client = cls.ClientClsByServiceName.get(service_name)(config)
+        return client
 
     @classmethod
-    def create_dlc_client(
-        cls, access_key_id, access_key_secret, region_id, endpoint=None
-    ):
-        if not region_id and not endpoint:
-            _logger.info("DLC client not initialized.")
-            return None
+    def get_endpoint(cls, service_name: str, region_id: str, endpoint: str = None):
+        """Construct an endpoint for the service client.
 
-        return DlcClient(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region_id=region_id,
-            endpoint=endpoint,
+        Args:
+            service_name:
+            region_id:
+            endpoint:
+
+        Returns:
+            str: Endpoint for the service.
+        """
+        # use specific endpoint
+        if endpoint:
+            return endpoint
+        # Use endpoint configured by environment variable.
+        key = PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN.format(service_name.upper())
+        if os.environ.get(key):
+            return os.environ.get(key)
+
+        # Use endpoint by
+        pop_product_name = PAI_SERVICE_NAME_POP_PRODUCT_NAME_MAPPING.get(service_name)
+        if not pop_product_name:
+            raise ValueError(
+                "Unknown service endpoint: Service Name={}".format(service_name)
+            )
+
+        if not region_id:
+            raise ValueError("Please provide region_id to construct the endpoint.")
+
+        return PAI_SERVICE_ENDPOINT_BY_REGION_ID_PATTERN.format(
+            pop_product_name, region_id
         )
-
-    @classmethod
-    def build_workspace_endpoint(cls, region_id):
-        return "aiworkspace.{}.aliyuncs.com".format(region_id)
-
-    @classmethod
-    def build_paiflow_endpoint(cls, region_id):
-        return "paiflow.{}.aliyuncs.com".format(region_id)

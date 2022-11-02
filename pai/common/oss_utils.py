@@ -2,17 +2,19 @@ from __future__ import absolute_import
 
 import glob
 import logging
+import os.path
 import pathlib
 from collections import namedtuple
+from typing import Optional
 
 import six
+from oss2.api import Bucket
 from six.moves.urllib import parse
-
 
 _logger = logging.getLogger(__name__)
 
 
-def is_oss_url(url):
+def is_oss_url(url: Optional[str]) -> bool:
     """Return if url is in OSS URL schema."""
     return bool(url and isinstance(url, six.string_types) and url.startswith("oss://"))
 
@@ -26,7 +28,7 @@ ParsedDatasetPath = namedtuple(
 )
 
 
-def parse_oss_url(oss_url):
+def parse_oss_url(oss_url: str) -> "ParsedOssUrl":
     """Parse the given OSS schema URL and returns an namedtuple including bucket_name, object_key, endpoint, role_arn.
     Args:
         oss_url: URL in OSS schema ( oss://<bucket.endpoint>/<object_key>?endpoint=<endpoint>&host=<endpoint>&role_arn=<role_arn>)
@@ -80,13 +82,17 @@ def parse_dataset_path(path):
     """
     path = path.strip()
     if path.endswith("/"):
-        is_dir, dir_path, file_name = True, path, None
+        is_dir, dir_path, file_name = True, os.path.join("/", path), None
     else:
         idx = path.rfind("/")
         if idx < 0:
-            is_dir, dir_path, file_name = False, "", path
+            is_dir, dir_path, file_name = False, "/", path
         else:
-            is_dir, dir_path, file_name = False, path[: idx + 1], path[idx + 1 :]
+            is_dir, dir_path, file_name = (
+                False,
+                os.path.join("/", path[: idx + 1]),
+                path[idx + 1 :],
+            )
 
     return ParsedDatasetPath(
         is_dir=is_dir,
@@ -95,7 +101,7 @@ def parse_dataset_path(path):
     )
 
 
-def upload_to_oss(source_path, oss_path, oss_bucket):
+def upload_to_oss(source_path: str, oss_path: str, oss_bucket: Bucket) -> str:
     """Upload local source file/directory to OSS.
 
     Args:
@@ -121,13 +127,39 @@ def upload_to_oss(source_path, oss_path, oss_bucket):
             if file_path_obj.is_dir():
                 continue
             is_empty_dir = False
-            file_relative_path = source_path_obj.relative_to(source_path_obj).as_posix()
+            file_relative_path = file_path_obj.relative_to(source_path_obj).as_posix()
             object_key = oss_path + file_relative_path
             oss_bucket.put_object_from_file(key=object_key, filename=file_path)
         if is_empty_dir:
             raise RuntimeError("Source path is empty dir: {}".format(source_path))
     else:
         oss_bucket.put_object_from_file(key=oss_path, filename=source_path)
+    return "oss://{}/{}".format(oss_bucket.bucket_name, oss_path)
+
+
+def truncate_endpoint(url):
+    """Remove endpoint if it is present as host in OSS URL.
+
+    Args:
+        url (str): OSS URL.
+
+    Returns:
+        str: Endpoint removed OSS URL.
+    """
+
+    parsed = parse_oss_url(url)
+
+    return "oss://{bucket_name}/{key}".format(
+        bucket_name=parsed.bucket_name, key=parsed.object_key
+    )
+
+
+def join_endpoint(url, endpoint):
+    parsed = parse_oss_url(url)
+
+    return "oss://{bucket_name}.{endpoint}/{key}".format(
+        bucket_name=parsed.bucket_name, endpoint=endpoint, key=parsed.object_key
+    )
 
 
 def tar_and_upload(source_path, destination, oss_bucket):

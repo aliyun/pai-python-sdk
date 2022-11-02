@@ -1,12 +1,12 @@
 from pai.common import ProviderAlibabaPAI
 from pai.operator import ContainerOperator
 from pai.operator.types import (
-    PipelineArtifact,
+    ArtifactMetadataUtils,
+    DataType,
     LocationArtifactMetadata,
     LocationType,
-    DataType,
+    PipelineArtifact,
     PipelineParameter,
-    ArtifactMetadataUtils,
 )
 from pai.pipeline import Pipeline
 from pai.pipeline.step import PipelineStep

@@ -1,22 +1,25 @@
 import contextlib
 import os
-from unittest import skipUnless, skip
+from unittest import skip, skipUnless
 
 from pai.core.session import EnvType
 from pai.operator import (
-    ScriptOperator,
-    PAI_SOURCE_CODE_ENV_KEY,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
+    PAI_SOURCE_CODE_ENV_KEY,
+    ScriptOperator,
 )
-from pai.operator.types import PipelineArtifact, ArtifactMetadataUtils
-from pai.operator.types import PipelineParameter
+from pai.operator.types import (
+    ArtifactMetadataUtils,
+    PipelineArtifact,
+    PipelineParameter,
+)
 from pai.pipeline import Pipeline
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context
 from tests.test_data import (
+    RAW_ARTIFACT_RW_DIR_PATH,
     SCRIPT_DIR_PATH,
     SHELL_SCRIPT_DIR_PATH,
-    RAW_ARTIFACT_RW_DIR_PATH,
 )
 
 

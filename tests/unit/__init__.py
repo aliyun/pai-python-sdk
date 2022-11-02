@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 import os
 import unittest
+
 from mock import patch
 
 from tests.unit.utils import get_mock_session
@@ -15,22 +16,23 @@ class BaseUnitTestCase(unittest.TestCase):
     Base class for unittest, any test case class should inherit this.
     """
 
-    mock_session = True
+    mock_patches = []
 
     @classmethod
     def setUpClass(cls):
         super(BaseUnitTestCase, cls).setUpClass()
         cls._log_config()
-        if cls.mock_session:
-            cls.patch_mock_session()
-
-    @classmethod
-    def patch_mock_session(cls):
-        patch("pai.core.session.Session._default_session", get_mock_session()).start()
+        cls.mock_patches.append(
+            patch("pai.core.session._default_session", get_mock_session())
+        )
+        for p in cls.mock_patches:
+            p.start()
 
     @classmethod
     def tearDownClass(cls):
         super(BaseUnitTestCase, cls).tearDownClass()
+        for p in cls.mock_patches:
+            p.stop()
 
     @staticmethod
     def _log_config():

@@ -1,15 +1,14 @@
 from __future__ import absolute_import
 
 from pai.operator import ContainerOperator
-from pai.operator.types import PipelineParameter
-
-from pai.operator.types.artifact import MaxComputeResourceArtifact, OSSArtifact
 from pai.operator.types import (
-    PipelineArtifact,
-    LocationArtifactMetadata,
     DataType,
+    LocationArtifactMetadata,
     LocationType,
+    PipelineArtifact,
+    PipelineParameter,
 )
+from pai.operator.types.artifact import MaxComputeResourceArtifact, OSSArtifact
 from tests.unit import BaseUnitTestCase
 
 

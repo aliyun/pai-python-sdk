@@ -18,13 +18,13 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
 .. code:: python
 
     import pai
-    
+
     print(pai.__version__)
-    
-    from pai.core.session import setup_default_session, Session
-    
-    sess = Session.current()
-    
+
+    from pai.core.session import setup_default_session, Session, get_default_session
+
+    sess = get_default_session()
+
     if not sess:
         print("config session")
         sess = setup_default_session(
@@ -52,20 +52,20 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
     from pai.operator.types import PipelineParameter
     from pai.operator import CustomJobOperator
     from pai.pipeline import Pipeline
-    
+
     # 自定义节点使用的镜像，这里我们使用了PAI仓库内提供的XGBoost社区镜像运行我们的任务。
     image_uri = "registry.{}.aliyuncs.com/pai-dlc/xgboost-training:1.6.0-cpu-py36-ubuntu18.04".format(
         sess.region_id
     )
-    
-    
+
+
     output_path_uri = "oss://{bucket_name}.{endpoint}/custom-job-example/output/".format(
         bucket_name=sess.oss_bucket.bucket_name,
         endpoint=sess.oss_bucket.endpoint.strip("https://"),
     )
     print("output_path_uri", output_path_uri)
-    
-    
+
+
     # 这里我们构建自定义组件，会写出一个 test_acc 的output_parameter.
     # 这里依赖于我们的命令，或是脚本，将相应的输出参数，写出到 `/ml/output/output_parameters/<OutputParameterName>`
     output_param_name = "test_acc"
@@ -79,8 +79,8 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
             % output_param_name,
         ],
     )
-    
-    
+
+
     # 构建Pipeline中的第一个节点.
     step1 = op.as_step(
         name="step1",
@@ -91,7 +91,7 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
             "output_path": output_path_uri + "step1_output/",
         },
     )
-    
+
     # 构建Pipeline中的第二个节点
     # 只有上游的output参数(step.outputs.test_acc) 大于 0.8时，才会执行当前节点。
     step2 = op.as_condition_step(
@@ -104,7 +104,7 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
             "output_path": output_path_uri + "step2_output/",
         },
     )
-    
+
     # 构建Pipeline中的第三个节点
     # 只有上游的output参数(step.outputs.test_acc) 小于 0.8时，才会执行当前节点。
     step3 = op.as_condition_step(
@@ -117,11 +117,11 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
             "output_path": output_path_uri + "step3_output/",
         },
     )
-    
+
     # 构建对应的工作流
     # 不满足条件的相应节点，会被跳过(状态：skipped）
     p = Pipeline(steps=[step3, step2, step1])
-    
+
     p.run("ConditionalPipelineRun")
 
 
@@ -131,4 +131,3 @@ PAI的Workflow支持在条件执行，从而支持灵活的Workflow执行。以�
 当前示例Notebook下载链接:
 
 :download:`Notebook下载 <../resources/conditional_workflow.ipynb>`
-

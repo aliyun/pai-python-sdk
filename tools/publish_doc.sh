@@ -16,8 +16,7 @@ function cd_docs_dir() {
 }
 
 function build_doc() {
-  cd_docs_dir
-  make html
+  nox -s doc
 }
 
 function publish_preview_doc() {

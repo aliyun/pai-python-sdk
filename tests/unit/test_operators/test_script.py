@@ -1,11 +1,9 @@
-import os
-
 from pai.operator import (
-    ScriptOperator,
     PAI_PROGRAM_ENTRY_POINT_ENV_KEY,
-    PAI_SOURCE_CODE_ENV_KEY,
     PAI_SCRIPT_TEMPLATE_DEFAULT_COMMAND,
+    PAI_SOURCE_CODE_ENV_KEY,
     ContainerOperator,
+    ScriptOperator,
 )
 from tests.test_data import SCRIPT_DIR_PATH
 from tests.unit import BaseUnitTestCase
@@ -80,9 +78,3 @@ class TestScriptOperator(BaseUnitTestCase):
                     entry_file=case["input"]["entry_file"],
                     source_dir=case["input"]["source_dir"],
                 )
-
-    def test_snapshot_with_literal(self):
-        script_file = os.path.join(SCRIPT_DIR_PATH, "main.py")
-        op = ContainerOperator.create_with_source_snapshot(
-            script_file=script_file, install_packages="requests"
-        )

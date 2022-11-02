@@ -5,11 +5,11 @@ from abc import ABCMeta, abstractmethod
 
 import six
 
-
 from pai.common.utils import random_str
-from pai.common.yaml_utils import dump as yaml_dump, dump_all as yaml_dump_all
-from pai.core.session import Session
-from pai.operator.types import InputsSpec, IO_TYPE_INPUTS, OutputsSpec, IO_TYPE_OUTPUTS
+from pai.common.yaml_utils import dump as yaml_dump
+from pai.common.yaml_utils import dump_all as yaml_dump_all
+from pai.core.session import Session, get_default_session
+from pai.operator.types import IO_TYPE_INPUTS, IO_TYPE_OUTPUTS, InputsSpec, OutputsSpec
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class OperatorBase(six.with_metaclass(ABCMeta, object)):
 
     @classmethod
     def _get_service_client(cls):
-        return Session.current().paiflow_client
+        return get_default_session().paiflow_client
 
     @property
     def inputs(self):
@@ -250,7 +250,7 @@ class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
 
         manifest = self.to_manifest(identifier=identifier, version=version)
 
-        session = Session.current()
+        session = get_default_session()
         id = session.create_pipeline(manifest, workspace=session.workspace)
 
         return SavedOperator.get(id)
@@ -266,7 +266,7 @@ class UnRegisteredOperator(six.with_metaclass(ABCMeta, OperatorBase)):
         return pipeline_spec
 
     def _submit(self, job_name, args):
-        session = Session.current()
+        session = get_default_session()
         pipeline_spec = self._patch_metadata(self.to_dict())
         if isinstance(pipeline_spec, dict):
             manifest = yaml_dump(pipeline_spec)

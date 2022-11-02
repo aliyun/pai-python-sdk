@@ -20,7 +20,6 @@ sys.path.insert(0, dirname(doc_root_dir))
 
 import pai
 
-
 # -- Project information -----------------------------------------------------
 
 project = "Alibaba PAI SDK"

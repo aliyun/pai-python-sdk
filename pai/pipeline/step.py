@@ -135,10 +135,10 @@ class PipelineStep(object):
         Returns:
             PipelineStep: The built step instantiates from the given registered operator and inputs.
         """
+        from ..core.session import get_default_session
         from ..operator import SavedOperator
-        from ..core.session import Session
 
-        provider = provider or Session.current().provider
+        provider = provider or get_default_session().provider
         op = SavedOperator.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )

@@ -1,13 +1,12 @@
-from pprint import pprint
 import yaml
 
-from pai.operator.types import PipelineParameter
 from pai.operator import ContainerOperator
 from pai.operator.types import (
-    PipelineArtifact,
-    LocationArtifactMetadata,
     DataType,
+    LocationArtifactMetadata,
     LocationType,
+    PipelineArtifact,
+    PipelineParameter,
 )
 from tests.unit import BaseUnitTestCase
 

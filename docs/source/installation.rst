@@ -12,8 +12,6 @@
 
     # Mac OS install with brew
     brew install graphviz
-    
+
     # Ubuntu install with apt-get
     apt-get install graphviz
-
-

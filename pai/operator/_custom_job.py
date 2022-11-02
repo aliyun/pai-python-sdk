@@ -7,16 +7,17 @@ import six
 from oss2.exceptions import NotFound, ServerError
 from six.moves.urllib import parse
 
+from pai.common.consts import JobType
 from pai.common.image_utils import retrieve_executor_image
-from pai.common.utils import to_abs_path, tar_file
-from pai.core import Session
+from pai.common.utils import tar_file, to_abs_path
+from pai.core.session import get_default_session
+from pai.entity.common import GitConfig
 from pai.exception import PAIException
-from pai.job.common import JobType, GitConfig
 from pai.operator import ContainerOperator
 from pai.operator.types import (
-    PipelineParameter,
-    PipelineArtifact,
     ArtifactMetadataUtils,
+    PipelineArtifact,
+    PipelineParameter,
 )
 
 
@@ -44,8 +45,8 @@ class _DefaultOperatorParameters(object):
 class CustomJobOperator(ContainerOperator):
     """CustomJobOperator response for submit a custom job to PAI-DLC."""
 
-    ExecutorType = "dlc-executor"
-    ExecutorVersion = "v2.0.0"
+    ExecutorType = "dlc-executor-v2"
+    ExecutorVersion = "v1.0.4"
 
     def __init__(
         self,
@@ -84,12 +85,12 @@ class CustomJobOperator(ContainerOperator):
         self.job_parameters = parameters or dict()
         self.job_base_dir = base_dir or "/ml"
         self.job_work_dir = work_dir or os.path.join(self.job_base_dir, "code")
-        self.job_type = JobType(job_type) if job_type else JobType.TFJob
+        self.job_type = job_type if job_type else JobType.TFJob
         self.job_code_path = code_path
         self.job_input_defs = inputs
         self.job_output_defs = outputs
         self.base_job_name = base_job_name or "custom_job_"
-        self._session = Session.current()
+        self._session = get_default_session()
 
         self._source_file = self._prepare_source_files()
 
@@ -130,7 +131,7 @@ class CustomJobOperator(ContainerOperator):
             raise ValueError("Please provide image_uri for the job.")
         if not self.job_entry_point and not self.job_command:
             raise ValueError("Please provide either one of entry_point or command.")
-        if self.job_type not in JobType:
+        if self.job_type not in JobType.SUPPORTED_JOB_TYPEs:
             raise ValueError("No supported job type: %s", self.job_type)
 
         preset_params = set([p.name for p in self._get_default_parameters()])
@@ -322,7 +323,7 @@ class CustomJobOperator(ContainerOperator):
         if source_file:
             env.update({_CustomJobEnv.ENV_CUSTOM_JOB_SOURCE_FILE: source_file})
 
-        sess = Session.current()
+        sess = get_default_session()
         if sess.is_inner:
             env.update(
                 {

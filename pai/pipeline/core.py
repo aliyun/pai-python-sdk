@@ -1,14 +1,15 @@
 from __future__ import absolute_import
 
 import logging
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 
 from pai.common.utils import is_iterable
-from pai.common.yaml_utils import dump_all as yaml_dump_all, dump as yaml_dump
+from pai.common.yaml_utils import dump as yaml_dump
+from pai.common.yaml_utils import dump_all as yaml_dump_all
 from pai.core import Session
+from pai.core.session import get_default_session
 from pai.operator._base import UnRegisteredOperator
-from pai.operator.types import OutputsSpec, InputsSpec
-from pai.operator.types import PipelineParameter
+from pai.operator.types import InputsSpec, OutputsSpec, PipelineParameter
 from pai.operator.types.artifact import PipelineArtifact, PipelineArtifactElement
 from pai.operator.types.variable import PipelineVariable
 
@@ -361,8 +362,8 @@ class Pipeline(UnRegisteredOperator):
             entrypoint["metadata"]["identifier"] = identifier
         if version is not None:
             entrypoint["metadata"]["version"] = version
-        if Session.current():
-            entrypoint["metadata"]["provider"] = Session.current().provider
+        if get_default_session():
+            entrypoint["metadata"]["provider"] = get_default_session().provider
 
         entrypoint["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
         if not self._unregistered_ops:

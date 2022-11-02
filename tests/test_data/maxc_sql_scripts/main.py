@@ -2,11 +2,7 @@ import argparse
 import json
 
 from pai_running.context import Context
-from pai_running.executor import (
-    MaxComputeExecutor,
-    SqlJob,
-    MaxComputeSqlUtils,
-)
+from pai_running.executor import MaxComputeExecutor, MaxComputeSqlUtils, SqlJob
 
 
 def prepare():

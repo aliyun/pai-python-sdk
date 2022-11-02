@@ -1,5 +1,5 @@
-from pai_running.context import Context
 import pai_running
+from pai_running.context import Context
 
 
 def main():
