@@ -1,6 +1,6 @@
-from pai.operator import ContainerOperator
-from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
+from pai.pipeline.component import ContainerComponent
+from pai.pipeline.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 
 
@@ -8,7 +8,7 @@ class TestUnRegisteredOperator(BaseIntegTestCase):
     def test(self):
         python_image = self.get_python_image()
 
-        op1 = ContainerOperator(
+        op1 = ContainerComponent(
             inputs=[PipelineParameter("foo"), PipelineParameter("bar")],
             outputs=[],
             image_uri=python_image,

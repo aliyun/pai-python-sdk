@@ -30,6 +30,6 @@ class ImageSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity import Image
+        from pai.image import Image
 
         return Image(**data)

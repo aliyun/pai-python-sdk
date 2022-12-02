@@ -4,7 +4,7 @@ import os
 
 import yaml
 
-from pai.core.session import EnvType
+from pai.session import EnvType
 from tests.test_data import OPERATOR_MANIFEST_DIR
 
 

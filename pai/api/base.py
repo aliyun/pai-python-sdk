@@ -92,15 +92,40 @@ class ResourceAPI(with_metaclass(ABCMeta, object)):
         return PaginatedResult(items=items, total_count=total_count)
 
 
-class ScopeResourceAPI(ResourceAPI):
-    """Scoped Resource API."""
+class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
+    """Workspace Scoped Resource API."""
+
+    # A workspace_id placeholder indicate the workspace_id field of
+    # the request should not be replaced.
+    workspace_id_none_placeholder = "workspace_id_none_placeholder"
 
     def __init__(self, workspace_id, acs_client):
-        super(ScopeResourceAPI, self).__init__(acs_client=acs_client)
+        super(WorkspaceScopedResourceAPI, self).__init__(acs_client=acs_client)
         self.workspace_id = workspace_id
+
+    def _do_request(self, method_, **kwargs):
+        headers, runtime = self._make_extra_request_options()
+        if "headers" not in kwargs:
+            kwargs["headers"] = headers
+        if "runtime" not in kwargs:
+            kwargs["runtime"] = runtime
+        request = kwargs.get("request")
+
+        # auto config workspace_id of the request.
+        if request and hasattr(request, "workspace_id"):
+            if request.workspace_id is None:
+                request.workspace_id = self.workspace_id
+            elif request.workspace_id == self.workspace_id_none_placeholder:
+                request.workspace_id = None
+
+        resp = getattr(self.acs_client, method_)(**kwargs)
+        self._check_response(resp)
+        return resp.body
 
 
 class PaginatedResult(object):
+    """ """
+
     items: List[Dict[str, Any]] = None
     total_count: int = None
 

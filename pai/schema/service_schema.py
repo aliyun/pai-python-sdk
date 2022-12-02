@@ -19,7 +19,7 @@ from .base import BaseAPIResourceSchema
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from pai.entity.service import (
+    from pai.predictor.service import (
         ComputeConfig,
         NetworkConfig,
         ServiceConfig,
@@ -105,7 +105,7 @@ class ServiceConfigSchema(
 
     @post_load(pass_original=True)
     def make(self, data, original, **kwargs):
-        from pai.entity.service import ServiceConfig
+        from pai.predictor.service import ServiceConfig
 
         metadata = data.pop("metadata", dict())
         name = data.get("name") or metadata.get("name")
@@ -131,7 +131,7 @@ class ServiceConfigSchema(
             name=name,
             role=role,
             blue_green_release=blue_green_release,
-            compute_target=compute_target,
+            compute_config=compute_target,
             processor=processor,
             processor_parameters=processor_parameters,
             instance_count=instance_count,
@@ -156,7 +156,7 @@ class ServiceConfigSchema(
 
     @classmethod
     def _make_storage_config(cls, original):
-        from pai.entity.service import StorageConfig
+        from pai.predictor.service import StorageConfig
 
         data = original.get("storage", [])
         if not data:
@@ -171,7 +171,7 @@ class ServiceConfigSchema(
 
     @classmethod
     def _make_network_config(cls, original):
-        from pai.entity.service import NetworkConfig
+        from pai.predictor.service import NetworkConfig
 
         """Make a NetworkConfig instance from config dict.
 
@@ -203,7 +203,7 @@ class ServiceConfigSchema(
 
     @classmethod
     def _make_rpc_config(cls, original):
-        from pai.entity.service import ServiceRpcConfig
+        from pai.predictor.service import ServiceRpcConfig
 
         metadata = original.get("metadata", dict())
         if not metadata:
@@ -251,7 +251,7 @@ class ServiceConfigSchema(
 
     @classmethod
     def _make_compute_target(cls, data):
-        from pai.entity.service import ComputeConfig
+        from pai.predictor.service import ComputeConfig
 
         metadata = data.get("metadata", dict())
         cpu = metadata.get("cpu")
@@ -289,7 +289,7 @@ class ServiceConfigSchema(
 
     @classmethod
     def _make_processor(cls, data):
-        from pai.entity.service import ContainerProcessor, CustomProcessor
+        from pai.predictor.service import ContainerProcessor, CustomProcessor
 
         if data.get("processor"):
             return data.get("processor")
@@ -389,7 +389,7 @@ class ServiceConfigSchema(
 
     @classmethod
     def patch_processor(cls, config, processor):
-        from pai.entity.service import ContainerProcessor, CustomProcessor
+        from pai.predictor.service import ContainerProcessor, CustomProcessor
 
         if isinstance(processor, (ContainerProcessor, CustomProcessor)):
             config.update(processor.to_api_object())
@@ -450,7 +450,7 @@ class ServiceConfigSchema(
         config,
         storage_configs: typing.List[Union["StorageConfig", Dict[str, Any]]],
     ):
-        from pai.entity.service import StorageConfig
+        from pai.predictor.service import StorageConfig
 
         if not storage_configs:
             return config
@@ -542,6 +542,6 @@ class ServiceSchema(BaseAPIResourceSchema):
 
     @post_load(pass_original=True)
     def _make(self, data, original, **kwargs):
-        from pai.entity.service import Service
+        from pai.predictor.service import Service
 
         return self.make_or_reload(Service, data)

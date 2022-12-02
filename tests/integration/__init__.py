@@ -7,7 +7,7 @@ import unittest
 import oss2
 from odps import ODPS
 
-from pai.core.session import EnvType, setup_default_session, setup_light_default_session
+from pai.session import setup_default_session
 
 from .utils import TestContext
 
@@ -143,29 +143,22 @@ class BaseIntegTestCase(unittest.TestCase):
 
     @classmethod
     def _setup_test_session(cls):
-        if cls.pai_service_config.env_type == EnvType.Light:
-            return setup_light_default_session(
-                access_key_id=cls.pai_service_config.access_key_id,
-                access_key_secret=cls.pai_service_config.access_key_secret,
-                endpoint=cls.pai_service_config.endpoint,
-            )
-        else:
-            oss_access_key_id = cls.oss_config.access_key_id or None
-            oss_access_key_secret = cls.oss_config.access_key_secret or None
-            oss_role_arn = cls.oss_config.role_arn or None
+        oss_access_key_id = cls.oss_config.access_key_id or None
+        oss_access_key_secret = cls.oss_config.access_key_secret or None
+        oss_role_arn = cls.oss_config.role_arn or None
 
-            return setup_default_session(
-                access_key_id=cls.pai_service_config.access_key_id,
-                access_key_secret=cls.pai_service_config.access_key_secret,
-                region_id=cls.pai_service_config.region_id,
-                workspace_id=cls.pai_service_config.workspace_id,
-                oss_bucket_name=cls.oss_config.bucket_name,
-                oss_endpoint=cls.oss_config.endpoint,
-                oss_access_key_id=oss_access_key_id,
-                oss_access_key_secret=oss_access_key_secret,
-                oss_role_arn=oss_role_arn,
-                oss_aliyun_uid=cls.oss_config.aliyun_uid,
-            )
+        return setup_default_session(
+            access_key_id=cls.pai_service_config.access_key_id,
+            access_key_secret=cls.pai_service_config.access_key_secret,
+            region_id=cls.pai_service_config.region_id,
+            workspace_id=cls.pai_service_config.workspace_id,
+            oss_bucket_name=cls.oss_config.bucket_name,
+            oss_endpoint=cls.oss_config.endpoint,
+            oss_access_key_id=oss_access_key_id,
+            oss_access_key_secret=oss_access_key_secret,
+            oss_role_arn=oss_role_arn,
+            oss_aliyun_uid=cls.oss_config.aliyun_uid,
+        )
 
     @classmethod
     def _init_maxc_client(cls):

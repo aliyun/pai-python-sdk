@@ -1,6 +1,6 @@
 from typing import Any, Dict, Tuple
 
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.libs.alibabacloud_paistudio20220112.client import Client
 from pai.libs.alibabacloud_paistudio20220112.models import (
     AlgorithmSpec,
@@ -15,7 +15,7 @@ from pai.libs.alibabacloud_paistudio20220112.models import (
 )
 
 
-class AlgorithmAPI(ScopeResourceAPI):
+class AlgorithmAPI(WorkspaceScopedResourceAPI):
 
     _get_method = "get_algorithm_with_options"
     _list_method = "list_algorithms_with_options"
@@ -44,10 +44,11 @@ class AlgorithmAPI(ScopeResourceAPI):
         page_number=1,
         page_size=10,
     ) -> PaginatedResult:
-        # Use default workspace configured in Session if provider and workspace is not provided.
-        if not algorithm_provider:
-            workspace_id = self.workspace_id
+
+        if algorithm_provider:
+            workspace_id = self.workspace_id_none_placeholder
         else:
+            # Use default workspace configured in Session if provider is not configured.
             workspace_id = None
 
         request = ListAlgorithmsRequest(
@@ -68,7 +69,6 @@ class AlgorithmAPI(ScopeResourceAPI):
         request = CreateAlgorithmRequest(
             algorithm_description=description,
             algorithm_name=name,
-            workspace_id=self.workspace_id,
         )
 
         res: CreateAlgorithmResponseBody = self._do_request(
@@ -115,9 +115,7 @@ class AlgorithmAPI(ScopeResourceAPI):
 
         return res.algorithm_id, res.algorithm_version
 
-    def get_by_name(self, algorithm_name, algorithm_provider=None, workspace_id=None):
-        if not algorithm_provider and not workspace_id:
-            workspace_id = self.workspace_id
+    def get_by_name(self, algorithm_name, algorithm_provider=None):
         page_size, page_number = 50, 1
 
         while True:

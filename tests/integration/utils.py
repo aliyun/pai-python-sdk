@@ -5,7 +5,7 @@ import shutil
 from collections import namedtuple
 
 from pai.common.utils import random_str
-from pai.core.session import EnvType
+from pai.session import EnvType
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 

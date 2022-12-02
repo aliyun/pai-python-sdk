@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.common.consts import DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE, PAIServiceName
 from pai.libs.alibabacloud_aiworkspace20210204.client import Client
 from pai.libs.alibabacloud_aiworkspace20210204.models import (
@@ -10,7 +10,7 @@ from pai.libs.alibabacloud_aiworkspace20210204.models import (
 )
 
 
-class CodeSourceAPI(ScopeResourceAPI):
+class CodeSourceAPI(WorkspaceScopedResourceAPI):
     """Class which provide API to operate CodeSource resource."""
 
     BACKEND_SERVICE_NAME = PAIServiceName.AIWORKSPACE
@@ -34,7 +34,6 @@ class CodeSourceAPI(ScopeResourceAPI):
     def list(
         self,
         display_name=None,
-        workspace_id=None,
         order=None,
         page_number=DEFAULT_PAGE_NUMBER,
         page_size=DEFAULT_PAGE_SIZE,
@@ -44,7 +43,6 @@ class CodeSourceAPI(ScopeResourceAPI):
 
         Args:
             display_name: Display name of the CodeSource.
-            workspace_id: Workspace id which code source belongs to.
             sort_by: Filed using in code source sort.
             order:
             page_size: Page size.
@@ -55,16 +53,12 @@ class CodeSourceAPI(ScopeResourceAPI):
 
         """
 
-        if not workspace_id:
-            workspace_id = self.workspace_id
-
         request = ListCodeSourcesRequest(
             display_name=display_name,
             order=order,
             page_number=page_number,
             page_size=page_size,
             sort_by=sort_by,
-            workspace_id=workspace_id,
         )
 
         resp = self._do_request(method_=self._list_method, request=request).to_map()
@@ -73,24 +67,19 @@ class CodeSourceAPI(ScopeResourceAPI):
     def count(
         self,
         display_name=None,
-        workspace_id=None,
     ):
         """Returns count of CodeSource match the conditions.
 
         Args:
             display_name: Display name of the CodeSource.
-            workspace_id: Workspace id which code source belongs to.
 
         Returns:
             int: Count of code source.
 
         """
-        if not workspace_id:
-            workspace_id = self.workspace_id
 
         request = ListCodeSourcesRequest(
             display_name=display_name,
-            workspace_id=workspace_id,
         )
         result = self._do_request(self._list_method, request=request)
         return result.total_count
@@ -113,9 +102,6 @@ class CodeSourceAPI(ScopeResourceAPI):
 
     def create(self, code_source):
         """Create a CodeSource resource."""
-
-        if not code_source.workspace_id:
-            code_source.workspace_id = self.workspace_id
 
         request = CreateCodeSourceRequest().from_map(code_source.to_api_object())
 

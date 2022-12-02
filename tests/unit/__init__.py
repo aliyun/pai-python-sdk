@@ -23,7 +23,7 @@ class BaseUnitTestCase(unittest.TestCase):
         super(BaseUnitTestCase, cls).setUpClass()
         cls._log_config()
         cls.mock_patches.append(
-            patch("pai.core.session._default_session", get_mock_session())
+            patch("pai.session._default_session", get_mock_session())
         )
         for p in cls.mock_patches:
             p.start()

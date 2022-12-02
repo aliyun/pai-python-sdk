@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict
 
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.common.consts import (
     DEFAULT_PAGE_NUMBER,
     DEFAULT_PAGE_SIZE,
@@ -24,7 +24,7 @@ from pai.libs.alibabacloud_pai_dlc20201203.models import (
 logger = logging.getLogger(__name__)
 
 
-class JobAPI(ScopeResourceAPI):
+class JobAPI(WorkspaceScopedResourceAPI):
     """Class which provide API to operate job resource."""
 
     BACKEND_SERVICE_NAME = PAIServiceName.PAI_DLC
@@ -111,7 +111,7 @@ class JobAPI(ScopeResourceAPI):
         user_command=None,
         user_vpc=None,
     ) -> CreateJobRequest:
-        from pai.entity.job import Job
+        from pai.job import Job
 
         api_object = Job(
             display_name=display_name,
@@ -129,7 +129,6 @@ class JobAPI(ScopeResourceAPI):
             user_vpc=user_vpc,
         ).to_api_object()
         request = CreateJobRequest().from_map(api_object)
-        request.workspace_id = self.workspace_id
 
         return request
 
@@ -143,7 +142,6 @@ class JobAPI(ScopeResourceAPI):
         order=None,
         status=None,
         tags=None,
-        workspace_id=None,
         page_number=DEFAULT_PAGE_NUMBER,
         page_size=DEFAULT_PAGE_SIZE,
     ) -> PaginatedResult:
@@ -160,14 +158,10 @@ class JobAPI(ScopeResourceAPI):
             tags:
             page_number:
             page_size:
-            workspace_id:
 
         Returns:
 
         """
-
-        if not workspace_id:
-            workspace_id = self.workspace_id
 
         request = ListJobsRequest(
             display_name=display_name,
@@ -180,7 +174,6 @@ class JobAPI(ScopeResourceAPI):
             order=order,
             status=status,
             tags=tags,
-            workspace_id=workspace_id,
         )
 
         resp: ListJobsResponseBody = self._do_request(

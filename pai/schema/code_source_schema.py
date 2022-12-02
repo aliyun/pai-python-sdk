@@ -32,6 +32,6 @@ class CodeSourceSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity import CodeSource
+        from pai.code_source import CodeSource
 
         return self.make_or_reload(instance_cls=CodeSource, data=data)

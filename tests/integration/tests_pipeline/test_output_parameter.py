@@ -1,9 +1,9 @@
 import contextlib
 import io
 
-from pai.operator import ContainerOperator
-from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
+from pai.pipeline.component import ContainerComponent
+from pai.pipeline.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 
 
@@ -14,7 +14,7 @@ class TestPipelineOutputParameter(BaseIntegTestCase):
         acc = "0.97"
         output_param_name = "output_1"
 
-        op = ContainerOperator(
+        op = ContainerComponent(
             inputs=[PipelineParameter("foo"), PipelineParameter("bar")],
             outputs=[PipelineParameter("output_1")],
             image_uri=python_image,

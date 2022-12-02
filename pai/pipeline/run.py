@@ -3,12 +3,13 @@ from __future__ import absolute_import
 import logging
 import time
 from datetime import datetime
+from typing import Callable
 
-from pai.core.artifact import ArchivedArtifact
-from pai.core.session import Session, get_default_session
+from pai.api.base import PaginatedResult
 from pai.decorator import cached_property, config_default_session
-from pai.exception import PAIException, TimeoutException
+from pai.exception import PAIException
 from pai.libs.futures import ThreadPoolExecutor
+from pai.pipeline.artifact import ArchivedArtifact
 from pai.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class PipelineRun(object):
     def __init__(
         self,
         run_id,
-        name,
+        name=None,
         workspace_id=None,
         status=None,
         node_id=None,
@@ -69,20 +70,17 @@ class PipelineRun(object):
         self.parent_user_id = parent_user_id
         self.session = session
 
-    @classmethod
-    def _get_service_client(cls):
-        session = get_default_session()
-        return session.paiflow_client
-
     @cached_property
     def workspace(self):
         return Workspace.get(self.workspace_id) if self.workspace_id else None
 
     @classmethod
-    def get(cls, run_id):
-        return next(cls.list(run_id=run_id), None)
+    @config_default_session
+    def get(cls, run_id, session=None):
+        return cls.deserialize(session.pipeline_run_api.get(run_id=run_id))
 
     @classmethod
+    @config_default_session
     def list(
         cls,
         name=None,
@@ -92,20 +90,26 @@ class PipelineRun(object):
         sort_by=None,
         order=None,
         workspace_id=None,
+        page_size=20,
+        page_number=1,
+        session=None,
         **kwargs,
     ):
-        generator = cls._get_service_client().list_run_generator(
-            name=name,
-            run_id=run_id,
-            pipeline_id=pipeline_id,
-            status=status,
-            sort_by=sort_by,
-            order=order,
-            workspace_id=workspace_id,
+
+        result = session.pipeline_run_api.list(
+            name=None,
+            run_id=None,
+            pipeline_id=None,
+            status=None,
+            sort_by=None,
+            order=None,
+            workspace_id=None,
+            page_size=20,
+            page_number=1,
             **kwargs,
         )
-        for info in generator:
-            yield cls.deserialize(info)
+
+        return [cls.deserialize(run) for run in result.items]
 
     @classmethod
     def deserialize(cls, d):
@@ -130,11 +134,12 @@ class PipelineRun(object):
         def pipelines_travel(curr_node_id, parent=None, cur_depth=1):
             if cur_depth > max_depth:
                 return
-            run_node_detail_info = self._get_service_client().get_node(
+            run_node_detail_info = self.session.pipeline_run_api.get_node(
                 self.run_id,
                 curr_node_id,
                 depth=2,
             )
+
             if (
                 not run_node_detail_info
                 or "StartedAt" not in run_node_detail_info["StatusInfo"]
@@ -185,10 +190,10 @@ class PipelineRun(object):
         return self.session.run_detail_url(run_id=self.run_id)
 
     def get_run_info(self):
-        return self._get_service_client().get_run(self.run_id)
+        return self.session.pipeline_run_api.get(self.run_id)
 
     def get_run_node_detail(self, node_id, depth=2):
-        return self._get_service_client().get_node(
+        return self.session.pipeline_run_api.get_node(
             self.run_id, node_id=node_id, depth=depth
         )
 
@@ -199,47 +204,32 @@ class PipelineRun(object):
 
         if not node_id:
             return
-        client = self.session.paiflow_client or type(self)._get_service_client()
-        outputs = [
-            output
-            for output in client.list_node_outputs_generator(
-                name=name,
-                node_id=node_id,
-                run_id=self.run_id,
-                depth=depth,
-                type=type,
-            )
-        ]
 
-        logger.info(
-            "RunInstance outputs: run_id:%s, node_id:%s, outputs:%s"
-            % (self.run_id, node_id, len(outputs))
+        result = self.session.pipeline_run_api.list_node_outputs(
+            name=name,
+            node_id=node_id,
+            run_id=self.run_id,
+            depth=depth,
+            type=type,
         )
-        return [ArchivedArtifact.deserialize(output) for output in outputs]
+        return [ArchivedArtifact.deserialize(output) for output in result.items]
 
     def get_status(self):
         return self.get_run_info()["Status"]
 
     def start(self):
-        return self._get_service_client().start_run(self.run_id)
+        self.session.pipeline_run_api.start(self.run_id)
 
     def terminate(self):
-        return self._get_service_client().terminate_run(self.run_id)
+        self.session.pipeline_run_api.terminate(self.run_id)
 
-    def _wait_for_init(self, timeout=120, retry_interval=1):
-        """Wait for "NodeId" allocated to pipeline run.
-
-        Args:
-            timeout: timeout of wait_for_completion time.
-        """
-        start_time = datetime.now()
+    def _wait_for_init(self, retry_interval=1):
+        """Wait for "NodeId" allocated to pipeline run."""
+        datetime.now()
         run_info = self.get_run_info()
         while (
             PipelineRunStatus.is_running(run_info["Status"]) and not run_info["NodeId"]
         ):
-            time_elapse = datetime.now() - start_time
-            if time_elapse.seconds > timeout:
-                raise TimeoutException("")
             time.sleep(retry_interval)
             run_info = self.get_run_info()
 
@@ -248,9 +238,8 @@ class PipelineRun(object):
         else:
             raise ValueError("Failed in acquire root node_id of pipeline run.")
 
-    def wait_for_completion(self, show_outputs=True, timeout=None):
+    def wait_for_completion(self, show_outputs=True):
         """Wait until the pipeline run stop."""
-        start_at = datetime.now()
         run_info = self.get_run_info()
         node_id = run_info["NodeId"]
         if not node_id:
@@ -279,7 +268,9 @@ class PipelineRun(object):
         print("Wait for run workflow init")
 
         if show_outputs:
-            run_logger = _RunLogger(run_instance=self, node_id=node_id)
+            run_logger = _RunLogger(
+                run_instance=self, node_id=node_id, session=self.session
+            )
         else:
             run_logger = _MockRunLogger(run_instance=self, node_id=node_id)
 
@@ -288,9 +279,6 @@ class PipelineRun(object):
             root_node_status = run_status
             log_runners = []
             while PipelineRunStatus.is_running(root_node_status):
-                curr_time = datetime.now()
-                if timeout and (curr_time - start_at).total_seconds() > timeout:
-                    raise TimeoutException("RunInstance wait_for_completion timeout.")
                 curr_status_infos = self.travel_node_status_info(node_id)
                 for node_fullname, status_info in curr_status_infos.items():
                     if (
@@ -329,7 +317,6 @@ class PipelineRun(object):
 
                 time.sleep(2)
         except (KeyboardInterrupt, PAIException) as e:
-            logger.debug("catch expections, %s", e)
             run_logger.stop_tail()
             raise e
 
@@ -344,29 +331,42 @@ class PipelineRun(object):
     def _wait_with_logger(self, node_id):
         pass
 
-    def _list_node_logs_generator(
-        self,
-        run_id,
-        node_id,
-        page_offset=0,
-        page_size=100,
-    ):
-        return self.session.paiflow_client.list_node_logs_generator(
-            run_id=run_id,
-            node_id=node_id,
-            page_offset=page_offset,
-            page_size=page_size,
-        )
+
+def make_log_iterator(method: Callable, **kwargs):
+    """Make an iterator from resource list API.
+
+    Args:
+        method: Resource List API.
+        **kwargs: arguments for the method.
+
+    Returns:
+        A resource iterator.
+    """
+
+    page_offset = kwargs.get("page_offset", 0)
+    page_size = kwargs.get("page_size", 20)
+
+    while True:
+        kwargs.update(page_offset=page_offset, page_size=page_size)
+        result: PaginatedResult = method(**kwargs)
+
+        for item in result.items:
+            yield item
+
+        if len(result.items) == 0 or len(result.items) <= page_size:
+            return
+        page_offset += page_size
 
 
 class _RunLogger(object):
     executor = ThreadPoolExecutor(5)
 
-    def __init__(self, run_instance, node_id):
+    def __init__(self, run_instance, node_id, session):
         super(_RunLogger, self).__init__()
         self.run_instance = run_instance
         self.node_id = node_id
         self.running_nodes = set()
+        self.session = session
         self._tail = True
 
     def tail(
@@ -381,7 +381,8 @@ class _RunLogger(object):
         self.running_nodes.add(node_id)
 
         while True and self._tail:
-            logs = self.run_instance._list_node_logs_generator(
+            logs = make_log_iterator(
+                self.session.pipeline_run_api.list_node_logs,
                 run_id=self.run_instance.run_id,
                 node_id=node_id,
                 page_size=page_size,

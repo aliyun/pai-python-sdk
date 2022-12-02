@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List, Optional, Union
 
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.common.consts import (
     DEFAULT_PAGE_NUMBER,
     DEFAULT_PAGE_SIZE,
@@ -20,7 +20,7 @@ from pai.libs.alibabacloud_aiworkspace20210204.models import (
 )
 
 
-class DatasetAPI(ScopeResourceAPI):
+class DatasetAPI(WorkspaceScopedResourceAPI):
     """Class which provide API to operate Dataset resource."""
 
     BACKEND_SERVICE_NAME = PAIServiceName.AIWORKSPACE
@@ -37,33 +37,28 @@ class DatasetAPI(ScopeResourceAPI):
 
     def list(
         self,
-        data_source_type: None = None,
-        name: None = None,
+        data_source_type: str = None,
+        name: str = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         page_number: int = DEFAULT_PAGE_NUMBER,
-        workspace_id: None = None,
     ) -> PaginatedResult:
         """Returns Dataset in paging.
 
         Args:
             data_source_type: Data source type of the dataset using, support OSS and NAS.
             name: Name of the Dataset.
-            workspace_id: Workspace id of the Dataset.
             page_number: Page number.
             page_size: Page size.
 
         Returns:
             int: A list of datasets match the conditions.
         """
-        if not workspace_id:
-            workspace_id = self.workspace_id
 
         request = ListDatasetsRequest(
             data_source_types=data_source_type,
             name=name,
             page_size=page_size,
             page_number=page_number,
-            workspace_id=workspace_id,
         )
 
         resp: ListDatasetsResponseBody = self._do_request(
@@ -121,7 +116,6 @@ class DatasetAPI(ScopeResourceAPI):
             property=property,
             source_type=source_type,
             uri=uri,
-            workspace_id=self.workspace_id,
         )
         result = self._do_request(self._create_method, request=request)
         return result.dataset_id

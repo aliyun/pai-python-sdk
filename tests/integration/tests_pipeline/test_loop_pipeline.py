@@ -2,16 +2,16 @@ import contextlib
 import io
 import json
 
-from pai.operator import ContainerOperator
-from pai.operator.types import PipelineParameter
-from pai.operator.types.parameter import LoopItemPlaceholder
 from pai.pipeline import Pipeline
+from pai.pipeline.component import ContainerComponent
+from pai.pipeline.types import PipelineParameter
+from pai.pipeline.types.parameter import LoopItemPlaceholder
 from tests.integration import BaseIntegTestCase
 
 
 class TestLoopPipeline(BaseIntegTestCase):
     def test_loop_with_sequence(self):
-        op = ContainerOperator(
+        op = ContainerComponent(
             inputs=[
                 PipelineParameter("foo", default="valueFoo"),
                 PipelineParameter("bar", default="valueBar"),
@@ -45,7 +45,7 @@ class TestLoopPipeline(BaseIntegTestCase):
     def test_loop_with_param(self):
         output_param_name = "outputparam"
         output_params = json.dumps(["hello", "world"])
-        op = ContainerOperator(
+        op = ContainerComponent(
             inputs=[
                 PipelineParameter("foo", default="valueFoo"),
                 PipelineParameter("bar", default="valueBar"),
@@ -92,7 +92,7 @@ class TestLoopPipeline(BaseIntegTestCase):
         self.assertTrue("foo=world" in run_output.getvalue())
 
     def test_loop_with_items(self):
-        op = ContainerOperator(
+        op = ContainerComponent(
             inputs=[
                 PipelineParameter("foo", default="valueFoo"),
                 PipelineParameter("bar", default="valueBar"),

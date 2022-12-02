@@ -10,6 +10,7 @@ import tempfile
 import time
 import uuid
 from datetime import datetime
+from typing import Callable
 
 import six
 from odps import DataFrame as ODPSDataFrame
@@ -21,8 +22,8 @@ odps_table_re = (
 )
 
 
-PAI_PIPELINE_RUN_ID_PLACEHOLDER = "${pai_system_run_id}"
-PAI_PIPELINE_NODE_ID_PLACEHOLDER = "${pai_system_node_id}"
+PAI_PIPELINE_RUN_ID_PLACEHOLDER = "${pai_system_run_id_underscore}"
+PAI_PIPELINE_NODE_ID_PLACEHOLDER = "${pai_system_node_id_underscore}"
 
 
 def md5_digest(raw_data):
@@ -203,3 +204,32 @@ def snake_to_camel(name):
 
 def print_msg(msg: str, *args, **kwargs):
     print(msg.format(*args, **kwargs))
+
+
+def make_list_resource_iterator(method: Callable, **kwargs):
+    """Wrap resource list method as an iterator.
+
+    Args:
+        method: Resource List method.
+        **kwargs: arguments for the method.
+
+    Yields:
+        A resource iterator.
+    """
+
+    from pai.api.base import PaginatedResult
+
+    page_number = kwargs.get("page_number", 1)
+    page_size = kwargs.get("page_size", 10)
+
+    while True:
+        kwargs.update(page_number=page_number, page_size=page_size)
+        result = method(**kwargs)
+        if isinstance(result, PaginatedResult):
+            result = result.items
+        for item in result:
+            yield item
+
+        if len(result) == 0 or len(result) < page_size:
+            return
+        page_number += 1

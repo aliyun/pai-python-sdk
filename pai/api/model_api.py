@@ -1,6 +1,6 @@
 import typing
 
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.common.consts import PAIServiceName
 from pai.libs.alibabacloud_aiworkspace20210204.models import (
     CreateModelRequest,
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     pass
 
 
-class ModelAPI(ScopeResourceAPI):
+class ModelAPI(WorkspaceScopedResourceAPI):
 
     BACKEND_SERVICE_NAME = PAIServiceName.AIWORKSPACE
 
@@ -44,22 +44,16 @@ class ModelAPI(ScopeResourceAPI):
 
     def create_from_api_object(self, api_object):
         request = CreateModelRequest().from_map(api_object)
-        if not request.workspace_id:
-            request.workspace_id = self.workspace_id
 
         resp = self._do_request(self._create_model_method, request=request)
         return resp.model_id
 
-    def create(
-        self, name, accessibility=None, workspace_id=None, labels=None, description=None
-    ):
-        workspace_id = workspace_id or self.workspace_id
+    def create(self, name, accessibility=None, labels=None, description=None):
 
         labels = [Label(key=k, value=v) for k, v in labels.items()] if labels else []
 
         request = CreateModelRequest(
             model_name=name,
-            workspace_id=workspace_id,
             accessibility=accessibility,
             labels=labels,
             model_description=description,
@@ -133,7 +127,6 @@ class ModelAPI(ScopeResourceAPI):
             page_number=page_number,
             page_size=page_size,
             sort_by=sort_by,
-            workspace_id=self.workspace_id
             # labels=None,
             # label_string=None,
         )
@@ -142,9 +135,6 @@ class ModelAPI(ScopeResourceAPI):
             self._list_model_method, request=request
         )
         return self.make_paginated_result(resp)
-
-    def list_iterator(self, name=None, order=None, sort_by=None):
-        pass
 
     def list_versions(
         self,

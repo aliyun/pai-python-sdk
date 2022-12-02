@@ -30,15 +30,11 @@ requirements = [
     "marshmallow",
     "marshmallow-oneofschema==3.0.1",
     "eas_prediction<=0.13",
-]
-
-tea_requires = [
     "alibabacloud_tea_util>=0.3.6, <1.0.0",
     "alibabacloud_tea_openapi>=0.3.3, <1.0.0",
     "alibabacloud_openapi_util>=0.1.6, <1.0.0",
     "alibabacloud_endpoint_util>=0.0.3, <1.0.0",
 ]
-requirements.extend(tea_requires)
 
 long_description = None
 if os.path.exists("README.md"):

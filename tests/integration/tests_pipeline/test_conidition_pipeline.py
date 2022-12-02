@@ -1,9 +1,9 @@
 import contextlib
 import io
 
-from pai.operator import ContainerOperator
-from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline
+from pai.pipeline.component import ContainerComponent
+from pai.pipeline.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 
 
@@ -11,7 +11,7 @@ class TestConditionPipeline(BaseIntegTestCase):
     def test_condition_output(self):
         acc = "0.97"
         output_param_name = "outputparam"
-        op = ContainerOperator(
+        op = ContainerComponent(
             inputs=[
                 PipelineParameter("foo", default="valueFoo"),
                 PipelineParameter("bar", default="valueBar"),

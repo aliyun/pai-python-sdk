@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import WorkspaceScopedResourceAPI
 from pai.libs.alibabacloud_paistudio20220112.client import Client
 from pai.libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequest,
@@ -11,14 +11,11 @@ from pai.libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequestOutputChannels,
     CreateTrainingJobRequestScheduler,
     CreateTrainingJobResponseBody,
-    GetAlgorithmVersionResponseBody,
     GetTrainingJobResponseBody,
-    ListAlgorithmsRequest,
-    ListAlgorithmVersionsRequest,
 )
 
 
-class TrainingJobAPI(ScopeResourceAPI):
+class TrainingJobAPI(WorkspaceScopedResourceAPI):
     _create_method = "create_training_job_with_options"
     _get_method = "get_training_job_with_options"
 
@@ -94,7 +91,6 @@ class TrainingJobAPI(ScopeResourceAPI):
             ),
             training_job_description=description,
             training_job_name=job_name,
-            workspace_id=self.workspace_id,
         )
 
         resp: CreateTrainingJobResponseBody = self._do_request(

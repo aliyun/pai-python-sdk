@@ -1,20 +1,14 @@
 from __future__ import absolute_import
 
 import os
-from unittest import skipIf
 
 from pai.common import ProviderAlibabaPAI
-from pai.operator import SavedOperator
-from tests.integration import BaseIntegTestCase, EnvType
-from tests.integration.utils import t_context
+from pai.pipeline.component import RegisteredComponent
+from tests.integration import BaseIntegTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-@skipIf(
-    t_context.env_type == EnvType.Light,
-    "Light Environment do not hold PAI provide SavedOperator.",
-)
 class TestPipelineWithSavedOp(BaseIntegTestCase):
     @classmethod
     def init_prediction_pipeline(
@@ -23,7 +17,7 @@ class TestPipelineWithSavedOp(BaseIntegTestCase):
         version="v1",
         provider=ProviderAlibabaPAI,
     ):
-        p = SavedOperator.get_by_identifier(
+        p = RegisteredComponent.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )
         return p

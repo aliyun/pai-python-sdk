@@ -26,7 +26,7 @@ class JobResourceConfigSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from ..entity.job import ResourceConfig
+        from pai.job import ResourceConfig
 
         return ResourceConfig(**data)
 
@@ -46,7 +46,7 @@ class JobSpecSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from ..entity.job import JobSpec
+        from pai.job import JobSpec
 
         return JobSpec(**data)
 
@@ -63,7 +63,7 @@ class JobDataSourceSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from ..entity.common import DataSourceConfig
+        from ..dataset import DataSourceConfig
 
         return DataSourceConfig(**data)
 
@@ -78,7 +78,7 @@ class JobCodeSourceSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from ..entity.common import CodeSourceConfig
+        from ..code_source import CodeSourceConfig
 
         # Backend Service may return CodeSource struct with empty code_source_id.
         if data.get("code_source_id"):
@@ -108,7 +108,7 @@ class JobPodSchema(BaseAPIResourceSchema):
 
     @post_load()
     def _make(self, data, **kwargs):
-        from pai.entity.job import JobPod
+        from pai.job import JobPod
 
         return JobPod(**data)
 
@@ -132,6 +132,7 @@ class JobSchema(BaseAPIResourceSchema):
     user_command = fields.Str(required=True)
     max_running_time_minutes = fields.Int()
     resource_id = fields.Str()
+    envs = fields.Dict()
 
     # Load only fields
     job_id = fields.Str(load_only=True)
@@ -150,6 +151,6 @@ class JobSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.job import Job
+        from pai.job import Job
 
         return self.make_or_reload(Job, data=data)

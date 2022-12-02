@@ -1,4 +1,4 @@
-from marshmallow import EXCLUDE, fields, post_load
+from marshmallow import fields, post_load
 
 from pai.schema.base import BaseAPIResourceSchema
 
@@ -12,7 +12,7 @@ class HyperparameterDefinitionSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.algorithm import HyperparameterDefinition
+        from pai.algorithm import HyperparameterDefinition
 
         return HyperparameterDefinition(**data)
 
@@ -24,7 +24,7 @@ class MetricDefinitionSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.algorithm import MetricDefinition
+        from pai.algorithm import MetricDefinition
 
         return MetricDefinition(**data)
 
@@ -38,7 +38,7 @@ class ChannelDefinitionSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.algorithm import ChannelDefinition
+        from pai.algorithm import ChannelDefinition
 
         return ChannelDefinition(**data)
 
@@ -57,7 +57,7 @@ class AlgorithmSpecSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.algorithm import AlgorithmSpec
+        from pai.algorithm import AlgorithmSpec
 
         return AlgorithmSpec(**data)
 
@@ -76,7 +76,7 @@ class AlgorithmVersionSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.algorithm import AlgorithmVersion
+        from pai.algorithm import AlgorithmVersion
 
         return self.make_or_reload(AlgorithmVersion, data)
 
@@ -97,6 +97,6 @@ class AlgorithmSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.algorithm import Algorithm
+        from pai.algorithm import Algorithm
 
         return self.make_or_reload(Algorithm, data)

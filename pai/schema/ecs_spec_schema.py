@@ -18,6 +18,6 @@ class EcsSpecSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity import EcsSpec
+        from pai.job import EcsSpec
 
         return EcsSpec(**data)

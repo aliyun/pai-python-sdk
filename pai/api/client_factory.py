@@ -2,11 +2,9 @@ from __future__ import absolute_import
 
 import logging
 import os
-from typing import Optional
 
 from alibabacloud_tea_openapi.models import Config
 
-from pai.api.client.paiflow import PAIFlowClient
 from pai.common.consts import PAIServiceName
 from pai.libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
 from pai.libs.alibabacloud_eas20210701.client import Client as EasClient
@@ -47,24 +45,6 @@ class ClientFactory(object):
     @staticmethod
     def _is_inner_client(acs_client):
         return acs_client.get_region_id() == "center"
-
-    @classmethod
-    def create_paiflow_client(
-        cls,
-        access_key_id: str,
-        access_key_secret: str,
-        region_id: Optional[str] = None,
-        endpoint: None = None,
-        **kwargs,
-    ) -> PAIFlowClient:
-
-        return PAIFlowClient(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region_id=region_id,
-            endpoint=endpoint,
-            **kwargs,
-        )
 
     @classmethod
     def create_client(
@@ -123,7 +103,9 @@ class ClientFactory(object):
         if endpoint:
             return endpoint
         # Use endpoint configured by environment variable.
-        key = PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN.format(service_name.upper())
+        key = PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN.format(
+            service_name.upper().replace("-", "_")
+        )
         if os.environ.get(key):
             return os.environ.get(key)
 

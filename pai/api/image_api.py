@@ -1,4 +1,4 @@
-from pai.api.base import PaginatedResult, ScopeResourceAPI
+from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.common.consts import DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE, PAIServiceName
 from pai.libs.alibabacloud_aiworkspace20210204.client import Client
 from pai.libs.alibabacloud_aiworkspace20210204.models import (
@@ -7,7 +7,7 @@ from pai.libs.alibabacloud_aiworkspace20210204.models import (
 )
 
 
-class ImageAPI(ScopeResourceAPI):
+class ImageAPI(WorkspaceScopedResourceAPI):
     """Class which provide API to operate CodeSource resource."""
 
     BACKEND_SERVICE_NAME = PAIServiceName.AIWORKSPACE
@@ -35,16 +35,12 @@ class ImageAPI(ScopeResourceAPI):
         creator_id=None,
         verbose=False,
         labels=_LIST_IMAGE_DEFAULT_LABEL_FILTER,
-        workspace_id=None,
         sort_by=None,
         order=_LIST_DEFAULT_ORDER,
         page_number=DEFAULT_PAGE_NUMBER,
         page_size=DEFAULT_PAGE_SIZE,
     ):
         """List image resources."""
-
-        if workspace_id is None:
-            workspace_id = self.workspace_id
 
         if isinstance(labels, dict):
             labels = ["{}={}".format(k, v) for k, v in labels.items()]
@@ -58,7 +54,6 @@ class ImageAPI(ScopeResourceAPI):
             verbose=verbose,
             page_size=page_size,
             page_number=page_number,
-            workspace_id=workspace_id,
         )
 
         return self._list(request=req)
@@ -88,6 +83,7 @@ class ImageAPI(ScopeResourceAPI):
             verbose=True,
             page_size=page_size,
             page_number=page_number,
+            workspace_id=self.workspace_id_none_placeholder,
         )
         return self._list(request=req)
 
@@ -103,5 +99,6 @@ class ImageAPI(ScopeResourceAPI):
             verbose=True,
             page_size=page_size,
             page_number=page_number,
+            workspace_id=self.workspace_id_none_placeholder,
         )
         return self._list(request=req)

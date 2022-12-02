@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import os
 import os.path
 
 import torch
@@ -145,8 +146,16 @@ def main():
         metavar="N",
         help="how many batches to wait before logging training status",
     )
-    parser.add_argument("--output_path", default=None, help="Saving model output path")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--output_path",
+        default=os.environ.get("PAI_OUTPUT_MODEL_PATH"),
+        help="Saving model output path",
+    )
+
+    for key, val in os.environ.items():
+        print("Environment {}={}".format(key, val))
+
+    args, _ = parser.parse_known_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
     torch.manual_seed(args.seed)
@@ -178,6 +187,7 @@ def main():
         scheduler.step()
 
     if args.output_path:
+        os.makedirs(args.output_path, exist_ok=True)
         m = torch.jit.script(model)
         m.save(os.path.join(args.output_path, "mnist.pt"))
 

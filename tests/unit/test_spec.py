@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import os
 
-from pai.operator.types import (
+from pai.pipeline.types import (
     DataType,
     InputsSpec,
     LocationArtifactMetadata,
@@ -10,7 +10,7 @@ from pai.operator.types import (
     PipelineArtifact,
     PipelineParameter,
 )
-from pai.operator.types.spec import sort_variable_by_category
+from pai.pipeline.types.spec import sort_variable_by_category
 from tests.unit import BaseUnitTestCase
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))

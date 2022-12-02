@@ -3,20 +3,22 @@ from __future__ import absolute_import
 import logging
 from collections import Counter, defaultdict
 
-from pai.common.utils import is_iterable
 from pai.common.yaml_utils import dump as yaml_dump
 from pai.common.yaml_utils import dump_all as yaml_dump_all
-from pai.core import Session
-from pai.core.session import get_default_session
-from pai.operator._base import UnRegisteredOperator
-from pai.operator.types import InputsSpec, OutputsSpec, PipelineParameter
-from pai.operator.types.artifact import PipelineArtifact, PipelineArtifactElement
-from pai.operator.types.variable import PipelineVariable
+from pai.pipeline.component._base import UnRegisteredComponent
+from pai.pipeline.types import (
+    InputsSpec,
+    OutputsSpec,
+    PipelineParameter,
+    PipelineVariable,
+)
+from pai.pipeline.types.artifact import PipelineArtifact, PipelineArtifactElement
+from pai.session import get_default_session
 
 logger = logging.getLogger(__name__)
 
 
-class Pipeline(UnRegisteredOperator):
+class Pipeline(UnRegisteredComponent):
     """Represents pipeline instance in PAI Machine Learning pipeliner service.
 
     Pipeline can be constructed from multiple pipeline steps, or single container implementation.
@@ -43,7 +45,7 @@ class Pipeline(UnRegisteredOperator):
         )
 
         self._steps = steps
-        self._unregistered_ops = unregistered_ops
+        self._unregistered_components = unregistered_ops
         super(Pipeline, self).__init__(inputs=inputs, outputs=outputs, **kwargs)
 
     @property
@@ -68,7 +70,7 @@ class Pipeline(UnRegisteredOperator):
         self._check_inputs_outputs_name_conflict(
             inputs_spec=inputs_spec, outputs_spec=outputs_spec
         )
-        unregistered_ops = self._get_unregistered_ops(steps)
+        unregistered_ops = self._get_unregistered_components(steps)
 
         self._update_steps(steps)
 
@@ -80,18 +82,18 @@ class Pipeline(UnRegisteredOperator):
         )
 
     @classmethod
-    def _get_unregistered_ops(cls, steps):
-        """Get the unregistered operators used by the step in the pipeline.
+    def _get_unregistered_components(cls, steps):
+        """Get the unregistered components used by the step in the pipeline.
 
         Args:
             steps: Steps in the pipeline.
 
         Returns:
-            List[OperatorBase]: Return unregistered operators using in the pipeline.
+            List[OperatorBase]: Return unregistered components using in the pipeline.
         """
 
         unregistered_ops = [
-            step.operator for step in steps if not step.is_op_registered
+            step.component for step in steps if not step.is_component_registered
         ]
         seen = set()
         return [
@@ -366,10 +368,10 @@ class Pipeline(UnRegisteredOperator):
             entrypoint["metadata"]["provider"] = get_default_session().provider
 
         entrypoint["spec"]["pipelines"] = [step.to_dict() for step in self.steps]
-        if not self._unregistered_ops:
+        if not self._unregistered_components:
             return entrypoint
 
-        res = [op.to_dict() for op in self._unregistered_ops]
+        res = [op.to_dict() for op in self._unregistered_components]
         res.append(entrypoint)
 
         return res

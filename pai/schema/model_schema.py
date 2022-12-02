@@ -25,7 +25,7 @@ class ModelSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.model import Model
+        from pai.model import Model
 
         return self.make_or_reload(Model, data)
 
@@ -62,6 +62,6 @@ class ModelVersionSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity.model import ModelVersion
+        from pai.model import ModelVersion
 
         return self.make_or_reload(ModelVersion, data)

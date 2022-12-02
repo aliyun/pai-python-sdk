@@ -29,7 +29,7 @@ Bucket，请确认使用的OSS region和工作空间是一致的。
     from pai.core.session import setup_default_session, get_default_session
     from pai.pipeline.run import PipelineRun
     from pai.common import ProviderAlibabaPAI
-    from pai.operator import SavedOperator
+    from pai.operator import RegisteredComponent
 
     sess = get_default_session()
 
@@ -48,5 +48,5 @@ Bucket，请确认使用的OSS region和工作空间是一致的。
     for run_instance in PipelineRun.list():
         print(run_instance)
 
-    for templ in SavedOperator.list(provider=ProviderAlibabaPAI):
+    for templ in RegisteredComponent.list(provider=ProviderAlibabaPAI):
         print(templ)

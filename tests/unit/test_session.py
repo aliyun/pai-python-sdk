@@ -1,4 +1,3 @@
-from pai.core.session import Session, setup_default_session
 from tests.unit import BaseUnitTestCase
 
 

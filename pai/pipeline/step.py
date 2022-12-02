@@ -4,12 +4,12 @@ import itertools
 
 import six
 
-from pai.operator.types.parameter import ConditionExpr, LoopItems, PipelineParameter
-from pai.operator.types.spec import load_input_output_spec
-from pai.operator.types.variable import PipelineVariable
+from pai.pipeline.types import PipelineVariable
+from pai.pipeline.types.parameter import ConditionExpr, LoopItems, PipelineParameter
+from pai.pipeline.types.spec import load_input_output_spec
 
 
-class _OpRef(object):
+class _ComponentRefer(object):
     def __init__(self):
         pass
 
@@ -17,9 +17,9 @@ class _OpRef(object):
         pass
 
 
-class RegisteredOperatorRef(_OpRef):
+class RegisteredComponentRefer(_ComponentRefer):
     def __init__(self, identifier, provider, version):
-        super(RegisteredOperatorRef, self).__init__()
+        super(RegisteredComponentRefer, self).__init__()
         self.identifier = identifier
         self.provider = provider
         self.version = version
@@ -32,9 +32,9 @@ class RegisteredOperatorRef(_OpRef):
         }
 
 
-class UnRegisteredOperatorRef(_OpRef):
+class UnRegisteredComponentRefer(_ComponentRefer):
     def __init__(self, guid):
-        super(UnRegisteredOperatorRef, self).__init__()
+        super(UnRegisteredComponentRefer, self).__init__()
         self.guid = guid
 
     def to_dict(self):
@@ -54,19 +54,19 @@ class PipelineStep(object):
         inputs=None,
         name=None,
         depends=None,
-        operator=None,
+        component=None,
     ):
-        """Construct a step which represent operator execution in pipeline.
+        """Construct a step which represent component execution in pipeline.
 
         Args:
-            inputs (dict): Inputs for the step in dict: key is the operator input name, value
+            inputs (dict): Inputs for the step in dict: key is the component input name, value
                 could be the output artifact/parameter from other step, input of the pipeline,
                 or actual value for the step.
             name (str): Name of the step in pipeline, must be unique in the pipeline.
             depends (list): A list of PipelineStep which step depends.
-            operator (OperatorBase): The operator used by the constructed step.
+            component (OperatorBase): The component used by the constructed step.
         """
-        from ..operator import SavedOperator
+        from pai.pipeline.component import RegisteredComponent
 
         self._depends = depends or set()
         if any([type(x) for x in self._depends if not isinstance(x, PipelineStep)]):
@@ -74,22 +74,22 @@ class PipelineStep(object):
 
         self._assigned = set()
 
-        if isinstance(operator, SavedOperator):
-            self.op_ref = RegisteredOperatorRef(
-                identifier=operator.identifier,
-                version=operator.version,
-                provider=operator.provider,
+        if isinstance(component, RegisteredComponent):
+            self.component_ref = RegisteredComponentRefer(
+                identifier=component.identifier,
+                version=component.version,
+                provider=component.provider,
             )
         else:
-            self.op_ref = UnRegisteredOperatorRef(guid=operator.guid)
+            self.component_ref = UnRegisteredComponentRefer(guid=component.guid)
 
         self._name = name
-        self._operator = operator
+        self._component = component
 
         (
             inputs_spec,
             outputs_spec,
-        ) = load_input_output_spec(self, operator.io_spec_to_dict())
+        ) = load_input_output_spec(self, component.io_spec_to_dict())
         self.parent = None
         self.inputs = inputs_spec
         self.outputs = outputs_spec
@@ -98,22 +98,22 @@ class PipelineStep(object):
         self._repeated_artifact_config = {}
 
     @property
-    def is_op_registered(self):
-        if isinstance(self.op_ref, RegisteredOperatorRef):
+    def is_component_registered(self):
+        if isinstance(self.component_ref, RegisteredComponentRefer):
             return True
         return False
 
     @property
-    def operator(self):
-        return self._operator
+    def component(self):
+        return self._component
 
     def gen_name_prefix(self):
-        if self.is_op_registered:
-            return self.op_ref.identifier
-        return self.operator.name
+        if self.is_component_registered:
+            return self.component_ref.identifier
+        return self.component.name
 
     @classmethod
-    def from_registered_op(
+    def from_registered_component(
         cls,
         identifier,
         provider=None,
@@ -122,30 +122,30 @@ class PipelineStep(object):
         name=None,
         depends=None,
     ):
-        """Build the PipelineStep from the given registered operator reference: identifier, version, provider.
+        """Build the PipelineStep from the given registered component reference: identifier, version, provider.
 
         Args:
-            identifier: Identifier of the registered operator.
-            provider: Provider of the registered operator.
-            version: Version of the registered operator.
+            identifier: Identifier of the registered component.
+            provider: Provider of the registered component.
+            version: Version of the registered component.
             inputs: Inputs for the building step.
             name: Name for the building step.
             depends: Depended steps of the building step.
 
         Returns:
-            PipelineStep: The built step instantiates from the given registered operator and inputs.
+            PipelineStep: The built step instantiates from the given registered component and inputs.
         """
-        from ..core.session import get_default_session
-        from ..operator import SavedOperator
+        from pai.pipeline.component import RegisteredComponent
+        from pai.session import get_default_session
 
         provider = provider or get_default_session().provider
-        op = SavedOperator.get_by_identifier(
+        c = RegisteredComponent.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )
 
-        if not op:
+        if not c:
             raise ValueError(
-                "Specific register operator not found: identifier={0}, provider={1}, version={2}".format(
+                "Specific register component not found: identifier={0}, provider={1}, version={2}".format(
                     identifier, provider, version
                 )
             )
@@ -153,7 +153,7 @@ class PipelineStep(object):
             inputs=inputs or [],
             name=name,
             depends=depends,
-            operator=op,
+            component=c,
         )
 
     @property
@@ -211,7 +211,7 @@ class PipelineStep(object):
                 values.append(ipt)
 
         def _depend_step(input):
-            from pai.operator.types.artifact import PipelineArtifactElement
+            from pai.pipeline.types.artifact import PipelineArtifactElement
 
             if isinstance(input, PipelineVariable) and input.parent:
                 return input.parent
@@ -235,13 +235,13 @@ class PipelineStep(object):
         self._name = value
 
     @classmethod
-    def get_operator(cls, identifier, provider, version):
-        from ..operator import SavedOperator
+    def get_component(cls, identifier, provider, version):
+        from pai.pipeline.component import RegisteredComponent
 
-        operator = SavedOperator.get_by_identifier(
+        component = RegisteredComponent.get_by_identifier(
             identifier=identifier, provider=provider, version=version
         )
-        return operator
+        return component
 
     def after(self, *steps):
         if self.parent or any(step for step in steps if step.parent):
@@ -290,7 +290,7 @@ class PipelineStep(object):
 
     def to_dict(self):
         metadata = {"name": self.name}
-        metadata.update(self.op_ref.to_dict())
+        metadata.update(self.component_ref.to_dict())
 
         d = {
             "metadata": metadata,
@@ -302,7 +302,7 @@ class PipelineStep(object):
 class ConditionStep(PipelineStep):
     """Represent a conditional execution step in pipeline."""
 
-    def __init__(self, condition, inputs=None, name=None, depends=None, operator=None):
+    def __init__(self, condition, inputs=None, name=None, depends=None, component=None):
         """Construct a ConditionStep to support conditional execution in pipeline.
 
         A ConditionStep only execute if condition evaluate to true.
@@ -310,12 +310,12 @@ class ConditionStep(PipelineStep):
         Args:
             condition (Union[str, ConditionExpr]): Condition expression used to determine
                 if the step should be executed, could be ConditionExpr or str.
-            inputs (dict): Inputs for the step in dict: key is the operator input name, value
+            inputs (dict): Inputs for the step in dict: key is the component input name, value
                 could be the output artifact/parameter from other step, input of the pipeline,
                 or actual value for the step.
             name (str): Name of the step in pipeline, must be unique in the pipeline.
             depends (list): A list of PipelineStep which step depends.
-            operator (OperatorBase): The operator used by the constructed step.
+            component (ComponentBase): The component used by the constructed step.
         """
         if not isinstance(condition, (ConditionExpr, str)):
             raise ValueError("Not supported condition type: %s" % type(condition))
@@ -323,7 +323,7 @@ class ConditionStep(PipelineStep):
             condition_depends = condition.get_depends_steps()
             depends = list(filter(None, (depends or []) + condition_depends))
 
-        super().__init__(inputs=inputs, name=name, depends=depends, operator=operator)
+        super().__init__(inputs=inputs, name=name, depends=depends, component=component)
         self.condition = condition
 
     def to_dict(self):
@@ -348,22 +348,22 @@ class LoopStep(PipelineStep):
         inputs=None,
         name=None,
         depends=None,
-        operator=None,
+        component=None,
     ):
         """Construct a LoopStep to support for-loop execution in pipeline.
 
-        A LoopStep invoke the operator in for-loop execution style.
+        A LoopStep invoke the component in for-loop execution style.
 
         Args:
             items (Union[str, ConditionExpr]): Condition expression used to determine
                 if the step should be executed, could be ConditionExpr or str.
             parallelism (int): Max execution parallelism of the step.
-            inputs (dict): Inputs for the step in dict: key is the operator input name, value
+            inputs (dict): Inputs for the step in dict: key is the component input name, value
                 could be the output artifact/parameter from other step, input of the pipeline,
                 or actual value for the step.
             name (str): Name of the step in pipeline, must be unique in the pipeline.
             depends (list): A list of PipelineStep which step depends.
-            operator (OperatorBase): The operator used by the constructed step.
+            component (OperatorBase): The component used by the constructed step.
         """
         if (
             isinstance(items, PipelineParameter)
@@ -373,7 +373,7 @@ class LoopStep(PipelineStep):
             depends = depends or []
             depends.append(items.parent)
 
-        super().__init__(inputs=inputs, name=name, depends=depends, operator=operator)
+        super().__init__(inputs=inputs, name=name, depends=depends, component=component)
         self.items = LoopItems(items)
         self.parallelism = int(parallelism or type(self).DEFAULT_PARALLELISM_COUNT)
 

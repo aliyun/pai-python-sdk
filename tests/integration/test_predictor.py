@@ -5,9 +5,8 @@ import numpy as np
 from pai.common.consts import ModelFormat
 from pai.common.oss_utils import upload_to_oss
 from pai.common.utils import camel_to_snake
-from pai.eas.processor import BuildInProcessor
-from pai.entity.service import ComputeConfig, Service
-from pai.serializer import TorchIOSpec, TorchSerializer
+from pai.predictor.serializers import TorchIOSpec, TorchSerializer
+from pai.predictor.service import BuildInProcessor, ComputeConfig, Service
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import make_resource_name
 from tests.test_data import (
@@ -52,11 +51,11 @@ class TestPredictBase(BaseIntegTestCase):
                 cpu=2,
                 memory=4000,
             ),
-            processor=BuildInProcessor.from_model_format(
+            processor=BuildInProcessor.get_default_by_model_format(
                 model_format=cls.model_format,
             ),
             model_path=model_path,
-            wait_for_ready=True,
+            wait=True,
         )
         return service
 

@@ -16,13 +16,13 @@ PAI提供了一些公共的算法组件，在SavedOperator.list方法中, 通过
 
 .. code-block:: python
 
-    from pai.operator import SavedOperator
+    from pai.operator import RegisteredComponent
     from pai.common import ProviderAlibabaPAI
 
-    for op in SavedOperator.list(provider=ProviderAlibabaPAI):
+    for op in RegisteredComponent.list(provider=ProviderAlibabaPAI):
         print(op.pipeline_id, op.identifier, op.provider, op.version)
 
-    op = next(SavedOperator.list(provider=ProviderAlibabaPAI))
+    op = next(RegisteredComponent.list(provider=ProviderAlibabaPAI))
     # inspect the inputs and outputs of the operator.
     print(op.inputs)
     print(op.outputs)
@@ -39,7 +39,7 @@ PAI提供了一些公共的算法组件，在SavedOperator.list方法中, 通过
 
     from pai.common.utils import gen_temp_table
 
-    op = SavedOperator.get_by_identifier(identifier="split", provider=ProviderAlibabaPAI, version="v1")
+    op = RegisteredComponent.get_by_identifier(identifier="split", provider=ProviderAlibabaPAI, version="v1")
     print(op.inputs)
 
     # split 运行在MaxCompute中，需要指定运行的MaxCompute项目以及执行环境。
@@ -88,7 +88,7 @@ PAI Pipeline Service支持将多个算法组件拼接成为一个一个新的Pip
 
     from pai.pipeline.types import PipelineParameter, PipelineArtifact, ArtifactMetadata, ArtifactDataType, ArtifactLocationType
     from pai.pipeline import PipelineStep, Pipeline
-    from pai.operator import SavedOperator
+    from pai.operator import RegisteredComponent
 
     def create_composite_pipeline():
         # 定义当前的Pipeline的Inputs
@@ -108,7 +108,7 @@ PAI Pipeline Service支持将多个算法组件拼接成为一个一个新的Pip
         )
 
         # PipelineTemplate也可以作为一个Step构建Pipeline
-        split_operator = SavedOperator.get_by_identifier(identifier="split-xflow-maxCompute",
+        split_operator = RegisteredComponent.get_by_identifier(identifier="split-xflow-maxCompute",
          provider=ProviderAlibabaPAI, version="v1")
 
         split_step = split_operator.as_step(inputs={"inputArtifact": type_transform_step.outputs[0],

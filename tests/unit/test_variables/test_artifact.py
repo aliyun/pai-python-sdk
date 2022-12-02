@@ -1,14 +1,14 @@
 from __future__ import absolute_import
 
-from pai.operator import ContainerOperator
-from pai.operator.types import (
+from pai.pipeline.component import ContainerComponent
+from pai.pipeline.types import (
     DataType,
     LocationArtifactMetadata,
     LocationType,
     PipelineArtifact,
     PipelineParameter,
 )
-from pai.operator.types.artifact import MaxComputeResourceArtifact, OSSArtifact
+from pai.pipeline.types.artifact import MaxComputeResourceArtifact, OSSArtifact
 from tests.unit import BaseUnitTestCase
 
 
@@ -99,7 +99,7 @@ class TestArtifact(BaseUnitTestCase):
             )
 
     def test_repeated_artifact(self):
-        container_op = ContainerOperator(
+        container_op = ContainerComponent(
             inputs=[
                 PipelineParameter("foo"),
                 PipelineArtifact(

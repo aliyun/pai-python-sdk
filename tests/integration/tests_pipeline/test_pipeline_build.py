@@ -6,25 +6,19 @@ import uuid
 
 from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_temp_table
-from pai.core.session import EnvType
-from pai.operator.types import (
+from pai.pipeline import Pipeline, PipelineStep
+from pai.pipeline.run import PipelineRunStatus
+from pai.pipeline.types import (
     DataType,
     LocationArtifactMetadata,
     LocationType,
     PipelineArtifact,
     PipelineParameter,
 )
-from pai.pipeline import Pipeline, PipelineStep
-from pai.pipeline.run import PipelineRunStatus
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
-from tests.integration.utils import t_context
 
 
-@unittest.skipIf(
-    t_context.env_type == EnvType.Light,
-    "Light Environment do not hold PAI provide SavedOperator.",
-)
 class TestSimpleCompositePipeline(BaseIntegTestCase):
     def test_run_composite_pipeline(self):
         (
@@ -93,7 +87,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             ),
         )
 
-        split_step_1 = PipelineStep.from_registered_op(
+        split_step_1 = PipelineStep.from_registered_component(
             name="split-step",
             identifier="split",
             provider=ProviderAlibabaPAI,
@@ -106,7 +100,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
                 "output2TableName": gen_temp_table(),
             },
         )
-        split_step_2 = PipelineStep.from_registered_op(
+        split_step_2 = PipelineStep.from_registered_component(
             name="split-step",
             identifier="split",
             provider=ProviderAlibabaPAI,
@@ -132,7 +126,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             ),
         )
 
-        split_step_1 = PipelineStep.from_registered_op(
+        split_step_1 = PipelineStep.from_registered_component(
             name="split-step-1",
             identifier="split",
             provider=ProviderAlibabaPAI,
@@ -145,7 +139,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
                 "output2TableName": gen_temp_table(),
             },
         )
-        split_step_2 = PipelineStep.from_registered_op(
+        split_step_2 = PipelineStep.from_registered_component(
             identifier="split",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -166,7 +160,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
         cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str)
         table_input = PipelineParameter(name="table_name", typ=str)
 
-        data_source_step = PipelineStep.from_registered_op(
+        data_source_step = PipelineStep.from_registered_component(
             identifier="data_source",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -178,7 +172,7 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             },
         )
 
-        type_transform_step = PipelineStep.from_registered_op(
+        type_transform_step = PipelineStep.from_registered_component(
             identifier="type_transform",
             provider=ProviderAlibabaPAI,
             version="v1",
@@ -198,10 +192,6 @@ class TestSimpleCompositePipeline(BaseIntegTestCase):
             )
 
 
-@unittest.skipIf(
-    t_context.env_type == EnvType.Light,
-    "Light Environment do not hold PAI provide SavedOperator.",
-)
 class TestPipelineBuild(BaseIntegTestCase):
     def setUp(self):
         super(TestPipelineBuild, self).setUp()
@@ -213,7 +203,7 @@ class TestPipelineBuild(BaseIntegTestCase):
         def create_saved_base_pipeline():
             execution_input = PipelineParameter(name="execution", typ="map")
 
-            data_source_step = PipelineStep.from_registered_op(
+            data_source_step = PipelineStep.from_registered_component(
                 identifier="data_source",
                 provider=ProviderAlibabaPAI,
                 version="v1",
@@ -225,7 +215,7 @@ class TestPipelineBuild(BaseIntegTestCase):
                 },
             )
 
-            type_transform_step = PipelineStep.from_registered_op(
+            type_transform_step = PipelineStep.from_registered_component(
                 identifier="type_transform",
                 provider=ProviderAlibabaPAI,
                 version="v1",
@@ -237,7 +227,7 @@ class TestPipelineBuild(BaseIntegTestCase):
                     "cols_to_double": ",".join(dataset.columns),
                 },
             )
-            split_step = PipelineStep.from_registered_op(
+            split_step = PipelineStep.from_registered_component(
                 identifier="split",
                 provider=ProviderAlibabaPAI,
                 version="v1",
@@ -267,7 +257,7 @@ class TestPipelineBuild(BaseIntegTestCase):
         prev_pipeline = pipeline
         for idx in range(1, 10):
             execution_input = PipelineParameter(name="execution", typ="map")
-            inner_step = PipelineStep.from_registered_op(
+            inner_step = PipelineStep.from_registered_component(
                 identifier=prev_pipeline.identifier,
                 version=prev_pipeline.version,
                 provider=prev_pipeline.provider,

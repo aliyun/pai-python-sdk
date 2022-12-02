@@ -42,7 +42,7 @@ class DatasetSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.entity import Dataset
+        from pai.dataset import Dataset
 
         mount_path = self._get_mount_path_from_options(data)
         if mount_path:

@@ -18,7 +18,7 @@ from pai.libs.alibabacloud_eas20210701.models import (
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from pai.entity.service import ServiceConfig, ServiceConfigV2
+    from pai.predictor.service import ServiceConfig
 
 
 class ServiceAPI(ResourceAPI):
@@ -68,14 +68,10 @@ class ServiceAPI(ResourceAPI):
     def get(self, name: str) -> Dict[str, Any]:
         return self.get_api_object_by_resource_id(resource_id=name)
 
-    def create(
-        self, config: Union["ServiceConfig", "ServiceConfigV2", str, typing.Dict]
-    ):
-        from pai.entity.service import ServiceConfig, ServiceConfigV2
+    def create(self, config: Union["ServiceConfig", str, typing.Dict]):
+        from pai.predictor.service import ServiceConfig
 
-        if isinstance(config, ServiceConfigV2):
-            config_obj = config.to_dict()
-        elif isinstance(config, ServiceConfig):
+        if isinstance(config, ServiceConfig):
             config_obj = config.to_api_object()
         elif isinstance(config, str):
             config_obj = json.loads(config)
@@ -108,7 +104,7 @@ class ServiceAPI(ResourceAPI):
         )
 
     def update(self, name, config: Union["ServiceConfig", str, typing.Dict]):
-        from pai.entity.service import ServiceConfig
+        from pai.predictor.service import ServiceConfig
 
         if isinstance(config, ServiceConfig):
             config_obj = config.to_api_object()

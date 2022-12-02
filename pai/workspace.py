@@ -4,11 +4,12 @@ from collections import namedtuple
 from typing import List, Sequence, Union
 
 from pai.api.workspace_api import WorkspaceAPI
+from pai.base import EntityBaseMixin
 from pai.common.consts import DEFAULT_PAGE_SIZE
-from pai.core.session import Session, get_default_session
+from pai.common.utils import make_list_resource_iterator
 from pai.decorator import config_default_session
-from pai.entity.base import EntityBaseMixin, make_resource_iterator
 from pai.schema.workspace_schema import WorkspaceMemberSchema, WorkspaceSchema
+from pai.session import Session, get_default_session
 
 SubUserInfo = namedtuple("SubUserInfo", ["user_id", "name"])
 
@@ -111,7 +112,7 @@ class Workspace(EntityBaseMixin):
         if not name:
             raise ValueError("Please provide non-empty workspace name.")
 
-        iterator = make_resource_iterator(cls.list, name=name, session=session)
+        iterator = make_list_resource_iterator(cls.list, name=name, session=session)
         workspace = next(
             (ws for ws in iterator if ws.name == name),
             None,

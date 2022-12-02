@@ -312,7 +312,7 @@ client下载到本地应用，也可以直接在PAI的控制台上，使用PAI-E
 
 .. code:: python
 
-    from pai.operator import CustomJobOperator, SavedOperator
+    from pai.operator import CustomJobOperator, RegisteredComponent
 
     import time
 
@@ -334,7 +334,7 @@ client下载到本地应用，也可以直接在PAI的控制台上，使用PAI-E
     version = "v-%s" % int(time.time())
     op.save(identifier="xgb-example", version=version)
     # 从后端获取保存的组件
-    registered_op = SavedOperator.get_by_identifier(
+    registered_op = RegisteredComponent.get_by_identifier(
         identifier="xgb-example", version=version
     )
 

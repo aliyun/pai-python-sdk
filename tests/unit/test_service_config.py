@@ -1,10 +1,9 @@
-from pai.entity.service import (
+from pai.predictor.service import (
     BuildInProcessor,
     ComputeConfig,
     ContainerProcessor,
     CustomProcessor,
     ServiceConfig,
-    ServiceConfigV2,
     ServiceRpcConfig,
 )
 from tests.unit import BaseUnitTestCase
@@ -133,7 +132,7 @@ class TestServiceConfig(BaseUnitTestCase):
             name="test_service_make_config",
             instance_count=2,
             service_group_name="test_service_group",
-            compute_target=ComputeConfig(
+            compute_config=ComputeConfig(
                 cpu=1,
                 memory=2000,
             ),
@@ -164,7 +163,7 @@ class TestServiceConfig(BaseUnitTestCase):
         config = ServiceConfig(
             name="test_service_make_config",
             instance_count=2,
-            compute_target=ComputeConfig(
+            compute_config=ComputeConfig(
                 cpu=1,
                 memory=2000,
             ),
@@ -249,38 +248,3 @@ class TestServiceConfig(BaseUnitTestCase):
         self.assertEqual(c.rpc_config.max_queue_size, 10)
         self.assertEqual(c.rpc_config.worker_threads, 5)
         self.assertEqual(c.rpc_config.max_batch_timeout, 100)
-
-
-class TestEasServiceConfigV2(BaseUnitTestCase):
-    def test(self):
-        config = ServiceConfigV2()
-
-        config.cloud.computing.instance_type = "ecs.c6.xlarge"
-        config.cloud.computing.instance_type = "ecs.c6.xlarge2"
-        config.metadata.release = True
-        config.processor = "pmml"
-
-        self.assertDictEqual(config.metadata, {"release": True})
-        self.assertDictEqual(
-            config.cloud,
-            {
-                "computing": {
-                    "instance_type": "ecs.c6.xlarge2",
-                }
-            },
-        )
-        config.metadata = {
-            "cpu": 1,
-            "gpu": 2,
-        }
-
-        self.assertEqual(config.metadata.cpu, 1)
-        self.assertEqual(config.metadata.gpu, 2)
-
-        self.assertDictEqual(
-            config.metadata,
-            {
-                "cpu": 1,
-                "gpu": 2,
-            },
-        )

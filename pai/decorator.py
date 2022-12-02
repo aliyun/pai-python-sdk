@@ -58,7 +58,7 @@ class cached_property(property):
 
 def config_default_session(f: Callable) -> Callable:
     def _(*args, **kwargs):
-        from pai.core.session import get_default_session
+        from pai.session import get_default_session
 
         if not kwargs.get("session"):
             kwargs["session"] = get_default_session()

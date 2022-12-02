@@ -2,8 +2,8 @@ from __future__ import absolute_import
 
 from pai.common import ProviderAlibabaPAI
 from pai.common.utils import gen_run_node_scoped_placeholder
-from pai.operator.types import PipelineParameter
 from pai.pipeline import Pipeline, PipelineStep
+from pai.pipeline.types import PipelineParameter
 
 
 def create_simple_composite_pipeline():
@@ -12,7 +12,7 @@ def create_simple_composite_pipeline():
     cols_to_double_input = PipelineParameter(name="cols_to_double", typ=str)
     table_input = PipelineParameter(name="table_name", typ=str)
 
-    data_source_step = PipelineStep.from_registered_op(
+    data_source_step = PipelineStep.from_registered_component(
         identifier="data_source",
         provider=ProviderAlibabaPAI,
         version="v1",
@@ -24,7 +24,7 @@ def create_simple_composite_pipeline():
         },
     )
 
-    type_transform_step = PipelineStep.from_registered_op(
+    type_transform_step = PipelineStep.from_registered_component(
         identifier="type_transform",
         provider=ProviderAlibabaPAI,
         version="v1",
@@ -38,7 +38,7 @@ def create_simple_composite_pipeline():
             "memSizePerCore": 1024,
         },
     )
-    split_step = PipelineStep.from_registered_op(
+    split_step = PipelineStep.from_registered_component(
         identifier="split",
         provider=ProviderAlibabaPAI,
         version="v1",
