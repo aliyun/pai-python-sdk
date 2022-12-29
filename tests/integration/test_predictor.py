@@ -5,8 +5,14 @@ import numpy as np
 from pai.common.consts import ModelFormat
 from pai.common.oss_utils import upload_to_oss
 from pai.common.utils import camel_to_snake
+from pai.predictor.predictor import Predictor
 from pai.predictor.serializers import TorchIOSpec, TorchSerializer
-from pai.predictor.service import BuildInProcessor, ComputeConfig, Service
+from pai.predictor.service import (
+    BuildInProcessor,
+    ComputeConfig,
+    Service,
+    ServiceStatus,
+)
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import make_resource_name
 from tests.test_data import (
@@ -20,11 +26,13 @@ class TestPredictBase(BaseIntegTestCase):
     model_path: str = None
     model_format = ModelFormat.PMML
     service: Service = None
+    predictor: Predictor = None
 
     @classmethod
     def setUpClass(cls):
         super(TestPredictBase, cls).setUpClass()
         cls.service = cls._init_service()
+        cls.predictor = cls._init_predictor()
 
     @classmethod
     def _init_service(cls):
@@ -60,6 +68,11 @@ class TestPredictBase(BaseIntegTestCase):
         return service
 
     @classmethod
+    def _init_predictor(cls):
+        predictor = Predictor(service_name=cls.service.name)
+        return predictor
+
+    @classmethod
     def tearDownClass(cls):
         super(TestPredictBase, cls).tearDownClass()
         if cls.service:
@@ -86,9 +99,9 @@ class TestPmmlPredict(TestPredictBase):
                 },
             ]
         )
-        self.assertTrue(isinstance(resp, list))
-        self.assertTrue(len(resp) == 2)
-        self.assertTrue("p_0" in resp[0])
+        self.assertTrue(isinstance(resp, list), "resp is not a list")
+        self.assertTrue(len(resp) == 2, "resp doesn't have length 2")
+        self.assertTrue("p_0" in resp[0], "p_0 is not in resp[0]")
 
 
 class TestTensorFlowPredict(TestPredictBase):
@@ -137,3 +150,101 @@ class TestTorchPredict(TestPredictBase):
         )
         self.assertIsNotNone(result_2)
         self.assertTupleEqual(np.shape(result_2), (2, 10))
+
+
+class TestPredictorOperation(BaseIntegTestCase):
+    model_path = PMML_MODEL_PATH
+    model_format = ModelFormat.PMML
+    service: Service = None
+    predictor: Predictor = None
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestPredictorOperation, cls).setUpClass()
+        cls.service = cls._init_service()
+        cls.predictor = cls._init_predictor()
+
+    @classmethod
+    def _init_service(cls):
+        case_name = camel_to_snake(cls.__name__)
+
+        if not os.path.isdir(cls.model_path):
+            file_name = os.path.basename(cls.model_path)
+            obj_key = f"sdk-integration-test/{case_name}/{file_name}"
+        else:
+            obj_key = f"sdk-integration-test/{case_name}/"
+        model_path = upload_to_oss(
+            cls.model_path,
+            obj_key,
+            cls.default_session.oss_bucket,
+        )
+
+        name = make_resource_name(
+            camel_to_snake(cls.__name__), sep="_", time_suffix=False
+        )
+        service = Service.deploy(
+            name=name,
+            instance_count=2,
+            compute_config=ComputeConfig.from_resource_config(
+                cpu=2,
+                memory=4000,
+            ),
+            processor=BuildInProcessor.get_default_by_model_format(
+                model_format=cls.model_format,
+            ),
+            model_path=model_path,
+            wait=True,
+        )
+        return service
+
+    @classmethod
+    def _init_predictor(cls):
+        predictor = Predictor(
+            service_name=cls.service.name,
+            serializer=cls.service.get_default_serializer(),
+        )
+        return predictor
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestPredictorOperation, cls).tearDownClass()
+        if cls.service:
+            cls.service.delete()
+
+    def test_predictor_operation_pmml(self):
+        resp = self.predictor.predict(
+            [
+                {
+                    "pm10": 1.0,
+                    "so2": 2.0,
+                    "co": 0.5,
+                },
+                {
+                    "pm10": 1.0,
+                    "so2": 2.0,
+                    "co": 0.5,
+                },
+            ]
+        )
+        self.assertTrue(isinstance(resp, list), "resp is not a list")
+        self.assertTrue(len(resp) == 2, "resp doesn't have length 2")
+        self.assertTrue("p_0" in resp[0], "p_0 is not in resp[0]")
+        self.assertTrue(
+            self.predictor.service.status == ServiceStatus.Running,
+            "service is not running",
+        )
+        self.predictor.stop()
+        self.assertTrue(
+            self.predictor.service.status == ServiceStatus.Stopped,
+            "service does not stop",
+        )
+        self.predictor.start()
+        self.assertTrue(
+            self.predictor.service.status == ServiceStatus.Running,
+            "service does not start",
+        )
+        self.predictor.delete()
+        self.assertTrue(
+            self.predictor.service.status == ServiceStatus.Deleting,
+            "service does not start",
+        )

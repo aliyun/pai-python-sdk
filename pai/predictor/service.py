@@ -779,6 +779,17 @@ class Service(EntityBaseMixin):
         if wait:
             self.wait_for_ready()
 
+    def start(self, wait=True):
+        self.session.service_api.start(name=self.name)
+        if wait:
+            status = ServiceStatus.Running
+            unexpected_status = ServiceStatus.completed_status()
+            unexpected_status.remove(status)
+            self.wait_for_status(
+                status=status,
+                unexpected_status=unexpected_status,
+            )
+
     def stop(self, wait=True):
         self.session.service_api.stop(name=self.name)
         if wait:

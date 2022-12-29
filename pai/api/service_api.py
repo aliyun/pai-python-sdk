@@ -29,6 +29,7 @@ class ServiceAPI(ResourceAPI):
     _update_version_method = "update_service_version_with_options"
     _list_method = "list_services_with_options"
     _get_method = "describe_service_with_options"
+    _start_method = "start_service_with_options"
     _stop_method = "stop_service_with_options"
     _delete_method = "delete_service_with_options"
     _release_method = "release_service_with_options"
@@ -91,6 +92,11 @@ class ServiceAPI(ResourceAPI):
             cluster_id=self.region_id,
             service_name=name,
             request=request,
+        )
+
+    def start(self, name):
+        self._do_request(
+            self._start_method, cluster_id=self.region_id, service_name=name
         )
 
     def stop(self, name):

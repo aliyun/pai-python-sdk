@@ -6,7 +6,7 @@ from eas_prediction.request import Request
 from six.moves.urllib import parse
 
 from pai.decorator import config_default_session
-from pai.predictor.service import Service
+from pai.predictor.service import Service, ServiceStatus
 from pai.session import Session
 
 ENDPOINT_TYPE_DIRECT = "DIRECT"
@@ -83,3 +83,39 @@ class Predictor(object):
 
     def destruct(self):
         self.client.destroy()
+
+    def start(self, wait=True):
+        """Start the stopped service."""
+        self.session.service_api.start(name=self.service.name)
+        if wait:
+            status = ServiceStatus.Running
+            unexpected_status = ServiceStatus.completed_status()
+            unexpected_status.remove(status)
+            self.service.wait_for_status(
+                status=status,
+                unexpected_status=unexpected_status,
+            )
+
+    def stop(self, wait=True):
+        """Stop the running service."""
+        self.session.service_api.stop(name=self.service.name)
+        if wait:
+            status = ServiceStatus.Stopped
+            unexpected_status = ServiceStatus.completed_status()
+            unexpected_status.remove(status)
+            unexpected_status.remove(ServiceStatus.Running)
+            self.service.wait_for_status(
+                status=status,
+                unexpected_status=unexpected_status,
+            )
+
+    def delete(self):
+        """Delete the service."""
+        self.session.service_api.delete(name=self.service.name)
+        self.session.service_api.refresh_entity(self.service.name, self.service)
+
+    def release(self):
+        pass
+
+    def update(self):
+        pass
