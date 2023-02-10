@@ -22,7 +22,7 @@ PKG_IMPORT_NAME=pai
 repo=${1:-testpypi}
 version_tag=${2}
 
-if [[ version_tag != v* && repo != "oss" ]]; then
+if [[ $version_tag != v* && $repo != "oss" ]]; then
   echo "release version tag should be startswith v" && exit 1
 fi
 
