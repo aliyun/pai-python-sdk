@@ -1,0 +1,7 @@
+test_data
+train_data
+xgb_src
+train_src
+infer_src
+tf_train_src
+fashion-mnist

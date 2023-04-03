@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .component import ContainerComponent, CustomJobComponent, RegisteredComponent
+from .component import ContainerComponent, RegisteredComponent
 from .core import Pipeline
 from .run import PipelineRun, PipelineRunStatus
 from .step import PipelineStep
@@ -10,7 +10,6 @@ __all__ = [
     "PipelineParameter",
     "PipelineArtifact",
     "PipelineVariable",
-    "CustomJobComponent",
     "ContainerComponent",
     "RegisteredComponent",
     "Pipeline",

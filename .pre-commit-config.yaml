@@ -9,12 +9,13 @@ repos:
       - id: end-of-file-fixer
         exclude: pai/libs
       - id: trailing-whitespace
-
   - repo: https://github.com/psf/black
     rev: 22.8.0
     hooks:
       - id: black
         # Exclude third-party libs.
+        exclude: ^pai/libs
+      - id: black-jupyter
         exclude: ^pai/libs
 
   - repo: https://github.com/pycqa/flake8
@@ -37,3 +38,8 @@ repos:
     rev: v1.5.3
     hooks:
       - id: autoflake
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout

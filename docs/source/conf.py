@@ -22,7 +22,7 @@ import pai
 
 # -- Project information -----------------------------------------------------
 
-project = "Alibaba PAI SDK"
+project = "PAI Python SDK"
 copyright = "2020, Alibaba Cloud"
 author = "Alibaba Cloud"
 
@@ -37,8 +37,11 @@ release = pai.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.viewcode",
+    # "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx_copybutton",
+    # "nbsphinx",
+    "myst_nb",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -47,7 +50,10 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = [
+    "_build/*",
+    "source/_build/*",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -55,7 +61,8 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
+html_title = "PAI Python SDK"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -66,3 +73,22 @@ html_static_path = ["_static"]
 # -- Extension configuration -------------------------------------------------
 
 autoclass_content = "both"
+autodoc_member_order = "bysource"
+
+
+_release_pkg = (
+    f"https://pai-sdk.oss-cn-shanghai.aliyuncs.com/alipai/dist/"
+    f"alipai-{release}-py2.py3-none-any.whl"
+)
+
+myst_enable_extensions = [
+    "substitution",
+]
+
+
+rst_epilog = f"""
+.. |release| replace:: {release}
+.. |release_pkg| replace:: {_release_pkg}
+"""
+
+nb_execution_mode = "off"

@@ -12,7 +12,7 @@ from odps.models import Volume as ODPSVolume
 from odps.models.ml.offlinemodel import OfflineModel as ODPSOfflineModel
 from six import with_metaclass
 
-from pai.common.oss_utils import parse_oss_url
+from pai.common.oss_utils import parse_oss_uri
 from pai.common.utils import is_iterable
 from pai.pipeline.types.variable import PipelineVariable
 
@@ -769,7 +769,7 @@ class OSSArtifact(LocationArtifactValue):
         Returns:
             OSSArtifact instance.
         """
-        bucket_name, object_key, endpoint, role_arn = parse_oss_url(resource)
+        bucket_name, object_key, endpoint, role_arn = parse_oss_uri(resource)
         return (
             cls(
                 bucket=bucket_name, key=object_key, endpoint=endpoint, role_arn=role_arn

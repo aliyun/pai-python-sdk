@@ -1,61 +1,74 @@
 from __future__ import absolute_import
 
+import functools
 import json
 import logging
 import os.path
-from enum import Enum
+import typing
+from datetime import datetime
+from typing import Callable, Optional
 
 import oss2
-import six
 
-from pai.api._resource_api import ResourceAPIsContainerMixin
-from pai.common.consts import INNER_REGION_IDS
-from pai.common.utils import makedirs
-from pai.decorator import cached_property
+from .api.api_container import ResourceAPIsContainerMixin
+from .common.oss_utils import OssUriObj
+from .common.utils import makedirs
 
 logger = logging.getLogger(__name__)
 
-
-# Environment variable indicates where config path located.
-# If not present, "~/.pai/config.json" is used as default config path.
+# Environment variable that indicates where the config path is located.
+# If it is not provided, "$HOME/.pai/config.json" is used as the default config path.
 ENV_PAI_CONFIG_PATH = "PAI_CONFIG_PATH"
 
+INNER_REGION_IDS = ["center"]
+
+
+# Global default session used by the program.
 _default_session = None
 
 
-class EnvType(Enum):
-    PublicCloud = "PublicCloud"
-    Light = "Light"
+def config_default_session(f: Callable) -> Callable:
+    """Decorator to config default session for the function."""
+
+    @functools.wraps(f)
+    def _(*args, **kwargs):
+        if not kwargs.get("session"):
+            kwargs["session"] = get_default_session()
+
+        return f(*args, **kwargs)
+
+    return _
 
 
 def setup_default_session(
-    access_key_id,
-    access_key_secret,
-    region_id,
-    oss_bucket_name=None,
-    oss_endpoint=None,
-    workspace_id=None,
-    workspace_name=None,
+    access_key_id: str,
+    access_key_secret: str,
+    region_id: str,
+    oss_bucket_name: Optional[str] = None,
+    oss_endpoint: Optional[str] = None,
+    workspace_id: Optional[typing.Union[str, int]] = None,
     **kwargs,
-):
-    """Setup the default session used by the program.
+) -> "Session":
+    """Set up the default session used in the program.
 
-    The function setup the default region of PAI service, workspace, and credentials of
-     default the session.
+    The function construct a session that used for communicating with PAI service,
+    and set it as the global default instance.
 
     Args:
-        access_key_id (str): Alibaba Cloud access key id.
-        access_key_secret (str): Alibaba Cloud access key secret.
-        region_id (str): Alibaba Cloud region id, Please visit below url to view the detail:
-             https://help.aliyun.com/document_detail/40654.html
-        oss_bucket_name: OSS bucket name.
-        oss_endpoint (str): Endpoint for the OSS bucket.
-        workspace_id: Id of workspace use in the default session.
-        workspace_name: Name of workspace in the default session.
+        access_key_id (str): The access key ID for the Alibaba Cloud account.
+        access_key_secret (str): The access key secret for the Alibaba Cloud
+            account.
+        region_id (str): The ID of the Alibaba Cloud region where the service
+            is located.
+        workspace_id (str, optional): ID of the workspace used in the default
+            session.
+        oss_bucket_name (str, optional): The name of the OSS bucket used in the
+            session.
+        oss_endpoint (str, optional): The endpoint for the OSS bucket.
         **kwargs:
 
     Returns:
-        pai.session.Session: Initialized default session.
+        :class:`pai.session.Session`: Initialized default session.
 
     """
     session = Session(
@@ -65,56 +78,60 @@ def setup_default_session(
         oss_bucket_name=oss_bucket_name,
         oss_endpoint=oss_endpoint,
         workspace_id=workspace_id,
-        workspace_name=workspace_name,
         **kwargs,
     )
 
-    Session.set_default_session(session)
+    global _default_session
+    _default_session = session
     return session
 
 
-def get_default_session(config_path=None):
+def get_default_session() -> "Session":
+    """Get the default session used by the program.
+
+    If the global default session is set, the function will try to initialize
+    a session from config file.
+
+    Returns:
+        :class:`pai.session.Session`: The default session.
+
+    """
     global _default_session
     if not _default_session:
-        _default_session = Session.from_config(config_path=config_path)
+        _default_session = Session.from_config()
     return _default_session
 
 
 class Session(ResourceAPIsContainerMixin):
-    """Wrap functionality provided by Alibaba Cloud PAI services
-
-    This class encapsulates convenient methods to access PAI services, currently focus
-    on PAI pipeline service(PAIFlow). Other service provided by PAI, such as EAS inference service,
-    Model optimize, etc, will be included soon.
-
-    """
-
-    _default_session = None
-
-    env_type = EnvType.PublicCloud
+    """A class responsible for communicating with PAI services."""
 
     def __init__(
         self,
-        access_key_id,
-        access_key_secret,
-        region_id,
-        security_token=None,
-        oss_bucket_name=None,
-        oss_endpoint=None,
-        workspace_id=None,
-        workspace_name=None,
+        access_key_id: str,
+        access_key_secret: str,
+        region_id: str,
+        workspace_id: Optional[str] = None,
+        security_token: Optional[str] = None,
+        oss_bucket_name: Optional[str] = None,
+        oss_endpoint: Optional[str] = None,
         **kwargs,
     ):
         """PAI Session Initializer.
 
         Args:
-            access_key_id (str): Alibaba Cloud access key id.
-            access_key_secret (str): Alibaba Cloud access key secret.
-            region_id (str): Alibaba Cloud region id, Please visit below url to explore the detail:
-                 https://help.aliyun.com/document_detail/40654.html
+            access_key_id (str): The access key ID for the Alibaba Cloud account.
+            access_key_secret (str): The access key secret for the Alibaba Cloud
+                account.
+            region_id (str): The ID of the Alibaba Cloud region where the service
+                is located.
+            workspace_id (str, optional): ID of the workspace used in the default
+                session.
+            oss_bucket_name (str, optional): The name of the OSS bucket used in the
+                session.
+            oss_endpoint (str, optional): The endpoint for the OSS bucket.
         """
 
-        if not access_key_id or not access_key_secret:
+        if not access_key_id or not access_key_secret or not region_id:
             raise ValueError("Please provide access_key, access_secret and region")
 
         self._region_id = region_id
@@ -122,164 +139,159 @@ class Session(ResourceAPIsContainerMixin):
         self._access_key_secret = access_key_secret
         self._security_token = security_token
         self._workspace_id = workspace_id
+        self._oss_bucket_name = oss_bucket_name
+        self._oss_endpoint = oss_endpoint
 
-        self._init_oss_bucket(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-            region_id=region_id,
-            oss_bucket_name=oss_bucket_name,
-            oss_endpoint=oss_endpoint,
-            **kwargs,
-        )
-        super(Session, self).__init__()
+        self._oss_access_key_id = kwargs.pop("oss_access_key_id", None)
+        self._oss_access_key_secret = kwargs.pop("oss_access_key_secret", None)
+        self._oss_security_token = kwargs.pop("oss_security_token", None)
 
-        self._init_workspace(workspace_id, workspace_name)
+        header = kwargs.pop("header", None)
+        super(Session, self).__init__(header=header)
 
-    def _init_workspace(self, workspace_id, workspace_name):
-        """Init workspace instance for the session using given workspace_id/workspace_name."""
-        from pai.workspace import Workspace
+    @property
+    def region_id(self) -> str:
+        return self._region_id
 
-        if workspace_name and workspace_id:
-            raise ValueError(
-                "both workspace_name and workspace_id are provided, only one is required."
-            )
-        if workspace_id:
-            workspace = Workspace.get(workspace_id, session=self)
-            if not workspace:
-                raise ValueError("Workspace not found, workspace_id=%s" % workspace_id)
-        elif workspace_name:
-            workspace = Workspace.get_by_name(name=workspace_name)
-            if not workspace:
-                raise ValueError(
-                    "Workspace not found, workspace_name=%s" % workspace_name
-                )
+    @property
+    def is_inner(self) -> bool:
+        return self._region_id in INNER_REGION_IDS
+
+    @property
+    def workspace_name(self):
+        if hasattr(self, "_workspace_name") and self._workspace_name:
+            return self._workspace_name
+
+        workspace_id = self.workspace_id
+        if not workspace_id:
+            raise ValueError("Workspace id is not set.")
+        workspace_api_obj = self.workspace_api.get(workspace_id=self.workspace_id)
+        self._workspace_name = workspace_api_obj["WorkspaceName"]
+
+        return self._workspace_name
+
+    @property
+    def provider(self) -> str:
+        return self.pipeline_api.get_caller_provider()
+
+    @property
+    def workspace_id(self) -> str:
+        """ID of the workspace used by the session.
+
+        Returns the workspace used in the session, if workspace_id is not specified
+        for the session, returns the default workspace id for the account.
+
+        """
+        if self._workspace_id:
+            return self._workspace_id
+
+        resp = self.workspace_api.get_default_workspace()
+        self._workspace_id = resp["WorkspaceId"]
+        return self._workspace_id
+
+    @property
+    def console_uri(self) -> str:
+        """The web console URI for PAI service."""
+        if self.is_inner:
+            return "https://pai-next.alibaba-inc.com"
         else:
-            workspace = None
-        self._workspace = workspace
+            return "https://pai.console.aliyun.com/console"
 
-    def _init_oss_bucket(
+    def _init_oss_config(
         self,
-        access_key_id,
-        access_key_secret,
-        region_id,
-        oss_bucket_name,
-        oss_endpoint=None,
-        **kwargs,
     ):
-        """Initialize an OSS bucket instance."""
-        oss_bucket = None
-        if oss_bucket_name and not oss_endpoint:
-            oss_endpoint = "oss-{}.aliyuncs.com".format(region_id)
-            logger.info(
-                "Note: OSS endpoint not given, use default endpoint of the region: oss_endpoint=%s",
-                oss_endpoint,
+        """Initialize a OssConfig instance."""
+        if not self._oss_bucket_name:
+            # If OSS bucket name is not provided, use the default OSS storage URI
+            # that is configured for the workspace.
+            default_oss_uri = self.workspace_api.get_default_storage_uri(
+                self.workspace_id
             )
-        if oss_bucket_name and oss_endpoint:
-            # Use specific credential for OSS bucket if it is provided.
-            if "oss_access_key_id" in kwargs and "oss_access_key_secret" in kwargs:
-                access_key_id = kwargs.pop("oss_access_key_id", None) or access_key_id
-                access_key_secret = (
-                    kwargs.pop("oss_access_key_secret", None) or access_key_secret
+            if not default_oss_uri:
+                raise RuntimeError(
+                    "No default OSS URI is configured for the workspace."
                 )
-                self._oss_access_key_id = access_key_id
-                self._oss_access_key_secret = access_key_secret
-            else:
-                self._oss_access_key_id = None
-                self._oss_access_key_secret = None
+            oss_uri_obj = OssUriObj(default_oss_uri)
+            self._oss_bucket_name = oss_uri_obj.bucket_name
 
-            # Group-inner job requires oss_role_arn to support mount OSS.
-            self._oss_role_arn = kwargs.pop("oss_role_arn", None)
+        if not self._oss_endpoint:
+            self._oss_endpoint = self._get_default_oss_endpoint()
 
+    @property
+    def oss_bucket(self):
+        """A OSS2 bucket instance used by the session."""
+        if not self._oss_bucket_name or not self._oss_endpoint:
+            self._init_oss_config()
+
+        if self._security_token:
+            auth = oss2.StsAuth(
+                access_key_id=self._access_key_id,
+                access_key_secret=self._access_key_secret,
+                security_token=self._security_token,
+            )
+        else:
             auth = oss2.Auth(
-                access_key_id=access_key_id, access_key_secret=access_key_secret
+                access_key_id=self._access_key_id,
+                access_key_secret=self._access_key_secret,
             )
-            oss_bucket = oss2.Bucket(
-                auth=auth, endpoint=oss_endpoint, bucket_name=oss_bucket_name
-            )
-        self._oss_bucket = oss_bucket
+
+        oss_bucket = oss2.Bucket(
+            auth=auth,
+            endpoint=self._oss_endpoint,
+            bucket_name=self._oss_bucket_name,
+        )
+        return oss_bucket
 
     @classmethod
-    def from_config(cls, config_path=None):
-        """Initialize session from config file.
-
-        If config_path is not given, "~/.pai/config" is used as the default.
+    def from_config(cls, config_path: Optional[str] = None):
+        """Initialize a session instance from the config file.
 
         Args:
-            config_path:
+            config_path (str): The path to the config, if it is not provided,
+             "$HOME/.pai/config" is used.
 
         Returns:
-            Session:
+            :class:`pai.session.Session`: A PAI session instance.
 
         """
         return cls._init_from_file_config(config_path=config_path)
 
     def save_config(self, config_path=None):
-        """Persist configuration used by the session"""
+        """Save the configuration of the session to a local file."""
+        # Save attributes that startswith an underline.
+        config = {
+            key.lstrip("_"): value
+            for key, value in vars(self).items()
+            if key.startswith("_") and value is not None
+        }
+
         if not config_path:
             default_config_path = os.path.join(
                 os.path.expanduser("~"), ".pai", "config.json"
             )
             config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
-        config = {
-            "access_key_id": self._access_key_id,
-            "access_key_secret": self._access_key_secret,
-            "region_id": self._region_id,
-        }
-
-        if self._oss_bucket:
-            config.update(
-                {
-                    "oss_bucket_name": self._oss_bucket.bucket_name,
-                    "oss_endpoint": self._oss_bucket.endpoint,
-                }
-            )
-
-        if self._workspace:
-            config.update(
-                {
-                    "workspace_id": self.workspace.id,
-                }
-            )
-
-        # Support specific OSS credentials.
-        if self._oss_access_key_id and self._oss_access_key_secret:
-            config.update(
-                {
-                    "oss_access_key_id": self._oss_access_key_id,
-                    "oss_access_key_secret": self._oss_access_key_secret,
-                }
-            )
-        # Support OSS RoleARN config which is required by OSS mount in group inner.
-        if self._oss_role_arn:
-            config.update(
-                {
-                    "oss_role_arn": self._oss_role_arn,
-                }
-            )
 
         makedirs(os.path.dirname(config_path))
-
         with open(config_path, "w") as f:
             f.write(json.dumps(config, indent=4))
-        print("Write config succeed: config_path=%s" % config_path)
+        logger.info("Write PAI config succeed: config_path=%s" % config_path)
 
     @classmethod
     def _init_from_file_config(cls, config_path=None):
-        """Read config file and construct a default session.
+        """Read config file and construct a session instance.
 
         Returns:
-            Session: Session instance init from config file.
+            :class:`pai.session.Session`: Session instance init from config file.
         """
         if not config_path:
             default_config_path = os.path.join(
                 os.path.expanduser("~"), ".pai", "config.json"
             )
             config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
-        # Lookup config path silently, not raise exception if default config path is not exists.
         if not os.path.exists(config_path):
-            raise ValueError("Config file not exists: %s", config_path)
+            logger.warning("Not found config file: %s", config_path)
+            return
 
-        logger.debug("Reading config from file: %s", config_path)
         with open(config_path, "r") as f:
             config = json.load(f)
 
@@ -287,127 +299,84 @@ class Session(ResourceAPIsContainerMixin):
 
         return sess
 
-    @classmethod
-    def set_default_session(cls, s):
-        """Set default session"""
+    def patch_oss_endpoint(self, oss_uri: str):
+        oss_uri_obj = OssUriObj(oss_uri)
+        if oss_uri_obj.endpoint:
+            return oss_uri
 
-        global _default_session
-        _default_session = s
+        # patch endpoint using current OSS bucket endpoint.
+        endpoint = self.oss_bucket.endpoint
+        if endpoint.startswith("http://"):
+            endpoint = endpoint.lstrip("http://")
+        elif endpoint.startswith("https://"):
+            endpoint = endpoint.lstrip("https://")
+        return "oss://{bucket_name}.{endpoint}/{key}".format(
+            bucket_name=oss_uri_obj.bucket_name,
+            endpoint=endpoint,
+            key=oss_uri_obj.object_key,
+        )
 
-    @property
-    def region_id(self):
-        return self._region_id
+    def _get_default_oss_endpoint(self):
+        """Returns a default OSS endpoint."""
+        if self._oss_endpoint:
+            return self._oss_endpoint
 
-    @classmethod
-    def _is_inner_region(cls, region_id):
-        return region_id in INNER_REGION_IDS
+        # OSS Endpoint document:
+        # https://help.aliyun.com/document_detail/31837.html
+        internet_endpoint = "oss-{}.aliyuncs.com".format(self.region_id)
 
-    @property
-    def is_inner(self):
-        return self._region_id in INNER_REGION_IDS
+        # TODO: support using internal endpoint if inspect the program
+        #  is running in cloud.
+        # internal_endpoint="oss-{}-internal.aliyuncs.com"
 
-    @property
-    def workspace(self):
-        """Workspace current session work in."""
-        return self._workspace
+        return internet_endpoint
 
-    @property
-    def workspace_name(self):
-        return self._workspace.name
-
-    def set_workspace(self, workspace):
-        from pai.workspace import Workspace
-
-        if isinstance(workspace, six.string_types):
-            workspace = Workspace.get_by_name(workspace)
-        if not isinstance(workspace, Workspace):
-            raise ValueError(
-                "Parameter workspace should be Workspace instance or workspace name"
-            )
-        self._workspace = workspace
-
-    @property
-    def oss_bucket(self):
-        if not self._oss_bucket:
-            raise ValueError("Default OSS bucket not provided")
-        return self._oss_bucket
-
-    @property
-    def workspace_id(self):
-        return self._workspace_id
-
-    @property
-    def console_url(self):
-        if self.is_inner:
-            return "https://pai-next.alibaba-inc.com"
-        else:
-            return "https://pai.console.aliyun.com/console"
-
-    @cached_property
-    def provider(self):
-        return self.pipeline_api.get_caller_provider()
-
-    def create_run(
-        self,
-        name,
-        arguments,
-        env=None,
-        pipeline_id=None,
-        manifest=None,
-        no_confirm_required=True,
-    ):
-        """Submit a pipeline run with pipeline operator and run arguments.
-
-        If pipeline_id is supplied, remote pipeline manifest is used as workflow template.
-
+    def get_oss_bucket(self, bucket_name) -> oss2.Bucket:
+        """Get a OSS bucket using the credentials of the session.
 
         Args:
-            name (str): Run instance name of the submit job.
-            arguments (dict): Run arguments required by pipeline manifest.
-            env (list): Environment arguments of run.
-            pipeline_id (str): Pipeline
-            manifest (str or dict): Pipeline manifest of the run workflow.
-            no_confirm_required (bool): Run workflow start immediately if true
-                else start_run service call if required to start the workflow.
+            bucket_name (str): The name of the bucket.
 
         Returns:
-            str:run id if run workflow init success.
+            :class:`oss2.Bucket`: A OSS bucket instance.
 
         """
-        run_id = self.pipeline_run_api.create(
-            name=name,
-            arguments=arguments,
-            env=env,
-            manifest=manifest,
-            pipeline_id=pipeline_id,
-            no_confirm_required=no_confirm_required,
-        )
-
-        print(
-            "Create pipeline run success (run_id: {run_id}), please visit the link below to"
-            " view the run detail.".format(run_id=run_id)
-        )
-        print(self.run_detail_url(run_id, pipeline_id=pipeline_id))
-
-        return run_id
-
-    def run_detail_url(self, run_id, pipeline_id=None):
-        if self.env_type == EnvType.Light:
-            return (
-                "{console_host}/#/pipeline/detail/{pipeline_id}#runId={run_id}".format(
-                    console_host=self.console_url,
-                    pipeline_id=pipeline_id or 0,
-                    run_id=run_id,
-                )
+        endpoint = self._oss_endpoint or self._get_default_oss_endpoint()
+        if self._security_token:
+            auth = oss2.StsAuth(
+                access_key_id=self._access_key_id,
+                access_key_secret=self._access_key_secret,
+                security_token=self._security_token,
             )
-
-        if self.env_type == EnvType.PublicCloud:
-            if not self.is_inner:
-                return "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
-                    console_host=self.console_url,
-                    region_id=self.region_id,
-                    run_id=run_id,
-                )
-            return "{console_host}/#/studio/task/detail/{run_id}".format(
-                console_host=self.console_url, run_id=run_id
+        else:
+            auth = oss2.Auth(
+                access_key_id=self._access_key_id,
+                access_key_secret=self._access_key_secret,
             )
+        oss_bucket = oss2.Bucket(
+            auth=auth,
+            endpoint=endpoint,
+            bucket_name=bucket_name,
+        )
+        return oss_bucket
+
+    @classmethod
+    def get_storage_path_by_category(
+        cls, category: str, dir_name: Optional[str] = None
+    ) -> str:
+        """Get an OSS storage path for the resource.
+
+        Args:
+            category (str): The category of the resource.
+            dir_name (str, optional): The directory name of the resource.
+
+        Returns:
+            str: A OSS storage path.
+
+        """
+        dir_name = dir_name or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        storage_path = os.path.join("pai", category, dir_name).strip()
+
+        if not storage_path.endswith("/"):
+            storage_path += "/"
+        return storage_path

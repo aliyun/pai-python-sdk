@@ -1,18 +1,14 @@
+import json
 import os
+import time
 
 import numpy as np
 
 from pai.common.consts import ModelFormat
-from pai.common.oss_utils import upload_to_oss
+from pai.common.oss_utils import parse_oss_uri, upload
 from pai.common.utils import camel_to_snake
-from pai.predictor.predictor import Predictor
-from pai.predictor.serializers import TorchIOSpec, TorchSerializer
-from pai.predictor.service import (
-    BuildInProcessor,
-    ComputeConfig,
-    Service,
-    ServiceStatus,
-)
+from pai.model import _BuiltinProcessor
+from pai.predictor import Predictor, ServiceStatus
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import make_resource_name
 from tests.test_data import (
@@ -22,28 +18,35 @@ from tests.test_data import (
 )
 
 
-class TestPredictBase(BaseIntegTestCase):
+def _truncate_endpoint(uri):
+    """Remove endpoint if it is present as host in OSS URI"""
+
+    parsed = parse_oss_uri(uri)
+
+    return "oss://{bucket_name}/{key}".format(
+        bucket_name=parsed.bucket_name, key=parsed.object_key
+    )
+
+
+class TestPredictorBase(BaseIntegTestCase):
     model_path: str = None
     model_format = ModelFormat.PMML
-    service: Service = None
     predictor: Predictor = None
 
     @classmethod
     def setUpClass(cls):
-        super(TestPredictBase, cls).setUpClass()
-        cls.service = cls._init_service()
+        super(TestPredictorBase, cls).setUpClass()
         cls.predictor = cls._init_predictor()
 
     @classmethod
-    def _init_service(cls):
+    def _init_predictor(cls):
         case_name = camel_to_snake(cls.__name__)
-
         if not os.path.isdir(cls.model_path):
             file_name = os.path.basename(cls.model_path)
             obj_key = f"sdk-integration-test/{case_name}/{file_name}"
         else:
             obj_key = f"sdk-integration-test/{case_name}/"
-        model_path = upload_to_oss(
+        model_path = upload(
             cls.model_path,
             obj_key,
             cls.default_session.oss_bucket,
@@ -52,40 +55,40 @@ class TestPredictBase(BaseIntegTestCase):
         name = make_resource_name(
             camel_to_snake(cls.__name__), sep="_", time_suffix=False
         )
-        service = Service.deploy(
-            name=name,
-            instance_count=2,
-            compute_config=ComputeConfig.from_resource_config(
-                cpu=2,
-                memory=4000,
-            ),
-            processor=BuildInProcessor.get_default_by_model_format(
-                model_format=cls.model_format,
-            ),
-            model_path=model_path,
-            wait=True,
-        )
-        return service
 
-    @classmethod
-    def _init_predictor(cls):
-        predictor = Predictor(service_name=cls.service.name)
-        return predictor
+        service_name = cls.default_session.service_api.create(
+            {
+                "name": name,
+                "metadata": {
+                    "instance": 2,
+                    "cpu": 2,
+                    "memory": 4000,
+                },
+                "processor": _BuiltinProcessor.get_default_by_model_format(
+                    model_format=cls.model_format,
+                ),
+                "model_path": _truncate_endpoint(model_path),
+            },
+        )
+
+        p = Predictor(service_name=service_name)
+        p.wait_for_ready()
+        time.sleep(5)
+        return p
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPredictBase, cls).tearDownClass()
-        if cls.service:
-            cls.service.delete()
+        super(TestPredictorBase, cls).tearDownClass()
+        if cls.predictor:
+            cls.predictor.delete_service()
 
 
-class TestPmmlPredict(TestPredictBase):
+class TestPmmlPredictor(TestPredictorBase):
     model_path = PMML_MODEL_PATH
     model_format = ModelFormat.PMML
-    service: Service = None
 
-    def test_pmml(self):
-        resp = self.service.predict(
+    def test_json_serializer(self):
+        resp = self.predictor.predict(
             [
                 {
                     "pm10": 1.0,
@@ -99,73 +102,97 @@ class TestPmmlPredict(TestPredictBase):
                 },
             ]
         )
+
         self.assertTrue(isinstance(resp, list), "resp is not a list")
         self.assertTrue(len(resp) == 2, "resp doesn't have length 2")
         self.assertTrue("p_0" in resp[0], "p_0 is not in resp[0]")
 
+    def test_raw_request(self):
+        p = self.predictor
 
-class TestTensorFlowPredict(TestPredictBase):
+        result = p.raw_predict(
+            json.dumps(
+                [
+                    {
+                        "pm10": 1.0,
+                        "so2": 2.0,
+                        "co": 0.5,
+                    },
+                    {
+                        "pm10": 1.0,
+                        "so2": 2.0,
+                        "co": 0.5,
+                    },
+                ]
+            ).encode()
+        )
+
+        res = json.loads(result)
+
+        self.assertEqual(len(res), 2)
+
+
+class TestTensorFlowPredictor(TestPredictorBase):
     model_path = TF_MNIST_MODEL_PATH
     model_format = ModelFormat.SavedModel
-    service: Service = None
 
     def test_tf_predict(self):
-        self.assertTrue(
-            "signature_name" in self.service.inspect_tensorflow_signature_def()
+        predictor = self.predictor
+        result_1 = predictor.predict(
+            {
+                # batch_size = 2
+                "flatten_input": [1]
+                * 784
+                * 2,
+            }
         )
-        result_1 = self.service.predict(
-            [1] * 784,
+
+        self.assertTupleEqual(result_1["dense_1"].shape, (2, 10))
+
+        result_2 = predictor.predict([1] * 784 * 3)
+        self.assertTupleEqual(result_2["dense_1"].shape, (3, 10))
+
+        result_3 = predictor.predict(
+            {
+                # batch_size = 2
+                "flatten_input": np.asarray([1] * 784 * 4)
+            }
         )
-        result_2 = self.service.predict({"flatten_input": [1] * 784})
+        self.assertTupleEqual(result_3["dense_1"].shape, (4, 10))
 
-        self.assertListEqual(result_1["dense_1"].tolist(), result_2["dense_1"].tolist())
+    def test_signature_def(self):
+        signature_def = self.predictor.inspect_model_signature_def()
+        self.assertTrue(signature_def["signature_name"], "serving_default")
+        self.assertTrue("inputs" in signature_def)
+        self.assertTrue("outputs" in signature_def)
 
 
-class TestTorchPredict(TestPredictBase):
+class TestTorchPredictor(TestPredictorBase):
     model_path = PYTORCH_MNIST_MODEL_PATH
     model_format = ModelFormat.TorchScript
-    service: Service = None
 
     def test_torch_predict(self):
-        # service: EasService = EasService.get("lq_mnist_torch_1_8")
-        # print(service.config.processor)
-        service = self.service
-        result_1 = service.predict(
-            np.asarray([0.5] * 28 * 28 * 2).reshape((2, 1, 28, 28)),
+        result = self.predictor.predict(
+            np.asarray([0.5] * 28 * 28 * 2, dtype=np.float32).reshape((2, 1, 28, 28)),
         )
 
-        self.assertIsNotNone(result_1)
-        self.assertTupleEqual(np.shape(result_1), (2, 10))
+        self.assertTrue(isinstance(result, np.ndarray))
 
-        result_2 = service.predict(
-            np.asarray([0.5] * 28 * 28 * 2),
-            serializer=TorchSerializer(
-                input_specs=TorchIOSpec(
-                    index=0,
-                    shape=(2, 1, 28, 28),
-                    data_type=TorchSerializer.DT_FLOAT,
-                ),
-                output_filter=[0],
-            ),
-        )
-        self.assertIsNotNone(result_2)
-        self.assertTupleEqual(np.shape(result_2), (2, 10))
+        self.assertTupleEqual(result.shape, (2, 10))
 
 
 class TestPredictorOperation(BaseIntegTestCase):
     model_path = PMML_MODEL_PATH
     model_format = ModelFormat.PMML
-    service: Service = None
     predictor: Predictor = None
 
     @classmethod
     def setUpClass(cls):
         super(TestPredictorOperation, cls).setUpClass()
-        cls.service = cls._init_service()
         cls.predictor = cls._init_predictor()
 
     @classmethod
-    def _init_service(cls):
+    def _init_predictor(cls):
         case_name = camel_to_snake(cls.__name__)
 
         if not os.path.isdir(cls.model_path):
@@ -173,43 +200,41 @@ class TestPredictorOperation(BaseIntegTestCase):
             obj_key = f"sdk-integration-test/{case_name}/{file_name}"
         else:
             obj_key = f"sdk-integration-test/{case_name}/"
-        model_path = upload_to_oss(
+        model_path = upload(
             cls.model_path,
             obj_key,
             cls.default_session.oss_bucket,
         )
-
         name = make_resource_name(
             camel_to_snake(cls.__name__), sep="_", time_suffix=False
         )
-        service = Service.deploy(
-            name=name,
-            instance_count=2,
-            compute_config=ComputeConfig.from_resource_config(
-                cpu=2,
-                memory=4000,
-            ),
-            processor=BuildInProcessor.get_default_by_model_format(
-                model_format=cls.model_format,
-            ),
-            model_path=model_path,
-            wait=True,
+        service_name = cls.default_session.service_api.create(
+            {
+                "name": name,
+                "metadata": {
+                    "instance": 2,
+                    "cpu": 2,
+                    "memory": 4000,
+                },
+                "processor": _BuiltinProcessor.get_default_by_model_format(
+                    model_format=cls.model_format,
+                ),
+                "model_path": _truncate_endpoint(model_path),
+            },
         )
-        return service
 
-    @classmethod
-    def _init_predictor(cls):
-        predictor = Predictor(
-            service_name=cls.service.name,
-            serializer=cls.service.get_default_serializer(),
-        )
-        return predictor
+        p = Predictor(service_name=service_name)
+        p.wait_for_ready()
+
+        # hack: wait for the service to be 'really' ready
+        time.sleep(5)
+        return p
 
     @classmethod
     def tearDownClass(cls):
         super(TestPredictorOperation, cls).tearDownClass()
-        if cls.service:
-            cls.service.delete()
+        if cls.predictor:
+            cls.predictor.delete_service()
 
     def test_predictor_operation_pmml(self):
         resp = self.predictor.predict(
@@ -230,21 +255,17 @@ class TestPredictorOperation(BaseIntegTestCase):
         self.assertTrue(len(resp) == 2, "resp doesn't have length 2")
         self.assertTrue("p_0" in resp[0], "p_0 is not in resp[0]")
         self.assertTrue(
-            self.predictor.service.status == ServiceStatus.Running,
+            self.predictor.service_status == ServiceStatus.Running,
             "service is not running",
         )
-        self.predictor.stop()
+        self.predictor.stop_service()
         self.assertTrue(
-            self.predictor.service.status == ServiceStatus.Stopped,
+            self.predictor.service_status == ServiceStatus.Stopped,
             "service does not stop",
         )
-        self.predictor.start()
+        self.predictor.start_service()
         self.assertTrue(
-            self.predictor.service.status == ServiceStatus.Running,
+            self.predictor.service_status == ServiceStatus.Running,
             "service does not start",
         )
-        self.predictor.delete()
-        self.assertTrue(
-            self.predictor.service.status == ServiceStatus.Deleting,
-            "service does not start",
-        )
+        self.predictor.delete_service()

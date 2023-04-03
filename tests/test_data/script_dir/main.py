@@ -8,6 +8,10 @@ import time
 from utils import print_hello
 
 if __name__ == "__main__":
+
+    for key, value in os.environ.items():
+        print("Environment: Key={} Value={}".format(key, value))
+
     parser = argparse.ArgumentParser(description="Program arguments parser")
     parser.add_argument("--foo", help="this is parameter foo", type=str)
     parser.add_argument("--bar", help="this is parameter bar", type=str)

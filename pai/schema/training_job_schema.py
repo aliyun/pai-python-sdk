@@ -1,4 +1,4 @@
-from marshmallow import EXCLUDE, fields, post_load
+from marshmallow import fields, post_load
 
 from pai.schema.base import BaseAPIResourceSchema, ListOfKVField
 
@@ -57,8 +57,6 @@ class TrainingJobSchema(BaseAPIResourceSchema):
         "GmtCreateTime": "create_time",
         "GmtModifiedTime": "modified_time",
         "TrainingJobDescription": "description",
-        "TrainingJobName": "job_name",
-        "TrainingJobId": "job_id",
     }
 
     algorithm_name = fields.Str()
@@ -66,17 +64,17 @@ class TrainingJobSchema(BaseAPIResourceSchema):
     algorithm_version = fields.Str()
 
     hyperparameters = HyperparameterField()
-    input_channels = fields.List(fields.Nested(TrainingJobChannelSchema))
-    output_channels = fields.List(fields.Nested(TrainingJobChannelSchema))
+    input_channels = fields.List(fields.Dict)
+    output_channels = fields.List(fields.Dict)
     labels = ListOfKVField()
     description = fields.Str()
-    job_name = fields.Str()
+    training_job_name = fields.Str()
     scheduler = fields.Dict()
     compute_resource = fields.Dict()
     workspace_id = fields.Str()
 
     # load only fields
-    latest_metrics = fields.List(fields.Nested(TrainingJobMetricSchema))
+    latest_metrics = fields.List(fields.Dict)
     algorithm_id = fields.Str(load_only=True)
     create_time = fields.DateTime(load_only=True)
     modified_time = fields.DateTime(load_only=True)
@@ -84,11 +82,11 @@ class TrainingJobSchema(BaseAPIResourceSchema):
     reason_message = fields.Str()
     status = fields.Str()
     status_transitions = fields.List(fields.Dict)
-    job_id = fields.Str()
+    training_job_id = fields.Str()
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.job._training_job import TrainingJob
+        from pai.estimator import _TrainingJob
 
         data["instance_count"] = data.get("compute_resource", {}).get("EcsCount")
         data["instance_type"] = data.get("compute_resource", {}).get("EcsType")
@@ -96,4 +94,4 @@ class TrainingJobSchema(BaseAPIResourceSchema):
             "MaxRunningTimeInSeconds"
         )
 
-        return self.make_or_reload(TrainingJob, data)
+        return self.make_or_reload(_TrainingJob, data)

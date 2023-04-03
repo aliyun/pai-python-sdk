@@ -1,5 +1,6 @@
 import contextlib
 import io
+from unittest import skip
 
 from pai.pipeline import Pipeline
 from pai.pipeline.component import ContainerComponent
@@ -7,6 +8,7 @@ from pai.pipeline.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 
 
+@skip("Backend is not stable.")
 class TestConditionPipeline(BaseIntegTestCase):
     def test_condition_output(self):
         acc = "0.97"

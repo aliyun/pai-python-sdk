@@ -1,7 +1,7 @@
 Pipeline
 --------
 
-.. autoclass:: pai.operator.RegisteredComponent
+.. autoclass:: pai.pipeline.RegisteredComponent
    :members:
    :undoc-members:
    :show-inheritance:

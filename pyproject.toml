@@ -23,3 +23,6 @@ exclude = '''
 profile = "black"
 src_paths = ["pai", "tests"]
 #known_first_party = ["pai", "tests"]
+
+[tool.pytest.ini_options]
+timeout = 300

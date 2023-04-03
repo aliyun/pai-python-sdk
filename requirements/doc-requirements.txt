@@ -1,0 +1,8 @@
+sphinx
+sphinx-rtd-theme
+sphinx-copybutton
+sphinx_book_theme
+sphinx-autobuild
+myst-nb
+nbmake
+pydata-sphinx-theme==0.13.1

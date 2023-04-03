@@ -1,52 +1,76 @@
 import logging
 from abc import ABCMeta
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import six
-from alibabacloud_tea_util import models as util_models
+from alibabacloud_tea_openapi.client import Client
+from alibabacloud_tea_util.models import RuntimeOptions
 from six import with_metaclass
 from Tea.model import TeaModel
 
-from pai.common.consts import PAIServiceName
-
 logger = logging.getLogger(__name__)
+
+
+class PAIServiceName(object):
+    PAI_DLC = "PAI_DLC"
+    PAI_EAS = "PAI_EAS"
+    AIWORKSPACE = "AIWORKSPACE"
+    PAIFLOW = "PAIFLOW"
+    TRAINING_SERVICE = "TRAINING"
+
+
+class PAIRestResourceTypes(object):
+    """Resource types provided by PAI REST API."""
+
+    Dataset = "Dataset"
+    DlcJob = "DlcJob"
+    CodeSource = "CodeSource"
+    Image = "Image"
+    Service = "Service"
+    Model = "Model"
+    Workspace = "Workspace"
+    Algorithm = "Algorithm"
+    TrainingJob = "TrainingJob"
+    Pipeline = "Pipeline"
+    PipelineRun = "PipelineRun"
 
 
 class ResourceAPI(with_metaclass(ABCMeta, object)):
     """Class that provide APIs to operate the resource."""
 
-    BACKEND_SERVICE_NAME = PAIServiceName.PAI_DLC
+    def __init__(
+        self,
+        acs_client: Client,
+        header: Optional[Dict[str, str]] = None,
+        runtime: Optional[RuntimeOptions] = None,
+    ):
+        """Initialize a ResourceAPI object.
 
-    def __init__(self, acs_client):
+        Args:
+            acs_client (Client): A basic client used to communicate with a specific PAI
+                service.
+            header (Dict[str, str], optional): Header set in the HTTP request. Defaults
+                to None.
+            runtime (RuntimeOptions, optional): Options configured for the client
+                runtime behavior, such as read_timeout, connection_timeout, etc.
+                Defaults to None.
+        """
         self.acs_client = acs_client
+        self.header = header
+        self.runtime = runtime
 
-    @classmethod
-    def _make_extra_request_options(cls):
+    def _make_extra_request_options(self):
         """Returns headers and runtime for client."""
-        return dict(), util_models.RuntimeOptions()
+        return self.header or dict(), self.runtime or RuntimeOptions()
 
-    def _do_request(self, method_, **kwargs):
+    def _do_request(self, method_, *args, **kwargs):
         headers, runtime = self._make_extra_request_options()
         if "headers" not in kwargs:
             kwargs["headers"] = headers
         if "runtime" not in kwargs:
             kwargs["runtime"] = runtime
-        resp = getattr(self.acs_client, method_)(**kwargs)
-        # logger.debug(
-        #     "DoRequest {} Response: status_code={} header={} body={}".format(
-        #         type(self).__name__,
-        #         resp.status_code,
-        #         resp.headers,
-        #         resp.body.to_map(),
-        #     )
-        # )
-        self._check_response(resp)
+        resp = getattr(self.acs_client, method_)(*args, **kwargs)
         return resp.body
-
-    def _check_response(self, resp):
-        pass
-        # if resp.status_code != 200:
-        #     raise RuntimeError("Unexpected response: {} {}", type(self), resp.to_map())
 
     def get_api_object_by_resource_id(self, resource_id):
         raise NotImplementedError
@@ -97,10 +121,12 @@ class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
 
     # A workspace_id placeholder indicate the workspace_id field of
     # the request should not be replaced.
-    workspace_id_none_placeholder = "workspace_id_none_placeholder"
+    workspace_id_none_placeholder = "WORKSPACE_ID_NONE_PLACEHOLDER"
 
-    def __init__(self, workspace_id, acs_client):
-        super(WorkspaceScopedResourceAPI, self).__init__(acs_client=acs_client)
+    def __init__(self, workspace_id, acs_client, **kwargs):
+        super(WorkspaceScopedResourceAPI, self).__init__(
+            acs_client=acs_client, **kwargs
+        )
         self.workspace_id = workspace_id
 
     def _do_request(self, method_, **kwargs):
@@ -111,24 +137,28 @@ class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
             kwargs["runtime"] = runtime
         request = kwargs.get("request")
 
-        # auto config workspace_id of the request.
+        # Automatically configure the workspace ID for the request
         if request and hasattr(request, "workspace_id"):
             if request.workspace_id is None:
                 request.workspace_id = self.workspace_id
-            elif request.workspace_id == self.workspace_id_none_placeholder:
+            elif (
+                request.workspace_id == self.workspace_id_none_placeholder
+                or not request.workspace_id
+            ):
+                # request.workspace_id is 0 or request.workspace_id is empty string,
+                # we do not inject workspace_id of the scope.
                 request.workspace_id = None
 
         resp = getattr(self.acs_client, method_)(**kwargs)
-        self._check_response(resp)
         return resp.body
 
 
 class PaginatedResult(object):
-    """ """
+    """A class represent response of a pagination call to PAI service."""
 
-    items: List[Dict[str, Any]] = None
+    items: List[Union[Dict[str, Any], str]] = None
     total_count: int = None
 
-    def __init__(self, items: List[Dict[str, Any]], total_count: int):
+    def __init__(self, items: List[Union[Dict[str, Any], str]], total_count: int):
         self.items = items
         self.total_count = total_count

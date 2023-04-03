@@ -2,19 +2,19 @@ from __future__ import absolute_import
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Optional
 
 from pai.api.base import PaginatedResult
-from pai.decorator import cached_property, config_default_session
 from pai.exception import PAIException
-from pai.libs.futures import ThreadPoolExecutor
 from pai.pipeline.artifact import ArchivedArtifact
-from pai.workspace import Workspace
+from pai.session import Session, config_default_session
 
 logger = logging.getLogger(__name__)
 
 
+# TODO: review the status names of the PipelineRun.
 class PipelineRunStatus(object):
     Initialized = "Initialized"
     ReadyToSchedule = "ReadyToSchedule"
@@ -29,18 +29,29 @@ class PipelineRunStatus(object):
     Failed = "Failed"
 
     @classmethod
+    def completed_status(cls):
+        return [
+            cls.Suspended,
+            cls.Terminated,
+            cls.Skipped,
+            cls.Failed,
+        ]
+
+    @classmethod
     def is_running(cls, status):
         if status in (
-            PipelineRunStatus.Starting,
-            PipelineRunStatus.Running,
-            PipelineRunStatus.WorkflowServiceStarting,
-            PipelineRunStatus.ReadyToSchedule,
+            cls.Starting,
+            cls.Running,
+            cls.WorkflowServiceStarting,
+            cls.ReadyToSchedule,
         ):
             return True
         return False
 
 
 class PipelineRun(object):
+    """Class represent a pipeline run resource."""
+
     @config_default_session
     def __init__(
         self,
@@ -70,14 +81,59 @@ class PipelineRun(object):
         self.parent_user_id = parent_user_id
         self.session = session
 
-    @cached_property
-    def workspace(self):
-        return Workspace.get(self.workspace_id) if self.workspace_id else None
+    @classmethod
+    @config_default_session
+    def get(cls, run_id, session=None) -> "PipelineRun":
+        return cls.deserialize(session.pipeline_run_api.get(run_id=run_id))
 
     @classmethod
     @config_default_session
-    def get(cls, run_id, session=None):
-        return cls.deserialize(session.pipeline_run_api.get(run_id=run_id))
+    def run(
+        cls,
+        name,
+        arguments,
+        env=None,
+        pipeline_id: Optional[str] = None,
+        manifest: Optional[str] = None,
+        no_confirm_required: bool = True,
+        session: Optional[Session] = None,
+    ):
+        """Submit a pipeline run with pipeline operator and run arguments.
+
+        If pipeline_id is supplied, remote pipeline manifest is used as workflow template.
+
+
+        Args:
+            name (str): PipelineRun instance name of the submitted job.
+            arguments (dict): Run arguments required by pipeline manifest.
+            env (list): Environment arguments of run.
+            pipeline_id (str): Pipeline
+            manifest (str or dict): Pipeline manifest of the run workflow.
+            no_confirm_required (bool): Run workflow start immediately if true
+                else start_run service call if required to start the workflow.
+            session (:class:`pai.session.Session`): A PAI session instance used for
+                communicating with PAI service.
+
+        Returns:
+            str:run id if run workflow init success.
+
+        """
+        run_id = session.pipeline_run_api.create(
+            name=name,
+            arguments=arguments,
+            env=env,
+            manifest=manifest,
+            pipeline_id=pipeline_id,
+            no_confirm_required=no_confirm_required,
+        )
+
+        run = PipelineRun.get(run_id)
+        logger.info(
+            "Create pipeline run succeeded (run_id: {run_id}), please visit the link"
+            " below to view the run details.".format(run_id=run_id)
+        )
+        logger.info(run.console_uri)
+        return run_id
 
     @classmethod
     @config_default_session
@@ -89,23 +145,21 @@ class PipelineRun(object):
         status=None,
         sort_by=None,
         order=None,
-        workspace_id=None,
         page_size=20,
         page_number=1,
         session=None,
         **kwargs,
     ):
-
         result = session.pipeline_run_api.list(
-            name=None,
-            run_id=None,
-            pipeline_id=None,
-            status=None,
-            sort_by=None,
-            order=None,
+            name=name,
+            run_id=run_id,
+            pipeline_id=pipeline_id,
+            status=status,
+            sort_by=sort_by,
+            order=order,
             workspace_id=None,
-            page_size=20,
-            page_number=1,
+            page_size=page_size,
+            page_number=page_number,
             **kwargs,
         )
 
@@ -182,12 +236,16 @@ class PipelineRun(object):
         }
 
     @property
-    def run_detail_url(self):
-        return self.session.run_detail_url(run_id=self.run_id)
-
-    @property
-    def dashboard_uri(self):
-        return self.session.run_detail_url(run_id=self.run_id)
+    def console_uri(self):
+        if not self.session.is_inner:
+            return "{console_host}?regionId={region_id}#/studio/task/detail/{run_id}".format(
+                console_host=self.session.console_uri,
+                region_id=self.session.region_id,
+                run_id=self.run_id,
+            )
+        return "{console_host}/#/studio/task/detail/{run_id}".format(
+            console_host=self.session.console_uri, run_id=self.run_id
+        )
 
     def get_run_info(self):
         return self.session.pipeline_run_api.get(self.run_id)

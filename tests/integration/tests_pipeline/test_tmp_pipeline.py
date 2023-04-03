@@ -4,8 +4,8 @@ from pai.pipeline.types import PipelineParameter
 from tests.integration import BaseIntegTestCase
 
 
-class TestUnRegisteredOperator(BaseIntegTestCase):
-    def test(self):
+class TestUnRegisteredComponent(BaseIntegTestCase):
+    def test_pipeline(self):
         python_image = self.get_python_image()
 
         op1 = ContainerComponent(
@@ -44,7 +44,7 @@ class TestUnRegisteredOperator(BaseIntegTestCase):
 
         p = build_pipeline()
         p.run(
-            job_name="hello",
+            job_name="test_container_op_pipeline",
             arguments={
                 "foo": "Hello",
                 "bar": "World",

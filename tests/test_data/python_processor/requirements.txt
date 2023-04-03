@@ -1,0 +1,6 @@
+#allspark: PAI EAS runtime library
+http://eas-data.oss-cn-shanghai.aliyuncs.com/release/amd64/linux/easworker/0_6_22/allspark-0.15.0-py2.py3-none-any.whl
+
+scikit-learn==1.1.1
+uvicorn[standard]
+fastapi

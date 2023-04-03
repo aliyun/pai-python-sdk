@@ -4,7 +4,6 @@ import os
 
 import yaml
 
-from pai.session import EnvType
 from tests.test_data import OPERATOR_MANIFEST_DIR
 
 
@@ -43,10 +42,6 @@ class MockSession(object):
     @property
     def region_id(self):
         return "cn-hangzhou"
-
-    @property
-    def env_type(self):
-        return EnvType.PublicCloud
 
     @property
     def is_inner(self):

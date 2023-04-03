@@ -5,7 +5,8 @@ import os
 
 from alibabacloud_tea_openapi.models import Config
 
-from pai.common.consts import PAIServiceName
+import pai
+from pai.api.base import PAIServiceName
 from pai.libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
 from pai.libs.alibabacloud_eas20210701.client import Client as EasClient
 from pai.libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
@@ -27,12 +28,6 @@ PAI_SERVICE_NAME_POP_PRODUCT_NAME_MAPPING = {
 }
 
 
-_DLC_PRODUCT_NAME = "pai-dlc"
-_WORKSPACE_PRODUCT_NAME = "aiworkspace"
-
-_INNER_REGION_ID = "center"
-
-
 class ClientFactory(object):
     ClientClsByServiceName = {
         PAIServiceName.PAI_DLC: DlcClient,
@@ -45,6 +40,10 @@ class ClientFactory(object):
     @staticmethod
     def _is_inner_client(acs_client):
         return acs_client.get_region_id() == "center"
+
+    @classmethod
+    def _get_default_user_agent(cls):
+        return f"PAI/{pai.__version__}"
 
     @classmethod
     def create_client(
@@ -82,6 +81,7 @@ class ClientFactory(object):
                 endpoint=endpoint,
             ),
             signature_algorithm="v2",
+            user_agent=cls._get_default_user_agent(),
             **kwargs,
         )
         client = cls.ClientClsByServiceName.get(service_name)(config)
@@ -89,7 +89,7 @@ class ClientFactory(object):
 
     @classmethod
     def get_endpoint(cls, service_name: str, region_id: str, endpoint: str = None):
-        """Construct an endpoint for the service client.
+        """Get the endpoint for the service client.
 
         Args:
             service_name:
@@ -99,17 +99,24 @@ class ClientFactory(object):
         Returns:
             str: Endpoint for the service.
         """
-        # use specific endpoint
+        # 1. Use specific endpoint.
         if endpoint:
             return endpoint
-        # Use endpoint configured by environment variable.
+
+        # 2. Use endpoint configured in environment variable.
         key = PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN.format(
             service_name.upper().replace("-", "_")
         )
         if os.environ.get(key):
-            return os.environ.get(key)
+            endpoint = os.environ.get(key)
+            logging.info(
+                f"Using PAI service endpoint from environment: "
+                f"service_name={service_name} "
+                f"endpoint={endpoint}"
+            )
+            return endpoint
 
-        # Use endpoint by
+        # 3. Get endpoint using product_name and region_id.
         pop_product_name = PAI_SERVICE_NAME_POP_PRODUCT_NAME_MAPPING.get(service_name)
         if not pop_product_name:
             raise ValueError(
@@ -117,8 +124,7 @@ class ClientFactory(object):
             )
 
         if not region_id:
-            raise ValueError("Please provide region_id to construct the endpoint.")
-
+            raise ValueError("Please provide region_id to get the endpoint.")
         return PAI_SERVICE_ENDPOINT_BY_REGION_ID_PATTERN.format(
             pop_product_name, region_id
         )

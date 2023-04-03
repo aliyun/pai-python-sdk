@@ -1,6 +1,8 @@
 Contributing to PAI Python SDK
 ================================
 
+
+
 Developing and testing
 --------------------------
 Initialize a virtual environment for development purpose with conda (or pyenv).
@@ -12,7 +14,7 @@ Initialize a virtual environment for development purpose with conda (or pyenv).
     conda activate pai-dev-py36
 
     # install develop requirements
-    python -m pip install -r dev-requirements.txt
+    python -m pip install -r requirements/dev-requirements.txt
     python -m pip install -e .
 
 
@@ -70,11 +72,14 @@ For the detail content in the config file, please check the file *tests/integrat
     nox -s integration -- -n 8
 
     # example: run a specific test case.
-    nox -s integration -- -k TestPmmlPredict
+    nox -s integration -- -k TestPmmlPredictor
 
     # overwrite default test_config name (test.ini).
     # example: use test_public_cn_shanghai.ini under tests/integration as the config file.
     PAI_TEST_CONFIG=test_public_cn_shanghai.ini nox -s integration
+
+    # test notebooks in toturial
+    nox -s notebook
 
 
 
@@ -95,3 +100,29 @@ Currently, the project use OSS to distribute the package and publish the documen
 
     # publish documents for production purpose.
     ./tools/publish_doc.sh production
+
+Package Structure
+--------------------------
+
+An explanation of the package structure shown below.
+
+```plain
+
+├── docs/                           // Documents of the project.
+├── pai/
+│   ├── api/                        // ResourceAPIs used to operate specific Resource with PAI REST API.
+│   ├── common/                     // Some common utilities.
+│   ├── libs/                       // Thirdparty libs.
+│   ├── schema                      // schema class used to transform between API object and resource entity.
+│   ├── estimator.py                // Files under pai are major API provided by PAI SDK.
+│   ├── model.py
+│   ├── predictor.py
+│   ├── ...
+│   ├── ...
+├── tests
+│   ├── integration/                // Integration test case
+│   ├── test_data/                  // Resource used in test case.
+│   └── unit/                       // Unit test case.
+└── tools/                          // Tools used for publishing SDK and document.
+
+```

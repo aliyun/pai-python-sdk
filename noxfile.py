@@ -3,15 +3,23 @@ import os.path
 import nox
 from nox.sessions import Session
 
-BLACK_VERSION = "black==22.6.0"
+_pkg_root = os.path.dirname(os.path.abspath(__file__))
 
-TEST_DEPENDENCIES = [
-    "pytest",
-    "pytest-cov",
-    "pytest-xdist",
-    "mock>=2.0.0",
-    "aliyun-python-sdk-core==2.13.25",
-]
+TEST_REQUIREMENTS = os.path.join(
+    _pkg_root,
+    "requirements/test-requirements.txt",
+)
+
+LINT_REQUIREMENTS = os.path.join(
+    _pkg_root,
+    "requirements/lint-requirements.txt",
+)
+
+
+DOC_REQUIREMENTS = os.path.join(
+    _pkg_root,
+    "requirements/doc-requirements.txt",
+)
 
 PASSING_ENVIRONMENTS = {
     "PAI_TEST_CONFIG": "test.ini",
@@ -27,23 +35,8 @@ def install_test_dependencies(session: Session):
     # install package
     session.install("-e", ".")
 
-    # fix eas_prediction protobuf requirement.
-    try:
-        session.install("protobuf==3.20.*")
-    except Exception:
-        pass
-
     # install test requirements
-    session.install(*TEST_DEPENDENCIES)
-
-
-@nox.session
-def lint(session: Session):
-    """Enforce code style with flake8."""
-    session.install("flake8")
-    session.install(BLACK_VERSION)
-    session.run("flake8", "--config", ".flake8")
-    session.run("black", "--check", ".")
+    session.install("-r", TEST_REQUIREMENTS)
 
 
 @nox.session(venv_backend=TEST_VENV_BACKEND)
@@ -96,10 +89,18 @@ def unit(session: Session):
     )
 
 
+@nox.session
+def lint(session: Session):
+    """Enforce code style with flake8."""
+    session.install("-r", LINT_REQUIREMENTS)
+    session.run("flake8", "--config", ".flake8")
+    session.run("black", "--check", ".")
+
+
 @nox.session(reuse_venv=True)
 def black(session: Session):
     """Format code with black."""
-    session.install("black==22.6.0")
+    session.install("-r", LINT_REQUIREMENTS)
     session.run("black", ".")
 
 
@@ -107,7 +108,7 @@ def black(session: Session):
 def doc(session: Session):
     """Build the documents with Sphinx."""
     session.install("-e", ".")
-    session.install("sphinx", "sphinx-rtd-theme")
+    session.install("-r", DOC_REQUIREMENTS)
 
     with session.chdir("./docs"):
         session.run(
@@ -122,7 +123,28 @@ def doc(session: Session):
 
 @nox.session(reuse_venv=True)
 def coverage(session: Session):
-    """"""
-    session.install("coverage", "pytest-cov")
+    """Coverage report"""
+    install_test_dependencies(session)
     session.run("coverage", "report", "--show-missing")
     session.run("coverage", "erase")
+
+
+@nox.session(reuse_venv=True)
+def notebook(session: Session):
+    """Run jupyter notebook test with nbmake.
+
+    How to use nbmake:
+    https://semaphoreci.com/blog/test-jupyter-notebooks-with-pytest-and-nbmake
+
+    """
+    install_test_dependencies(session)
+    session.install("-r", DOC_REQUIREMENTS)
+
+    session.run(
+        "pytest",
+        "--timeout",
+        "3000",
+        "--nbmake",
+        "-n=auto",
+        "docs/source/tutorial/",
+    )

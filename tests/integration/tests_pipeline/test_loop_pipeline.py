@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+from unittest import skip
 
 from pai.pipeline import Pipeline
 from pai.pipeline.component import ContainerComponent
@@ -9,6 +10,7 @@ from pai.pipeline.types.parameter import LoopItemPlaceholder
 from tests.integration import BaseIntegTestCase
 
 
+@skip("Backend is not stable.")
 class TestLoopPipeline(BaseIntegTestCase):
     def test_loop_with_sequence(self):
         op = ContainerComponent(

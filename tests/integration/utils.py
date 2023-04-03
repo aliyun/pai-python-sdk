@@ -5,7 +5,6 @@ import shutil
 from collections import namedtuple
 
 from pai.common.utils import random_str
-from pai.session import EnvType
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,7 +17,6 @@ PaiServiceConfig = namedtuple(
         "region_id",
         "workspace_id",
         "endpoint",
-        "env_type",
     ],
 )
 
@@ -61,12 +59,6 @@ class TestContext(object):
     def is_inner(self):
         return self.pai_service_config.region_id == "center"
 
-    @property
-    def env_type(self):
-        if self.pai_service_config.env_type:
-            return self.pai_service_config.env_type
-        return EnvType.PublicCloud
-
     @classmethod
     def _load_test_config(cls):
         test_config = os.environ.get("PAI_TEST_CONFIG", "test_public.ini")
@@ -77,16 +69,12 @@ class TestContext(object):
         access_key_secret = cfg_parser.get("client", "access_key_secret")
         region_id = cfg_parser.get("client", "region_id", fallback=None)
         endpoint = cfg_parser.get("client", "endpoint", fallback=None)
-        _env_type_name = cfg_parser.get("client", "env_type", fallback=None)
         workspace_id = cfg_parser.get("client", "workspace_id", fallback=None)
 
         pai_service_config = PaiServiceConfig(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             region_id=region_id,
-            env_type=EnvType.PublicCloud
-            if not _env_type_name
-            else EnvType[_env_type_name],
             workspace_id=workspace_id,
             endpoint=endpoint,
         )

@@ -5,17 +5,12 @@ import os
 import random
 import re
 import string
-import tarfile
-import tempfile
 import time
 import uuid
 from datetime import datetime
 from typing import Callable
 
 import six
-from odps import DataFrame as ODPSDataFrame
-from odps.models import Table
-from odps.models.partition import Partition
 
 odps_table_re = (
     r"odps://(?P<project>[^/]+)/tables/(?P<table_name>[^/]+)(?P<partition>.*)"
@@ -24,6 +19,8 @@ odps_table_re = (
 
 PAI_PIPELINE_RUN_ID_PLACEHOLDER = "${pai_system_run_id_underscore}"
 PAI_PIPELINE_NODE_ID_PLACEHOLDER = "${pai_system_node_id_underscore}"
+
+DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS = string.ascii_letters + string.digits + "_"
 
 
 def md5_digest(raw_data):
@@ -52,6 +49,10 @@ def ensure_unix_time(t):
 
 
 def extract_odps_table_info(data):
+    from odps import DataFrame as ODPSDataFrame
+    from odps.models import Table
+    from odps.models.partition import Partition
+
     if isinstance(data, ODPSDataFrame):
         data = data.data
 
@@ -111,34 +112,6 @@ def iter_with_limit(iterator, limit):
             return
 
 
-def tar_source_files(source_files, target=None):
-    if isinstance(source_files, six.string_types):
-        source_files = [source_files]
-    if target is None:
-        target = tempfile.mktemp()
-
-    with tarfile.open(target, "w:gz") as tar:
-        for name in source_files:
-            tar.add(name, arcname=os.path.basename(name))
-    return target
-
-
-def tar_file(source_file, target=None):
-    source_file = to_abs_path(source_file)
-    if not os.path.exists(source_file):
-        raise ValueError("source file not exists: %s", source_file)
-    if os.path.isdir(source_file):
-        arcname = ""
-    else:
-        arcname = os.path.basename(source_file)
-
-    if not target:
-        target = tempfile.mktemp()
-    with tarfile.open(target, "w:gz") as tar:
-        tar.add(name=source_file, arcname=arcname)
-    return target
-
-
 def file_checksum(file_name, hash_type="md5"):
     if hash_type.lower() != "md5":
         raise ValueError("not support hash type")
@@ -148,18 +121,6 @@ def file_checksum(file_name, hash_type="md5"):
         for chunk in iter(lambda: f.read(256 * 1024), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
-
-
-def to_abs_path(path):
-    if os.path.isabs(path):
-        return path
-    else:
-        return os.path.abspath(path)
-
-
-def extract_file_name(file_or_path):
-    _, tail = os.path.split(file_or_path)
-    return tail.strip()
 
 
 def makedirs(path_dir, mode=0o777):
@@ -202,10 +163,6 @@ def snake_to_camel(name):
     return "".join([w.title() for w in name.split("_")])
 
 
-def print_msg(msg: str, *args, **kwargs):
-    print(msg.format(*args, **kwargs))
-
-
 def make_list_resource_iterator(method: Callable, **kwargs):
     """Wrap resource list method as an iterator.
 
@@ -233,3 +190,10 @@ def make_list_resource_iterator(method: Callable, **kwargs):
         if len(result) == 0 or len(result) < page_size:
             return
         page_number += 1
+
+
+def to_plain_text(
+    input_str: str, allowed_characters=DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS, repl_ch="_"
+):
+    """Replace characters in input_str if it is not in allowed_characters."""
+    return "".join([c if c in allowed_characters else repl_ch for c in input_str])

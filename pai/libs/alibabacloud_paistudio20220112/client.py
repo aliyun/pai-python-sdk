@@ -11,6 +11,7 @@ from alibabacloud_endpoint_util.client import Client as EndpointUtilClient
 from alibabacloud_tea_util import models as util_models
 from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
 
+
 from pai.libs.alibabacloud_paistudio20220112 import models as pai_studio_20220112_models
 
 
@@ -177,7 +178,7 @@ class Client(OpenApiClient):
         request = pai_studio_20220112_models.CreateAlgorithmVersionShrinkRequest()
         OpenApiUtilClient.convert(tmp_req, request)
         if not UtilClient.is_unset(tmp_req.algorithm_spec):
-            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(TeaCore.to_map(tmp_req.algorithm_spec), 'AlgorithmSpec', 'json')
+            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.algorithm_spec, 'AlgorithmSpec', 'json')
         body = {}
         if not UtilClient.is_unset(request.algorithm_spec_shrink):
             body['AlgorithmSpec'] = request.algorithm_spec_shrink
@@ -213,7 +214,7 @@ class Client(OpenApiClient):
         request = pai_studio_20220112_models.CreateAlgorithmVersionShrinkRequest()
         OpenApiUtilClient.convert(tmp_req, request)
         if not UtilClient.is_unset(tmp_req.algorithm_spec):
-            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(TeaCore.to_map(tmp_req.algorithm_spec), 'AlgorithmSpec', 'json')
+            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.algorithm_spec, 'AlgorithmSpec', 'json')
         body = {}
         if not UtilClient.is_unset(request.algorithm_spec_shrink):
             body['AlgorithmSpec'] = request.algorithm_spec_shrink
@@ -349,8 +350,12 @@ class Client(OpenApiClient):
             body['AlgorithmName'] = request.algorithm_name
         if not UtilClient.is_unset(request.algorithm_provider):
             body['AlgorithmProvider'] = request.algorithm_provider
+        if not UtilClient.is_unset(request.algorithm_spec):
+            body['AlgorithmSpec'] = request.algorithm_spec
         if not UtilClient.is_unset(request.algorithm_version):
             body['AlgorithmVersion'] = request.algorithm_version
+        if not UtilClient.is_unset(request.code_dir):
+            body['CodeDir'] = request.code_dir
         if not UtilClient.is_unset(request.compute_resource):
             body['ComputeResource'] = request.compute_resource
         if not UtilClient.is_unset(request.hyper_parameters):
@@ -401,8 +406,12 @@ class Client(OpenApiClient):
             body['AlgorithmName'] = request.algorithm_name
         if not UtilClient.is_unset(request.algorithm_provider):
             body['AlgorithmProvider'] = request.algorithm_provider
+        if not UtilClient.is_unset(request.algorithm_spec):
+            body['AlgorithmSpec'] = request.algorithm_spec
         if not UtilClient.is_unset(request.algorithm_version):
             body['AlgorithmVersion'] = request.algorithm_version
+        if not UtilClient.is_unset(request.code_dir):
+            body['CodeDir'] = request.code_dir
         if not UtilClient.is_unset(request.compute_resource):
             body['ComputeResource'] = request.compute_resource
         if not UtilClient.is_unset(request.hyper_parameters):
@@ -1061,6 +1070,110 @@ class Client(OpenApiClient):
             await self.call_api_async(params, req, runtime)
         )
 
+    def get_job_view_metrics(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetJobViewMetricsRequest,
+    ) -> pai_studio_20220112_models.GetJobViewMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_job_view_metrics_with_options(resource_group_id, request, headers, runtime)
+
+    async def get_job_view_metrics_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetJobViewMetricsRequest,
+    ) -> pai_studio_20220112_models.GetJobViewMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_job_view_metrics_with_options_async(resource_group_id, request, headers, runtime)
+
+    def get_job_view_metrics_with_options(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetJobViewMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetJobViewMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.time_step):
+            query['TimeStep'] = request.time_step
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetJobViewMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/jobmetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetJobViewMetricsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_job_view_metrics_with_options_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetJobViewMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetJobViewMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.time_step):
+            query['TimeStep'] = request.time_step
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetJobViewMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/jobmetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetJobViewMetricsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
     def get_jobs_statistics_by_resource_group(
         self,
         resource_group_id: str,
@@ -1092,6 +1205,8 @@ class Client(OpenApiClient):
             query['EndTime'] = request.end_time
         if not UtilClient.is_unset(request.start_time):
             query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceID'] = request.workspace_id
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -1125,6 +1240,8 @@ class Client(OpenApiClient):
             query['EndTime'] = request.end_time
         if not UtilClient.is_unset(request.start_time):
             query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceID'] = request.workspace_id
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -1308,6 +1425,210 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             pai_studio_20220112_models.GetNodeMetricsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_node_view_metrics(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetNodeViewMetricsRequest,
+    ) -> pai_studio_20220112_models.GetNodeViewMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_node_view_metrics_with_options(resource_group_id, request, headers, runtime)
+
+    async def get_node_view_metrics_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetNodeViewMetricsRequest,
+    ) -> pai_studio_20220112_models.GetNodeViewMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_node_view_metrics_with_options_async(resource_group_id, request, headers, runtime)
+
+    def get_node_view_metrics_with_options(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetNodeViewMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetNodeViewMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.node_id):
+            query['NodeId'] = request.node_id
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.time_step):
+            query['TimeStep'] = request.time_step
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetNodeViewMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/nodeviewmetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetNodeViewMetricsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_node_view_metrics_with_options_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetNodeViewMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetNodeViewMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.node_id):
+            query['NodeId'] = request.node_id
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.time_step):
+            query['TimeStep'] = request.time_step
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetNodeViewMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/nodeviewmetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetNodeViewMetricsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_range_user_view_metrics(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetRangeUserViewMetricsRequest,
+    ) -> pai_studio_20220112_models.GetRangeUserViewMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_range_user_view_metrics_with_options(resource_group_id, request, headers, runtime)
+
+    async def get_range_user_view_metrics_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetRangeUserViewMetricsRequest,
+    ) -> pai_studio_20220112_models.GetRangeUserViewMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_range_user_view_metrics_with_options_async(resource_group_id, request, headers, runtime)
+
+    def get_range_user_view_metrics_with_options(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetRangeUserViewMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetRangeUserViewMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.user_id):
+            query['UserId'] = request.user_id
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetRangeUserViewMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/rangeusermetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetRangeUserViewMetricsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_range_user_view_metrics_with_options_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.GetRangeUserViewMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetRangeUserViewMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.user_id):
+            query['UserId'] = request.user_id
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetRangeUserViewMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/rangeusermetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetRangeUserViewMetricsResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2349,6 +2670,102 @@ class Client(OpenApiClient):
             await self.call_api_async(params, req, runtime)
         )
 
+    def list_training_job_instance_metrics(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobInstanceMetricsRequest,
+    ) -> pai_studio_20220112_models.ListTrainingJobInstanceMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_training_job_instance_metrics_with_options(training_job_id, request, headers, runtime)
+
+    async def list_training_job_instance_metrics_async(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobInstanceMetricsRequest,
+    ) -> pai_studio_20220112_models.ListTrainingJobInstanceMetricsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_training_job_instance_metrics_with_options_async(training_job_id, request, headers, runtime)
+
+    def list_training_job_instance_metrics_with_options(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobInstanceMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListTrainingJobInstanceMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.metric_type):
+            query['MetricType'] = request.metric_type
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.time_step):
+            query['TimeStep'] = request.time_step
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTrainingJobInstanceMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/instancemetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListTrainingJobInstanceMetricsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_training_job_instance_metrics_with_options_async(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobInstanceMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListTrainingJobInstanceMetricsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.metric_type):
+            query['MetricType'] = request.metric_type
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        if not UtilClient.is_unset(request.time_step):
+            query['TimeStep'] = request.time_step
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTrainingJobInstanceMetrics',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/instancemetrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListTrainingJobInstanceMetricsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
     def list_training_job_logs(
         self,
         training_job_id: str,
@@ -2821,6 +3238,72 @@ class Client(OpenApiClient):
             await self.call_api_async(params, req, runtime)
         )
 
+    def stop_arrears_training_job(
+        self,
+        training_job_id: str,
+    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.stop_arrears_training_job_with_options(training_job_id, headers, runtime)
+
+    async def stop_arrears_training_job_async(
+        self,
+        training_job_id: str,
+    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.stop_arrears_training_job_with_options_async(training_job_id, headers, runtime)
+
+    def stop_arrears_training_job_with_options(
+        self,
+        training_job_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='StopArrearsTrainingJob',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/arrearage/stop',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.StopArrearsTrainingJobResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def stop_arrears_training_job_with_options_async(
+        self,
+        training_job_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='StopArrearsTrainingJob',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/arrearage/stop',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.StopArrearsTrainingJobResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
     def stop_training_job(
         self,
         training_job_id: str,
@@ -2999,7 +3482,7 @@ class Client(OpenApiClient):
         request = pai_studio_20220112_models.UpdateAlgorithmVersionShrinkRequest()
         OpenApiUtilClient.convert(tmp_req, request)
         if not UtilClient.is_unset(tmp_req.algorithm_spec):
-            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(TeaCore.to_map(tmp_req.algorithm_spec), 'AlgorithmSpec', 'json')
+            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.algorithm_spec, 'AlgorithmSpec', 'json')
         body = {}
         if not UtilClient.is_unset(request.algorithm_spec_shrink):
             body['AlgorithmSpec'] = request.algorithm_spec_shrink
@@ -3035,7 +3518,7 @@ class Client(OpenApiClient):
         request = pai_studio_20220112_models.UpdateAlgorithmVersionShrinkRequest()
         OpenApiUtilClient.convert(tmp_req, request)
         if not UtilClient.is_unset(tmp_req.algorithm_spec):
-            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(TeaCore.to_map(tmp_req.algorithm_spec), 'AlgorithmSpec', 'json')
+            request.algorithm_spec_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.algorithm_spec, 'AlgorithmSpec', 'json')
         body = {}
         if not UtilClient.is_unset(request.algorithm_spec_shrink):
             body['AlgorithmSpec'] = request.algorithm_spec_shrink

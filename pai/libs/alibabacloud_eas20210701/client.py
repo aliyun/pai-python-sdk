@@ -7,10 +7,9 @@ from alibabacloud_tea_openapi.client import Client as OpenApiClient
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util.client import Client as UtilClient
 from alibabacloud_endpoint_util.client import Client as EndpointUtilClient
-# from alibabacloud_eas20210701 import models as eas_20210701_models
 from alibabacloud_tea_util import models as util_models
-from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
 from pai.libs.alibabacloud_eas20210701 import models as eas_20210701_models
+from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
 
 
 class Client(OpenApiClient):
@@ -18,7 +17,7 @@ class Client(OpenApiClient):
     *\
     """
     def __init__(
-        self,
+        self, 
         config: open_api_models.Config,
     ):
         super().__init__(config)
@@ -59,21 +58,75 @@ class Client(OpenApiClient):
             return endpoint_map.get(region_id)
         return EndpointUtilClient.get_endpoint_rules(product_id, region_id, endpoint_rule, network, suffix)
 
-    def create_benchmark_task(
+    def commit_service_with_options(
         self,
-        request: eas_20210701_models.CreateBenchmarkTaskRequest,
-    ) -> eas_20210701_models.CreateBenchmarkTaskResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return self.create_benchmark_task_with_options(request, headers, runtime)
+        cluster_id: str,
+        service_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.CommitServiceResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='CommitService',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/commit',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.CommitServiceResponse(),
+            self.call_api(params, req, runtime)
+        )
 
-    async def create_benchmark_task_async(
+    async def commit_service_with_options_async(
         self,
-        request: eas_20210701_models.CreateBenchmarkTaskRequest,
-    ) -> eas_20210701_models.CreateBenchmarkTaskResponse:
+        cluster_id: str,
+        service_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.CommitServiceResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='CommitService',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/commit',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.CommitServiceResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def commit_service(
+        self,
+        cluster_id: str,
+        service_name: str,
+    ) -> eas_20210701_models.CommitServiceResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.create_benchmark_task_with_options_async(request, headers, runtime)
+        return self.commit_service_with_options(cluster_id, service_name, headers, runtime)
+
+    async def commit_service_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+    ) -> eas_20210701_models.CommitServiceResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.commit_service_with_options_async(cluster_id, service_name, headers, runtime)
 
     def create_benchmark_task_with_options(
         self,
@@ -129,21 +182,21 @@ class Client(OpenApiClient):
             await self.call_api_async(params, req, runtime)
         )
 
-    def create_resource(
+    def create_benchmark_task(
         self,
-        request: eas_20210701_models.CreateResourceRequest,
-    ) -> eas_20210701_models.CreateResourceResponse:
+        request: eas_20210701_models.CreateBenchmarkTaskRequest,
+    ) -> eas_20210701_models.CreateBenchmarkTaskResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return self.create_resource_with_options(request, headers, runtime)
+        return self.create_benchmark_task_with_options(request, headers, runtime)
 
-    async def create_resource_async(
+    async def create_benchmark_task_async(
         self,
-        request: eas_20210701_models.CreateResourceRequest,
-    ) -> eas_20210701_models.CreateResourceResponse:
+        request: eas_20210701_models.CreateBenchmarkTaskRequest,
+    ) -> eas_20210701_models.CreateBenchmarkTaskResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.create_resource_with_options_async(request, headers, runtime)
+        return await self.create_benchmark_task_with_options_async(request, headers, runtime)
 
     def create_resource_with_options(
         self,
@@ -217,25 +270,21 @@ class Client(OpenApiClient):
             await self.call_api_async(params, req, runtime)
         )
 
-    def create_resource_instances(
+    def create_resource(
         self,
-        cluster_id: str,
-        resource_id: str,
-        request: eas_20210701_models.CreateResourceInstancesRequest,
-    ) -> eas_20210701_models.CreateResourceInstancesResponse:
+        request: eas_20210701_models.CreateResourceRequest,
+    ) -> eas_20210701_models.CreateResourceResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return self.create_resource_instances_with_options(cluster_id, resource_id, request, headers, runtime)
+        return self.create_resource_with_options(request, headers, runtime)
 
-    async def create_resource_instances_async(
+    async def create_resource_async(
         self,
-        cluster_id: str,
-        resource_id: str,
-        request: eas_20210701_models.CreateResourceInstancesRequest,
-    ) -> eas_20210701_models.CreateResourceInstancesResponse:
+        request: eas_20210701_models.CreateResourceRequest,
+    ) -> eas_20210701_models.CreateResourceResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.create_resource_instances_with_options_async(cluster_id, resource_id, request, headers, runtime)
+        return await self.create_resource_with_options_async(request, headers, runtime)
 
     def create_resource_instances_with_options(
         self,
@@ -246,8 +295,6 @@ class Client(OpenApiClient):
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.CreateResourceInstancesResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         body = {}
         if not UtilClient.is_unset(request.auto_renewal):
             body['AutoRenewal'] = request.auto_renewal
@@ -267,7 +314,7 @@ class Client(OpenApiClient):
             action='CreateResourceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instances',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances',
             method='POST',
             auth_type='AK',
             style='ROA',
@@ -288,8 +335,6 @@ class Client(OpenApiClient):
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.CreateResourceInstancesResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         body = {}
         if not UtilClient.is_unset(request.auto_renewal):
             body['AutoRenewal'] = request.auto_renewal
@@ -309,7 +354,7 @@ class Client(OpenApiClient):
             action='CreateResourceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instances',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances',
             method='POST',
             auth_type='AK',
             style='ROA',
@@ -318,6 +363,94 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             eas_20210701_models.CreateResourceInstancesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_resource_instances(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        request: eas_20210701_models.CreateResourceInstancesRequest,
+    ) -> eas_20210701_models.CreateResourceInstancesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_resource_instances_with_options(cluster_id, resource_id, request, headers, runtime)
+
+    async def create_resource_instances_async(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        request: eas_20210701_models.CreateResourceInstancesRequest,
+    ) -> eas_20210701_models.CreateResourceInstancesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_resource_instances_with_options_async(cluster_id, resource_id, request, headers, runtime)
+
+    def create_resource_log_with_options(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        request: eas_20210701_models.CreateResourceLogRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.CreateResourceLogResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.log_store):
+            body['LogStore'] = request.log_store
+        if not UtilClient.is_unset(request.project_name):
+            body['ProjectName'] = request.project_name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateResourceLog',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/log',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.CreateResourceLogResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_resource_log_with_options_async(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        request: eas_20210701_models.CreateResourceLogRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.CreateResourceLogResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.log_store):
+            body['LogStore'] = request.log_store
+        if not UtilClient.is_unset(request.project_name):
+            body['ProjectName'] = request.project_name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateResourceLog',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/log',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.CreateResourceLogResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -341,103 +474,25 @@ class Client(OpenApiClient):
         headers = {}
         return await self.create_resource_log_with_options_async(cluster_id, resource_id, request, headers, runtime)
 
-    def create_resource_log_with_options(
-        self,
-        cluster_id: str,
-        resource_id: str,
-        request: eas_20210701_models.CreateResourceLogRequest,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateResourceLogResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        body = {}
-        if not UtilClient.is_unset(request.log_store):
-            body['LogStore'] = request.log_store
-        if not UtilClient.is_unset(request.project_name):
-            body['ProjectName'] = request.project_name
-        req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
-        )
-        params = open_api_models.Params(
-            action='CreateResourceLog',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/log',
-            method='POST',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.CreateResourceLogResponse(),
-            self.call_api(params, req, runtime)
-        )
-
-    async def create_resource_log_with_options_async(
-        self,
-        cluster_id: str,
-        resource_id: str,
-        request: eas_20210701_models.CreateResourceLogRequest,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateResourceLogResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        body = {}
-        if not UtilClient.is_unset(request.log_store):
-            body['LogStore'] = request.log_store
-        if not UtilClient.is_unset(request.project_name):
-            body['ProjectName'] = request.project_name
-        req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
-        )
-        params = open_api_models.Params(
-            action='CreateResourceLog',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/log',
-            method='POST',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.CreateResourceLogResponse(),
-            await self.call_api_async(params, req, runtime)
-        )
-
-    def create_service(
-        self,
-        request: eas_20210701_models.CreateServiceRequest,
-    ) -> eas_20210701_models.CreateServiceResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return self.create_service_with_options(request, headers, runtime)
-
-    async def create_service_async(
-        self,
-        request: eas_20210701_models.CreateServiceRequest,
-    ) -> eas_20210701_models.CreateServiceResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return await self.create_service_with_options_async(request, headers, runtime)
-
     def create_service_with_options(
         self,
-        request: eas_20210701_models.CreateServiceRequest,
+        tmp_req: eas_20210701_models.CreateServiceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.CreateServiceResponse:
-        UtilClient.validate_model(request)
+        UtilClient.validate_model(tmp_req)
+        request = eas_20210701_models.CreateServiceShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.labels):
+            request.labels_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.labels, 'Labels', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.develop):
+            query['Develop'] = request.develop
+        if not UtilClient.is_unset(request.labels_shrink):
+            query['Labels'] = request.labels_shrink
         req = open_api_models.OpenApiRequest(
             headers=headers,
+            query=OpenApiUtilClient.query(query),
             body=request.body
         )
         params = open_api_models.Params(
@@ -458,13 +513,23 @@ class Client(OpenApiClient):
 
     async def create_service_with_options_async(
         self,
-        request: eas_20210701_models.CreateServiceRequest,
+        tmp_req: eas_20210701_models.CreateServiceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.CreateServiceResponse:
-        UtilClient.validate_model(request)
+        UtilClient.validate_model(tmp_req)
+        request = eas_20210701_models.CreateServiceShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.labels):
+            request.labels_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.labels, 'Labels', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.develop):
+            query['Develop'] = request.develop
+        if not UtilClient.is_unset(request.labels_shrink):
+            query['Labels'] = request.labels_shrink
         req = open_api_models.OpenApiRequest(
             headers=headers,
+            query=OpenApiUtilClient.query(query),
             body=request.body
         )
         params = open_api_models.Params(
@@ -480,6 +545,94 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             eas_20210701_models.CreateServiceResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_service(
+        self,
+        request: eas_20210701_models.CreateServiceRequest,
+    ) -> eas_20210701_models.CreateServiceResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_service_with_options(request, headers, runtime)
+
+    async def create_service_async(
+        self,
+        request: eas_20210701_models.CreateServiceRequest,
+    ) -> eas_20210701_models.CreateServiceResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_service_with_options_async(request, headers, runtime)
+
+    def create_service_auto_scaler_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.CreateServiceAutoScalerRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.CreateServiceAutoScalerResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.max):
+            body['max'] = request.max
+        if not UtilClient.is_unset(request.min):
+            body['min'] = request.min
+        if not UtilClient.is_unset(request.scale_strategies):
+            body['scaleStrategies'] = request.scale_strategies
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateServiceAutoScaler',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.CreateServiceAutoScalerResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_service_auto_scaler_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.CreateServiceAutoScalerRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.CreateServiceAutoScalerResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.max):
+            body['max'] = request.max
+        if not UtilClient.is_unset(request.min):
+            body['min'] = request.min
+        if not UtilClient.is_unset(request.scale_strategies):
+            body['scaleStrategies'] = request.scale_strategies
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateServiceAutoScaler',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.CreateServiceAutoScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -503,33 +656,29 @@ class Client(OpenApiClient):
         headers = {}
         return await self.create_service_auto_scaler_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def create_service_auto_scaler_with_options(
+    def create_service_cron_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.CreateServiceAutoScalerRequest,
+        request: eas_20210701_models.CreateServiceCronScalerRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateServiceAutoScalerResponse:
+    ) -> eas_20210701_models.CreateServiceCronScalerResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.max):
-            body['max'] = request.max
-        if not UtilClient.is_unset(request.min):
-            body['min'] = request.min
-        if not UtilClient.is_unset(request.strategies):
-            body['strategies'] = request.strategies
+        if not UtilClient.is_unset(request.exclude_dates):
+            body['ExcludeDates'] = request.exclude_dates
+        if not UtilClient.is_unset(request.scale_jobs):
+            body['ScaleJobs'] = request.scale_jobs
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='CreateServiceAutoScaler',
+            action='CreateServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='POST',
             auth_type='AK',
             style='ROA',
@@ -537,37 +686,33 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.CreateServiceAutoScalerResponse(),
+            eas_20210701_models.CreateServiceCronScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def create_service_auto_scaler_with_options_async(
+    async def create_service_cron_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.CreateServiceAutoScalerRequest,
+        request: eas_20210701_models.CreateServiceCronScalerRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateServiceAutoScalerResponse:
+    ) -> eas_20210701_models.CreateServiceCronScalerResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.max):
-            body['max'] = request.max
-        if not UtilClient.is_unset(request.min):
-            body['min'] = request.min
-        if not UtilClient.is_unset(request.strategies):
-            body['strategies'] = request.strategies
+        if not UtilClient.is_unset(request.exclude_dates):
+            body['ExcludeDates'] = request.exclude_dates
+        if not UtilClient.is_unset(request.scale_jobs):
+            body['ScaleJobs'] = request.scale_jobs
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='CreateServiceAutoScaler',
+            action='CreateServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='POST',
             auth_type='AK',
             style='ROA',
@@ -575,7 +720,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.CreateServiceAutoScalerResponse(),
+            eas_20210701_models.CreateServiceCronScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -599,31 +744,29 @@ class Client(OpenApiClient):
         headers = {}
         return await self.create_service_cron_scaler_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def create_service_cron_scaler_with_options(
+    def create_service_mirror_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.CreateServiceCronScalerRequest,
+        request: eas_20210701_models.CreateServiceMirrorRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateServiceCronScalerResponse:
+    ) -> eas_20210701_models.CreateServiceMirrorResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.exclude_dates):
-            body['ExcludeDates'] = request.exclude_dates
-        if not UtilClient.is_unset(request.scale_jobs):
-            body['ScaleJobs'] = request.scale_jobs
+        if not UtilClient.is_unset(request.ratio):
+            body['Ratio'] = request.ratio
+        if not UtilClient.is_unset(request.target):
+            body['Target'] = request.target
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='CreateServiceCronScaler',
+            action='CreateServiceMirror',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
             method='POST',
             auth_type='AK',
             style='ROA',
@@ -631,35 +774,33 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.CreateServiceCronScalerResponse(),
+            eas_20210701_models.CreateServiceMirrorResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def create_service_cron_scaler_with_options_async(
+    async def create_service_mirror_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.CreateServiceCronScalerRequest,
+        request: eas_20210701_models.CreateServiceMirrorRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateServiceCronScalerResponse:
+    ) -> eas_20210701_models.CreateServiceMirrorResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.exclude_dates):
-            body['ExcludeDates'] = request.exclude_dates
-        if not UtilClient.is_unset(request.scale_jobs):
-            body['ScaleJobs'] = request.scale_jobs
+        if not UtilClient.is_unset(request.ratio):
+            body['Ratio'] = request.ratio
+        if not UtilClient.is_unset(request.target):
+            body['Target'] = request.target
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='CreateServiceCronScaler',
+            action='CreateServiceMirror',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
             method='POST',
             auth_type='AK',
             style='ROA',
@@ -667,7 +808,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.CreateServiceCronScalerResponse(),
+            eas_20210701_models.CreateServiceMirrorResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -691,75 +832,55 @@ class Client(OpenApiClient):
         headers = {}
         return await self.create_service_mirror_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def create_service_mirror_with_options(
+    def delete_benchmark_task_with_options(
         self,
         cluster_id: str,
-        service_name: str,
-        request: eas_20210701_models.CreateServiceMirrorRequest,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateServiceMirrorResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        body = {}
-        if not UtilClient.is_unset(request.ratio):
-            body['Ratio'] = request.ratio
-        if not UtilClient.is_unset(request.target):
-            body['Target'] = request.target
+    ) -> eas_20210701_models.DeleteBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='CreateServiceMirror',
+            action='DeleteBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
-            method='POST',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}',
+            method='DELETE',
             auth_type='AK',
             style='ROA',
             req_body_type='json',
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.CreateServiceMirrorResponse(),
+            eas_20210701_models.DeleteBenchmarkTaskResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def create_service_mirror_with_options_async(
+    async def delete_benchmark_task_with_options_async(
         self,
         cluster_id: str,
-        service_name: str,
-        request: eas_20210701_models.CreateServiceMirrorRequest,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.CreateServiceMirrorResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        body = {}
-        if not UtilClient.is_unset(request.ratio):
-            body['Ratio'] = request.ratio
-        if not UtilClient.is_unset(request.target):
-            body['Target'] = request.target
+    ) -> eas_20210701_models.DeleteBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='CreateServiceMirror',
+            action='DeleteBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
-            method='POST',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}',
+            method='DELETE',
             auth_type='AK',
             style='ROA',
             req_body_type='json',
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.CreateServiceMirrorResponse(),
+            eas_20210701_models.DeleteBenchmarkTaskResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -781,23 +902,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_benchmark_task_with_options_async(cluster_id, task_name, headers, runtime)
 
-    def delete_benchmark_task_with_options(
+    def delete_resource_with_options(
         self,
         cluster_id: str,
-        task_name: str,
+        resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+    ) -> eas_20210701_models.DeleteResourceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteBenchmarkTask',
+            action='DeleteResource',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -805,27 +924,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteBenchmarkTaskResponse(),
+            eas_20210701_models.DeleteResourceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_benchmark_task_with_options_async(
+    async def delete_resource_with_options_async(
         self,
         cluster_id: str,
-        task_name: str,
+        resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+    ) -> eas_20210701_models.DeleteResourceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteBenchmarkTask',
+            action='DeleteResource',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -833,7 +950,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteBenchmarkTaskResponse(),
+            eas_20210701_models.DeleteResourceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -855,23 +972,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_resource_with_options_async(cluster_id, resource_id, headers, runtime)
 
-    def delete_resource_with_options(
+    def delete_resource_dlink_with_options(
         self,
         cluster_id: str,
         resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DeleteResourceDLinkResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteResource',
+            action='DeleteResourceDLink',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/dlink',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -879,27 +994,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceResponse(),
+            eas_20210701_models.DeleteResourceDLinkResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_resource_with_options_async(
+    async def delete_resource_dlink_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DeleteResourceDLinkResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteResource',
+            action='DeleteResourceDLink',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/dlink',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -907,7 +1020,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceResponse(),
+            eas_20210701_models.DeleteResourceDLinkResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -929,23 +1042,29 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_resource_dlink_with_options_async(cluster_id, resource_id, headers, runtime)
 
-    def delete_resource_dlink_with_options(
+    def delete_resource_instances_with_options(
         self,
         cluster_id: str,
         resource_id: str,
+        request: eas_20210701_models.DeleteResourceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceDLinkResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DeleteResourceInstancesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.all_failed):
+            query['AllFailed'] = request.all_failed
+        if not UtilClient.is_unset(request.instance_list):
+            query['InstanceList'] = request.instance_list
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DeleteResourceDLink',
+            action='DeleteResourceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/dlink',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -953,27 +1072,33 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceDLinkResponse(),
+            eas_20210701_models.DeleteResourceInstancesResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_resource_dlink_with_options_async(
+    async def delete_resource_instances_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
+        request: eas_20210701_models.DeleteResourceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceDLinkResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DeleteResourceInstancesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.all_failed):
+            query['AllFailed'] = request.all_failed
+        if not UtilClient.is_unset(request.instance_list):
+            query['InstanceList'] = request.instance_list
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DeleteResourceDLink',
+            action='DeleteResourceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/dlink',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -981,7 +1106,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceDLinkResponse(),
+            eas_20210701_models.DeleteResourceInstancesResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1005,31 +1130,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_resource_instances_with_options_async(cluster_id, resource_id, request, headers, runtime)
 
-    def delete_resource_instances_with_options(
+    def delete_resource_log_with_options(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.DeleteResourceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceInstancesResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        query = {}
-        if not UtilClient.is_unset(request.all_failed):
-            query['AllFailed'] = request.all_failed
-        if not UtilClient.is_unset(request.instance_list):
-            query['InstanceList'] = request.instance_list
+    ) -> eas_20210701_models.DeleteResourceLogResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            query=OpenApiUtilClient.query(query)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteResourceInstances',
+            action='DeleteResourceLog',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instances',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/log',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1037,35 +1152,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceInstancesResponse(),
+            eas_20210701_models.DeleteResourceLogResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_resource_instances_with_options_async(
+    async def delete_resource_log_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.DeleteResourceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceInstancesResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        query = {}
-        if not UtilClient.is_unset(request.all_failed):
-            query['AllFailed'] = request.all_failed
-        if not UtilClient.is_unset(request.instance_list):
-            query['InstanceList'] = request.instance_list
+    ) -> eas_20210701_models.DeleteResourceLogResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            query=OpenApiUtilClient.query(query)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteResourceInstances',
+            action='DeleteResourceLog',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instances',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/log',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1073,7 +1178,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceInstancesResponse(),
+            eas_20210701_models.DeleteResourceLogResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1095,23 +1200,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_resource_log_with_options_async(cluster_id, resource_id, headers, runtime)
 
-    def delete_resource_log_with_options(
+    def delete_service_with_options(
         self,
         cluster_id: str,
-        resource_id: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceLogResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DeleteServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteResourceLog',
+            action='DeleteService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/log',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1119,27 +1222,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceLogResponse(),
+            eas_20210701_models.DeleteServiceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_resource_log_with_options_async(
+    async def delete_service_with_options_async(
         self,
         cluster_id: str,
-        resource_id: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteResourceLogResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DeleteServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteResourceLog',
+            action='DeleteService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/log',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1147,7 +1248,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteResourceLogResponse(),
+            eas_20210701_models.DeleteServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1169,23 +1270,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_service_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def delete_service_with_options(
+    def delete_service_auto_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceAutoScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteService',
+            action='DeleteServiceAutoScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1193,27 +1292,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceResponse(),
+            eas_20210701_models.DeleteServiceAutoScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_service_with_options_async(
+    async def delete_service_auto_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceAutoScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteService',
+            action='DeleteServiceAutoScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1221,7 +1318,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceResponse(),
+            eas_20210701_models.DeleteServiceAutoScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1243,23 +1340,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_service_auto_scaler_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def delete_service_auto_scaler_with_options(
+    def delete_service_cron_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceAutoScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceCronScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteServiceAutoScaler',
+            action='DeleteServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1267,27 +1362,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceAutoScalerResponse(),
+            eas_20210701_models.DeleteServiceCronScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_service_auto_scaler_with_options_async(
+    async def delete_service_cron_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceAutoScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceCronScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteServiceAutoScaler',
+            action='DeleteServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1295,7 +1388,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceAutoScalerResponse(),
+            eas_20210701_models.DeleteServiceCronScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1317,23 +1410,27 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_service_cron_scaler_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def delete_service_cron_scaler_with_options(
+    def delete_service_instances_with_options(
         self,
         cluster_id: str,
         service_name: str,
+        request: eas_20210701_models.DeleteServiceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceCronScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceInstancesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.instance_list):
+            query['InstanceList'] = request.instance_list
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DeleteServiceCronScaler',
+            action='DeleteServiceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/instances',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1341,27 +1438,31 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceCronScalerResponse(),
+            eas_20210701_models.DeleteServiceInstancesResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_service_cron_scaler_with_options_async(
+    async def delete_service_instances_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
+        request: eas_20210701_models.DeleteServiceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceCronScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceInstancesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.instance_list):
+            query['InstanceList'] = request.instance_list
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DeleteServiceCronScaler',
+            action='DeleteServiceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/instances',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1369,7 +1470,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceCronScalerResponse(),
+            eas_20210701_models.DeleteServiceInstancesResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1393,29 +1494,31 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_service_instances_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def delete_service_instances_with_options(
+    def delete_service_label_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.DeleteServiceInstancesRequest,
+        tmp_req: eas_20210701_models.DeleteServiceLabelRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceInstancesResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceLabelResponse:
+        UtilClient.validate_model(tmp_req)
+        request = eas_20210701_models.DeleteServiceLabelShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.keys):
+            request.keys_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.keys, 'Keys', 'simple')
         query = {}
-        if not UtilClient.is_unset(request.instance_list):
-            query['InstanceList'] = request.instance_list
+        if not UtilClient.is_unset(request.keys_shrink):
+            query['Keys'] = request.keys_shrink
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DeleteServiceInstances',
+            action='DeleteServiceLabel',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/instances',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/label',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1423,33 +1526,35 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceInstancesResponse(),
+            eas_20210701_models.DeleteServiceLabelResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_service_instances_with_options_async(
+    async def delete_service_label_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.DeleteServiceInstancesRequest,
+        tmp_req: eas_20210701_models.DeleteServiceLabelRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceInstancesResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DeleteServiceLabelResponse:
+        UtilClient.validate_model(tmp_req)
+        request = eas_20210701_models.DeleteServiceLabelShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.keys):
+            request.keys_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.keys, 'Keys', 'simple')
         query = {}
-        if not UtilClient.is_unset(request.instance_list):
-            query['InstanceList'] = request.instance_list
+        if not UtilClient.is_unset(request.keys_shrink):
+            query['Keys'] = request.keys_shrink
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DeleteServiceInstances',
+            action='DeleteServiceLabel',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/instances',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/label',
             method='DELETE',
             auth_type='AK',
             style='ROA',
@@ -1457,7 +1562,79 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceInstancesResponse(),
+            eas_20210701_models.DeleteServiceLabelResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def delete_service_label(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DeleteServiceLabelRequest,
+    ) -> eas_20210701_models.DeleteServiceLabelResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.delete_service_label_with_options(cluster_id, service_name, request, headers, runtime)
+
+    async def delete_service_label_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DeleteServiceLabelRequest,
+    ) -> eas_20210701_models.DeleteServiceLabelResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.delete_service_label_with_options_async(cluster_id, service_name, request, headers, runtime)
+
+    def delete_service_mirror_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DeleteServiceMirrorResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteServiceMirror',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DeleteServiceMirrorResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def delete_service_mirror_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DeleteServiceMirrorResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteServiceMirror',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DeleteServiceMirrorResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1479,59 +1656,55 @@ class Client(OpenApiClient):
         headers = {}
         return await self.delete_service_mirror_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def delete_service_mirror_with_options(
+    def describe_benchmark_task_with_options(
         self,
         cluster_id: str,
-        service_name: str,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceMirrorResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteServiceMirror',
+            action='DescribeBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
-            method='DELETE',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}',
+            method='GET',
             auth_type='AK',
             style='ROA',
             req_body_type='json',
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceMirrorResponse(),
+            eas_20210701_models.DescribeBenchmarkTaskResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def delete_service_mirror_with_options_async(
+    async def describe_benchmark_task_with_options_async(
         self,
         cluster_id: str,
-        service_name: str,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DeleteServiceMirrorResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DeleteServiceMirror',
+            action='DescribeBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
-            method='DELETE',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}',
+            method='GET',
             auth_type='AK',
             style='ROA',
             req_body_type='json',
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DeleteServiceMirrorResponse(),
+            eas_20210701_models.DescribeBenchmarkTaskResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1553,97 +1726,27 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_benchmark_task_with_options_async(cluster_id, task_name, headers, runtime)
 
-    def describe_benchmark_task_with_options(
-        self,
-        cluster_id: str,
-        task_name: str,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
-        req = open_api_models.OpenApiRequest(
-            headers=headers
-        )
-        params = open_api_models.Params(
-            action='DescribeBenchmarkTask',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}',
-            method='GET',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.DescribeBenchmarkTaskResponse(),
-            self.call_api(params, req, runtime)
-        )
-
-    async def describe_benchmark_task_with_options_async(
-        self,
-        cluster_id: str,
-        task_name: str,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
-        req = open_api_models.OpenApiRequest(
-            headers=headers
-        )
-        params = open_api_models.Params(
-            action='DescribeBenchmarkTask',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}',
-            method='GET',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.DescribeBenchmarkTaskResponse(),
-            await self.call_api_async(params, req, runtime)
-        )
-
-    def describe_benchmark_task_report(
-        self,
-        cluster_id: str,
-        task_name: str,
-    ) -> eas_20210701_models.DescribeBenchmarkTaskReportResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return self.describe_benchmark_task_report_with_options(cluster_id, task_name, headers, runtime)
-
-    async def describe_benchmark_task_report_async(
-        self,
-        cluster_id: str,
-        task_name: str,
-    ) -> eas_20210701_models.DescribeBenchmarkTaskReportResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return await self.describe_benchmark_task_report_with_options_async(cluster_id, task_name, headers, runtime)
-
     def describe_benchmark_task_report_with_options(
         self,
         cluster_id: str,
         task_name: str,
+        request: eas_20210701_models.DescribeBenchmarkTaskReportRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.DescribeBenchmarkTaskReportResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.report_type):
+            query['ReportType'] = request.report_type
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='DescribeBenchmarkTaskReport',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}/report',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}/report',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1659,19 +1762,23 @@ class Client(OpenApiClient):
         self,
         cluster_id: str,
         task_name: str,
+        request: eas_20210701_models.DescribeBenchmarkTaskReportRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.DescribeBenchmarkTaskReportResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.report_type):
+            query['ReportType'] = request.report_type
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='DescribeBenchmarkTaskReport',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}/report',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}/report',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1680,6 +1787,148 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             eas_20210701_models.DescribeBenchmarkTaskReportResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def describe_benchmark_task_report(
+        self,
+        cluster_id: str,
+        task_name: str,
+        request: eas_20210701_models.DescribeBenchmarkTaskReportRequest,
+    ) -> eas_20210701_models.DescribeBenchmarkTaskReportResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.describe_benchmark_task_report_with_options(cluster_id, task_name, request, headers, runtime)
+
+    async def describe_benchmark_task_report_async(
+        self,
+        cluster_id: str,
+        task_name: str,
+        request: eas_20210701_models.DescribeBenchmarkTaskReportRequest,
+    ) -> eas_20210701_models.DescribeBenchmarkTaskReportResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.describe_benchmark_task_report_with_options_async(cluster_id, task_name, request, headers, runtime)
+
+    def describe_group_with_options(
+        self,
+        cluster_id: str,
+        group_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeGroupResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DescribeGroup',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/groups/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(group_name)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeGroupResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def describe_group_with_options_async(
+        self,
+        cluster_id: str,
+        group_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeGroupResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DescribeGroup',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/groups/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(group_name)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeGroupResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def describe_group(
+        self,
+        cluster_id: str,
+        group_name: str,
+    ) -> eas_20210701_models.DescribeGroupResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.describe_group_with_options(cluster_id, group_name, headers, runtime)
+
+    async def describe_group_async(
+        self,
+        cluster_id: str,
+        group_name: str,
+    ) -> eas_20210701_models.DescribeGroupResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.describe_group_with_options_async(cluster_id, group_name, headers, runtime)
+
+    def describe_resource_with_options(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeResourceResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DescribeResource',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeResourceResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def describe_resource_with_options_async(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeResourceResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DescribeResource',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeResourceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1701,23 +1950,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_resource_with_options_async(cluster_id, resource_id, headers, runtime)
 
-    def describe_resource_with_options(
+    def describe_resource_dlink_with_options(
         self,
         cluster_id: str,
         resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeResourceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DescribeResourceDLinkResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeResource',
+            action='DescribeResourceDLink',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/dlink',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1725,27 +1972,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeResourceResponse(),
+            eas_20210701_models.DescribeResourceDLinkResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_resource_with_options_async(
+    async def describe_resource_dlink_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeResourceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DescribeResourceDLinkResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeResource',
+            action='DescribeResourceDLink',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/dlink',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1753,7 +1998,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeResourceResponse(),
+            eas_20210701_models.DescribeResourceDLinkResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1775,23 +2020,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_resource_dlink_with_options_async(cluster_id, resource_id, headers, runtime)
 
-    def describe_resource_dlink_with_options(
+    def describe_resource_log_with_options(
         self,
         cluster_id: str,
         resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeResourceDLinkResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DescribeResourceLogResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeResourceDLink',
+            action='DescribeResourceLog',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/dlink',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/log',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1799,27 +2042,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeResourceDLinkResponse(),
+            eas_20210701_models.DescribeResourceLogResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_resource_dlink_with_options_async(
+    async def describe_resource_log_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeResourceDLinkResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DescribeResourceLogResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeResourceDLink',
+            action='DescribeResourceLog',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/dlink',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/log',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1827,7 +2068,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeResourceDLinkResponse(),
+            eas_20210701_models.DescribeResourceLogResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1849,23 +2090,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_resource_log_with_options_async(cluster_id, resource_id, headers, runtime)
 
-    def describe_resource_log_with_options(
+    def describe_service_with_options(
         self,
         cluster_id: str,
-        resource_id: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeResourceLogResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DescribeServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeResourceLog',
+            action='DescribeService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/log',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1873,27 +2112,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeResourceLogResponse(),
+            eas_20210701_models.DescribeServiceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_resource_log_with_options_async(
+    async def describe_service_with_options_async(
         self,
         cluster_id: str,
-        resource_id: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeResourceLogResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
+    ) -> eas_20210701_models.DescribeServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeResourceLog',
+            action='DescribeService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/log',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1901,7 +2138,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeResourceLogResponse(),
+            eas_20210701_models.DescribeServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1923,23 +2160,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_service_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def describe_service_with_options(
+    def describe_service_auto_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeServiceAutoScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeService',
+            action='DescribeServiceAutoScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1947,27 +2182,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceResponse(),
+            eas_20210701_models.DescribeServiceAutoScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_service_with_options_async(
+    async def describe_service_auto_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeServiceAutoScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeService',
+            action='DescribeServiceAutoScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -1975,7 +2208,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceResponse(),
+            eas_20210701_models.DescribeServiceAutoScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -1997,23 +2230,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_service_auto_scaler_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def describe_service_auto_scaler_with_options(
+    def describe_service_cron_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceAutoScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeServiceCronScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeServiceAutoScaler',
+            action='DescribeServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2021,27 +2252,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceAutoScalerResponse(),
+            eas_20210701_models.DescribeServiceCronScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_service_auto_scaler_with_options_async(
+    async def describe_service_cron_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceAutoScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeServiceCronScalerResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeServiceAutoScaler',
+            action='DescribeServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2049,7 +2278,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceAutoScalerResponse(),
+            eas_20210701_models.DescribeServiceCronScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2071,23 +2300,33 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_service_cron_scaler_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def describe_service_cron_scaler_with_options(
+    def describe_service_event_with_options(
         self,
         cluster_id: str,
         service_name: str,
+        request: eas_20210701_models.DescribeServiceEventRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceCronScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeServiceEventResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.page_num):
+            query['PageNum'] = request.page_num
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DescribeServiceCronScaler',
+            action='DescribeServiceEvent',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/events',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2095,27 +2334,37 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceCronScalerResponse(),
+            eas_20210701_models.DescribeServiceEventResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_service_cron_scaler_with_options_async(
+    async def describe_service_event_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
+        request: eas_20210701_models.DescribeServiceEventRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceCronScalerResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DescribeServiceEventResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.page_num):
+            query['PageNum'] = request.page_num
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DescribeServiceCronScaler',
+            action='DescribeServiceEvent',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/events',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2123,7 +2372,111 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceCronScalerResponse(),
+            eas_20210701_models.DescribeServiceEventResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def describe_service_event(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DescribeServiceEventRequest,
+    ) -> eas_20210701_models.DescribeServiceEventResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.describe_service_event_with_options(cluster_id, service_name, request, headers, runtime)
+
+    async def describe_service_event_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DescribeServiceEventRequest,
+    ) -> eas_20210701_models.DescribeServiceEventResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.describe_service_event_with_options_async(cluster_id, service_name, request, headers, runtime)
+
+    def describe_service_log_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DescribeServiceLogRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeServiceLogResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.ip):
+            query['Ip'] = request.ip
+        if not UtilClient.is_unset(request.keyword):
+            query['Keyword'] = request.keyword
+        if not UtilClient.is_unset(request.page_num):
+            query['PageNum'] = request.page_num
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='DescribeServiceLog',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/logs',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeServiceLogResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def describe_service_log_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DescribeServiceLogRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeServiceLogResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.ip):
+            query['Ip'] = request.ip
+        if not UtilClient.is_unset(request.keyword):
+            query['Keyword'] = request.keyword
+        if not UtilClient.is_unset(request.page_num):
+            query['PageNum'] = request.page_num
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='DescribeServiceLog',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/logs',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeServiceLogResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2147,39 +2500,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_service_log_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def describe_service_log_with_options(
+    def describe_service_mirror_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.DescribeServiceLogRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceLogResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        query = {}
-        if not UtilClient.is_unset(request.end_time):
-            query['EndTime'] = request.end_time
-        if not UtilClient.is_unset(request.ip):
-            query['Ip'] = request.ip
-        if not UtilClient.is_unset(request.keyword):
-            query['Keyword'] = request.keyword
-        if not UtilClient.is_unset(request.page_num):
-            query['PageNum'] = request.page_num
-        if not UtilClient.is_unset(request.page_size):
-            query['PageSize'] = request.page_size
-        if not UtilClient.is_unset(request.start_time):
-            query['StartTime'] = request.start_time
+    ) -> eas_20210701_models.DescribeServiceMirrorResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            query=OpenApiUtilClient.query(query)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeServiceLog',
+            action='DescribeServiceMirror',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/logs',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2187,43 +2522,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceLogResponse(),
+            eas_20210701_models.DescribeServiceMirrorResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_service_log_with_options_async(
+    async def describe_service_mirror_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.DescribeServiceLogRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceLogResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        query = {}
-        if not UtilClient.is_unset(request.end_time):
-            query['EndTime'] = request.end_time
-        if not UtilClient.is_unset(request.ip):
-            query['Ip'] = request.ip
-        if not UtilClient.is_unset(request.keyword):
-            query['Keyword'] = request.keyword
-        if not UtilClient.is_unset(request.page_num):
-            query['PageNum'] = request.page_num
-        if not UtilClient.is_unset(request.page_size):
-            query['PageSize'] = request.page_size
-        if not UtilClient.is_unset(request.start_time):
-            query['StartTime'] = request.start_time
+    ) -> eas_20210701_models.DescribeServiceMirrorResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            query=OpenApiUtilClient.query(query)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='DescribeServiceLog',
+            action='DescribeServiceMirror',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/logs',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2231,7 +2548,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceLogResponse(),
+            eas_20210701_models.DescribeServiceMirrorResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2253,79 +2570,109 @@ class Client(OpenApiClient):
         headers = {}
         return await self.describe_service_mirror_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def describe_service_mirror_with_options(
+    def develop_service_with_options(
         self,
         cluster_id: str,
         service_name: str,
+        request: eas_20210701_models.DevelopServiceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceMirrorResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DevelopServiceResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.exit):
+            query['Exit'] = request.exit
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DescribeServiceMirror',
+            action='DevelopService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
-            method='GET',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/develop',
+            method='PUT',
             auth_type='AK',
             style='ROA',
             req_body_type='json',
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceMirrorResponse(),
+            eas_20210701_models.DevelopServiceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def describe_service_mirror_with_options_async(
+    async def develop_service_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
+        request: eas_20210701_models.DevelopServiceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.DescribeServiceMirrorResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.DevelopServiceResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.exit):
+            query['Exit'] = request.exit
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='DescribeServiceMirror',
+            action='DevelopService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
-            method='GET',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/develop',
+            method='PUT',
             auth_type='AK',
             style='ROA',
             req_body_type='json',
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.DescribeServiceMirrorResponse(),
+            eas_20210701_models.DevelopServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
-    def list_benchmark_task(self) -> eas_20210701_models.ListBenchmarkTaskResponse:
+    def develop_service(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DevelopServiceRequest,
+    ) -> eas_20210701_models.DevelopServiceResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return self.list_benchmark_task_with_options(headers, runtime)
+        return self.develop_service_with_options(cluster_id, service_name, request, headers, runtime)
 
-    async def list_benchmark_task_async(self) -> eas_20210701_models.ListBenchmarkTaskResponse:
+    async def develop_service_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.DevelopServiceRequest,
+    ) -> eas_20210701_models.DevelopServiceResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.list_benchmark_task_with_options_async(headers, runtime)
+        return await self.develop_service_with_options_async(cluster_id, service_name, request, headers, runtime)
 
     def list_benchmark_task_with_options(
         self,
+        request: eas_20210701_models.ListBenchmarkTaskRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.ListBenchmarkTaskResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.filter):
+            query['Filter'] = request.filter
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.service_name):
+            query['ServiceName'] = request.service_name
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='ListBenchmarkTask',
@@ -2345,11 +2692,23 @@ class Client(OpenApiClient):
 
     async def list_benchmark_task_with_options_async(
         self,
+        request: eas_20210701_models.ListBenchmarkTaskRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.ListBenchmarkTaskResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.filter):
+            query['Filter'] = request.filter
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.service_name):
+            query['ServiceName'] = request.service_name
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='ListBenchmarkTask',
@@ -2364,6 +2723,176 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             eas_20210701_models.ListBenchmarkTaskResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_benchmark_task(
+        self,
+        request: eas_20210701_models.ListBenchmarkTaskRequest,
+    ) -> eas_20210701_models.ListBenchmarkTaskResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_benchmark_task_with_options(request, headers, runtime)
+
+    async def list_benchmark_task_async(
+        self,
+        request: eas_20210701_models.ListBenchmarkTaskRequest,
+    ) -> eas_20210701_models.ListBenchmarkTaskResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_benchmark_task_with_options_async(request, headers, runtime)
+
+    def list_groups_with_options(
+        self,
+        request: eas_20210701_models.ListGroupsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ListGroupsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.filter):
+            query['Filter'] = request.filter
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListGroups',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/groups',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ListGroupsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_groups_with_options_async(
+        self,
+        request: eas_20210701_models.ListGroupsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ListGroupsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.filter):
+            query['Filter'] = request.filter
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListGroups',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/groups',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ListGroupsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_groups(
+        self,
+        request: eas_20210701_models.ListGroupsRequest,
+    ) -> eas_20210701_models.ListGroupsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_groups_with_options(request, headers, runtime)
+
+    async def list_groups_async(
+        self,
+        request: eas_20210701_models.ListGroupsRequest,
+    ) -> eas_20210701_models.ListGroupsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_groups_with_options_async(request, headers, runtime)
+
+    def list_resource_instance_worker_with_options(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        instance_name: str,
+        request: eas_20210701_models.ListResourceInstanceWorkerRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ListResourceInstanceWorkerResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListResourceInstanceWorker',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instance/{OpenApiUtilClient.get_encode_param(instance_name)}/workers',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ListResourceInstanceWorkerResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_resource_instance_worker_with_options_async(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        instance_name: str,
+        request: eas_20210701_models.ListResourceInstanceWorkerRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ListResourceInstanceWorkerResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListResourceInstanceWorker',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instance/{OpenApiUtilClient.get_encode_param(instance_name)}/workers',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ListResourceInstanceWorkerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2389,20 +2918,22 @@ class Client(OpenApiClient):
         headers = {}
         return await self.list_resource_instance_worker_with_options_async(cluster_id, resource_id, instance_name, request, headers, runtime)
 
-    def list_resource_instance_worker_with_options(
+    def list_resource_instances_with_options(
         self,
         cluster_id: str,
         resource_id: str,
-        instance_name: str,
-        request: eas_20210701_models.ListResourceInstanceWorkerRequest,
+        request: eas_20210701_models.ListResourceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListResourceInstanceWorkerResponse:
+    ) -> eas_20210701_models.ListResourceInstancesResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        instance_name = OpenApiUtilClient.get_encode_param(instance_name)
         query = {}
+        if not UtilClient.is_unset(request.charge_type):
+            query['ChargeType'] = request.charge_type
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.instance_name):
+            query['InstanceName'] = request.instance_name
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
@@ -2412,10 +2943,10 @@ class Client(OpenApiClient):
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='ListResourceInstanceWorker',
+            action='ListResourceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instance/{instance_name}/workers',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2423,24 +2954,26 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ListResourceInstanceWorkerResponse(),
+            eas_20210701_models.ListResourceInstancesResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def list_resource_instance_worker_with_options_async(
+    async def list_resource_instances_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
-        instance_name: str,
-        request: eas_20210701_models.ListResourceInstanceWorkerRequest,
+        request: eas_20210701_models.ListResourceInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListResourceInstanceWorkerResponse:
+    ) -> eas_20210701_models.ListResourceInstancesResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        instance_name = OpenApiUtilClient.get_encode_param(instance_name)
         query = {}
+        if not UtilClient.is_unset(request.charge_type):
+            query['ChargeType'] = request.charge_type
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.instance_name):
+            query['InstanceName'] = request.instance_name
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
@@ -2450,10 +2983,10 @@ class Client(OpenApiClient):
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='ListResourceInstanceWorker',
+            action='ListResourceInstances',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instance/{instance_name}/workers',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2461,7 +2994,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ListResourceInstanceWorkerResponse(),
+            eas_20210701_models.ListResourceInstancesResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2485,20 +3018,16 @@ class Client(OpenApiClient):
         headers = {}
         return await self.list_resource_instances_with_options_async(cluster_id, resource_id, request, headers, runtime)
 
-    def list_resource_instances_with_options(
+    def list_resource_services_with_options(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.ListResourceInstancesRequest,
+        request: eas_20210701_models.ListResourceServicesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListResourceInstancesResponse:
+    ) -> eas_20210701_models.ListResourceServicesResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         query = {}
-        if not UtilClient.is_unset(request.charge_type):
-            query['ChargeType'] = request.charge_type
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
@@ -2508,10 +3037,10 @@ class Client(OpenApiClient):
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='ListResourceInstances',
+            action='ListResourceServices',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instances',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/services',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2519,24 +3048,20 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ListResourceInstancesResponse(),
+            eas_20210701_models.ListResourceServicesResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def list_resource_instances_with_options_async(
+    async def list_resource_services_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.ListResourceInstancesRequest,
+        request: eas_20210701_models.ListResourceServicesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListResourceInstancesResponse:
+    ) -> eas_20210701_models.ListResourceServicesResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         query = {}
-        if not UtilClient.is_unset(request.charge_type):
-            query['ChargeType'] = request.charge_type
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
@@ -2546,10 +3071,10 @@ class Client(OpenApiClient):
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='ListResourceInstances',
+            action='ListResourceServices',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/instances',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/services',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2557,7 +3082,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ListResourceInstancesResponse(),
+            eas_20210701_models.ListResourceServicesResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2581,94 +3106,6 @@ class Client(OpenApiClient):
         headers = {}
         return await self.list_resource_services_with_options_async(cluster_id, resource_id, request, headers, runtime)
 
-    def list_resource_services_with_options(
-        self,
-        cluster_id: str,
-        resource_id: str,
-        request: eas_20210701_models.ListResourceServicesRequest,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListResourceServicesResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        query = {}
-        if not UtilClient.is_unset(request.page_number):
-            query['PageNumber'] = request.page_number
-        if not UtilClient.is_unset(request.page_size):
-            query['PageSize'] = request.page_size
-        req = open_api_models.OpenApiRequest(
-            headers=headers,
-            query=OpenApiUtilClient.query(query)
-        )
-        params = open_api_models.Params(
-            action='ListResourceServices',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/services',
-            method='GET',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.ListResourceServicesResponse(),
-            self.call_api(params, req, runtime)
-        )
-
-    async def list_resource_services_with_options_async(
-        self,
-        cluster_id: str,
-        resource_id: str,
-        request: eas_20210701_models.ListResourceServicesRequest,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListResourceServicesResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
-        query = {}
-        if not UtilClient.is_unset(request.page_number):
-            query['PageNumber'] = request.page_number
-        if not UtilClient.is_unset(request.page_size):
-            query['PageSize'] = request.page_size
-        req = open_api_models.OpenApiRequest(
-            headers=headers,
-            query=OpenApiUtilClient.query(query)
-        )
-        params = open_api_models.Params(
-            action='ListResourceServices',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/services',
-            method='GET',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.ListResourceServicesResponse(),
-            await self.call_api_async(params, req, runtime)
-        )
-
-    def list_resources(
-        self,
-        request: eas_20210701_models.ListResourcesRequest,
-    ) -> eas_20210701_models.ListResourcesResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return self.list_resources_with_options(request, headers, runtime)
-
-    async def list_resources_async(
-        self,
-        request: eas_20210701_models.ListResourcesRequest,
-    ) -> eas_20210701_models.ListResourcesResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return await self.list_resources_with_options_async(request, headers, runtime)
-
     def list_resources_with_options(
         self,
         request: eas_20210701_models.ListResourcesRequest,
@@ -2681,6 +3118,10 @@ class Client(OpenApiClient):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
             query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.resource_id):
+            query['ResourceId'] = request.resource_id
+        if not UtilClient.is_unset(request.resource_name):
+            query['ResourceName'] = request.resource_name
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -2713,6 +3154,10 @@ class Client(OpenApiClient):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
             query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.resource_id):
+            query['ResourceId'] = request.resource_id
+        if not UtilClient.is_unset(request.resource_name):
+            query['ResourceName'] = request.resource_name
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -2730,6 +3175,90 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             eas_20210701_models.ListResourcesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_resources(
+        self,
+        request: eas_20210701_models.ListResourcesRequest,
+    ) -> eas_20210701_models.ListResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_resources_with_options(request, headers, runtime)
+
+    async def list_resources_async(
+        self,
+        request: eas_20210701_models.ListResourcesRequest,
+    ) -> eas_20210701_models.ListResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_resources_with_options_async(request, headers, runtime)
+
+    def list_service_instances_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.ListServiceInstancesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ListServiceInstancesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListServiceInstances',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/instances',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ListServiceInstancesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_service_instances_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.ListServiceInstancesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ListServiceInstancesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListServiceInstances',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/instances',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ListServiceInstancesResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2753,17 +3282,15 @@ class Client(OpenApiClient):
         headers = {}
         return await self.list_service_instances_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def list_service_instances_with_options(
+    def list_service_versions_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.ListServiceInstancesRequest,
+        request: eas_20210701_models.ListServiceVersionsRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListServiceInstancesResponse:
+    ) -> eas_20210701_models.ListServiceVersionsResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         query = {}
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
@@ -2774,10 +3301,10 @@ class Client(OpenApiClient):
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='ListServiceInstances',
+            action='ListServiceVersions',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/instances',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/versions',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2785,21 +3312,19 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ListServiceInstancesResponse(),
+            eas_20210701_models.ListServiceVersionsResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def list_service_instances_with_options_async(
+    async def list_service_versions_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.ListServiceInstancesRequest,
+        request: eas_20210701_models.ListServiceVersionsRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ListServiceInstancesResponse:
+    ) -> eas_20210701_models.ListServiceVersionsResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         query = {}
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
@@ -2810,10 +3335,10 @@ class Client(OpenApiClient):
             query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
-            action='ListServiceInstances',
+            action='ListServiceVersions',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/instances',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/versions',
             method='GET',
             auth_type='AK',
             style='ROA',
@@ -2821,42 +3346,58 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ListServiceInstancesResponse(),
+            eas_20210701_models.ListServiceVersionsResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
-    def list_services(
+    def list_service_versions(
         self,
-        request: eas_20210701_models.ListServicesRequest,
-    ) -> eas_20210701_models.ListServicesResponse:
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.ListServiceVersionsRequest,
+    ) -> eas_20210701_models.ListServiceVersionsResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return self.list_services_with_options(request, headers, runtime)
+        return self.list_service_versions_with_options(cluster_id, service_name, request, headers, runtime)
 
-    async def list_services_async(
+    async def list_service_versions_async(
         self,
-        request: eas_20210701_models.ListServicesRequest,
-    ) -> eas_20210701_models.ListServicesResponse:
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.ListServiceVersionsRequest,
+    ) -> eas_20210701_models.ListServiceVersionsResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.list_services_with_options_async(request, headers, runtime)
+        return await self.list_service_versions_with_options_async(cluster_id, service_name, request, headers, runtime)
 
     def list_services_with_options(
         self,
-        request: eas_20210701_models.ListServicesRequest,
+        tmp_req: eas_20210701_models.ListServicesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.ListServicesResponse:
-        UtilClient.validate_model(request)
+        UtilClient.validate_model(tmp_req)
+        request = eas_20210701_models.ListServicesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.label):
+            request.label_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.label, 'Label', 'json')
         query = {}
         if not UtilClient.is_unset(request.filter):
             query['Filter'] = request.filter
+        if not UtilClient.is_unset(request.group_name):
+            query['GroupName'] = request.group_name
+        if not UtilClient.is_unset(request.label_shrink):
+            query['Label'] = request.label_shrink
         if not UtilClient.is_unset(request.order):
             query['Order'] = request.order
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
             query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.parent_service_uid):
+            query['ParentServiceUid'] = request.parent_service_uid
+        if not UtilClient.is_unset(request.service_type):
+            query['ServiceType'] = request.service_type
         if not UtilClient.is_unset(request.sort):
             query['Sort'] = request.sort
         req = open_api_models.OpenApiRequest(
@@ -2881,20 +3422,32 @@ class Client(OpenApiClient):
 
     async def list_services_with_options_async(
         self,
-        request: eas_20210701_models.ListServicesRequest,
+        tmp_req: eas_20210701_models.ListServicesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> eas_20210701_models.ListServicesResponse:
-        UtilClient.validate_model(request)
+        UtilClient.validate_model(tmp_req)
+        request = eas_20210701_models.ListServicesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.label):
+            request.label_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.label, 'Label', 'json')
         query = {}
         if not UtilClient.is_unset(request.filter):
             query['Filter'] = request.filter
+        if not UtilClient.is_unset(request.group_name):
+            query['GroupName'] = request.group_name
+        if not UtilClient.is_unset(request.label_shrink):
+            query['Label'] = request.label_shrink
         if not UtilClient.is_unset(request.order):
             query['Order'] = request.order
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
             query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.parent_service_uid):
+            query['ParentServiceUid'] = request.parent_service_uid
+        if not UtilClient.is_unset(request.service_type):
+            query['ServiceType'] = request.service_type
         if not UtilClient.is_unset(request.sort):
             query['Sort'] = request.sort
         req = open_api_models.OpenApiRequest(
@@ -2914,6 +3467,90 @@ class Client(OpenApiClient):
         )
         return TeaCore.from_map(
             eas_20210701_models.ListServicesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_services(
+        self,
+        request: eas_20210701_models.ListServicesRequest,
+    ) -> eas_20210701_models.ListServicesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_services_with_options(request, headers, runtime)
+
+    async def list_services_async(
+        self,
+        request: eas_20210701_models.ListServicesRequest,
+    ) -> eas_20210701_models.ListServicesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_services_with_options_async(request, headers, runtime)
+
+    def release_service_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.ReleaseServiceRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ReleaseServiceResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.traffic_state):
+            body['TrafficState'] = request.traffic_state
+        if not UtilClient.is_unset(request.weight):
+            body['Weight'] = request.weight
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ReleaseService',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/release',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ReleaseServiceResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def release_service_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.ReleaseServiceRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.ReleaseServiceResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.traffic_state):
+            body['TrafficState'] = request.traffic_state
+        if not UtilClient.is_unset(request.weight):
+            body['Weight'] = request.weight
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ReleaseService',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/release',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.ReleaseServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -2937,31 +3574,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.release_service_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def release_service_with_options(
+    def start_benchmark_task_with_options(
         self,
         cluster_id: str,
-        service_name: str,
-        request: eas_20210701_models.ReleaseServiceRequest,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ReleaseServiceResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        body = {}
-        if not UtilClient.is_unset(request.traffic_state):
-            body['TrafficState'] = request.traffic_state
-        if not UtilClient.is_unset(request.weight):
-            body['Weight'] = request.weight
+    ) -> eas_20210701_models.StartBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='ReleaseService',
+            action='StartBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/release',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}/start',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -2969,35 +3596,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ReleaseServiceResponse(),
+            eas_20210701_models.StartBenchmarkTaskResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def release_service_with_options_async(
+    async def start_benchmark_task_with_options_async(
         self,
         cluster_id: str,
-        service_name: str,
-        request: eas_20210701_models.ReleaseServiceRequest,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.ReleaseServiceResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        body = {}
-        if not UtilClient.is_unset(request.traffic_state):
-            body['TrafficState'] = request.traffic_state
-        if not UtilClient.is_unset(request.weight):
-            body['Weight'] = request.weight
+    ) -> eas_20210701_models.StartBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
+            headers=headers
         )
         params = open_api_models.Params(
-            action='ReleaseService',
+            action='StartBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/release',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}/start',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3005,7 +3622,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.ReleaseServiceResponse(),
+            eas_20210701_models.StartBenchmarkTaskResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3027,23 +3644,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.start_benchmark_task_with_options_async(cluster_id, task_name, headers, runtime)
 
-    def start_benchmark_task_with_options(
+    def start_service_with_options(
         self,
         cluster_id: str,
-        task_name: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StartBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+    ) -> eas_20210701_models.StartServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='StartBenchmarkTask',
+            action='StartService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}/start',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/start',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3051,27 +3666,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StartBenchmarkTaskResponse(),
+            eas_20210701_models.StartServiceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def start_benchmark_task_with_options_async(
+    async def start_service_with_options_async(
         self,
         cluster_id: str,
-        task_name: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StartBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+    ) -> eas_20210701_models.StartServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='StartBenchmarkTask',
+            action='StartService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}/start',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/start',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3079,7 +3692,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StartBenchmarkTaskResponse(),
+            eas_20210701_models.StartServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3101,23 +3714,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.start_service_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def start_service_with_options(
+    def stop_benchmark_task_with_options(
         self,
         cluster_id: str,
-        service_name: str,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StartServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.StopBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='StartService',
+            action='StopBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/start',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}/stop',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3125,27 +3736,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StartServiceResponse(),
+            eas_20210701_models.StopBenchmarkTaskResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def start_service_with_options_async(
+    async def stop_benchmark_task_with_options_async(
         self,
         cluster_id: str,
-        service_name: str,
+        task_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StartServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.StopBenchmarkTaskResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='StartService',
+            action='StopBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/start',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}/stop',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3153,7 +3762,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StartServiceResponse(),
+            eas_20210701_models.StopBenchmarkTaskResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3175,23 +3784,21 @@ class Client(OpenApiClient):
         headers = {}
         return await self.stop_benchmark_task_with_options_async(cluster_id, task_name, headers, runtime)
 
-    def stop_benchmark_task_with_options(
+    def stop_service_with_options(
         self,
         cluster_id: str,
-        task_name: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StopBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+    ) -> eas_20210701_models.StopServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='StopBenchmarkTask',
+            action='StopService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}/stop',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/stop',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3199,27 +3806,25 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StopBenchmarkTaskResponse(),
+            eas_20210701_models.StopServiceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def stop_benchmark_task_with_options_async(
+    async def stop_service_with_options_async(
         self,
         cluster_id: str,
-        task_name: str,
+        service_name: str,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StopBenchmarkTaskResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+    ) -> eas_20210701_models.StopServiceResponse:
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
         params = open_api_models.Params(
-            action='StopBenchmarkTask',
+            action='StopService',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}/stop',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/stop',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3227,7 +3832,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StopBenchmarkTaskResponse(),
+            eas_20210701_models.StopServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3249,23 +3854,24 @@ class Client(OpenApiClient):
         headers = {}
         return await self.stop_service_with_options_async(cluster_id, service_name, headers, runtime)
 
-    def stop_service_with_options(
+    def update_benchmark_task_with_options(
         self,
         cluster_id: str,
-        service_name: str,
+        task_name: str,
+        request: eas_20210701_models.UpdateBenchmarkTaskRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StopServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.UpdateBenchmarkTaskResponse:
+        UtilClient.validate_model(request)
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            body=request.body
         )
         params = open_api_models.Params(
-            action='StopService',
+            action='UpdateBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/stop',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3273,27 +3879,28 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StopServiceResponse(),
+            eas_20210701_models.UpdateBenchmarkTaskResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def stop_service_with_options_async(
+    async def update_benchmark_task_with_options_async(
         self,
         cluster_id: str,
-        service_name: str,
+        task_name: str,
+        request: eas_20210701_models.UpdateBenchmarkTaskRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.StopServiceResponse:
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+    ) -> eas_20210701_models.UpdateBenchmarkTaskResponse:
+        UtilClient.validate_model(request)
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            body=request.body
         )
         params = open_api_models.Params(
-            action='StopService',
+            action='UpdateBenchmarkTask',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/stop',
+            pathname=f'/api/v2/benchmark-tasks/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(task_name)}',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3301,7 +3908,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.StopServiceResponse(),
+            eas_20210701_models.UpdateBenchmarkTaskResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3325,26 +3932,27 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_benchmark_task_with_options_async(cluster_id, task_name, request, headers, runtime)
 
-    def update_benchmark_task_with_options(
+    def update_resource_with_options(
         self,
         cluster_id: str,
-        task_name: str,
-        request: eas_20210701_models.UpdateBenchmarkTaskRequest,
+        resource_id: str,
+        request: eas_20210701_models.UpdateResourceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateBenchmarkTaskResponse:
+    ) -> eas_20210701_models.UpdateResourceResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+        body = {}
+        if not UtilClient.is_unset(request.resource_name):
+            body['ResourceName'] = request.resource_name
         req = open_api_models.OpenApiRequest(
             headers=headers,
-            body=request.body
+            body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateBenchmarkTask',
+            action='UpdateResource',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3352,30 +3960,31 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateBenchmarkTaskResponse(),
+            eas_20210701_models.UpdateResourceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_benchmark_task_with_options_async(
+    async def update_resource_with_options_async(
         self,
         cluster_id: str,
-        task_name: str,
-        request: eas_20210701_models.UpdateBenchmarkTaskRequest,
+        resource_id: str,
+        request: eas_20210701_models.UpdateResourceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateBenchmarkTaskResponse:
+    ) -> eas_20210701_models.UpdateResourceResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        task_name = OpenApiUtilClient.get_encode_param(task_name)
+        body = {}
+        if not UtilClient.is_unset(request.resource_name):
+            body['ResourceName'] = request.resource_name
         req = open_api_models.OpenApiRequest(
             headers=headers,
-            body=request.body
+            body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateBenchmarkTask',
+            action='UpdateResource',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/benchmark-tasks/{cluster_id}/{task_name}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3383,7 +3992,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateBenchmarkTaskResponse(),
+            eas_20210701_models.UpdateResourceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3407,29 +4016,33 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_resource_with_options_async(cluster_id, resource_id, request, headers, runtime)
 
-    def update_resource_with_options(
+    def update_resource_dlink_with_options(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.UpdateResourceRequest,
+        request: eas_20210701_models.UpdateResourceDLinkRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateResourceResponse:
+    ) -> eas_20210701_models.UpdateResourceDLinkResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         body = {}
-        if not UtilClient.is_unset(request.resource_name):
-            body['ResourceName'] = request.resource_name
+        if not UtilClient.is_unset(request.destination_cidrs):
+            body['DestinationCIDRs'] = request.destination_cidrs
+        if not UtilClient.is_unset(request.security_group_id):
+            body['SecurityGroupId'] = request.security_group_id
+        if not UtilClient.is_unset(request.v_switch_id):
+            body['VSwitchId'] = request.v_switch_id
+        if not UtilClient.is_unset(request.v_switch_id_list):
+            body['VSwitchIdList'] = request.v_switch_id_list
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateResource',
+            action='UpdateResourceDLink',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/dlink',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3437,33 +4050,37 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateResourceResponse(),
+            eas_20210701_models.UpdateResourceDLinkResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_resource_with_options_async(
+    async def update_resource_dlink_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.UpdateResourceRequest,
+        request: eas_20210701_models.UpdateResourceDLinkRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateResourceResponse:
+    ) -> eas_20210701_models.UpdateResourceDLinkResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         body = {}
-        if not UtilClient.is_unset(request.resource_name):
-            body['ResourceName'] = request.resource_name
+        if not UtilClient.is_unset(request.destination_cidrs):
+            body['DestinationCIDRs'] = request.destination_cidrs
+        if not UtilClient.is_unset(request.security_group_id):
+            body['SecurityGroupId'] = request.security_group_id
+        if not UtilClient.is_unset(request.v_switch_id):
+            body['VSwitchId'] = request.v_switch_id
+        if not UtilClient.is_unset(request.v_switch_id_list):
+            body['VSwitchIdList'] = request.v_switch_id_list
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateResource',
+            action='UpdateResourceDLink',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/dlink',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3471,7 +4088,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateResourceResponse(),
+            eas_20210701_models.UpdateResourceDLinkResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3495,35 +4112,28 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_resource_dlink_with_options_async(cluster_id, resource_id, request, headers, runtime)
 
-    def update_resource_dlink_with_options(
+    def update_resource_instance_with_options(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.UpdateResourceDLinkRequest,
+        instance_id: str,
+        request: eas_20210701_models.UpdateResourceInstanceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateResourceDLinkResponse:
+    ) -> eas_20210701_models.UpdateResourceInstanceResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         body = {}
-        if not UtilClient.is_unset(request.destination_cidrs):
-            body['DestinationCIDRs'] = request.destination_cidrs
-        if not UtilClient.is_unset(request.security_group_id):
-            body['SecurityGroupId'] = request.security_group_id
-        if not UtilClient.is_unset(request.v_switch_id):
-            body['VSwitchId'] = request.v_switch_id
-        if not UtilClient.is_unset(request.v_switch_id_list):
-            body['VSwitchIdList'] = request.v_switch_id_list
+        if not UtilClient.is_unset(request.action):
+            body['Action'] = request.action
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateResourceDLink',
+            action='UpdateResourceInstance',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/dlink',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances/{OpenApiUtilClient.get_encode_param(instance_id)}',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3531,39 +4141,32 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateResourceDLinkResponse(),
+            eas_20210701_models.UpdateResourceInstanceResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_resource_dlink_with_options_async(
+    async def update_resource_instance_with_options_async(
         self,
         cluster_id: str,
         resource_id: str,
-        request: eas_20210701_models.UpdateResourceDLinkRequest,
+        instance_id: str,
+        request: eas_20210701_models.UpdateResourceInstanceRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateResourceDLinkResponse:
+    ) -> eas_20210701_models.UpdateResourceInstanceResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        resource_id = OpenApiUtilClient.get_encode_param(resource_id)
         body = {}
-        if not UtilClient.is_unset(request.destination_cidrs):
-            body['DestinationCIDRs'] = request.destination_cidrs
-        if not UtilClient.is_unset(request.security_group_id):
-            body['SecurityGroupId'] = request.security_group_id
-        if not UtilClient.is_unset(request.v_switch_id):
-            body['VSwitchId'] = request.v_switch_id
-        if not UtilClient.is_unset(request.v_switch_id_list):
-            body['VSwitchIdList'] = request.v_switch_id_list
+        if not UtilClient.is_unset(request.action):
+            body['Action'] = request.action
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateResourceDLink',
+            action='UpdateResourceInstance',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/resources/{cluster_id}/{resource_id}/dlink',
+            pathname=f'/api/v2/resources/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(resource_id)}/instances/{OpenApiUtilClient.get_encode_param(instance_id)}',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3571,7 +4174,87 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateResourceDLinkResponse(),
+            eas_20210701_models.UpdateResourceInstanceResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_resource_instance(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        instance_id: str,
+        request: eas_20210701_models.UpdateResourceInstanceRequest,
+    ) -> eas_20210701_models.UpdateResourceInstanceResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_resource_instance_with_options(cluster_id, resource_id, instance_id, request, headers, runtime)
+
+    async def update_resource_instance_async(
+        self,
+        cluster_id: str,
+        resource_id: str,
+        instance_id: str,
+        request: eas_20210701_models.UpdateResourceInstanceRequest,
+    ) -> eas_20210701_models.UpdateResourceInstanceResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_resource_instance_with_options_async(cluster_id, resource_id, instance_id, request, headers, runtime)
+
+    def update_service_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.UpdateServiceResponse:
+        UtilClient.validate_model(request)
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=request.body
+        )
+        params = open_api_models.Params(
+            action='UpdateService',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.UpdateServiceResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_service_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.UpdateServiceResponse:
+        UtilClient.validate_model(request)
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=request.body
+        )
+        params = open_api_models.Params(
+            action='UpdateService',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.UpdateServiceResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3595,26 +4278,31 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_service_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def update_service_with_options(
+    def update_service_auto_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceRequest,
+        request: eas_20210701_models.UpdateServiceAutoScalerRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceResponse:
+    ) -> eas_20210701_models.UpdateServiceAutoScalerResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+        body = {}
+        if not UtilClient.is_unset(request.max):
+            body['max'] = request.max
+        if not UtilClient.is_unset(request.min):
+            body['min'] = request.min
+        if not UtilClient.is_unset(request.scale_strategies):
+            body['scaleStrategies'] = request.scale_strategies
         req = open_api_models.OpenApiRequest(
             headers=headers,
-            body=request.body
+            body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateService',
+            action='UpdateServiceAutoScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3622,30 +4310,35 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceResponse(),
+            eas_20210701_models.UpdateServiceAutoScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_service_with_options_async(
+    async def update_service_auto_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceRequest,
+        request: eas_20210701_models.UpdateServiceAutoScalerRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceResponse:
+    ) -> eas_20210701_models.UpdateServiceAutoScalerResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
+        body = {}
+        if not UtilClient.is_unset(request.max):
+            body['max'] = request.max
+        if not UtilClient.is_unset(request.min):
+            body['min'] = request.min
+        if not UtilClient.is_unset(request.scale_strategies):
+            body['scaleStrategies'] = request.scale_strategies
         req = open_api_models.OpenApiRequest(
             headers=headers,
-            body=request.body
+            body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateService',
+            action='UpdateServiceAutoScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/autoscaler',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3653,7 +4346,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceResponse(),
+            eas_20210701_models.UpdateServiceAutoScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3677,33 +4370,29 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_service_auto_scaler_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def update_service_auto_scaler_with_options(
+    def update_service_cron_scaler_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceAutoScalerRequest,
+        request: eas_20210701_models.UpdateServiceCronScalerRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceAutoScalerResponse:
+    ) -> eas_20210701_models.UpdateServiceCronScalerResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.max):
-            body['max'] = request.max
-        if not UtilClient.is_unset(request.min):
-            body['min'] = request.min
-        if not UtilClient.is_unset(request.strategies):
-            body['strategies'] = request.strategies
+        if not UtilClient.is_unset(request.exclude_dates):
+            body['ExcludeDates'] = request.exclude_dates
+        if not UtilClient.is_unset(request.scale_jobs):
+            body['ScaleJobs'] = request.scale_jobs
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateServiceAutoScaler',
+            action='UpdateServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3711,37 +4400,33 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceAutoScalerResponse(),
+            eas_20210701_models.UpdateServiceCronScalerResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_service_auto_scaler_with_options_async(
+    async def update_service_cron_scaler_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceAutoScalerRequest,
+        request: eas_20210701_models.UpdateServiceCronScalerRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceAutoScalerResponse:
+    ) -> eas_20210701_models.UpdateServiceCronScalerResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.max):
-            body['max'] = request.max
-        if not UtilClient.is_unset(request.min):
-            body['min'] = request.min
-        if not UtilClient.is_unset(request.strategies):
-            body['strategies'] = request.strategies
+        if not UtilClient.is_unset(request.exclude_dates):
+            body['ExcludeDates'] = request.exclude_dates
+        if not UtilClient.is_unset(request.scale_jobs):
+            body['ScaleJobs'] = request.scale_jobs
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateServiceAutoScaler',
+            action='UpdateServiceCronScaler',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/autoscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/cronscaler',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3749,7 +4434,7 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceAutoScalerResponse(),
+            eas_20210701_models.UpdateServiceCronScalerResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3773,31 +4458,27 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_service_cron_scaler_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def update_service_cron_scaler_with_options(
+    def update_service_label_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceCronScalerRequest,
+        request: eas_20210701_models.UpdateServiceLabelRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceCronScalerResponse:
+    ) -> eas_20210701_models.UpdateServiceLabelResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.exclude_dates):
-            body['ExcludeDates'] = request.exclude_dates
-        if not UtilClient.is_unset(request.scale_jobs):
-            body['ScaleJobs'] = request.scale_jobs
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateServiceCronScaler',
+            action='UpdateServiceLabel',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/label',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3805,35 +4486,31 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceCronScalerResponse(),
+            eas_20210701_models.UpdateServiceLabelResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_service_cron_scaler_with_options_async(
+    async def update_service_label_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceCronScalerRequest,
+        request: eas_20210701_models.UpdateServiceLabelRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceCronScalerResponse:
+    ) -> eas_20210701_models.UpdateServiceLabelResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.exclude_dates):
-            body['ExcludeDates'] = request.exclude_dates
-        if not UtilClient.is_unset(request.scale_jobs):
-            body['ScaleJobs'] = request.scale_jobs
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateServiceCronScaler',
+            action='UpdateServiceLabel',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/cronscaler',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/label',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3841,7 +4518,95 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceCronScalerResponse(),
+            eas_20210701_models.UpdateServiceLabelResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_service_label(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceLabelRequest,
+    ) -> eas_20210701_models.UpdateServiceLabelResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_service_label_with_options(cluster_id, service_name, request, headers, runtime)
+
+    async def update_service_label_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceLabelRequest,
+    ) -> eas_20210701_models.UpdateServiceLabelResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_service_label_with_options_async(cluster_id, service_name, request, headers, runtime)
+
+    def update_service_mirror_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceMirrorRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.UpdateServiceMirrorResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.ratio):
+            body['Ratio'] = request.ratio
+        if not UtilClient.is_unset(request.target):
+            body['Target'] = request.target
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateServiceMirror',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.UpdateServiceMirrorResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_service_mirror_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceMirrorRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.UpdateServiceMirrorResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.ratio):
+            body['Ratio'] = request.ratio
+        if not UtilClient.is_unset(request.target):
+            body['Target'] = request.target
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateServiceMirror',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/mirror',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.UpdateServiceMirrorResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3865,31 +4630,27 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_service_mirror_with_options_async(cluster_id, service_name, request, headers, runtime)
 
-    def update_service_mirror_with_options(
+    def update_service_safety_lock_with_options(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceMirrorRequest,
+        request: eas_20210701_models.UpdateServiceSafetyLockRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceMirrorResponse:
+    ) -> eas_20210701_models.UpdateServiceSafetyLockResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.ratio):
-            body['Ratio'] = request.ratio
-        if not UtilClient.is_unset(request.target):
-            body['Target'] = request.target
+        if not UtilClient.is_unset(request.lock):
+            body['Lock'] = request.lock
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateServiceMirror',
+            action='UpdateServiceSafetyLock',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/lock',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3897,35 +4658,31 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceMirrorResponse(),
+            eas_20210701_models.UpdateServiceSafetyLockResponse(),
             self.call_api(params, req, runtime)
         )
 
-    async def update_service_mirror_with_options_async(
+    async def update_service_safety_lock_with_options_async(
         self,
         cluster_id: str,
         service_name: str,
-        request: eas_20210701_models.UpdateServiceMirrorRequest,
+        request: eas_20210701_models.UpdateServiceSafetyLockRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceMirrorResponse:
+    ) -> eas_20210701_models.UpdateServiceSafetyLockResponse:
         UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
         body = {}
-        if not UtilClient.is_unset(request.ratio):
-            body['Ratio'] = request.ratio
-        if not UtilClient.is_unset(request.target):
-            body['Target'] = request.target
+        if not UtilClient.is_unset(request.lock):
+            body['Lock'] = request.lock
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
         )
         params = open_api_models.Params(
-            action='UpdateServiceMirror',
+            action='UpdateServiceSafetyLock',
             version='2021-07-01',
             protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/mirror',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/lock',
             method='PUT',
             auth_type='AK',
             style='ROA',
@@ -3933,7 +4690,91 @@ class Client(OpenApiClient):
             body_type='json'
         )
         return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceMirrorResponse(),
+            eas_20210701_models.UpdateServiceSafetyLockResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_service_safety_lock(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceSafetyLockRequest,
+    ) -> eas_20210701_models.UpdateServiceSafetyLockResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_service_safety_lock_with_options(cluster_id, service_name, request, headers, runtime)
+
+    async def update_service_safety_lock_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceSafetyLockRequest,
+    ) -> eas_20210701_models.UpdateServiceSafetyLockResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_service_safety_lock_with_options_async(cluster_id, service_name, request, headers, runtime)
+
+    def update_service_version_with_options(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceVersionRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.UpdateServiceVersionResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.version):
+            body['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateServiceVersion',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/version',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.UpdateServiceVersionResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_service_version_with_options_async(
+        self,
+        cluster_id: str,
+        service_name: str,
+        request: eas_20210701_models.UpdateServiceVersionRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.UpdateServiceVersionResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.version):
+            body['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateServiceVersion',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/services/{OpenApiUtilClient.get_encode_param(cluster_id)}/{OpenApiUtilClient.get_encode_param(service_name)}/version',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            eas_20210701_models.UpdateServiceVersionResponse(),
             await self.call_api_async(params, req, runtime)
         )
 
@@ -3956,71 +4797,3 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_service_version_with_options_async(cluster_id, service_name, request, headers, runtime)
-
-    def update_service_version_with_options(
-        self,
-        cluster_id: str,
-        service_name: str,
-        request: eas_20210701_models.UpdateServiceVersionRequest,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceVersionResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        body = {}
-        if not UtilClient.is_unset(request.version):
-            body['Version'] = request.version
-        req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
-        )
-        params = open_api_models.Params(
-            action='UpdateServiceVersion',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/version',
-            method='PUT',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceVersionResponse(),
-            self.call_api(params, req, runtime)
-        )
-
-    async def update_service_version_with_options_async(
-        self,
-        cluster_id: str,
-        service_name: str,
-        request: eas_20210701_models.UpdateServiceVersionRequest,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> eas_20210701_models.UpdateServiceVersionResponse:
-        UtilClient.validate_model(request)
-        cluster_id = OpenApiUtilClient.get_encode_param(cluster_id)
-        service_name = OpenApiUtilClient.get_encode_param(service_name)
-        body = {}
-        if not UtilClient.is_unset(request.version):
-            body['Version'] = request.version
-        req = open_api_models.OpenApiRequest(
-            headers=headers,
-            body=OpenApiUtilClient.parse_to_map(body)
-        )
-        params = open_api_models.Params(
-            action='UpdateServiceVersion',
-            version='2021-07-01',
-            protocol='HTTPS',
-            pathname=f'/api/v2/services/{cluster_id}/{service_name}/version',
-            method='PUT',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            eas_20210701_models.UpdateServiceVersionResponse(),
-            await self.call_api_async(params, req, runtime)
-        )

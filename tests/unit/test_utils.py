@@ -2,19 +2,9 @@
 from __future__ import absolute_import, print_function
 
 import os
-import tarfile
-import tempfile
 
-from mock import patch
-
-from pai.common.oss_utils import is_oss_url
-from pai.common.utils import (
-    extract_file_name,
-    extract_odps_table_info,
-    file_checksum,
-    tar_source_files,
-    to_abs_path,
-)
+from pai.common.oss_utils import is_oss_uri
+from pai.common.utils import extract_odps_table_info, file_checksum
 from tests.test_data import SCRIPT_DIR_PATH
 from tests.unit import BaseUnitTestCase
 
@@ -48,46 +38,9 @@ class TestUtils(BaseUnitTestCase):
             result = extract_odps_table_info(case["input"])
             self.assertListEqual(list(result), case["expected"])
 
-    def test_tar_source_files(self):
-        source_files = [
-            os.path.join(SCRIPT_DIR_PATH, f) for f in os.listdir(SCRIPT_DIR_PATH)
-        ]
-
-        temp = tempfile.mktemp()
-
-        try:
-            tar_result = tar_source_files(source_files, temp)
-            self.assertTrue(tarfile.is_tarfile(tar_result))
-
-            expected = ["main.py", "utils.py", "requirements.txt"]
-
-            with tarfile.open(tar_result, "r") as result:
-                self.assertEqual(sorted(result.getnames()), sorted(expected))
-        finally:
-            os.remove(temp)
-
     def test_file_checksum(self):
         checksum = file_checksum(os.path.join(SCRIPT_DIR_PATH, "main.py"))
         self.assertTrue(len(checksum), 32)
-
-    def test_to_abs_path(self):
-        cwd = os.getcwd()
-        cases = [
-            {
-                "name": "case1",
-                "input": "example",
-                "expected": os.path.join(cwd, "example"),
-            },
-            {
-                "name": "case2",
-                "input": "/home/admin/logs",
-                "expected": "/home/admin/logs",
-            },
-        ]
-        for case in cases:
-            result = to_abs_path(case["input"])
-
-            self.assertEqual(case["expected"], result, "case:%s failed" % case["name"])
 
     def test_is_oss_url(self):
         cases = [
@@ -114,34 +67,5 @@ class TestUtils(BaseUnitTestCase):
         ]
 
         for case in cases:
-            result = is_oss_url(case["input"])
+            result = is_oss_uri(case["input"])
             self.assertEqual(result, case["expected"], "case:%s failed" % case["name"])
-
-    @patch("os.path.sep", "/")
-    def test_extract_file_name(self):
-        cases = [
-            {
-                "name": "case1",
-                "input": "/home/root/main.py",
-                "expected": "main.py",
-            },
-            {
-                "name": "case2",
-                "input": "main.py",
-                "expected": "main.py",
-            },
-            {
-                "name": "case3",
-                "input": "relative/path/to/main.py",
-                "expected": "main.py",
-            },
-            {
-                "name": "case4",
-                "input": "oss://bucket_name/path_to_file/main.py",
-                "expected": "main.py",
-            },
-        ]
-
-        for case in cases:
-            result = extract_file_name(case["input"])
-            self.assertEqual(case["expected"], result, "case:%s failed" % case["name"])

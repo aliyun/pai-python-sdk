@@ -261,6 +261,8 @@ class UnRegisteredComponent(six.with_metaclass(ABCMeta, ComponentBase)):
         return pipeline_spec
 
     def _submit(self, job_name, args):
+        from pai.pipeline.run import PipelineRun
+
         session = get_default_session()
         pipeline_spec = self._patch_metadata(self.to_dict())
         if isinstance(pipeline_spec, dict):
@@ -273,11 +275,12 @@ class UnRegisteredComponent(six.with_metaclass(ABCMeta, ComponentBase)):
                 "No support pipeline spec value type: %s" % (type(pipeline_spec))
             )
 
-        run_id = session.create_run(
+        run_id = PipelineRun.run(
             job_name,
             args,
             no_confirm_required=True,
             manifest=manifest,
+            session=session,
         )
         return run_id
 

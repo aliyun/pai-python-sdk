@@ -4,36 +4,92 @@ import glob
 import logging
 import os.path
 import pathlib
+import tarfile
+import tempfile
 from collections import namedtuple
 from typing import Optional, Tuple
 
+import oss2
 import six
-from oss2.api import Bucket
 from six.moves.urllib import parse
+from tqdm.asyncio import tqdm
 
-_logger = logging.getLogger(__name__)
-
-
-def is_oss_url(url: Optional[str]) -> bool:
-    """Return if url is in OSS URL schema."""
-    return bool(url and isinstance(url, six.string_types) and url.startswith("oss://"))
+logger = logging.getLogger(__name__)
 
 
-ParsedOssUrl = namedtuple(
-    "ParsedOssUrl", field_names=["bucket_name", "object_key", "endpoint", "role_arn"]
+class _ProgressCallbackTqdm(tqdm):
+    def __call__(self, consumed_bytes, total_bytes):
+        self.update(n=consumed_bytes - self.n)
+
+
+def _upload_with_progress(
+    filename,
+    object_key,
+    oss_bucket: oss2.Bucket,
+):
+    local_file_size = os.path.getsize(filename)
+    with _ProgressCallbackTqdm(
+        total=local_file_size,
+        unit="B",
+        unit_scale=True,
+        desc=f"Uploading file: {filename}",
+    ) as pbar:
+        oss2.resumable_upload(
+            bucket=oss_bucket,
+            key=object_key,
+            filename=filename,
+            progress_callback=pbar,
+            num_threads=os.cpu_count(),
+        )
+        # Mark the progress as completed.
+        pbar.update(n=pbar.total - pbar.n)
+
+
+def _download_with_progress(
+    filename,
+    object_key,
+    oss_bucket: oss2.Bucket,
+):
+    total = oss_bucket.get_object_meta(object_key).content_length
+    with _ProgressCallbackTqdm(
+        total=total,
+        unit="B",
+        unit_scale=True,
+        desc=f"Downloading file: {object_key}",
+    ) as pbar:
+        oss2.resumable_download(
+            bucket=oss_bucket,
+            key=object_key,
+            filename=filename,
+            progress_callback=pbar,
+            num_threads=os.cpu_count(),
+        )
+        # Mark the progress as completed.
+        pbar.update(n=pbar.total - pbar.n)
+
+
+def is_oss_uri(uri: str) -> bool:
+    """Return if uri is in OSS URI schema."""
+    return bool(uri and isinstance(uri, six.string_types) and uri.startswith("oss://"))
+
+
+ParsedOssUri = namedtuple(
+    "ParsedOssUri", field_names=["bucket_name", "object_key", "endpoint", "role_arn"]
 )
 
 
-def parse_oss_url(oss_url: str) -> "ParsedOssUrl":
-    """Parse the given OSS schema URL and returns an namedtuple including bucket_name, object_key, endpoint, role_arn.
+def parse_oss_uri(uri: str) -> "ParsedOssUri":
+    """Parse the given OSS schema URI and returns a namedtuple including bucket_name,
+        object_key, endpoint, role_arn.
+
     Args:
-        oss_url: URL in OSS schema ( oss://<bucket.endpoint>/<object_key>?endpoint=<endpoint>&host=<endpoint>&role_arn=<role_arn>)
+        uri: URI in OSS schema ( oss://<bucket.endpoint>/<object_key>?endpoint=<endpoint>&host=<endpoint>&role_arn=<role_arn>)
     Returns:
-        ParsedOssUrl: Returns a namedtuple including bucket_name, object_key, endpoint and role_arn.
+        ParsedOssUri: Returns a namedtuple including bucket_name, object_key, endpoint and role_arn.
     """
 
-    uri = OssUri(oss_url)
-    return ParsedOssUrl(
+    uri = OssUriObj(uri)
+    return ParsedOssUri(
         bucket_name=uri.bucket_name,
         object_key=uri.object_key,
         endpoint=uri.endpoint,
@@ -41,87 +97,176 @@ def parse_oss_url(oss_url: str) -> "ParsedOssUrl":
     )
 
 
-def compose_oss_url(bucket, path, endpoint=None):
-    """Build OSS uri from given bucket, object path, and service endpoint."""
-    return OssUri.from_bucket_key_endpoint(
-        bucket_name=bucket, object_key=path, endpoint=endpoint
-    ).uri
+def _tar_file(source_file, target=None):
+    source_file = (
+        source_file if os.path.isabs(source_file) else os.path.abspath(source_file)
+    )
+    if not os.path.exists(source_file):
+        raise ValueError("source file not exists: %s", source_file)
+    if os.path.isdir(source_file):
+        arcname = ""
+    else:
+        arcname = os.path.basename(source_file)
+
+    if not target:
+        target = tempfile.mktemp()
+    with tarfile.open(target, "w:gz") as tar:
+        tar.add(name=source_file, arcname=arcname)
+    return target
 
 
-def upload_to_oss(source_path: str, oss_path: str, oss_bucket: Bucket) -> str:
+def upload(
+    source_path: str,
+    oss_path: str,
+    oss_bucket: oss2.Bucket,
+    is_tar: Optional[bool] = False,
+) -> str:
     """Upload local source file/directory to OSS.
 
+    Examples::
+
+        # compress and upload local directory `./src/` to OSS
+        >>> upload(source_path="./src/", oss_path="path/to/file",
+        >>> oss_bucket=session.oss_bucket, is_tar=True)
+
+
     Args:
-        source_path (str): Source path which needs to be uploaded.
+        source_path (str): Source file local path which needs to be uploaded, can be
+            a single file or a directory.
         oss_path (str): Destination OSS path.
-        oss_bucket (oss2.Bucket): OSS bucket used for upload.
+        oss_bucket (oss2.Bucket): OSS bucket used to store the upload data.
+        is_tar (bool): Whether to compress the file before uploading (default: False).
+
+    Returns:
+        str: A string in OSS URI format. If the source_path is directory, return the
+            OSS URI representing the directory for uploaded data, else then
+            returns the OSS URI points to the uploaded file.
     """
     source_path_obj = pathlib.Path(source_path)
-
     if not source_path_obj.exists():
-        raise RuntimeError("Source path not exist: {}".format(source_path))
-    if source_path_obj.is_dir():
+        raise RuntimeError("Source path is not exist: {}".format(source_path))
+
+    if is_tar:
+        # compress the local data and upload the compressed source data.
+        with tempfile.TemporaryDirectory() as dir_name:
+            temp_tar_path = _tar_file(
+                source_path, os.path.join(dir_name, "source.tar.gz")
+            )
+            dest_path = (
+                os.path.join(oss_path, os.path.basename(temp_tar_path))
+                if oss_path.endswith("/")
+                else oss_path
+            )
+            _upload_with_progress(
+                filename=temp_tar_path, object_key=dest_path, oss_bucket=oss_bucket
+            )
+            return "oss://{}/{}".format(oss_bucket.bucket_name, dest_path)
+    elif not source_path_obj.is_dir():
+        # if source path is a file, just invoke bucket.put_object.
+
+        # if the oss_path is endswith slash, the file will be uploaded to
+        # "{oss_path}{filename}", else the file will be uploaded to "{oss_path}".
+        dest_path = (
+            os.path.join(oss_path, os.path.basename(source_path))
+            if oss_path.endswith("/")
+            else oss_path
+        )
+        _upload_with_progress(
+            filename=source_path, object_key=dest_path, oss_bucket=oss_bucket
+        )
+        return "oss://{}/{}".format(oss_bucket.bucket_name, dest_path)
+    else:
+        # if the source path is a directory, upload all the file under the directory.
         source_files = glob.glob(
             pathname=str(source_path_obj / "**"),
             recursive=True,
         )
-        is_empty_dir = True
-
         if not oss_path.endswith("/"):
             oss_path += "/"
-        for file_path in source_files:
+
+        files = [f for f in source_files if not os.path.isdir(f)]
+        for file_path in files:
             file_path_obj = pathlib.Path(file_path)
-            if file_path_obj.is_dir():
-                continue
-            is_empty_dir = False
             file_relative_path = file_path_obj.relative_to(source_path_obj).as_posix()
             object_key = oss_path + file_relative_path
-            oss_bucket.put_object_from_file(key=object_key, filename=file_path)
-        if is_empty_dir:
-            raise RuntimeError("Source path is empty dir: {}".format(source_path))
-    else:
-        oss_bucket.put_object_from_file(key=oss_path, filename=source_path)
-    return "oss://{}/{}".format(oss_bucket.bucket_name, oss_path)
+            _upload_with_progress(
+                filename=file_path, object_key=object_key, oss_bucket=oss_bucket
+            )
+        return "oss://{}/{}".format(oss_bucket.bucket_name, oss_path)
 
 
-def truncate_endpoint(url):
-    """Remove endpoint if it is present as host in OSS URL.
+def download(oss_path: str, local_path: str, bucket: oss2.Bucket, un_tar=False):
+    """Download OSS objects to local path.
 
     Args:
-        url (str): OSS URL.
+        oss_path (str): Source OSS path, could be a single OSS object or a OSS
+            directory.
+        local_path (str): Local path used to store the data from OSS.
+        bucket (oss2.Bucket): OSS Bucket that store the original data.
+        un_tar (bool, optional): Whether to decompress the downloaded data. It is only
+            work for `oss_path` point to a single file that has a suffix "tar.gz".
 
     Returns:
-        str: Endpoint removed OSS URL.
+        str: A local file path for the downloaded data.
+
     """
+    if not bucket.object_exists(oss_path) or oss_path.endswith("/"):
+        # The `oss_path` represents a "directory" in the OSS bucket, download the
+        # objects which object key is prefixed with `oss_path`.
+        # Note: `un_tar` is not work while `oss_path` is a directory.
 
-    parsed = parse_oss_url(url)
+        oss_path += "/" if not oss_path.endswith("/") else ""
+        iterator = oss2.ObjectIteratorV2(
+            bucket=bucket,
+            prefix=oss_path,
+        )
+        keys = [obj.key for obj in iterator if not obj.key.endswith("/")]
+        for key in tqdm(keys, desc=f"Downloading: {oss_path}"):
+            rel_path = os.path.relpath(key, oss_path)
+            dest = os.path.join(local_path, rel_path)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            _download_with_progress(
+                dest,
+                object_key=key,
+                oss_bucket=bucket,
+            )
+        return local_path
+    else:
+        # The `oss_path` represents a single file in OSS bucket.
+        if oss_path.endswith(".tar.gz") and un_tar:
+            # currently, only tar.gz format is supported for un_tar after downloading.
+            with tempfile.TemporaryDirectory() as temp_dir:
+                target_path = os.path.join(temp_dir, os.path.basename(oss_path))
+                _download_with_progress(
+                    target_path,
+                    object_key=oss_path,
+                    oss_bucket=bucket,
+                )
+                with tarfile.open(name=target_path, mode="r") as t:
+                    t.extractall(path=local_path)
 
-    return "oss://{bucket_name}/{key}".format(
-        bucket_name=parsed.bucket_name, key=parsed.object_key
-    )
+            return local_path
+        else:
+            os.makedirs(local_path, exist_ok=True)
+            dest = os.path.join(local_path, os.path.basename(oss_path))
+            _download_with_progress(
+                dest,
+                object_key=oss_path,
+                oss_bucket=bucket,
+            )
+
+            return dest
 
 
-def join_endpoint(url, endpoint):
-    oss_uri = OssUri(url)
-    if endpoint:
-        if endpoint.startswith("http://"):
-            endpoint = endpoint.lstrip("http://")
-        elif endpoint.startswith("https://"):
-            endpoint = endpoint.lstrip("https://")
-
-    return "oss://{bucket_name}.{endpoint}/{key}".format(
-        bucket_name=oss_uri.bucket_name, endpoint=endpoint, key=oss_uri.object_key
-    )
-
-
-class OssUri(object):
-    """A class that represent an OSS URI and provide some convenient method."""
+class OssUriObj(object):
+    """A class that represents an OSS URI and provides some convenient methods."""
 
     def __init__(self, uri):
-        """Constructor for class OssUri.
+        """Constructor for class OssUriObj.
 
         Args:
-            uri (str): A string in OSS schema: oss://{bucket_name}.{endpoint}/{object_key}, endpoint in url is optional.
+            uri (str): A string in OSS URI schema: oss://<bucket_name>[.endpoint]/<path/to/file>,
+                endpoint in uri is optional.
         """
         if not uri.startswith("oss://"):
             raise ValueError(
@@ -136,16 +281,16 @@ class OssUri(object):
     @classmethod
     def from_bucket_key_endpoint(
         cls, bucket_name: str, object_key: str, endpoint: Optional[str] = None
-    ) -> "OssUri":
+    ) -> "OssUriObj":
         """Initialize an OSSUri object from bucket_name, object_key and endpoint.
 
         Args:
             bucket_name (str): The name of the OSS bucket.
             object_key (str): OSS object key/path.
-            endpoint (str): Endpoint for the OSS bucket.
+            endpoint (str, optional): Endpoint for the OSS bucket.
 
         Returns:
-            OssUri:
+            OssUriObj:
 
         """
 
@@ -161,11 +306,12 @@ class OssUri(object):
             uri = f"oss://{bucket_name}.{endpoint}/{object_key}"
         else:
             uri = f"oss://{bucket_name}/{object_key}"
-        return OssUri(uri=uri)
+        return OssUriObj(uri=uri)
 
     @classmethod
     def parse(cls, oss_uri: str) -> Tuple[str, str, str, str]:
-        """Parse OSS uri string and returns a tuple of [bucket_name, object_key, endpoint, role_arn].
+        """Parse OSS uri string and returns a tuple of (bucket_name, object_key,
+        endpoint, role_arn).
 
         Args:
             oss_uri (str): A string in OSS Uri schema: oss://{bucket_name}.{endpoint}/{object_key}.
@@ -177,9 +323,8 @@ class OssUri(object):
         parsed_result = parse.urlparse(oss_uri)
         if parsed_result.scheme != "oss":
             raise ValueError(
-                "require OSS url('oss://[bucket_name]/[object_key]') but given '{}'".format(
-                    oss_uri
-                )
+                "require OSS uri('oss://[bucket_name]/[object_key]') but "
+                "given '{}'".format(oss_uri)
             )
         object_key = parsed_result.path
         if object_key.startswith("/"):

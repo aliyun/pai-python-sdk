@@ -1,0 +1,22 @@
+aliyun-python-sdk-core>=2.13.25
+alibabacloud_sts20150401
+graphviz
+numpy>=1.16.0
+oss2>=2.8.0
+pyodps>=0.11.0
+pyyaml>=5.3.1
+six>=1.15.0
+docker>=4.4.0
+marshmallow
+marshmallow-oneofschema>=3.0.1
+eas_prediction==0.18
+alibabacloud_tea_util>=0.3.6, <1.0.0
+alibabacloud_tea_openapi>=0.3.3, <1.0.0
+alibabacloud_openapi_util>=0.1.6, <1.0.0
+alibabacloud_endpoint_util>=0.0.3, <1.0.0
+pandas
+addict
+backoff<2.0.0
+semantic-version
+tqdm
+prompt-toolkit

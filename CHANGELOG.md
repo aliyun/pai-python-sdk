@@ -1,7 +1,7 @@
 # Changelog
 
 # v0.3.6
-- Feature: Support Model Management/EasService.
+- Feature: Support RegisteredModel Management/EasService.
 
 # v0.3.5
 - Feature: Add Resource based API.

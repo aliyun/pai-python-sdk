@@ -1,19 +1,5 @@
-# Feature flag indicate whether user use AIWorkspace Integrated PAI DLC or legacy PAI DLC.
-PAI_DLC_INTEGRATED_WITH_WORKSPACE_FEATURE = "PaiDLC:IntegrateWithWorkspace"
-
-# Default Dataset mount path
-DEFAULT_DATASET_MOUNT_PATH = "/mnt/data/"
-
-# Default CodeSource mount path
-DEFAULT_CODE_SOURCE_MOUNT_PATH = "/root/code/"
-
-
-# Inner RegionId list
-INNER_REGION_IDS = ["center"]
-
-
 class JobType(object):
-    """PAI DLC Job type."""
+    """PAI DLCJob/TrainingJob type."""
 
     TFJob = "TFJob"
     PyTorchJob = "PyTorchJob"
@@ -30,16 +16,6 @@ class JobType(object):
         If given job_type is unknown, just returns the original data.
         """
         return cls._JOB_TYPE_MAPPING.get(job_type.lower(), job_type)
-
-
-class WorkerType(object):
-    """Supported worker types in PAI-DLC."""
-
-    PS = "PS"
-    WORKER = "Worker"
-    MASTER = "Master"
-    EVALUATOR = "Evaluator"
-    CHIEF = "Chief"
 
 
 class ResourceAccessibility(object):
@@ -72,31 +48,6 @@ class DatasetSourceType(object):
     PAI_PUBLIC_DATASET = "PAI_PUBLIC_DATASET"
 
 
-class PAIServiceName(object):
-    PAI_DLC = "PAI_DLC"
-    PAI_EAS = "PAI_EAS"
-    AIWORKSPACE = "AIWORKSPACE"
-    PAIFLOW = "PAIFLOW"
-    TRAINING_SERVICE = "TRAINING"
-
-
-class PAIRestResourceTypes(object):
-    """Resource types provided by PAI REST API."""
-
-    Dataset = "Dataset"
-    DlcJob = "DlcJob"
-    CodeSource = "CodeSource"
-    Image = "Image"
-    EasService = "EasService"
-    Model = "Model"
-    Workspace = "Workspace"
-
-
-class PagingOrder(object):
-    DESCENT = "desc"
-    ASCENT = "asc"
-
-
 class ModelFormat(object):
     SavedModel = "SavedModel"
     FrozenPb = "FrozenPb"
@@ -107,7 +58,6 @@ class ModelFormat(object):
     PMML = "PMML"
     TorchScript = "TorchScript"
     TFLite = "TFLite"
-    ALinkModel = "AlinkModel"
 
 
 class FrameworkTypes(object):
@@ -118,9 +68,3 @@ class FrameworkTypes(object):
     Blade = "Blade"
     Alink = "Alink"
     TensorFlow = "TensorFlow"
-
-
-DEFAULT_WORKER_ECS_SPEC = "ecs.c6.large"
-
-DEFAULT_PAGE_SIZE = 10
-DEFAULT_PAGE_NUMBER = 1
