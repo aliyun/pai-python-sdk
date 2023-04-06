@@ -204,8 +204,11 @@ class UserProfile(object):
             ),
             None,
         )
+        if not oss_storage_uri:
+            return
 
-        return OssUriObj(oss_storage_uri).uri if oss_storage_uri else None
+        uri_obj = OssUriObj(oss_storage_uri)
+        return "oss://{}".format(uri_obj.bucket_name)
 
     def set_default_oss_storage(self, workspace_id, bucket_info: SimplifiedBucketInfo):
         workspace_api = self.get_workspace_api()

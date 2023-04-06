@@ -21,7 +21,7 @@ from .predictor import LocalPredictor, Predictor
 from .serializers import SerializerBase
 from .session import Session, config_default_session
 
-DEFAULT_SERVICE_PORT = 5000
+DEFAULT_SERVICE_PORT = 8000
 
 
 logger = logging.getLogger(__name__)
@@ -419,7 +419,7 @@ class InferenceSpec(object):
     @config_default_session
     def mount(
         self, source: str, mount_path: str, session: Session = None
-    ) -> "InferenceSpec":
+    ) -> Dict[str, Any]:
         """Mount a source storage to the running container.
 
         .. note::
@@ -435,7 +435,7 @@ class InferenceSpec(object):
                 with PAI service.
 
         Returns:
-            :class:`pai.model.InferenceSpec`: An InferenceSpec instance.
+            Dict[str, Any]: The storage config.
 
         Examples::
             # Mount a OSS storage path to the running container.
@@ -455,12 +455,12 @@ class InferenceSpec(object):
 
         # Get current storage configs.
         if "storage" in self._cfg_dict:
-            storage_configs = self._cfg_dict.get("storage", [])
+            configs = self._cfg_dict.get("storage", [])
         else:
-            storage_configs = []
+            configs = []
 
         # check if mount path is already used.
-        for conf in storage_configs:
+        for conf in configs:
             if conf.get("mount_path") == mount_path:
                 raise ValueError(
                     f"Mount path {mount_path} is already used by other storage."
@@ -490,9 +490,9 @@ class InferenceSpec(object):
                 "Source path is not a valid OSS URI or a existing local path."
             )
 
-        storage_configs.append(storage_config)
-        self.storage = storage_configs
-        return self
+        configs.append(storage_config)
+        self.storage = configs
+        return storage_config
 
 
 class _BuiltinProcessor(object):
