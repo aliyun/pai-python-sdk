@@ -86,6 +86,7 @@ def main():
     # 作业数据的数据，也通过arguments的方式传递给到训练脚本.
     parser.add_argument("--train_data", type=str, help="Input train data path.")
     args, _ = parser.parse_known_args()
+    print(vars(args))
 
     # 读取传入到容器内的数据
     train_x, train_y = load_dataset("train")

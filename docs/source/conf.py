@@ -40,7 +40,7 @@ extensions = [
     # "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
-    # "nbsphinx",
+    "sphinx_markdown_builder",
     "myst_nb",
 ]
 
@@ -53,6 +53,7 @@ templates_path = ["_templates"]
 exclude_patterns = [
     "_build/*",
     "source/_build/*",
+    "build/*",
 ]
 
 

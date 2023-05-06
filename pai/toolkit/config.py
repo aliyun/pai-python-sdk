@@ -111,7 +111,7 @@ def prompt_for_credential():
 
 
 def check_product_authorization(user_profile: UserProfile):
-    print(localized_text("Check Dependent Services", "云产品依赖检查: "))
+    print(localized_text("Check Dependent Service Authorization：", "云产品依赖检查: "))
     auths = {
         auth["RamRoleName"]: auth["IsAuthorized"]
         for auth in user_profile.get_production_authorizations()
@@ -268,7 +268,12 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
             bucket_name = buckets[index].name
 
     bucket_info = user_profile.get_bucket_info(bucket_name)
-    if not default_storage_uri:
+
+    # If Workspace has no default OSS storage URI and user has permission to edit,
+    # prompt to set the default OSS storage URI.
+    if not default_storage_uri and user_profile.has_permission_edit_config(
+        workspace_id=workspace_id
+    ):
         prompt_for_set_default_oss_storage(user_profile, workspace_id, bucket_info)
 
     row_format = "{:<60}{}"

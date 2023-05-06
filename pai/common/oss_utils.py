@@ -118,7 +118,7 @@ def _tar_file(source_file, target=None):
 def upload(
     source_path: str,
     oss_path: str,
-    oss_bucket: oss2.Bucket,
+    bucket: oss2.Bucket,
     is_tar: Optional[bool] = False,
 ) -> str:
     """Upload local source file/directory to OSS.
@@ -127,14 +127,14 @@ def upload(
 
         # compress and upload local directory `./src/` to OSS
         >>> upload(source_path="./src/", oss_path="path/to/file",
-        >>> oss_bucket=session.oss_bucket, is_tar=True)
+        ... bucket=session.oss_bucket, is_tar=True)
 
 
     Args:
         source_path (str): Source file local path which needs to be uploaded, can be
             a single file or a directory.
         oss_path (str): Destination OSS path.
-        oss_bucket (oss2.Bucket): OSS bucket used to store the upload data.
+        bucket (oss2.Bucket): OSS bucket used to store the upload data.
         is_tar (bool): Whether to compress the file before uploading (default: False).
 
     Returns:
@@ -158,9 +158,9 @@ def upload(
                 else oss_path
             )
             _upload_with_progress(
-                filename=temp_tar_path, object_key=dest_path, oss_bucket=oss_bucket
+                filename=temp_tar_path, object_key=dest_path, oss_bucket=bucket
             )
-            return "oss://{}/{}".format(oss_bucket.bucket_name, dest_path)
+            return "oss://{}/{}".format(bucket.bucket_name, dest_path)
     elif not source_path_obj.is_dir():
         # if source path is a file, just invoke bucket.put_object.
 
@@ -172,9 +172,9 @@ def upload(
             else oss_path
         )
         _upload_with_progress(
-            filename=source_path, object_key=dest_path, oss_bucket=oss_bucket
+            filename=source_path, object_key=dest_path, oss_bucket=bucket
         )
-        return "oss://{}/{}".format(oss_bucket.bucket_name, dest_path)
+        return "oss://{}/{}".format(bucket.bucket_name, dest_path)
     else:
         # if the source path is a directory, upload all the file under the directory.
         source_files = glob.glob(
@@ -190,9 +190,9 @@ def upload(
             file_relative_path = file_path_obj.relative_to(source_path_obj).as_posix()
             object_key = oss_path + file_relative_path
             _upload_with_progress(
-                filename=file_path, object_key=object_key, oss_bucket=oss_bucket
+                filename=file_path, object_key=object_key, oss_bucket=bucket
             )
-        return "oss://{}/{}".format(oss_bucket.bucket_name, oss_path)
+        return "oss://{}/{}".format(bucket.bucket_name, oss_path)
 
 
 def download(oss_path: str, local_path: str, bucket: oss2.Bucket, un_tar=False):

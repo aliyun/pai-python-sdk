@@ -2,11 +2,15 @@ import configparser
 import datetime
 import os
 import shutil
+import uuid
 from collections import namedtuple
 
 from pai.common.utils import random_str
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
+
+PAI_PIPELINE_RUN_ID_PLACEHOLDER = "${pai_system_run_id_underscore}"
+PAI_PIPELINE_NODE_ID_PLACEHOLDER = "${pai_system_node_id_underscore}"
 
 
 PaiServiceConfig = namedtuple(
@@ -144,3 +148,21 @@ def make_resource_name(case_name, resource_type=None, sep="-", time_suffix=True)
 
 def make_eas_service_name(case_name):
     return make_resource_name(case_name=case_name, sep="_", time_suffix=False)
+
+
+def gen_temp_table(prefix="pai_temp_"):
+    return "{prefix}{identifier}".format(
+        prefix=prefix,
+        identifier=uuid.uuid4().hex,
+    )
+
+
+def gen_run_node_scoped_placeholder(suffix=None):
+    if suffix:
+        return "{0}_{1}_{2}".format(
+            PAI_PIPELINE_NODE_ID_PLACEHOLDER, PAI_PIPELINE_RUN_ID_PLACEHOLDER, suffix
+        )
+    else:
+        return "{0}_{1}".format(
+            PAI_PIPELINE_NODE_ID_PLACEHOLDER, PAI_PIPELINE_RUN_ID_PLACEHOLDER
+        )

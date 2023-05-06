@@ -178,9 +178,9 @@ def _make_image_info(
 
 
 def _list_images(
-    name: str,
     labels: List[str],
     session: Session,
+    name: Optional[str] = None,
     page_number=1,
     page_size=50,
 ):
@@ -321,7 +321,6 @@ def retrieve(
 @config_default_session
 def list_images(
     framework_name: str,
-    name: Optional[str] = None,
     session: Optional[Session] = None,
     image_scope: Optional[str] = ImageScope.TRAINING,
 ) -> List[ImageInfo]:
@@ -330,7 +329,6 @@ def list_images(
     Args:
         framework_name (str): The name of the framework. Possible values include
             TensorFlow, XGBoost, PyTorch, OneFlow, and others.
-        name (str): Name of the image, support fuzzy searching.
         image_scope (str, optional): The scope of the image to use. Possible values
             include 'training', 'inference', and 'develop'.
         session (:class:`pai.session.Session`): A session object used to interact with
@@ -349,7 +347,7 @@ def list_images(
         ImageScope.to_image_label(image_scope),
         ImageLabel.OFFICIAL_LABEL,
     ]
-    images = _list_images(name=name, labels=labels, session=session)
+    images = _list_images(labels=labels, session=session)
 
     images = [
         _make_image_info(

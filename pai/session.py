@@ -12,7 +12,6 @@ import oss2
 
 from .api.api_container import ResourceAPIsContainerMixin
 from .common.oss_utils import OssUriObj
-from .common.utils import makedirs
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +270,7 @@ class Session(ResourceAPIsContainerMixin):
             )
             config_path = os.environ.get(ENV_PAI_CONFIG_PATH, default_config_path)
 
-        makedirs(os.path.dirname(config_path))
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
         with open(config_path, "w") as f:
             f.write(json.dumps(config, indent=4))
         logger.info("Write PAI config succeed: config_path=%s" % config_path)

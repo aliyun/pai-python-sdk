@@ -9,7 +9,6 @@ import uuid
 import pytest
 
 from pai.common import ProviderAlibabaPAI
-from pai.common.utils import gen_run_node_scoped_placeholder, gen_temp_table
 from pai.pipeline import Pipeline, PipelineStep
 from pai.pipeline.run import PipelineRunStatus
 from pai.pipeline.types import (
@@ -23,6 +22,7 @@ from pai.pipeline.types import (
 )
 from tests.integration import BaseIntegTestCase
 from tests.integration.tests_pipeline import create_simple_composite_pipeline
+from tests.integration.utils import gen_run_node_scoped_placeholder, gen_temp_table
 
 
 class TestPipelineRun(BaseIntegTestCase):

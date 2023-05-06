@@ -36,7 +36,7 @@ class TestEstimator(BaseIntegTestCase):
         est = Estimator(
             image_uri=xgb_image_uri,
             source_dir=os.path.join(test_data_dir, "xgb_train"),
-            entry_point="train.py",
+            command="python train.py",
             hyperparameters={
                 "n_estimators": 50,
                 "objective": "binary:logistic",
@@ -71,7 +71,7 @@ class TestEstimator(BaseIntegTestCase):
         est = Estimator(
             image_uri=image_uri,
             source_dir=os.path.join(test_data_dir, "xgb_train"),
-            entry_point="train.py",
+            command="python train.py $PAI_USER_ARGS",
             hyperparameters={
                 "n_estimators": 50,
                 "objective": "binary:logistic",

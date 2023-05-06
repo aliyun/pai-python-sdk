@@ -8,7 +8,6 @@ from pai.libs.alibabacloud_aiworkspace20210204.models import (
 
 
 class ImageLabel(object):
-
     # Unofficial Image Label
     UNOFFICIAL_LABEL = "system.official=false"
     # Official Image Label

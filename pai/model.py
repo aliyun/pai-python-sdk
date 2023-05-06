@@ -11,12 +11,13 @@ import textwrap
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import requests
 from addict import Dict as AttrDict
 
 from .common.consts import ModelFormat
-from .common.docker_utils import run_container
+from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import makedirs, random_str, to_plain_text
+from .common.utils import random_str, to_plain_text
 from .predictor import LocalPredictor, Predictor
 from .serializers import SerializerBase
 from .session import Session, config_default_session
@@ -26,7 +27,12 @@ DEFAULT_SERVICE_PORT = 8000
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL_PATH = "/eas/workspace/model/"
+
+class _ModelServiceConfig(object):
+    DEFAULT_PORT = 8000
+    NOT_ALLOWED_PORTS = [8080, 9090]
+    MODEL_PATH = "/eas/workspace/model/"
+    CODE_MOUNT_PATH = "/ml/usercode/"
 
 
 class ResourceConfig(object):
@@ -219,206 +225,37 @@ class InferenceSpec(object):
 
         return cls(**config)
 
-    @classmethod
-    def from_serving_container(
-        cls,
-        image_uri: str,
-        environment_variables: Dict[str, str] = None,
-        port: int = DEFAULT_SERVICE_PORT,
-        command: Union[str, List[str]] = None,
-        requirements: Optional[List[str]] = None,
-        requirements_path: Optional[str] = None,
-    ) -> "InferenceSpec":
-        """Build a InferenceSpec object that serving the model with the given docker
-        image.
-
-        Args:
-            image_uri (str): Docker image URI used to run the prediction service.
-            port (int): Exposed port of the server in container. the prediction request
-                will be forward to the port. The environment variable ``LISTEN_PORT``
-                in the container will be set to this value.
-            environment_variables (Dict[str, str]): Environment variables to be set to
-                the running container.
-            requirements (List[str], optional): A list of Python package dependency, it
-                will be installed before the serving container run.
-            requirements_path (str, optional): The path of the requirements.txt in the
-                running container.
-            command (Union[str, List[str]]): The command to be invoked when the
-                container is started.
-
-        Returns:
-            :class:`pai.model.InferenceSpec`: A InferenceSpec instance.
-
-        """
-
-        if isinstance(command, (list, tuple)):
-            command = " ".join([shlex.quote(s) for s in command])
-        container_spec = {
-            "image": image_uri,
-            "port": port,
-            "script": command,
-            "env": [
-                {"name": key, "value": str(value)}
-                for key, value in environment_variables.items()
-            ]
-            if environment_variables
-            else [],
-        }
-
-        if requirements or requirements_path:
-            prepare = dict()
-            if requirements:
-                prepare["pythonRequirements"] = requirements
-            if requirements_path:
-                prepare["pythonRequirementsPath"] = requirements_path
-            container_spec["prepare"] = prepare
-        d = {
-            "containers": [container_spec],
-        }
-        return cls(**d)
-
     def is_container_serving(self):
         return "containers" in self._cfg_dict
 
     @classmethod
-    @config_default_session
-    def from_serving_script(
-        cls,
-        entry_point: str,
-        image_uri: str,
-        port: int = DEFAULT_SERVICE_PORT,
-        source_dir: Optional[str] = None,
-        environment_variables: Optional[Dict[str, str]] = None,
-        requirements: Optional[List[str]] = None,
-        session: Optional[Session] = None,
-    ) -> "InferenceSpec":
-        """A convenient method to create a InferenceSpec instance that serving the model
-        with given scripts.
-
-        Examples::
-
-            spec = InferenceSpec.from_serving_script(
-                entry_point="run.py",
-                source_dir="./model_server/",
-                image_uri="<YourImageUri>",
-            )
-
-            m = Model(
-                model_data="oss://<YourOssBucket>/path/to/your/model",
-                inference_spec=spec,
-            )
-            m.deploy(
-                instance_type="ecs.c6.xlarge"
-            )
-
-
-        Args:
-            entry_point (str): The entry point file used to launch the model server,
-                which can be a `.py` or `.sh` file.
-            source_dir (str, optional): Local path to the source code directory to be
-                uploaded and used for the model server.
-            image_uri (str): The Docker image used to run the prediction service.
-            port (int): Expose port of the server in container, the prediction request
-                will be forward to the port. The environment variable ``LISTEN_PORT``
-                in the container will be set to this value.
-            environment_variables (Dict[str, str], optional): Dictionary of environment
-                variable key-value pairs to set on the running container.
-            requirements (List[str], optional): A list of Python package dependency, it
-                will be installed before the serving container run.
-            session (Session, optional): A PAI session instance used for communicating
-                with PAI service.
-
-        Returns:
-            :class:`pai.model.InferenceSpec`: An InferenceSpec instance.
-        """
-        # upload local script data to the OSS bucket.
-        code_mount_path = "/ml/usercode/"
-        if entry_point.endswith(".py"):
-            launch_command = f"python {entry_point}"
-        elif entry_point.endswith(".sh"):
-            launch_command = f"sh {entry_point}"
-        else:
-            launch_command = f"./{entry_point}"
-
-        # build the command for serving container.
-        command = textwrap.dedent(
-            f"""\
-        set -e
-        mkdir -p {code_mount_path} && cd {code_mount_path}
-        {launch_command}
-        """
-        )
-
-        script_data = cls._upload_source_dir(
-            entry_point, source_dir=source_dir, session=session
-        )
-        if source_dir and os.path.exists(os.path.join(source_dir, "requirements.txt")):
-            requirements_path = posixpath.join(code_mount_path, "requirements.txt")
-        else:
-            requirements_path = None
-
-        environment_variables = environment_variables or dict()
-        inference_spec = cls.from_serving_container(
-            image_uri=image_uri,
-            port=port,
-            environment_variables=environment_variables,
-            command=command,
-            requirements=requirements,
-            requirements_path=requirements_path,
-        )
-
-        # mount the uploaded serving scripts to the serving container.
-        script_mount_config = {
-            "mount_path": code_mount_path,
-            "oss": {
-                "path": script_data,
-            },
-        }
-
-        if len(inference_spec.storage) > 1:
-            inference_spec.storage.append(script_mount_config)
-        else:
-            inference_spec.storage = [script_mount_config]
-
-        return inference_spec
-
-    @classmethod
-    def _upload_source_dir(cls, entry_point, source_dir, session):
+    def _upload_source_dir(cls, source_dir, session):
         """Upload source files to OSS bucket."""
-        if not source_dir:
-            # if source code directory is not provided, upload the entry_point file.
-            if not os.path.exists(entry_point):
-                raise ValueError(f"Entry point file does not exist: {entry_point}.")
-            upload_source_file = entry_point
-        else:
-            if not os.path.exists(source_dir):
-                raise ValueError(
-                    f"Input source code path does not exist: {source_dir}."
-                )
-            if not os.path.isdir(source_dir):
-                raise ValueError(
-                    f"Input source code path should be a directory: {source_dir}."
-                )
 
-            if not os.path.exists(os.path.join(source_dir, entry_point)):
-                raise ValueError(
-                    f"Entry point file does not exist: "
-                    f"{os.path.join(source_dir, entry_point)}."
-                )
-            upload_source_file = source_dir
+        if not os.path.exists(source_dir):
+            raise ValueError(f"Input source code path does not exist: {source_dir}.")
+        if not os.path.isdir(source_dir):
+            raise ValueError(
+                f"Input source code path should be a directory: {source_dir}."
+            )
 
         target_dir = session.get_storage_path_by_category(category="inference_src")
         # upload local script data to the OSS bucket.
-        upload(
-            upload_source_file,
+        uploaded_source_code = upload(
+            source_dir,
             target_dir,
             session.oss_bucket,
         )
-        return os.path.join(f"oss://{session.oss_bucket.bucket_name}", target_dir)
+
+        logger.debug("Uploaded source code to OSS: %s", uploaded_source_code)
+        return uploaded_source_code
 
     @config_default_session
     def mount(
-        self, source: str, mount_path: str, session: Session = None
+        self,
+        source: str,
+        mount_path: str,
+        session: Session = None,
     ) -> Dict[str, Any]:
         """Mount a source storage to the running container.
 
@@ -450,7 +287,8 @@ class InferenceSpec(object):
         # TODO: supports more storages, such as NAS, PAI Dataset, PAI CodeSource, etc.
         if not isinstance(source, str):
             raise ValueError(
-                "Parameter source only support a OSS path in OSS URI format."
+                "Parameter should be a string which represents an OSS storage path"
+                " or a local file path."
             )
 
         # Get current storage configs.
@@ -478,7 +316,7 @@ class InferenceSpec(object):
             # as storage source.
             oss_path = session.get_storage_path_by_category("model_data")
             oss_uri = upload(
-                source_path=source, oss_path=oss_path, oss_bucket=session.oss_bucket
+                source_path=source, oss_path=oss_path, bucket=session.oss_bucket
             )
             oss_uri_obj = OssUriObj(oss_uri)
             storage_config = {
@@ -493,6 +331,139 @@ class InferenceSpec(object):
         configs.append(storage_config)
         self.storage = configs
         return storage_config
+
+
+@config_default_session
+def container_serving_spec(
+    command: str,
+    image_uri: str,
+    source_dir: Optional[str] = None,
+    port: int = DEFAULT_SERVICE_PORT,
+    environment_variables: Optional[Dict[str, str]] = None,
+    requirements: Optional[List[str]] = None,
+    requirements_path: Optional[str] = None,
+    health_check: Optional[Dict[str, Any]] = None,
+    session: Optional[Session] = None,
+) -> InferenceSpec:
+    """A convenient function to create an InferenceSpec instance that serving the model
+    with given container and script.
+
+    Examples::
+
+        infer_spec: InferenceSpec = container_serving_spec(
+            command="python run.py",
+            source_dir="./model_server/",
+            image_uri="<ServingImageUri>",
+        )
+
+        m = Model(
+            model_data="oss://<YourOssBucket>/path/to/your/model",
+            inference_spec=infer_spec,
+        )
+        m.deploy(
+            instance_type="ecs.c6.xlarge"
+        )
+
+
+    Args:
+        command (str): The command used to launch the HTTP server.
+        source_dir (str): A relative path or an absolute path to the source code
+            directory used to load model and launch the HTTP server, it will be
+            uploaded to the OSS bucket and mounted to the container. If there is a
+            ``requirements.txt`` file under the directory, it will be installed before
+            the prediction server started.
+        image_uri (str): The Docker image used to run the prediction service.
+        port (int): Expose port of the server in container, the prediction request
+            will be forward to the port. The environment variable ``LISTENING_PORT``
+            in the container will be set to this value.
+        environment_variables (Dict[str, str], optional): Dictionary of environment
+            variable key-value pairs to set on the running container.
+        requirements (List[str], optional): A list of Python package dependency, it
+            will be installed before the serving container run.
+        requirements_path (str, optional): A absolute path to the requirements.txt in
+            the container.
+        health_check (Dict[str, Any], optional): The health check configuration. If it
+            not set, A TCP readiness probe will be used to check the health of the
+            HTTP server.
+        session (Session, optional): A PAI session instance used for communicating
+            with PAI service.
+
+    Returns:
+        :class:`pai.model.InferenceSpec`: An InferenceSpec instance.
+    """
+    if port and int(port) in _ModelServiceConfig.NOT_ALLOWED_PORTS:
+        raise ValueError(
+            "Port {} is reserved by PAI, it is not allowed to configure"
+            " as serving port: port={}".format(
+                ", ".join([str(p) for p in _ModelServiceConfig.NOT_ALLOWED_PORTS]), port
+            )
+        )
+
+    if source_dir:
+        if not os.path.exists(source_dir):
+            raise ValueError("Source directory {} does not exist.".format(source_dir))
+
+        if not os.path.isdir(source_dir):
+            raise ValueError(
+                "Source directory {} is not a directory.".format(source_dir)
+            )
+
+        code_mount_path = _ModelServiceConfig.CODE_MOUNT_PATH
+        # build the command for serving container.
+        command = textwrap.dedent(
+            f"""\
+        # change working directory to code mount path.
+        cd {code_mount_path}
+        {command}
+        """
+        )
+
+        if not requirements_path and os.path.exists(
+            os.path.join(source_dir, "requirements.txt")
+        ):
+            requirements_path = posixpath.join(code_mount_path, "requirements.txt")
+    else:
+        code_mount_path = None
+        requirements_path = None
+
+    environment_variables = environment_variables or dict()
+    container_spec = {
+        "image": image_uri,
+        "port": port,
+        "script": command,
+        "env": [
+            {"name": key, "value": str(value)}
+            for key, value in environment_variables.items()
+        ]
+        if environment_variables
+        else [],
+    }
+
+    if health_check:
+        container_spec["health_check"] = health_check
+
+    if requirements:
+        container_spec["prepare"] = {"pythonRequirements": requirements}
+        if requirements_path:
+            logger.warning(
+                "If the parameter 'requirements' is set, the requirements_path "
+                "parameter will be ignored."
+            )
+    elif requirements_path:
+        container_spec["prepare"] = {
+            "pythonRequirementsPath": requirements_path,
+        }
+
+    inference_spec = InferenceSpec(containers=[container_spec])
+
+    # mount the uploaded serving scripts to the serving container.
+    if source_dir:
+        inference_spec.mount(
+            source_dir,
+            code_mount_path,
+            session=session,
+        )
+    return inference_spec
 
 
 class _BuiltinProcessor(object):
@@ -591,7 +562,7 @@ class ModelBase(object):
             if not os.path.exists(self.model_data):
                 raise ValueError(f"Model data path does not exist: {self.model_data}")
 
-            makedirs(target_dir)
+            os.makedirs(target_dir, exist_ok=True)
             if os.path.isfile(self.model_data):
                 shutil.copy(
                     self.model_data,
@@ -616,7 +587,7 @@ class ModelBase(object):
         upload_model_data = upload(
             source_path=self.model_data,
             oss_path=dest_oss_path,
-            oss_bucket=self.session.oss_bucket,
+            bucket=self.session.oss_bucket,
         )
         return upload_model_data
 
@@ -633,10 +604,14 @@ class ModelBase(object):
         options: Optional[Dict[str, Any]] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
+        **kwargs,
     ):
         """Deploy a prediction service with the model."""
         if instance_type == "local":
-            return self._deploy_local(serializer=serializer, wait=wait)
+            return self._deploy_local(
+                serializer=serializer,
+                wait=wait,
+            )
         else:
             return self._deploy(
                 service_name=service_name,
@@ -684,8 +659,11 @@ class ModelBase(object):
         )
 
         self._service_name = self.session.service_api.create(config=config)
+
         predictor = Predictor(
-            service_name=service_name, session=self.session, serializer=serializer
+            service_name=service_name,
+            session=self.session,
+            serializer=serializer,
         )
         print(
             "View the service detail by accessing the console URI: \n{}".format(
@@ -739,7 +717,7 @@ class ModelBase(object):
             else:
                 inference_spec.mount(
                     self.model_data,
-                    mount_path=DEFAULT_MODEL_PATH,
+                    mount_path=_ModelServiceConfig.MODEL_PATH,
                 )
 
         if service_name:
@@ -799,7 +777,7 @@ class ModelBase(object):
         self._download_model_data(target_dir=model_dir)
         volumes = {
             model_dir: {
-                "bind": "/eas/workspace/model/",
+                "bind": _ModelServiceConfig.MODEL_PATH,
                 "mode": "rw",
             }
         }
@@ -812,20 +790,9 @@ class ModelBase(object):
                     f"Local run only support InferenceSpec using OSS storage config: "
                     f"{self.inference_spec.to_dict()}"
                 )
-
-            # download data from OSS bucket and mount to local.
-            # Example OSS storage config:
-            # "storage": [
-            #     {
-            #         "mount_path": "/data_oss",
-            #         "oss": {
-            #             "endpoint": "oss-cn-shanghai-internal.aliyuncs.com",
-            #             "path": "oss://bucket/path/"
-            #         }
-            #     }
-            # ]
             for idx, storage in enumerate(self.inference_spec.storage):
                 store_dir = os.path.join(work_dir, f"storage_{idx}")
+                os.makedirs(store_dir, exist_ok=True)
                 oss_uri = OssUriObj(storage.oss.path)
                 download(
                     oss_path=oss_uri.object_key,
@@ -838,25 +805,75 @@ class ModelBase(object):
         env_vars = {
             item["name"]: item["value"] for item in container_spec.get("env", [])
         }
+
+        # build local launch script
+        requirements_list = container_spec.get("prepare", dict()).get(
+            "pythonRequirements", []
+        )
+        if requirements_list:
+            install_requirements = shlex.join(
+                ["python", "-m", "pip", "install"] + requirements_list
+            )
+        else:
+            install_requirements = ""
+        user_scripts = container_spec.get("script", "")
+        launch_script = textwrap.dedent(
+            f"""\
+            set -e
+            {install_requirements}
+            {user_scripts}
+            """
+        )
+
         container_run = run_container(
             image_uri=container_spec["image"],
             port=container_spec.get("port"),
             environment_variables=env_vars,
-            command=container_spec.get("command"),
+            entry_point=[
+                "/bin/sh",
+                "-c",
+                launch_script,
+            ],
             volumes=volumes,
         )
-
-        if wait:
-            container_run.wait_for_ready()
-            # ensure the server is ready.
-            # TODO(liangquan): Check if the server is ready by using the health
-            #  check probe (or readiness probe?)
-            time.sleep(5)
-        return LocalPredictor(
+        predictor = LocalPredictor(
             container_id=container_run.container.id,
             port=container_run.port,
             serializer=serializer,
         )
+
+        if wait:
+            predictor.wait_for_ready()
+
+        return predictor
+
+    @classmethod
+    def _wait_local_server_ready(
+        cls,
+        container_run: ContainerRun,
+        interval: int = 5,
+    ):
+        """Wait for the local model server to be ready."""
+        while True:
+            try:
+                # Check whether the container is still running.
+                if not container_run.is_running():
+                    raise RuntimeError(
+                        "Container exited unexpectedly, status: {}".format(
+                            container_run.status
+                        )
+                    )
+
+                # Make a HEAD request to the server.
+                requests.head(
+                    f"http://127.0.0.1:{container_run.port}/",
+                )
+                break
+            except requests.ConnectionError:
+                # ConnectionError means server is not ready.
+                logging.debug("Waiting for the container to be ready...")
+                time.sleep(interval)
+                continue
 
 
 class Model(ModelBase):
@@ -935,6 +952,7 @@ class Model(ModelBase):
         options: Optional[Dict[str, Any]] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
+        **kwargs,
     ):
         """Deploy an online prediction service.
 
@@ -994,4 +1012,5 @@ class Model(ModelBase):
             options=options,
             wait=wait,
             serializer=serializer,
+            **kwargs,
         )

@@ -7,6 +7,7 @@ from alibabacloud_tea_openapi.models import Config
 
 import pai
 from pai.api.base import PAIServiceName
+from pai.common.utils import default_user_agent
 from pai.libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
 from pai.libs.alibabacloud_eas20210701.client import Client as EasClient
 from pai.libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
@@ -40,10 +41,6 @@ class ClientFactory(object):
     @staticmethod
     def _is_inner_client(acs_client):
         return acs_client.get_region_id() == "center"
-
-    @classmethod
-    def _get_default_user_agent(cls):
-        return f"PAI/{pai.__version__}"
 
     @classmethod
     def create_client(
@@ -81,7 +78,7 @@ class ClientFactory(object):
                 endpoint=endpoint,
             ),
             signature_algorithm="v2",
-            user_agent=cls._get_default_user_agent(),
+            user_agent=default_user_agent(),
             **kwargs,
         )
         client = cls.ClientClsByServiceName.get(service_name)(config)

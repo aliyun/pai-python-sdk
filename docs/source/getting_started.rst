@@ -2,14 +2,14 @@
 快速开始
 ======================
 
-用户可以基于 **PAI Python SDK** 在 PAI 使用云上的资源完成模型的训练，部署，端到端得串联机器学习流程。
+用户可以基于 **PAI Python SDK** 在PAI使用云上的资源完成模型的训练和部署，端到端得串联机器学习流程。
 
-在本示例中，我们使用 PyTorch 训练模型，将产出的模型部署为在线服务，然后调用测试部署的服务。
+在本示例中，我们使用PyTorch训练模型，将产出的模型部署为在线服务，然后调用测试部署的服务。
 
 安装
 -------------------------------------------
 
-请通过以下命令安装 PAI Python SDK（请使用Python >= 3.6）。
+请通过以下命令安装PAI Python SDK（请使用Python>=3.6）。
 
 .. parsed-literal::
 
@@ -32,7 +32,7 @@ SDK依赖于PAI在阿里云上提供的服务，首次使用需要用户配置�
 提交训练作业
 -----------------------------------
 
-:class:`pai.estimator.Estimator` 支持将本地的训练脚本提交到云端执行，当前示例中，我们在 PyTorch 提供 `MNIST 示例 <https://github.com/pytorch/examples/blob/main/mnist/main.py>`_ 基础上，修改了模型保存部分的代码，作为训练脚本提交训练。
+:class:`pai.estimator.Estimator` 支持将本地的训练脚本提交到云端执行，当前示例中，我们在PyTorch提供 `MNIST 示例 <https://github.com/pytorch/examples/blob/main/mnist/main.py>`_ 基础上，修改了模型保存部分的代码，作为训练脚本提交训练。
 
 :download:`点击下载训练脚本 <./resources/torch_mnist/main.py>`
 
@@ -42,12 +42,13 @@ SDK依赖于PAI在阿里云上提供的服务，首次使用需要用户配置�
     from pai.image import retrieve
 
     # 获取PAI支持的最新的PyTorch镜像
-    torch_image_uri = retrieve(framework_name="PyTorch", accelerator_type="GPU").image_uri
+    torch_image_uri = retrieve(framework_name="PyTorch", framework_version="latest", accelerator_type="GPU").image_uri
 
     est = Estimator(
-        entry_point="main.py",
+        command="python main.py",
+        source_dir="<YourSourceCodeDir>"        # 下载脚本所在目录，请注意，指定的目录会被上传到OSS上.
         image_uri=torch_image_uri,
-        instance_type="ecs.gn6i-c4g1.xlarge", # 4vCPU 15GB 1*NVIDIA T4
+        instance_type="ecs.gn6i-c4g1.xlarge",   # 4vCPU 15GB 1*NVIDIA T4
         hyperparameters={
             "epochs": 5,
             "batch-size": 64 * 4,
@@ -68,7 +69,7 @@ SDK依赖于PAI在阿里云上提供的服务，首次使用需要用户配置�
     from pai.predictor import Predictor
 
     # 使用PAI提供的 PyTorch Processor 加载模型，构建在线服务
-    infer_spec = InferenceSpec(processor="pytorch_cpu_1.10")
+    infer_spec = InferenceSpec(processor="pytorch_gpu_1.10")
 
     m = Model(
         model_data=est.model_data(),
@@ -77,7 +78,7 @@ SDK依赖于PAI在阿里云上提供的服务，首次使用需要用户配置�
 
     p: Predictor = m.deploy(
         service_name="torch_mnist_example",
-        instance_type="ecs.c6.xlarge",
+        instance_type="ecs.gn6i-c4g1.xlarge", # 4vCPU 15GB 1*NVIDIA T4
     )
 
 对于模型部署的详细介绍，可以见文档: :doc:`user-guide/model` 。

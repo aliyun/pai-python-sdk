@@ -3,8 +3,11 @@ import json
 import logging
 import os
 import posixpath
+import re
+import shlex
 import shutil
 import tempfile
+import textwrap
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -17,7 +20,7 @@ from .common import ProviderAlibabaPAI
 from .common.consts import JobType
 from .common.docker_utils import run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import makedirs, random_str, to_plain_text
+from .common.utils import random_str, to_plain_text
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .schema.training_job_schema import TrainingJobSchema
@@ -50,7 +53,7 @@ class Estimator(object):
 
         est = Estimator(
             source_dir="./train/src/",
-            entry_point="train.py",
+            command="python train.py",
             image_uri = training_image_uri,
             instance_type="ecs.c6.xlarge",
             hyperparameters={
@@ -74,11 +77,12 @@ class Estimator(object):
     def __init__(
         self,
         image_uri: str,
-        entry_point: str,
+        command: str,
         source_dir: Optional[str] = None,
         job_type: str = JobType.PyTorchJob,
         hyperparameters: Optional[Dict[str, Any]] = None,
         base_job_name: Optional[str] = None,
+        max_run_time: Optional[int] = None,
         checkpoints_path: Optional[str] = None,
         output_path: Optional[str] = None,
         metric_definitions: Optional[List[Dict[str, str]]] = None,
@@ -93,9 +97,7 @@ class Estimator(object):
                 provided by PAI or a user customized image. To view the images provided
                 by PAI, please refer to the document:
                 https://help.aliyun.com/document_detail/202834.htm.
-            entry_point (str): The relative path or absolute path of the entry point
-                file used by the job.  if parameter `source_dir` is specified,
-                `entry_point` should be a relative path in the `source_dir`.
+            command (str): The command used to run the training job.
             source_dir (str, optional): The local source code directory used in the
                 training job. The directory will be packaged and uploaded to an OSS
                 bucket, then downloaded to the `/ml/usercode` directory in the training
@@ -114,6 +116,9 @@ class Estimator(object):
                 https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
                 If the instance_type is "local", the training job is executed locally
                 using docker.
+            max_run_time (int, optional): The maximum time in seconds that the training
+                job can run. The training job will be terminated after the time is
+                reached (Default None).
             instance_count (int): The number of machines used to run the training job.
             base_job_name (str, optional): The base name used to generate the training
                 job name.
@@ -179,12 +184,13 @@ class Estimator(object):
 
         """
         self.image_uri = image_uri
-        self.entry_point = entry_point
+        self.command = command
         self.source_dir = source_dir
         self.hyperparameters = hyperparameters or dict()
         self.instance_type = instance_type
         self.instance_count = instance_count
         self.job_type = job_type if job_type else JobType.PyTorchJob
+        self.max_run_time = max_run_time
         self.base_job_name = base_job_name
         self.output_path = output_path
         self.checkpoints_path = checkpoints_path
@@ -201,37 +207,23 @@ class Estimator(object):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
 
-    def _check(self):
-        if not self.image_uri:
-            raise ValueError("Please provide image_uri to create the job.")
-        if not self.entry_point:
-            raise ValueError("Please provide entry_point to create the job.")
-
-    def _upload_source_files(self, job_name):
+    def _upload_source_files(self, job_name: str) -> Optional[str]:
         """Upload local source files to OSS."""
-        if self.source_dir:
-            source_file = self.source_dir
-        else:
-            # if source_dir is not provided, use entry_point as source files.
-            source_file = self.entry_point
+        if not self.source_dir:
+            return
 
-        if not os.path.exists(source_file):
-            raise ValueError(f"Source file is not exist: {source_file}")
-
-        if not isinstance(source_file, six.string_types):
-            raise ValueError(
-                f"Unsupported source file type, expected string but given"
-                f" {type(source_file)}"
-            )
-
+        if is_oss_uri(self.source_dir):
+            return self.source_dir
+        elif not os.path.exists(self.source_dir):
+            raise ValueError(f"Source directory {self.source_dir} does not exist.")
         # compress the source files to a Tar Gz file and upload to OSS bucket.
         upload_data_path = self.session.get_storage_path_by_category(
             "training_src", to_plain_text(job_name)
         )
         self.__uploaded_source_files = upload(
-            source_path=source_file,
+            source_path=self.source_dir,
             oss_path=upload_data_path,
-            oss_bucket=self.session.oss_bucket,
+            bucket=self.session.oss_bucket,
             is_tar=True,
         )
         return self.__uploaded_source_files
@@ -241,8 +233,13 @@ class Estimator(object):
         code_input,
     ) -> Dict[str, Any]:
         """Build a temporary AlgorithmSpec used for submitting the TrainingJob."""
+        command = [
+            "/bin/sh",
+            "-c",
+            self.command,
+        ]
         algo_spec = {
-            "Command": ["bash", "-c", " ".join(self._build_command())],
+            "Command": command,
             "Image": self.image_uri,
             "JobType": self.job_type,
             "MetricDefinitions": [m for m in self.metric_definitions]
@@ -252,33 +249,10 @@ class Estimator(object):
         }
         return algo_spec
 
-    def _build_command(self):
-        install_training_utils = [
-            "python",
-            "-m",
-            "pip",
-            "install",
-            "--quiet",
-            "--no-cache",
-            TRAINING_UTILS_PKG,
-            "--index-url",
-            "http://mirrors.aliyun.com/pypi/simple/",
-            "--trusted-host",
-            "mirrors.aliyun.com/",
-        ]
-
-        return [
-            # PAI download the source code passing by `CodeDir` and untar
-            # to directory `/ml/usercode/`.
-            *install_training_utils,
-            "&&",
-            # command "launch" requires pai-training-utils installed in docker image.
-            "launch",
-            "--entry_point",
-            self.entry_point,
-        ]
-
-    def _build_input_data_configs(self, inputs: Dict[str, Any] = None):
+    @classmethod
+    def _build_input_data_configs(
+        cls, inputs: Dict[str, Any] = None
+    ) -> List[Dict[str, str]]:
         inputs = inputs or dict()
         res = []
         for name, item in inputs.items():
@@ -298,7 +272,7 @@ class Estimator(object):
 
         return res
 
-    def _build_output_data_configs(self, job_name: str):
+    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
         job_base_output_path = self._generate_job_base_output_path(job_name)
 
         # OSS URI for output channel will be mounted to directory
@@ -348,7 +322,7 @@ class Estimator(object):
 
         return code_dir
 
-    def _generate_job_base_output_path(self, job_name):
+    def _generate_job_base_output_path(self, job_name: str) -> str:
         bucket = self.session.oss_bucket
         bucket_name = bucket.bucket_name
         # replace non-alphanumeric character in training job name.
@@ -404,6 +378,7 @@ class Estimator(object):
             instance_type=self.instance_type,
             job_name=job_name,
             hyperparameters=self.hyperparameters,
+            max_running_in_seconds=self.max_run_time,
             input_channels=input_configs,
             output_channels=output_configs,
             algorithm_spec=algo_spec,
@@ -429,7 +404,7 @@ class Estimator(object):
         training_job.run()
         return training_job
 
-    def model_data(self):
+    def model_data(self) -> str:
         """Model data output path.
 
         Returns:
@@ -451,7 +426,7 @@ class Estimator(object):
             channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
         )
 
-    def checkpoints_data(self):
+    def checkpoints_data(self) -> str:
         """Checkpoints data output path.
 
         Returns:
@@ -539,6 +514,49 @@ class Estimator(object):
         return p
 
 
+_TRAINING_LAUNCH_SCRIPT_TEMPLATE = textwrap.dedent(
+    """\
+#!/bin/sh
+
+# change to working directory
+if [ -n "$PAI_WORKING_DIR" ]; then
+    echo "Change to Working Directory", $PAI_WORKING_DIR
+    mkdir -p $PAI_WORKING_DIR && cd $PAI_WORKING_DIR
+fi
+
+# install requirements
+if [ -e "requirements.txt" ]; then
+    echo "Installing dependencies from requirements.txt"
+    python -m pip install -r requirements.txt
+fi
+
+echo "User program launching"
+echo "-----------------------------------------------------------------"
+
+sh {0}
+"""
+)
+
+
+class _TrainingEnv(object):
+    ENV_PAI_HPS = "PAI_HPS"
+    ENV_PAI_HPS_PREFIX = "PAI_HPS_"
+    ENV_PAI_USER_ARGS = "PAI_USER_ARGS"
+    ENV_PAI_INPUT_PREFIX = "PAI_INPUT_"
+    ENV_PAI_OUTPUT_PREFIX = "PAI_OUTPUT_"
+    ENV_PAI_WORKING_DIR = "PAI_WORKING_DIR"
+
+
+class _TrainingJobConfig(object):
+    WORKING_DIR = "/ml/usercode/"
+    INPUT_CONFIG_DIR = "/ml/input/config/"
+    INPUT_DATA_DIR = "/ml/input/data/"
+    OUTPUT_DIR = "/ml/output/"
+
+
+_ENV_NOT_ALLOWED_CHARS = re.compile(r"[^a-zA-Z0-9_]")
+
+
 class _LocalTrainingJob(object):
     """A class that represents a local training job running with docker container."""
 
@@ -560,19 +578,62 @@ class _LocalTrainingJob(object):
     def session(self) -> Session:
         return self.estimator.session
 
+    def prepare_env(self) -> Dict[str, str]:
+        """Prepare environment variables for the training job."""
+
+        # Hyperparameters environment variables
+        def _normalize_name(name: str) -> str:
+            # replace all non-alphanumeric characters with underscore
+            return _ENV_NOT_ALLOWED_CHARS.sub("_", name)
+
+        env = {}
+        user_args = []
+        for name, value in self.estimator.hyperparameters.items():
+            env[_TrainingEnv.ENV_PAI_HPS_PREFIX + _normalize_name(name)] = str(value)
+            user_args.extend(["--" + name, shlex.quote(str(value))])
+        env[_TrainingEnv.ENV_PAI_USER_ARGS] = shlex.join(user_args)
+        env[_TrainingEnv.ENV_PAI_HPS] = json.dumps(
+            {name: str(value) for name, value in self.estimator.hyperparameters.items()}
+        )
+
+        # Environments for input channel
+        for name, value in self.inputs.items():
+            if (is_oss_uri(value) and value.endswith("/")) or os.path.isdir(value):
+                env[
+                    _TrainingEnv.ENV_PAI_INPUT_PREFIX + _normalize_name(name)
+                ] = posixpath.join(_TrainingJobConfig.INPUT_DATA_DIR, name)
+            else:
+                file_name = os.path.basename(value)
+                env[
+                    _TrainingEnv.ENV_PAI_INPUT_PREFIX + _normalize_name(name)
+                ] = posixpath.join(_TrainingJobConfig.INPUT_DATA_DIR, name, file_name)
+
+        # Environments for output channel.
+        # By default, TrainingJob invoked by Estimator will have two output channels:
+        # 'model' and 'checkpoints'
+        output_channel = ["model", "checkpoints"]
+        for name in output_channel:
+            env[
+                _TrainingEnv.ENV_PAI_OUTPUT_PREFIX + _normalize_name(name)
+            ] = posixpath.join(_TrainingJobConfig.OUTPUT_DIR, name)
+
+        env[_TrainingEnv.ENV_PAI_WORKING_DIR] = _TrainingJobConfig.WORKING_DIR
+        return env
+
     def run(self):
         """Run estimator job in local with docker."""
         output_model_path = self.output_path()
-        makedirs(output_model_path)
+        os.makedirs(output_model_path, exist_ok=True)
         volumes = {}
 
         tmp_dir = tempfile.mkdtemp()
         # 1. Prepare source code to directory /ml/usercode
         user_code_dir = os.path.join(self.tmp_dir, "user_code")
-        # TODO: support source code in OSS
+        if is_oss_uri(self.estimator.source_dir):
+            raise RuntimeError("OSS source code is not supported in local training.")
         shutil.copytree(self.estimator.source_dir, user_code_dir)
         volumes[user_code_dir] = {
-            "bind": "/ml/usercode/",
+            "bind": _TrainingJobConfig.WORKING_DIR,
             "mode": "rw",
         }
 
@@ -587,45 +648,51 @@ class _LocalTrainingJob(object):
         # 3. Prepare input config files, such as hyperparameters.json,
         # training-job.json, etc.
         input_config_path = os.path.join(tmp_dir, "config")
-        os.mkdir(input_config_path)
+        os.makedirs(input_config_path, exist_ok=True)
         self.prepare_input_config(input_config_path=input_config_path)
-        volumes[input_config_path] = {"bind": "/ml/input/config/", "mode": "rw"}
+        volumes[input_config_path] = {
+            "bind": _TrainingJobConfig.INPUT_CONFIG_DIR,
+            "mode": "rw",
+        }
+
+        execution_dir = os.path.join(tmp_dir, "config", "execution")
+        os.makedirs(execution_dir, exist_ok=True)
+        command_path = os.path.join(execution_dir, "command.sh")
+        with open(command_path, "w") as f:
+            f.write(self.estimator.command)
+        launch_script_path = os.path.join(input_config_path, "launch.sh")
+        with open(launch_script_path, "w") as f:
+            f.write(
+                _TRAINING_LAUNCH_SCRIPT_TEMPLATE.format(
+                    posixpath.join(
+                        _TrainingJobConfig.INPUT_CONFIG_DIR, "execution/command.sh"
+                    )
+                )
+            )
 
         # 4. Config output model channel
         volumes[output_model_path] = {
-            "bind": "/ml/output/model/",
+            "bind": posixpath.join(_TrainingJobConfig.OUTPUT_DIR, "model"),
             "mode": "rw",
         }
 
         self._container_run = run_container(
-            # container_name=self.job_name,
+            environment_variables=self.prepare_env(),
             image_uri=self.estimator.image_uri,
-            entry_point=["bash", "-c", " ".join(self.estimator._build_command())],
+            entry_point=[
+                "/bin/sh",
+                posixpath.join(_TrainingJobConfig.INPUT_CONFIG_DIR, "launch.sh"),
+            ],
             volumes=volumes,
+            working_dir=_TrainingJobConfig.WORKING_DIR,
         )
 
     def prepare_input_config(self, input_config_path):
-        """Prepare input config for TrainingJob, such as hyper-parameters.json,
-        training-job.json."""
-        with open(os.path.join(input_config_path, "hyper-parameters.json"), "w") as f:
+        """Prepare input config for TrainingJob, such as hyperparameters.json,
+        trainingjob.json."""
+        with open(os.path.join(input_config_path, "hyperparameters.json"), "w") as f:
             hps = self.estimator.hyperparameters or dict()
             f.write(json.dumps({k: str(v) for k, v in hps.items()}))
-
-        # Mock training-job spec.
-        with open(os.path.join(input_config_path, "training-job.json"), "w") as f:
-            # pai-training-utils use 'codeDir' in training-job.json to determine
-            # whether launch job using code in /ml/usercode.
-            training_job_spec = {
-                "codeDir": {
-                    "locationType": "oss",
-                    "locationValue": {
-                        "endpoint": "MockEndpoint",
-                        "key": "MockKey",
-                        "bucket": "MockBucket",
-                    },
-                }
-            }
-            f.write(json.dumps(training_job_spec))
 
     def prepare_input_data(self) -> Dict[str, str]:
         """Prepare input data config."""
@@ -633,18 +700,22 @@ class _LocalTrainingJob(object):
 
         for name, input_data in self.inputs.items():
             local_channel_path = os.path.join(self.tmp_dir, f"input/data/{name}")
-            makedirs(local_channel_path)
-            input_data_configs[local_channel_path] = f"/ml/input/data/{name}"
-            if input_data.startswith("oss://"):
+            os.makedirs(local_channel_path, exist_ok=True)
+            input_data_configs[local_channel_path] = posixpath.join(
+                _TrainingJobConfig.INPUT_DATA_DIR, name
+            )
+            if is_oss_uri(input_data):
                 oss_uri_obj = OssUriObj(input_data)
                 oss_bucket = self.session.get_oss_bucket(oss_uri_obj.bucket_name)
-                makedirs(local_channel_path)
+                os.makedirs(local_channel_path, exist_ok=True)
                 download(
                     oss_uri_obj.object_key,
                     local_path=local_channel_path,
                     bucket=oss_bucket,
                 )
-                input_data_configs[local_channel_path] = f"/ml/input/data/{name}"
+                input_data_configs[local_channel_path] = posixpath.join(
+                    _TrainingJobConfig.INPUT_DATA_DIR, name
+                )
             else:
                 # If the input data is local files, copy the input data to a
                 # temporary directory.
@@ -668,14 +739,10 @@ class _LocalTrainingJob(object):
         self._container_run.watch()
 
     def output_path(self, channel_name="model"):
-        return posixpath.join(self.tmp_dir, f"output/{channel_name}/")
-
-    def _reload(self):
-        self._container_run.container.reload()
+        return os.path.join(self.tmp_dir, "output", f"{channel_name}/")
 
     def is_succeeded(self):
         """Return True if the training job is succeeded, otherwise return False."""
-        self._reload()
         return self._container_run.is_succeeded()
 
 

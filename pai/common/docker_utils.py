@@ -1,12 +1,12 @@
 import io
 import logging
-import socket
 import subprocess
 import time
 from random import randint
 from typing import Any, Dict, List, Optional, Union
 
 import docker
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -37,24 +37,31 @@ class ContainerRun(object):
     CONTAINER_STATUS_EXITED = "exited"
     CONTAINER_STATUS_PAUSED = "paused"
 
-    def __init__(self, container: docker.models.containers.Container, port: int):
+    def __init__(
+        self, container: docker.models.containers.Container, port: Optional[int] = None
+    ):
         """Initialize a container run.
 
         Args:
             container: A docker container object.
-            port (int): The port container is exposing.
+            port (int): The host port that container is exposed to.
 
         """
         self.container = container
         self.port = port
 
+    @property
+    def status(self):
+        self.container.reload()
+        return self.container.status
+
     def is_running(self):
         """Return True if container is running, otherwise False."""
-        return self.container.status == self.CONTAINER_STATUS_RUNNING
+        return self.status == self.CONTAINER_STATUS_RUNNING
 
     def is_terminated(self):
         """Return True if container is terminated, otherwise False."""
-        return self.container.status in [
+        return self.status in [
             self.CONTAINER_STATUS_EXITED,
             self.CONTAINER_STATUS_PAUSED,
         ]
@@ -62,54 +69,28 @@ class ContainerRun(object):
     def is_succeeded(self):
         """Return True if container is succeeded, otherwise False."""
         return (
-            self.container.status == "exited"
-            and self.container.attrs["State"]["ExitCode"] == 0
+            self.status == "exited" and self.container.attrs["State"]["ExitCode"] == 0
         )
 
-    def wait_for_ready(self, interval=1):
-        """Wait until container is ready.
-
-        If a port is specified, wait until server is ready.
-
-        """
+    def wait_for_ready(self, interval=5):
+        """Wait until container enter running state or terminated state."""
         while True:
-            self.container.reload()
-            if self.is_running():
+            status = self.status
+            if status == self.CONTAINER_STATUS_RUNNING:
                 break
-            elif self.is_terminated():
+            elif status in [self.CONTAINER_STATUS_EXITED, self.CONTAINER_STATUS_PAUSED]:
                 raise RuntimeError(
-                    "Container is terminated: id={} status={}".format(
+                    "Container is terminated : id={} status={}".format(
                         self.container.id, self.container.status
                     )
                 )
             time.sleep(interval)
 
-        if self.port:
-            self._wait_for_serving(interval=interval)
-
-    def _wait_for_serving(self, timeout=20, interval=1):
-        start_time = time.time()
-        while True:
-            try:
-                s = socket.create_connection(("127.0.0.1", self.port))
-                s.close()
-                return
-            except socket.error as e:
-                elapse = time.time() - start_time
-                if elapse > timeout:
-                    raise RuntimeError(
-                        "Wait for container serving timeout, connection error: %s", e
-                    )
-                time.sleep(interval)
-                continue
-
     def stop(self):
-        self.container.reload()
         if self.is_running():
             self.container.stop()
 
     def start(self):
-        self.container.reload()
         if not self.is_running():
             self.container.start()
 
@@ -142,6 +123,7 @@ def run_container(
     command: Union[List[str], str] = None,
     entry_point: Union[List[str], str] = None,
     volumes: Union[Dict[str, Any], List[str]] = None,
+    working_dir: str = None,
 ) -> ContainerRun:
     """Run a container in local.
 
@@ -154,6 +136,7 @@ def run_container(
         command (Union[List[str], str]): Command to run the container.
         entry_point (Union[List[str], str]): Entry point to run the container.
         volumes (Union[Dict[str, Any], List[str]]): Volumes to mount in the container.
+        working_dir (str): Working directory in the container.
 
     Returns:
         ContainerRun: A ContainerRun object.
@@ -170,6 +153,7 @@ def run_container(
         environment=environment_variables,
         ports={port: host_port} if port else None,
         volumes=volumes,
+        working_dir=working_dir,
         detach=True,
     )
     container_run = ContainerRun(

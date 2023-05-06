@@ -47,8 +47,16 @@ async def get_body(request: Request):
 
 
 @app.post("/")
-def predict(body: bytes = Depends(get_body)):
-    logger.info("API Predict Invocation.")
+def predict_v1(body: bytes = Depends(get_body)):
+    logger.info("API PredictV1 Invocation.")
+    global model
+    response = predict_fn(body, model)
+    return Response(content=response)
+
+
+@app.post("/predict")
+def predict_v2(body: bytes = Depends(get_body)):
+    logger.info("API PredictV2 Invocation.")
     global model
     response = predict_fn(body, model)
     return Response(content=response)
@@ -66,5 +74,5 @@ def predict_fn(data: bytes, model) -> bytes:
 if __name__ == "__main__":
     logger.info("FastAPI server launching")
     logger.info(os.environ)
-    port = int(os.environ.get("PAI_SERVING_PORT", 5000))
+    port = int(os.environ.get("LISTENING_PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

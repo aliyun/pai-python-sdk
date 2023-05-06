@@ -110,7 +110,7 @@ class TestPmmlPredictor(TestPredictorBase):
     def test_raw_request(self):
         p = self.predictor
 
-        result = p.raw_predict(
+        resp = p.raw_predict(
             json.dumps(
                 [
                     {
@@ -126,9 +126,7 @@ class TestPmmlPredictor(TestPredictorBase):
                 ]
             ).encode()
         )
-
-        res = json.loads(result)
-
+        res = resp.json()
         self.assertEqual(len(res), 2)
 
 

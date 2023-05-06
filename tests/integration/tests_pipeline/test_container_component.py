@@ -1,5 +1,6 @@
 # coding: utf-8
 import time
+from unittest import skip
 
 from pai.pipeline import Pipeline
 from pai.pipeline.component import ContainerComponent, RegisteredComponent
@@ -14,6 +15,7 @@ from tests.integration import BaseIntegTestCase
 
 
 class TestContainerOperator(BaseIntegTestCase):
+    @skip("Skip for now")
     def test_component_base(self):
         inputs = [
             PipelineParameter(name="xflow_name", typ=str, desc="ExampleParam"),

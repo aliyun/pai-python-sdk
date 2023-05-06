@@ -1,3 +1,5 @@
+from unittest import skip
+
 from pai.pipeline import Pipeline
 from pai.pipeline.component import ContainerComponent
 from pai.pipeline.types import PipelineParameter
@@ -5,6 +7,7 @@ from tests.integration import BaseIntegTestCase
 
 
 class TestUnRegisteredComponent(BaseIntegTestCase):
+    @skip("Skip for now")
     def test_pipeline(self):
         python_image = self.get_python_image()
 

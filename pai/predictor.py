@@ -1,21 +1,20 @@
 import json
 import logging
+import posixpath
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
-from urllib import parse
+from io import IOBase
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import docker
 import requests
-from eas_prediction import ENDPOINT_TYPE_DEFAULT, PredictClient
-from eas_prediction import PredictException as EasPredictionException
-from eas_prediction import StringRequest, StringResponse
 
+from . import __version__
 from .common.consts import FrameworkTypes
 from .common.docker_utils import ContainerRun
+from .common.utils import default_user_agent
 from .exception import PredictionException
 from .serializers import (
-    BytesSerializer,
     JsonSerializer,
     PyTorchSerializer,
     SerializerBase,
@@ -60,10 +59,51 @@ class EndpointType(object):
     INTRANET = "INTRANET"
 
 
+def _default_user_agent():
+    return f"PAI-Python-SDK/{__version__}"
+
+
 class PredictorBase(ABC):
     @abstractmethod
-    def predict(self, data) -> Any:
+    def predict(self, data: Any) -> Any:
         """Perform inference on the provided data and return a prediction."""
+
+    @abstractmethod
+    def raw_predict(
+        self,
+        data: Any = None,
+        path: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None,
+        method: str = "POST",
+        timeout: Optional[Union[float, Tuple[float, float]]] = None,
+        **kwargs,
+    ):
+        pass
+
+
+class RawResponse(object):
+    """Response object returned by the predictor.raw_predict."""
+
+    def __init__(self, status_code: int, headers: Dict[str, str], content: bytes):
+        """Initialize a RawResponse object.
+
+        Args:
+            status_code (int):
+            headers (dict):
+            content (bytes):
+        """
+        self.status_code = status_code
+        self.headers = headers
+        self.content = content
+
+    def json(self):
+        """Returns the json-encoded content of a response
+
+        Returns:
+            Dict[str, Any]: The json-encoded content of a response.
+
+        """
+        return json.loads(self.content)
 
 
 class Predictor(PredictorBase):
@@ -93,7 +133,6 @@ class Predictor(PredictorBase):
         endpoint_type: str = EndpointType.INTERNET,
         serializer: Optional[SerializerBase] = None,
         session: Optional[Session] = None,
-        **kwargs,
     ):
         """Construct a `Predictor` object using an existing prediction service.
 
@@ -114,10 +153,7 @@ class Predictor(PredictorBase):
         self._service_name = service_name
         self._endpoint_type = endpoint_type
         self._service_api_object = self.describe_service()
-        self._client = None
-        self._client_kwargs = kwargs or dict()
         self._serializer = serializer or self._get_default_serializer()
-
         self._check()
 
     @property
@@ -131,17 +167,6 @@ class Predictor(PredictorBase):
     @property
     def serializer(self):
         return self._serializer
-
-    @serializer.setter
-    def serializer(self, value):
-        if not isinstance(value, SerializerBase):
-            raise ValueError(
-                f"Type of serializer should be a subclass of 'SerializerBase'. "
-                f"Received: {type(value)}"
-            )
-
-        self._serializer = value
-        self._post_init_serializer(force=True)
 
     @property
     def service_status(self):
@@ -167,48 +192,15 @@ class Predictor(PredictorBase):
                 " 'INTERNET' or 'INTRANET'."
             )
 
-    def _post_init(self):
-        """Post-initialize the serializer and client."""
-        self._post_init_client()
-        self._post_init_serializer()
-
-    def _post_init_serializer(self, force=False):
+    def _post_init_serializer(self):
         """Post-initialize the serializer by invoking serializer.inspect_from_service"""
-        if not hasattr(self, "__post_init_serializer_flag") or force:
-            if hasattr(self._serializer, "inspect_from_service"):
-                self._serializer.inspect_from_service(
-                    self.service_name, session=self.session
-                )
-            setattr(self, "__post_init_serializer_flag", 1)
-
-    def _post_init_client(self):
-        """Construct the client used to call the prediction service."""
-        if self._client is None:
-            self._client = self._init_client()
-
-    def _init_client(self):
-        if self.endpoint_type.upper() == EndpointType.INTERNET:
-            endpoint_url = self._service_api_object["InternetEndpoint"]
-        else:
-            endpoint_url = self._service_api_object["IntranetEndpoint"]
-        parsed = parse.urlparse(endpoint_url)
-        client = PredictClient(
-            "{}://{}".format(parsed.scheme, parsed.hostname),
-            service_name=self.service_name,
-        )
-        timeout = self._client_kwargs.get("timeout", None)
-
-        if timeout:
-            client.set_timeout(timeout)
-        client.set_endpoint_type(ENDPOINT_TYPE_DEFAULT)
-        client.set_token(self._service_api_object["AccessToken"])
-        client.init()
-        return client
-
-    def __del__(self):
-        if hasattr(self, "_client") and self._client:
-            self._client.destroy()
-            self._client = None
+        if not hasattr(self._serializer, "__post_init_serializer_flag") and hasattr(
+            self._serializer, "inspect_from_service"
+        ):
+            self._serializer.inspect_from_service(
+                self.service_name, session=self.session
+            )
+            setattr(self._serializer, "__post_init_serializer_flag", 1)
 
     def _get_default_serializer(self):
         """Get default serializer for the predictor by inspecting the service config."""
@@ -217,10 +209,11 @@ class Predictor(PredictorBase):
         service_config = json.loads(self._service_api_object["ServiceConfig"])
         processor_code = service_config.get("processor")
 
-        # if the service serving with custom processor or custom container,
-        # use JsonSerializer as default serializer.
+        # If the prediction service is serving with custom processor or custom
+        # container, use JsonSerializer as default serializer.
         if not processor_code:
             return JsonSerializer()
+
         if processor_code in (
             _BuiltinProcessor.PMML,
             _BuiltinProcessor.XGBoost,
@@ -233,15 +226,6 @@ class Predictor(PredictorBase):
             return PyTorchSerializer()
         else:
             return JsonSerializer()
-
-    def _send_request(self, request):
-        if not self._client:
-            self._client = self._init_client()
-
-        try:
-            return self._client.predict(request)
-        except EasPredictionException as e:
-            raise PredictionException(e.code, e.message)
 
     def predict(self, data):
         """Make a prediction with the online prediction service.
@@ -264,30 +248,94 @@ class Predictor(PredictorBase):
             PredictionException: Raise if status code of the prediction response does
                 not equal 200.
         """
-
-        self._post_init()
+        self._post_init_serializer()
 
         data = self._serializer.serialize(data)
+        res = self.raw_predict(
+            data=data,
+        )
+        return self._serializer.deserialize(res.content)
 
-        resp: StringResponse = self._send_request(StringRequest(data))
-        return self._serializer.deserialize(resp.response_data)
+    def _build_url(self, path: Optional[str] = None) -> str:
+        if self.endpoint_type.upper() == EndpointType.INTERNET:
+            url = self._service_api_object["InternetEndpoint"]
+        else:
+            url = self._service_api_object["IntranetEndpoint"]
+        if path:
+            if path.startswith("/"):
+                path = path[1:]
+            url = posixpath.join(url, path)
+        return url
 
-    def raw_predict(self, data: bytes) -> bytes:
-        """Send the serialized data in bytes to the service and returns the
-        prediction in raw bytes.
+    def _build_headers(self, headers: Dict[str, str]) -> Dict[str, str]:
+        headers = headers or dict()
+        access_token = self._service_api_object["AccessToken"]
+        headers["Authorization"] = access_token
+        if "User-Agent" not in headers:
+            headers["User-Agent"] = default_user_agent()
+        return headers
+
+    def raw_predict(
+        self,
+        data: Any = None,
+        path: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None,
+        method: str = "POST",
+        timeout: Optional[Union[float, Tuple[float, float]]] = None,
+        **kwargs,
+    ) -> RawResponse:
+        """Make a prediction with the online prediction service.
 
         Args:
-            data (bytes): Input data that is serialized to bytes for transmission.
-
+            data (Any): Input data to be sent to the prediction service. If it is a
+                file-like object, bytes, or string, it will be sent as the request body.
+                Otherwise, it will be treated as a JSON serializable object and sent as
+                JSON.
+            path (str, optional): Path for the request to be sent to. If it is provided,
+                it will be appended to the endpoint URL (Default None).
+            headers (dict, optional): Request headers.
+            method (str, optional): Request method, default to 'POST'.
+            timeout(float, tuple(float, float), optional): Timeout setting for the
+                request (Default 10).
         Returns:
-            bytes: Prediction result in bytes returned by the service.
+            RawResponse: Prediction response from the service.
 
         Raises:
             PredictionException: Raise if status code of the prediction response does
-                not equal 200.
+                not equal 2xx.
         """
-        resp: StringResponse = self._send_request(StringRequest(data))
-        return resp.response_data
+        url = self._build_url(path)
+        headers = self._build_headers(headers)
+        if isinstance(data, (IOBase, bytes, str)):
+            # if data is a file-like object, bytes, or string, it will be sent as
+            # request body
+            json_data, data = None, data
+        else:
+            # otherwise, it will be treated as a JSON serializable object and sent as
+            # JSON.
+            json_data, data = data, None
+
+        if "stream" in kwargs:
+            kwargs.pop("stream")
+            logger.warning("Predictor.raw_predict does not support 'stream' parameter.")
+
+        resp = requests.request(
+            url=url,
+            json=json_data,
+            data=data,
+            headers=headers,
+            method=method,
+            timeout=timeout,
+            **kwargs,
+        )
+        resp = RawResponse(
+            status_code=resp.status_code,
+            content=resp.content,
+            headers=dict(resp.headers),
+        )
+        if resp.status_code // 100 != 2:
+            raise PredictionException(resp.status_code, resp.content)
+        return resp
 
     def inspect_model_signature_def(self):
         """Get SignatureDef of the serving model.
@@ -495,9 +543,8 @@ class LocalPredictor(PredictorBase):
     def __init__(
         self,
         port: int,
-        container_id: str = None,
-        serializer: SerializerBase = None,
-        prediction_route: str = None,
+        container_id: Optional[str] = None,
+        serializer: Optional[SerializerBase] = None,
     ):
         """LocalPredictor initializer.
 
@@ -505,13 +552,10 @@ class LocalPredictor(PredictorBase):
             port (int): The port of the local service.
             container_id (str, optional): The container id of the local service.
             serializer (SerializerBase, optional): A serializer object that transforms.
-            prediction_route (str, optional): The route of the prediction endpoint.
-
         """
         self.container_id = container_id
         self.port = port
-        self.serializer = serializer or BytesSerializer()
-        self.prediction_route = prediction_route.lstrip("/") if prediction_route else ""
+        self.serializer = serializer or JsonSerializer()
         self._container_run = (
             self._build_container_run(container_id, port=port)
             if self.container_id
@@ -533,9 +577,7 @@ class LocalPredictor(PredictorBase):
         """
         request_data = self.serializer.serialize(data=data)
         response = requests.post(
-            url="http://127.0.0.1:{port}/{prediction_route}".format(
-                port=self._container_run.port, prediction_route=self.prediction_route
-            ),
+            url="http://127.0.0.1:{port}/".format(port=self._container_run.port),
             data=request_data,
         )
 
@@ -547,48 +589,113 @@ class LocalPredictor(PredictorBase):
 
         return self.serializer.deserialize(response.content)
 
-    def raw_predict(self, data: bytes) -> bytes:
-        """Perform prediction with the given data in bytes.
+    def _build_headers(
+        self, headers: Optional[Dict[str, str]] = None
+    ) -> Dict[str, str]:
+        headers = headers or dict()
+        if "User-Agent" not in headers:
+            headers["User-Agent"] = _default_user_agent()
+        return headers
+
+    def _build_url(self, path: Optional[str] = None):
+        url = "http://127.0.0.1:{}".format(self.port)
+        if path:
+            if path.startswith("/"):
+                path = path[1:]
+            url = posixpath.join(url, path)
+        return url
+
+    def raw_predict(
+        self,
+        data: Any = None,
+        path: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None,
+        method: str = "POST",
+        timeout: Optional[Union[float, Tuple[float, float]]] = None,
+        **kwargs,
+    ) -> RawResponse:
+        """Make a prediction with the online prediction service.
 
         Args:
-            data (bytes): The data to be predicted.
-
+            data (Any): Input data to be sent to the prediction service. If it is a
+                file-like object, bytes, or string, it will be sent as the request body.
+                Otherwise, it will be treated as a JSON serializable object and sent as
+                JSON.
+            path (str, optional): Path for the request to be sent to. If it is provided,
+                it will be appended to the endpoint URL (Default None).
+            headers (dict, optional): Request headers.
+            method (str, optional): Request method, default to 'POST'.
+            timeout(float, tuple(float, float), optional): Timeout setting for the
+                request (Default 10).
         Returns:
-            bytes: The prediction result in bytes.
+            RawResponse: Prediction response from the service.
 
+        Raises:
+            PredictionException: Raise if status code of the prediction response does
+                not equal 2xx.
         """
-        response = requests.post(
-            url="http://127.0.0.1:{port}/{prediction_route}".format(
-                port=self.port, prediction_route=self.prediction_route
-            ),
+        if isinstance(data, (IOBase, bytes, str)):
+            # if data is a file-like object, bytes, or string, it will be sent as
+            # request body
+            json_data, data = None, data
+        else:
+            # otherwise, it will be treated as a JSON serializable object and sent as
+            # JSON.
+            json_data, data = data, None
+        header = self._build_headers(headers=headers)
+        url = self._build_url(path)
+        resp = requests.request(
+            url=url,
+            json=json_data,
             data=data,
+            headers=header,
+            method=method,
+            timeout=timeout,
+            **kwargs,
         )
-
-        if response.status_code != 200:
-            raise PredictionException(
-                code=response.status_code,
-                message=response.content,
-            )
-
-        return response.content
-
-    def __enter__(self):
-        if not self._container_run:
-            raise RuntimeError("No container id is provided for the predictor.")
-        elif not self._container_run.is_running():
-            self._container_run.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._container_run:
-            self._container_run.stop()
-
-    def __del__(self):
-        """Stops the container when the instance is about to be destroyed."""
-        if self._container_run:
-            self._container_run.stop()
+        resp = RawResponse(
+            status_code=resp.status_code,
+            content=resp.content,
+            headers=dict(resp.headers),
+        )
+        if resp.status_code // 100 != 2:
+            raise PredictionException(resp.status_code, resp.content)
+        return resp
 
     def delete_service(self):
         """Delete the docker container that running the service."""
         if self._container_run:
             self._container_run.stop()
+
+    def wait_for_ready(self):
+        self._container_run.wait_for_ready()
+        # ensure the server is ready.
+        self._wait_local_server_ready()
+        time.sleep(5)
+
+    def _wait_local_server_ready(
+        self,
+        interval: int = 5,
+    ):
+        """Wait for the local model server to be ready."""
+        container_run = self._container_run
+        while True:
+            try:
+                # Check whether the container is still running.
+                if not container_run.is_running():
+                    raise RuntimeError(
+                        "Container exited unexpectedly, status: {}".format(
+                            container_run.status
+                        )
+                    )
+
+                # Make a HEAD request to the server, just test for connection.
+                requests.head(
+                    f"http://127.0.0.1:{container_run.port}/",
+                )
+                break
+            except requests.ConnectionError:
+                # ConnectionError means server is not ready.
+                logging.debug("Waiting for the container to be ready...")
+                time.sleep(interval)
+                continue

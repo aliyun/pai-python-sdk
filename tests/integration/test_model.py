@@ -1,4 +1,5 @@
 import io
+import json
 import os.path
 from typing import Union
 from unittest import skipUnless
@@ -9,7 +10,8 @@ import pandas as pd
 from pai.common.oss_utils import is_oss_uri, upload
 from pai.common.utils import camel_to_snake
 from pai.image import retrieve
-from pai.model import InferenceSpec, Model, ResourceConfig
+from pai.model import InferenceSpec, Model, ResourceConfig, container_serving_spec
+from pai.predictor import LocalPredictor
 from pai.serializers import JsonSerializer, SerializerBase
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import make_eas_service_name, t_context
@@ -63,58 +65,25 @@ class TestModelContainerDeploy(BaseIntegTestCase):
         x_test_path = os.path.join(test_data_dir, "python_processor", "x_test.npy")
         cls.x_test = np.load(x_test_path)
 
-    def test_from_serving_script(self):
+    def test_container_serving(self):
+
         image_uri = retrieve("xgboost", framework_version="latest").image_uri
-        inference_spec = InferenceSpec.from_serving_script(
+        inference_spec = container_serving_spec(
             source_dir=os.path.join(test_data_dir, "xgb_serving"),
-            entry_point="serving.py",
+            command="python serving.py",
             image_uri=image_uri,
             port=5000,
-            environment_variables={"PYTHONUNBUFFERED": "1"},
-        )
-        model = Model(
-            inference_spec=inference_spec,
-            model_data=os.path.join(test_data_dir, "xgb_model/model.json"),
-        )
-
-        predictor = model.deploy(
-            service_name=make_eas_service_name("serving_script"),
-            instance_count=1,
-            instance_type="ecs.c6.xlarge",
-            serializer=NumpyBytesSerializer(),
-        )
-        self.predictors.append(predictor)
-
-        df = pd.read_csv(
-            os.path.join(test_data_dir, "breast_cancer_data/test.csv"),
-        )
-        y = df["target"]
-        x = df.drop(["target"], axis=1)
-        res = predictor.predict(x)
-        self.assertEqual(len(y), len(res))
-
-    def test_model_mount(self):
-        image_uri = retrieve("xgboost", framework_version="latest").image_uri
-        inference_spec = InferenceSpec.from_serving_script(
-            source_dir=os.path.join(test_data_dir, "xgb_serving"),
-            entry_point="serving.py",
-            image_uri=image_uri,
-            port=5000,
-            environment_variables={
-                "PYTHONUNBUFFERED": "1",
-            },
         )
         model = Model(
             inference_spec=inference_spec,
             model_data=os.path.join(test_data_dir, "xgb_model/model.json"),
         )
         predictor = model.deploy(
-            service_name=make_eas_service_name("mount_model"),
+            service_name=make_eas_service_name("container_serving"),
             instance_type="ecs.c6.xlarge",
             serializer=NumpyBytesSerializer(),
         )
         self.predictors.append(predictor)
-
         df = pd.read_csv(
             os.path.join(test_data_dir, "breast_cancer_data/test.csv"),
         )
@@ -149,7 +118,7 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
             instance_type="ecs.c6.xlarge",
         )
         self._created_services.append(predictor.service_name)
-        result = predictor.predict(
+        result1 = predictor.predict(
             [
                 {
                     "pm10": 1.0,
@@ -163,7 +132,41 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
                 },
             ]
         )
-        self.assertEqual(len(result), 2)
+        self.assertEqual(len(result1), 2)
+        resp = predictor.raw_predict(
+            json.dumps(
+                [
+                    {
+                        "pm10": 1.0,
+                        "so2": 2.0,
+                        "co": 0.5,
+                    },
+                    {
+                        "pm10": 1.0,
+                        "so2": 2.0,
+                        "co": 0.5,
+                    },
+                ]
+            )
+        )
+        result2 = resp.json()
+        resp = predictor.raw_predict(
+            [
+                {
+                    "pm10": 1.0,
+                    "so2": 2.0,
+                    "co": 0.5,
+                },
+                {
+                    "pm10": 1.0,
+                    "so2": 2.0,
+                    "co": 0.5,
+                },
+            ]
+        )
+        result3 = resp.json()
+        self.assertListEqual(result1, result2)
+        self.assertListEqual(result3, result1)
 
     def test_deploy_by_resource_config(self):
         m = Model(
@@ -211,6 +214,7 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
                 },
             ]
         )
+
         self.assertEqual(len(result), 1)
 
     def test_xgb_built_processor(self):
@@ -221,7 +225,7 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
         model_path = upload(
             source_path=os.path.join(test_data_dir, "xgb_model/model.json"),
             oss_path="sdk-integration-test/test_xgb_model_deploy/",
-            oss_bucket=self.default_session.oss_bucket,
+            bucket=self.default_session.oss_bucket,
         )
 
         m = Model(
@@ -243,12 +247,14 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
 
         self._created_services.append(p.service_name)
         pred_y = p.predict(val_x)
+        p.delete_service()
         self.assertEqual(len(pred_y), len(val_y))
 
 
 class TestInferenceSpec(BaseIntegTestCase):
     def test_mount_local_source(self):
-        infer_spec = InferenceSpec().mount(
+        infer_spec = InferenceSpec()
+        infer_spec.mount(
             os.path.join(test_data_dir, "xgb_serving"), mount_path="/ml/model/"
         )
         storage_config = infer_spec.storage[0]
@@ -258,7 +264,8 @@ class TestInferenceSpec(BaseIntegTestCase):
 
     def test_mount_oss(self):
         oss_uri = "oss://your_oss_bucket/test_xgb_model_deploy/"
-        infer_spec = InferenceSpec().mount(oss_uri, mount_path="/ml/model/")
+        infer_spec = InferenceSpec()
+        infer_spec.mount(oss_uri, mount_path="/ml/model/")
         storage_config = infer_spec.storage[0]
         self.assertEqual(storage_config["mount_path"], "/ml/model/")
         self.assertEqual(storage_config["oss"]["path"], oss_uri)
@@ -267,13 +274,18 @@ class TestInferenceSpec(BaseIntegTestCase):
 @skipUnless(t_context.has_docker, "Estimator local train requires docker.")
 class TestModelLocalDeploy(BaseIntegTestCase):
     def test_from_serving_local_scripts(self):
-        inference_spec = InferenceSpec.from_serving_script(
+        xgb_image_uri = retrieve("xgboost", framework_version="latest").image_uri
+        inference_spec = container_serving_spec(
             source_dir=os.path.join(test_data_dir, "xgb_serving"),
-            entry_point="serving.py",
-            image_uri="registry.{}.aliyuncs.com/lq-test-v2/python:xgb_serving_python37".format(
-                self.default_session.region_id
-            ),
+            command="python serving.py",
+            image_uri=xgb_image_uri,
             port=8000,
+            requirements=[
+                "xgboost==1.5.2",
+                "fastapi",
+                "uvicorn[standard]",
+                "scikit-learn",
+            ],
         )
 
         model = Model(
@@ -295,4 +307,19 @@ class TestModelLocalDeploy(BaseIntegTestCase):
         x = df.drop(["target"], axis=1)
         res = predictor.predict(x)
         self.assertEqual(len(y), len(res))
-        predictor.delete_service()
+
+        data = io.BytesIO()
+        np.save(data, x.to_numpy())
+        resp = predictor.raw_predict(
+            data=data.getvalue(),
+        )
+        f = io.BytesIO(resp.content)
+        res2 = np.load(f)
+        self.assertListEqual(res.tolist(), res2.tolist())
+        resp2 = predictor.raw_predict(
+            data=data.getvalue(),
+            path="/predict",
+        )
+        f = io.BytesIO(resp2.content)
+        res3 = np.load(f)
+        self.assertListEqual(res.tolist(), res3.tolist())

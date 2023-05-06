@@ -1,5 +1,6 @@
 import locale
 import logging
+import os
 import re
 from typing import List
 
@@ -22,7 +23,6 @@ from pai.api.client_factory import ClientFactory
 from pai.api.workspace import WorkspaceAPI, WorkspaceConfigKeys
 from pai.common.oss_utils import OssUriObj
 from pai.common.utils import make_list_resource_iterator
-from pai.toolkit.helper.consts import COLOR_RESET, FOREGROUND_COLORS
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +216,7 @@ class UserProfile(object):
         configs = {WorkspaceConfigKeys.DEFAULT_OSS_STORAGE_URI: oss_uri}
         workspace_api.update_configs(workspace_id, configs=configs)
 
-    def get_roles_in_workspace(self, workspace_id):
+    def get_roles_in_workspace(self, workspace_id) -> List[str]:
         workspace_api = self.get_workspace_api()
         member_info = next(
             (
@@ -231,6 +231,21 @@ class UserProfile(object):
         )
 
         return member_info["Roles"]
+
+    def has_permission_edit_config(self, workspace_id: str) -> bool:
+        """Return True if the current user has permission to edit workspace config.
+
+        Only members with the role of WorkspaceAdmin or WorkspaceOwner can edit
+        workspace config.
+
+        """
+        roles = self.get_roles_in_workspace(workspace_id)
+        return any(
+            (
+                r in roles
+                for r in [WorkspaceRoles.WorkspaceAdmin, WorkspaceRoles.WorkspaceOwner]
+            )
+        )
 
 
 def localized_text(en_text: str, cn_text: str = None):
@@ -302,12 +317,45 @@ def not_empty(text: str) -> bool:
 
 
 def print_highlight(msg: str):
-    print(f"{FOREGROUND_COLORS['green']}" + msg + COLOR_RESET)
+    print(ColorEscape.green(msg))
 
 
 def print_warning(msg: str):
-    print(f"{FOREGROUND_COLORS['red']}" + msg + COLOR_RESET)
+    print(ColorEscape.red(msg))
 
 
 def validate_bucket_name(name: str) -> bool:
     return bool(OSS_NAME_PATTERN.match(name))
+
+
+class ColorEscape(object):
+    """
+    A utility class to wrap a string with color escape code.
+    """
+
+    _black = "\u001b[30m"
+    _red = "\u001b[31m"
+    _green = "\u001b[32m"
+    _yellow = "\u001b[33m"
+    _blue = "\u001b[34m"
+    _magenta = "\u001b[35m"
+    _cyan = "\u001b[36m"
+    _white = "\u001b[37m"
+    _default = "\u001b[39m"
+
+    _reset = "\u001b[0m"
+
+    @classmethod
+    def green(cls, msg: str) -> str:
+        return cls._format(msg, cls._green)
+
+    @classmethod
+    def red(cls, msg: str) -> str:
+        return cls._format(msg, cls._red)
+
+    @classmethod
+    def _format(cls, msg: str, code: str) -> str:
+        if os.environ.get("NO_COLOR"):
+            # See https://no-color.org/
+            return msg
+        return code + msg + cls._reset

@@ -1,10 +1,16 @@
 # coding: utf-8
-
+import hashlib
 import os
+import re
 
+import six
 import yaml
 
 from tests.test_data import OPERATOR_MANIFEST_DIR
+
+ODPS_TABLE_RE = (
+    r"odps://(?P<project>[^/]+)/tables/(?P<table_name>[^/]+)(?P<partition>.*)"
+)
 
 
 def load_operator_manifest():
@@ -87,3 +93,45 @@ class MockSession(object):
 
 def get_mock_session():
     return MockSession()
+
+
+def _extract_odps_table_info_from_url(resource):
+    matches = re.match(ODPS_TABLE_RE, resource)
+    if not matches:
+        raise ValueError("Not support ODPSTable resource schema.")
+
+    project, table, partition = (
+        matches.group("project"),
+        matches.group("table_name"),
+        matches.group("partition").strip("/"),
+    )
+    return project, table, partition
+
+
+def extract_odps_table_info(data):
+    from odps import DataFrame as ODPSDataFrame
+    from odps.models import Table
+    from odps.models.partition import Partition
+
+    if isinstance(data, ODPSDataFrame):
+        data = data.data
+
+    if isinstance(data, Table):
+        return "%s.%s" % (data.project.name, data.name), None
+    elif isinstance(data, Partition):
+        return "%s.%s" % (data.table.project.name, data.table.name), data.spec
+    elif isinstance(data, six.string_types):
+        return _extract_odps_table_info_from_url(data)
+    else:
+        raise ValueError("Not support ODPSTable input(type:%s)" % type(data))
+
+
+def file_checksum(file_name, hash_type="md5"):
+    if hash_type.lower() != "md5":
+        raise ValueError("not support hash type")
+
+    hash_md5 = hashlib.md5()
+    with open(file_name, "rb") as f:
+        for chunk in iter(lambda: f.read(256 * 1024), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
