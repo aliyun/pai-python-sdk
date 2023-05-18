@@ -96,3 +96,15 @@ def to_plain_text(
 def default_user_agent() -> str:
     """Generate default User-Agent that represents current client."""
     return "PAI-Python-SDK/{}".format(__version__)
+
+
+def is_notebook() -> bool:
+    """Return True if current environment is notebook."""
+    try:
+        shell = get_ipython().__class__.__name__
+        for parent_cls in shell.__mro__:
+            if parent_cls.__name__ == "ZMQInteractiveShell":
+                return True
+        return False
+    except NameError:
+        return False

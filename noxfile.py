@@ -140,11 +140,16 @@ def notebook(session: Session):
     install_test_dependencies(session)
     session.install("-r", DOC_REQUIREMENTS)
 
+    if session.posargs:
+        posargs = session.posargs
+    else:
+        posargs = ["docs/source/tutorial/"]
+
     session.run(
         "pytest",
         "--timeout",
         "3000",
         "--nbmake",
         "-n=auto",
-        "docs/source/tutorial/",
+        *posargs,
     )

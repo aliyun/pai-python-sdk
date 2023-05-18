@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 from pai.common.consts import ModelFormat
-from pai.common.oss_utils import parse_oss_uri, upload
+from pai.common.oss_utils import OssUriObj, upload
 from pai.common.utils import camel_to_snake
 from pai.model import _BuiltinProcessor
 from pai.predictor import Predictor, ServiceStatus
@@ -20,11 +20,10 @@ from tests.test_data import (
 
 def _truncate_endpoint(uri):
     """Remove endpoint if it is present as host in OSS URI"""
-
-    parsed = parse_oss_uri(uri)
+    oss_obj = OssUriObj(uri)
 
     return "oss://{bucket_name}/{key}".format(
-        bucket_name=parsed.bucket_name, key=parsed.object_key
+        bucket_name=oss_obj.bucket_name, key=oss_obj.object_key
     )
 
 
@@ -61,9 +60,8 @@ class TestPredictorBase(BaseIntegTestCase):
                 "name": name,
                 "metadata": {
                     "instance": 2,
-                    "cpu": 2,
-                    "memory": 4000,
                 },
+                "cloud.computing.instance_type": "ecs.c6.xlarge",
                 "processor": _BuiltinProcessor.get_default_by_model_format(
                     model_format=cls.model_format,
                 ),

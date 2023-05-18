@@ -78,8 +78,11 @@ For the detail content in the config file, please check the file *tests/integrat
     # example: use test_public_cn_shanghai.ini under tests/integration as the config file.
     PAI_TEST_CONFIG=test_public_cn_shanghai.ini nox -s integration
 
-    # test notebooks in toturial
+    # test all notebooks in toturial
     nox -s notebook
+
+    # test some specific notebooks
+    nox -s notebook -- docs/source/tutorial/huggingface_bert/huggingface_bert.ipynb docs/source/tutorial/modelscope_vit/modelscope_vit.ipynb
 
 
 

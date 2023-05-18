@@ -30,9 +30,11 @@ PAI Python SDK 文档
     :maxdepth: 1
     :caption: Tutorial
 
-    训练和部署 PyTorch 模型<tutorial/pytorch_mnist>
-    训练和部署 XGBoost 模型<tutorial/xgboost_breast_cancer>
-    训练和部署 Tensorflow 模型<tutorial/tensorflow_image_classification>
+    训练和部署 PyTorch 模型<tutorial/pytorch_mnist/pytorch_mnist>
+    训练和部署 XGBoost 模型<tutorial/xgboost_breast_cancer/xgboost_breast_cancer>
+    训练和部署 Tensorflow 模型<tutorial/tensorflow_image_classification/tensorflow_image_classification>
+    基于HuggingFace BERT训练和部署情感分类模型<tutorial/huggingface_bert/huggingface_bert>
+    使用ModelScope ViT训练和部署图片分类模型<tutorial/modelscope_vit/modelscope_vit>
 
 
 

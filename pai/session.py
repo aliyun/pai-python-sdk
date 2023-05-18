@@ -331,17 +331,18 @@ class Session(ResourceAPIsContainerMixin):
 
         return internet_endpoint
 
-    def get_oss_bucket(self, bucket_name) -> oss2.Bucket:
+    def get_oss_bucket(self, bucket_name: str, endpoint: str = None) -> oss2.Bucket:
         """Get a OSS bucket using the credentials of the session.
 
         Args:
             bucket_name (str): The name of the bucket.
+            endpoint (str): Endpoint of the bucket.
 
         Returns:
             :class:`oss2.Bucket`: A OSS bucket instance.
 
         """
-        endpoint = self._oss_endpoint or self._get_default_oss_endpoint()
+        endpoint = endpoint or self._oss_endpoint or self._get_default_oss_endpoint()
         if self._security_token:
             auth = oss2.StsAuth(
                 access_key_id=self._access_key_id,

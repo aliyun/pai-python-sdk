@@ -18,6 +18,7 @@ from .common.consts import ModelFormat
 from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import random_str, to_plain_text
+from .image import ImageInfo
 from .predictor import LocalPredictor, Predictor
 from .serializers import SerializerBase
 from .session import Session, config_default_session
@@ -336,7 +337,7 @@ class InferenceSpec(object):
 @config_default_session
 def container_serving_spec(
     command: str,
-    image_uri: str,
+    image_uri: Union[str, ImageInfo],
     source_dir: Optional[str] = None,
     port: int = DEFAULT_SERVICE_PORT,
     environment_variables: Optional[Dict[str, str]] = None,
@@ -372,7 +373,8 @@ def container_serving_spec(
             uploaded to the OSS bucket and mounted to the container. If there is a
             ``requirements.txt`` file under the directory, it will be installed before
             the prediction server started.
-        image_uri (str): The Docker image used to run the prediction service.
+        image_uri (Union[str, ImageInfo]): The Docker image used to run the prediction
+            service.
         port (int): Expose port of the server in container, the prediction request
             will be forward to the port. The environment variable ``LISTENING_PORT``
             in the container will be set to this value.
@@ -425,6 +427,9 @@ def container_serving_spec(
     else:
         code_mount_path = None
         requirements_path = None
+
+    if isinstance(image_uri, ImageInfo):
+        image_uri = image_uri.image_uri
 
     environment_variables = environment_variables or dict()
     container_spec = {
