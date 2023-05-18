@@ -366,7 +366,7 @@ def container_serving_spec(
 
 
     Args:
-        command (str): The command used to launch the HTTP server.
+        command (str): The command used to launch the Model server.
         source_dir (str): A relative path or an absolute path to the source code
             directory used to load model and launch the HTTP server, it will be
             uploaded to the OSS bucket and mounted to the container. If there is a

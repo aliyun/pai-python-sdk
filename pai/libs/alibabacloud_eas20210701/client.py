@@ -1879,6 +1879,77 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.describe_group_with_options_async(cluster_id, group_name, headers, runtime)
+    
+    def describe_machine_spec_with_options(
+        self,
+        request: eas_20210701_models.DescribeMachineSpecRequest,
+        headers: dict,
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeMachineSpecResponse:
+        UtilClient.validate_model(request)
+        req = open_api_models.OpenApiRequest(
+            headers=request.headers,
+            query=request.query,
+        )
+        params = open_api_models.Params(
+            action='DescribeMachineSpec',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/public/instance_types',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        ) 
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeMachineSpecResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def describe_machine_spec_with_options_async(
+        self,
+        request: eas_20210701_models.DescribeMachineSpecRequest,
+        headers: dict, 
+        runtime: util_models.RuntimeOptions,
+    ) -> eas_20210701_models.DescribeMachineSpecResponse:
+        UtilClient.validate_model(request)        
+        req = open_api_models.OpenApiRequest(
+            headers=request.headers,
+            query=request.query,
+        )
+        params = open_api_models.Params(
+            action='DescribeMachineSpec',
+            version='2021-07-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/public/instance_types',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+
+        return TeaCore.from_map(
+            eas_20210701_models.DescribeMachineSpecResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def describe_machine_spec(
+        self,
+        request: eas_20210701_models.DescribeMachineSpecRequest,
+    ) -> eas_20210701_models.DescribeMachineSpecResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = dict()
+        return self.describe_machine_spec_with_options(request, headers, runtime)
+
+    async def describe_machine_spec_async(
+        self,
+        request: eas_20210701_models.DescribeMachineSpecRequest,
+    ) -> eas_20210701_models.DescribeMachineSpecResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = dict()
+        return await self.describe_machine_spec_with_options_async(request, headers, runtime)
 
     def describe_resource_with_options(
         self,

@@ -3271,6 +3271,259 @@ class DescribeGroupResponse(TeaModel):
         return self
 
 
+class DescribeMachineSpecQuery(TeaModel):
+    def __init__(
+        self,
+        instance_types: List[str] = None,
+    ):
+        self.instance_types = instance_types
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.instance_types is not None:
+            result['InstanceTypes'] = self.instance_types
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('InstanceTypes') is not None:
+            self.instance_types = m.get('InstanceTypes')
+        return self
+
+class DescribeMachineSpecRequest(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        query: DescribeMachineSpecQuery = None,
+    ):
+        self.headers = headers
+        self.query = query
+
+    def validate(self):
+        if self.query:
+            self.query.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.query is not None:
+            result['query'] = self.query.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('query') is not None:
+            temp_model = DescribeMachineSpecQuery()
+            self.query = temp_model.from_map(m['query'])
+        return self
+
+
+class DescribeMachineSpecResponseBodyInstanceMetas(TeaModel):
+    def __init__(
+        self,
+        cpu: int = None,
+        gpu: str = None,
+        gpuamount: int = None,
+        instance_type: str = None,
+        memory: float = None,
+        non_protect_spot_discount: float = None,
+        spot_discount: float = None,
+    ):
+        self.cpu = cpu
+        self.gpu = gpu
+        self.gpuamount = gpuamount
+        self.instance_type = instance_type
+        self.memory = memory
+        self.non_protect_spot_discount = non_protect_spot_discount
+        self.spot_discount = spot_discount
+
+    def validate(self):
+        self.validate_required(self.cpu, 'cpu')
+        self.validate_required(self.gpu, 'gpu')
+        self.validate_required(self.gpuamount, 'gpuamount')
+        self.validate_required(self.instance_type, 'instance_type')
+        self.validate_required(self.memory, 'memory')
+        self.validate_required(self.non_protect_spot_discount, 'non_protect_spot_discount')
+        self.validate_required(self.spot_discount, 'spot_discount')
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.cpu is not None:
+            result['CPU'] = self.cpu
+        if self.gpu is not None:
+            result['GPU'] = self.gpu
+        if self.gpuamount is not None:
+            result['GPUAmount'] = self.gpuamount
+        if self.instance_type is not None:
+            result['InstanceType'] = self.instance_type
+        if self.memory is not None:
+            result['Memory'] = self.memory
+        if self.non_protect_spot_discount is not None:
+            result['NonProtectSpotDiscount'] = self.non_protect_spot_discount
+        if self.spot_discount is not None:
+            result['SpotDiscount'] = self.spot_discount
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('CPU') is not None:
+            self.cpu = m.get('CPU')
+        if m.get('GPU') is not None:
+            self.gpu = m.get('GPU')
+        if m.get('GPUAmount') is not None:
+            self.gpuamount = m.get('GPUAmount')
+        if m.get('InstanceType') is not None:
+            self.instance_type = m.get('InstanceType')
+        if m.get('Memory') is not None:
+            self.memory = m.get('Memory')
+        if m.get('NonProtectSpotDiscount') is not None:
+            self.non_protect_spot_discount = m.get('NonProtectSpotDiscount')
+        if m.get('SpotDiscount') is not None:
+            self.spot_discount = m.get('SpotDiscount')
+        return self
+
+
+class DescribeMachineSpecResponseBodyTypes(TeaModel):
+    def __init__(
+        self,
+        cpu: int = None,
+    ):
+        self.cpu = cpu
+
+    def validate(self):
+        self.validate_required(self.cpu, 'cpu')
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.cpu is not None:
+            result['CPU'] = self.cpu
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('CPU') is not None:
+            self.cpu = m.get('CPU')
+        return self
+
+
+class DescribeMachineSpecResponseBody(TeaModel):
+    def __init__(
+        self,
+        request_id: str = None,
+        instance_metas: List[DescribeMachineSpecResponseBodyInstanceMetas] = None,
+        types: List[DescribeMachineSpecResponseBodyTypes] = None,
+    ):
+        self.request_id = request_id
+        self.instance_metas = instance_metas
+        self.types = types
+
+    def validate(self):
+        self.validate_required(self.request_id, 'request_id')
+        self.validate_required(self.instance_metas, 'instance_metas')
+        if self.instance_metas:
+            for k in self.instance_metas:
+                if k:
+                    k.validate()
+        self.validate_required(self.types, 'types')
+        if self.types:
+            for k in self.types:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        result['InstanceMetas'] = []
+        if self.instance_metas is not None:
+            for k in self.instance_metas:
+                result['InstanceMetas'].append(k.to_map() if k else None)
+        result['Types'] = []
+        if self.types is not None:
+            for k in self.types:
+                result['Types'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        self.instance_metas = []
+        if m.get('InstanceMetas') is not None:
+            for k in m.get('InstanceMetas'):
+                temp_model = DescribeMachineSpecResponseBodyInstanceMetas()
+                self.instance_metas.append(temp_model.from_map(k))
+        self.types = []
+        if m.get('Types') is not None:
+            for k in m.get('Types'):
+                temp_model = DescribeMachineSpecResponseBodyTypes()
+                self.types.append(temp_model.from_map(k))
+        return self
+
+
+class DescribeMachineSpecResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        body: DescribeMachineSpecResponseBody = None,
+    ):
+        self.headers = headers
+        self.body = body
+
+    def validate(self):
+        self.validate_required(self.headers, 'headers')
+        self.validate_required(self.body, 'body')
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('body') is not None:
+            temp_model = DescribeMachineSpecResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+    
+
 class DescribeResourceResponseBody(TeaModel):
     def __init__(
         self,

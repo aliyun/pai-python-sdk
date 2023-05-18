@@ -7,6 +7,9 @@ from pai.api.base import PaginatedResult, PAIServiceName, ResourceAPI
 from pai.libs.alibabacloud_eas20210701.models import (
     CreateServiceRequest,
     CreateServiceResponseBody,
+    DescribeMachineSpecQuery,
+    DescribeMachineSpecRequest,
+    DescribeMachineSpecResponseBody,
     ListServicesRequest,
     ListServicesResponseBody,
     ReleaseServiceRequest,
@@ -32,6 +35,7 @@ class ServiceAPI(ResourceAPI):
 
     _get_group_method = "describe_group_with_options"
     _list_groups_method = "list_group_with_options"
+    _describe_machine_method = "describe_machine_spec_with_options"
 
     def __init__(self, region_id, acs_client, **kwargs):
         super(ServiceAPI, self).__init__(acs_client=acs_client, **kwargs)
@@ -134,5 +138,32 @@ class ServiceAPI(ResourceAPI):
             self._get_group_method,
             cluster_id=self.region_id,
             group_name=group_name,
+        )
+        return resp.to_map()
+
+    def describe_machine(self, instance_type: str) -> Dict[str, Any]:
+        """Describe the detailed machine spec based on the given instance type name.
+
+        Args:
+            instance_type (str): Type of the machine instance, for example,
+                'ecs.c6.large'. For all supported instance, view the appendix of the
+                link:
+                https://help.aliyun.com/document_detail/144261.htm?#section-mci-qh9-4j7
+
+        Returns:
+            Dict: dict with detailed machine spec if the given instance_type is supported.
+                If the given instance_type is not supported, values in the dict will be
+                None or zero.
+        """
+        query = DescribeMachineSpecQuery(
+            instance_types=instance_type,
+        )
+        request = DescribeMachineSpecRequest(
+            query=query,
+        )
+
+        resp: DescribeMachineSpecResponseBody = self._do_request(
+            self._describe_machine_method,
+            request,
         )
         return resp.to_map()

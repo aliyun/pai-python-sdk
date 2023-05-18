@@ -9,21 +9,21 @@ Specify a git branch name `$BRANCH` to build and release the PAI Python SDK pack
 ## usage:
 ### Dockerfile:
 
-Build a docker image that contains all the environments that the shell script `release_pkg_to_oss.sh` need.  
+Build a docker image that contains all the environments that the shell script `release_pkg_to_oss.sh` need.
 
 This docker image does not have any editor within it. To use the shell script, it is suggested that either install an editor or mount the docker with a local directory which contains the script.
 
 ```bash
-# e.g.	build a docker image called test_dockerfile with tag 1.0 
+# e.g.	build a docker image called test_dockerfile with tag 1.0
 #		and run a container that is mounted with a local directory:
 $docker build -t test_dockerfile:1.0 - < Dockerfile
 $docker run -it -v /directory/contains/script:/work/directory test_dockerfile:1.0 /bin/bash
 ```
 
-### release_pkg_to_oss.sh:  
-Specify a git branch name `$BRANCH` to build and publish the package to OSS bucket. OSS config and git config are required.  
+### release_pkg_to_oss.sh:
+Specify a git branch name `$BRANCH` to build and publish the package to OSS bucket. OSS config and git config are required.
 
-git branch name `$BRANCH`, OSS username `$OSS_ACCESS_KEY_ID`, OSS password `$OSS_ACCESS_KEY_SECRET`, git username `$GIT_USERNAME` and git private token `$GIT_PRIVATE_TOKEN` are needed to be passed as enviornment variables to use the script.  
+git branch name `$BRANCH`, OSS username `$OSS_ACCESS_KEY_ID`, OSS password `$OSS_ACCESS_KEY_SECRET`, git username `$GIT_USERNAME` and git private token `$GIT_PRIVATE_TOKEN` are needed to be passed as enviornment variables to use the script.
 
 ```bash
 # e.g.	run the shell script:

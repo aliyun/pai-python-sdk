@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This shell script is used to build and publish PAI Python SDK package to OSS.
-# note: Specify a branch name($BRANCH) to build and publish package to OSS. 
+# note: Specify a branch name($BRANCH) to build and publish package to OSS.
 #		OSS config and git config are required to upload the package to OSS bucket.
 #		git branch name($BRANCH), OSS username ($OSS_ACCESS_KEY_ID), OSS password ($OSS_ACCESS_KEY_SECRET),
 #		git username ($GIT_USERNAME) and git private token($GIT_PRIVATE_TOKEN) are needed to be
@@ -124,7 +124,3 @@ function main() {
 
 
 main
-
-
-
-

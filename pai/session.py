@@ -12,6 +12,7 @@ import oss2
 
 from .api.api_container import ResourceAPIsContainerMixin
 from .common.oss_utils import OssUriObj
+from .common.utils import make_list_resource_iterator
 
 logger = logging.getLogger(__name__)
 
@@ -379,3 +380,57 @@ class Session(ResourceAPIsContainerMixin):
         if not storage_path.endswith("/"):
             storage_path += "/"
         return storage_path
+
+    def is_supported_training_instance(self, instance_type: str) -> bool:
+        instance_generator = make_list_resource_iterator(self.job_api.list_ecs_specs)
+        machine_spec = next(
+            (
+                item
+                for item in instance_generator
+                if item["InstanceType"] == instance_type
+            ),
+            None,
+        )
+        if machine_spec:
+            return True
+        return False
+
+    def is_gpu_training_instance(self, instance_type: str) -> bool:
+        instance_generator = make_list_resource_iterator(self.job_api.list_ecs_specs)
+        machine_spec = next(
+            (
+                item
+                for item in instance_generator
+                if item["InstanceType"] == instance_type
+            ),
+            None,
+        )
+        if not machine_spec:
+            raise ValueError(
+                f"Instance type {instance_type} is not supported for training job. "
+                "Please provide a supported instance type."
+            )
+        if machine_spec["AcceleratorType"] == "GPU":
+            return True
+        return False
+
+    def is_supported_inference_instance(self, instance_type: str) -> bool:
+        resp = self.service_api.describe_machine(instance_type=instance_type)[
+            "InstanceMetas"
+        ][0]
+        if not resp["CPU"] and not resp["GPU"]:
+            return False
+        return True
+
+    def is_gpu_inference_instance(self, instance_type: str) -> bool:
+        resp = self.service_api.describe_machine(instance_type=instance_type)[
+            "InstanceMetas"
+        ][0]
+        if not resp["CPU"] and not resp["GPU"]:
+            raise ValueError(
+                f"Instance type {instance_type} is not supported for deploying. "
+                "Please provide a supported instance type."
+            )
+        if not resp["GPU"]:
+            return False
+        return True

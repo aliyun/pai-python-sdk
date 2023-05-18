@@ -200,12 +200,35 @@ class Estimator(object):
 
         self.__uploaded_source_files = None
 
+        self._check_instance_type()
+
+    def _prepare_for_training(self):
+        """Update args before starting the training job."""
+        # TODO: used for git config
+
     def _gen_job_display_name(self, job_name=None):
         """Generate job display name."""
         if job_name:
             return job_name
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
+
+    def _check(self):
+        if not self.image_uri:
+            raise ValueError("Please provide image_uri to create the job.")
+        if not self.entry_point:
+            raise ValueError("Please provide entry_point to create the job.")
+
+    def _check_instance_type(self):
+        """Check if the given instance_type is supported for training job."""
+        if (
+            self.instance_type != "local"
+            and not self.session.is_supported_training_instance(self.instance_type)
+        ):
+            raise ValueError(
+                f"Instance type {self.instance_type} not supproted. "
+                "Please provide a supported instance type to create the job."
+            )
 
     def _upload_source_files(self, job_name: str) -> Optional[str]:
         """Upload local source files to OSS."""
@@ -240,7 +263,7 @@ class Estimator(object):
         ]
         algo_spec = {
             "Command": command,
-            "Image": self.image_uri,
+            "Image": self.training_image_uri(),
             "JobType": self.job_type,
             "MetricDefinitions": [m for m in self.metric_definitions]
             if self.metric_definitions
@@ -266,8 +289,8 @@ class Estimator(object):
                 )
             else:
                 raise ValueError(
-                    "The Estimator supports OSS URI or NAS URI as input data,"
-                    " Input data of type {} is not supported.".format(type(item))
+                    "The Estimator supports OSS URI or NAS URI as input data, "
+                    f"Input data of type {type(item)} is not supported."
                 )
 
         return res
@@ -336,6 +359,17 @@ class Estimator(object):
             )
             return f"oss://{bucket_name}/{job_output_path}"
 
+    def training_image_uri(self) -> str:
+        """Return the Docker image to use for training.
+
+        The fit() method, that does the model training, calls this method to
+        find the image to use for model training.
+
+        Returns:
+            str: The URI of the Docker image.
+        """
+        return self.image_uri
+
     def fit(self, inputs: Dict[str, Any] = None, wait=True):
         """Submit a training job with the given input data.
 
@@ -349,6 +383,7 @@ class Estimator(object):
                 either succeeded, failed, or stopped. (Default True).
         """
         inputs = inputs or dict()
+        self._prepare_for_training()
         job_name = self._gen_job_display_name()
         if self.instance_type == "local":
             training_job = self._local_run(job_name=job_name, inputs=inputs)
