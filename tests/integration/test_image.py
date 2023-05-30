@@ -54,13 +54,13 @@ class TestImageUris(BaseIntegTestCase):
         self.assertIsNotNone("tensorflow" in tf_gpu_image.image_uri)
         self.assertIsNotNone("inference" in tf_gpu_image.image_uri)
 
-        tf_gpu_image_211 = retrieve(
+        tf_gpu_image_23 = retrieve(
             "tensorflow",
-            framework_version="2.11",
+            framework_version="2.3",
             accelerator_type="GPU",
             image_scope=ImageScope.INFERENCE,
         )
-        self.assertIsNotNone(tf_gpu_image_211.image_uri)
+        self.assertIsNotNone(tf_gpu_image_23.image_uri)
 
         with self.assertRaises(RuntimeError):
             _ = retrieve(

@@ -44,14 +44,16 @@ class ImageAPI(WorkspaceScopedResourceAPI):
 
     def list(
         self,
-        name=None,
-        creator_id=None,
-        verbose=False,
         labels: Union[Dict[str, Any], List[str]] = ImageLabel.UNOFFICIAL_LABEL,
-        sort_by=None,
-        order="DESC",
-        page_number=1,
-        page_size=50,
+        name: str = None,
+        order: str = "DESC",
+        page_number: int = 1,
+        page_size: int = 50,
+        parent_user_id: str = None,
+        query: str = None,
+        sort_by: str = None,
+        user_id: str = None,
+        verbose: bool = False,
         **kwargs,
     ) -> PaginatedResult:
         """List image resources."""
@@ -64,12 +66,14 @@ class ImageAPI(WorkspaceScopedResourceAPI):
         req = ListImagesRequest(
             labels=labels,
             name=name,
-            operator_create=creator_id,
-            sort_by=sort_by,
             order=order,
-            verbose=verbose,
-            page_size=page_size,
             page_number=page_number,
+            page_size=page_size,
+            parent_user_id=parent_user_id,
+            query=query,
+            sort_by=sort_by,
+            user_id=user_id,
+            verbose=verbose,
             workspace_id=workspace_id,
         )
 
