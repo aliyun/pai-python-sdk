@@ -14,10 +14,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import requests
 from addict import Dict as AttrDict
 
-from .common.consts import ModelFormat
+from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import random_str, to_plain_text
+from .common.utils import is_local_run_instance_type, random_str, to_plain_text
 from .image import ImageInfo
 from .predictor import LocalPredictor, Predictor
 from .serializers import SerializerBase
@@ -553,6 +553,8 @@ class ModelBase(object):
         self.session = session
 
     def _download_model_data(self, target_dir):
+        if not self.model_data:
+            return
         logger.info(f"Prepare model data to local directory: {target_dir}")
         if self.model_data.startswith("oss://"):
             oss_uri = OssUriObj(self.model_data)
@@ -612,8 +614,9 @@ class ModelBase(object):
         **kwargs,
     ):
         """Deploy a prediction service with the model."""
-        if instance_type == "local":
+        if is_local_run_instance_type(instance_type):
             return self._deploy_local(
+                instance_type=instance_type,
                 serializer=serializer,
                 wait=wait,
             )
@@ -758,6 +761,7 @@ class ModelBase(object):
 
     def _deploy_local(
         self,
+        instance_type: str,
         serializer: SerializerBase = None,
         wait: bool = True,
     ) -> LocalPredictor:
@@ -815,12 +819,22 @@ class ModelBase(object):
         requirements_list = container_spec.get("prepare", dict()).get(
             "pythonRequirements", []
         )
+        requirements_path = container_spec.get("prepare", dict()).get(
+            "pythonRequirementsPath", None
+        )
+
+        # build command to install requirements
         if requirements_list:
             install_requirements = shlex.join(
                 ["python", "-m", "pip", "install"] + requirements_list
             )
+        elif requirements_path:
+            install_requirements = shlex.join(
+                ["python", "-m", "pip", "install", "-r", requirements_path]
+            )
         else:
             install_requirements = ""
+
         user_scripts = container_spec.get("script", "")
         launch_script = textwrap.dedent(
             f"""\
@@ -830,6 +844,7 @@ class ModelBase(object):
             """
         )
 
+        gpu_count = -1 if instance_type == INSTANCE_TYPE_LOCAL_GPU else None
         container_run = run_container(
             image_uri=container_spec["image"],
             port=container_spec.get("port"),
@@ -840,6 +855,7 @@ class ModelBase(object):
                 launch_script,
             ],
             volumes=volumes,
+            gpu_count=gpu_count,
         )
         predictor = LocalPredictor(
             container_id=container_run.container.id,

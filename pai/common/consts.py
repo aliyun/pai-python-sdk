@@ -68,3 +68,7 @@ class FrameworkTypes(object):
     Blade = "Blade"
     Alink = "Alink"
     TensorFlow = "TensorFlow"
+
+
+INSTANCE_TYPE_LOCAL = "local"
+INSTANCE_TYPE_LOCAL_GPU = "local_gpu"

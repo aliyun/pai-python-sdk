@@ -8,6 +8,7 @@ from typing import Callable
 import six
 
 from .. import __version__
+from .consts import INSTANCE_TYPE_LOCAL, INSTANCE_TYPE_LOCAL_GPU
 
 DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS = string.ascii_letters + string.digits + "_"
 
@@ -108,3 +109,11 @@ def is_notebook() -> bool:
         return False
     except NameError:
         return False
+
+
+def is_local_run_instance_type(instance_type: str) -> bool:
+    """Return True if instance_type is local run instance type."""
+    return instance_type and instance_type.strip() in [
+        INSTANCE_TYPE_LOCAL_GPU,
+        INSTANCE_TYPE_LOCAL,
+    ]

@@ -117,26 +117,40 @@ class ContainerRun(object):
 
 def run_container(
     image_uri: str,
-    container_name: str = None,
-    port: int = None,
-    environment_variables: Dict[str, str] = None,
-    command: Union[List[str], str] = None,
-    entry_point: Union[List[str], str] = None,
-    volumes: Union[Dict[str, Any], List[str]] = None,
-    working_dir: str = None,
+    container_name: Optional[str] = None,
+    port: Optional[int] = None,
+    environment_variables: Optional[Dict[str, str]] = None,
+    command: Optional[Union[List[str], str]] = None,
+    entry_point: Optional[Union[List[str], str]] = None,
+    volumes: Optional[Dict[str, Any]] = None,
+    working_dir: Optional[str] = None,
+    gpu_count: Optional[int] = None,
+    gpu_device_ids: Optional[List[str]] = None,
+    gpu_capabilities: Optional[List[List[str]]] = None,
 ) -> ContainerRun:
     """Run a container in local.
 
     Args:
         image_uri (str):  A docker image uri.
-        container_name (str): Name of the container.
-        port (int): The port to expose.
-        environment_variables (Dict[str, str]): Environment variables to set in the
-            container.
-        command (Union[List[str], str]): Command to run the container.
-        entry_point (Union[List[str], str]): Entry point to run the container.
-        volumes (Union[Dict[str, Any], List[str]]): Volumes to mount in the container.
-        working_dir (str): Working directory in the container.
+        container_name (str, optional): Name of the container.
+        port (int, optional): The port to expose.
+        environment_variables (Dict[str, str], optional): Environment variables to set
+            in the container.
+        command (Union[List[str], str], optional): Command to run the container.
+        entry_point (Union[List[str], str], optional): Entry point to run the container.
+        volumes (Dict[str, Any], optional): Volumes to mount in the container.
+        working_dir (str, optional): Working directory in the container.
+        gpu_count (int, optional): Number of GPU devices to request. Set to -1 to
+            request all available devices.
+            To use GPU, set either ``gpu_count`` or ``gpu_device_ids``.
+        gpu_device_ids (List[str], optional): List of strings for GPU device IDs,
+            corresponding to `NVIDIA_VISIBLE_DEVICES` in the NVIDIA Runtime.
+            To use GPU, set either ``gpu_count`` or ``gpu_device_ids``.
+        gpu_capabilities (List[List[str]], optional): This parameter corresponds to
+            `NVIDIA_DRIVER_CAPABILITIES` in the NVIDIA Runtime. The default value is
+             ``[["compute", "utility"]]`` if ``gpu_device_ids`` or ``gpu_count`` is set.
+             Available capabilities for the NVIDIA driver can be found in
+            https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/user-guide.html#driver-capabilities.
 
     Returns:
         ContainerRun: A ContainerRun object.
@@ -145,6 +159,20 @@ def run_container(
     client = docker.from_env()
     # use a random host port.
     host_port = randint(49152, 65535)
+
+    if gpu_count or gpu_device_ids or gpu_capabilities:
+        if not gpu_capabilities:
+            gpu_capabilities = [["compute", "utility"]]
+        device_requests = [
+            docker.types.DeviceRequest(
+                count=gpu_count,
+                device_ids=gpu_device_ids,
+                capabilities=gpu_capabilities,
+            )
+        ]
+    else:
+        device_requests = []
+
     container = client.containers.run(
         name=container_name,
         entrypoint=entry_point,
@@ -155,6 +183,7 @@ def run_container(
         volumes=volumes,
         working_dir=working_dir,
         detach=True,
+        device_requests=device_requests,
     )
     container_run = ContainerRun(
         container=container,

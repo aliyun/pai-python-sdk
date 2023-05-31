@@ -26,23 +26,11 @@ def load_train_test(data_path):
     return train_x, train_y, test_x, test_y
 
 
-def load_dataset(channel_name):
-    path = os.path.join(TRAINING_BASE_DIR, "input/data", channel_name)
+def load_dataset(path):
     if not os.path.exists(path):
         return None, None
-
-    # use first file in the channel dir.
-    file_name = next(
-        iter([f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]),
-        None,
-    )
-    if not file_name:
-        logging.warning(f"Not found input file in channel path: {path}")
-        return None, None
-
-    file_path = os.path.join(path, file_name)
     df = pd.read_csv(
-        filepath_or_buffer=file_path,
+        filepath_or_buffer=path,
         sep=",",
     )
 
@@ -84,14 +72,25 @@ def main():
     )
 
     # 作业数据的数据，也通过arguments的方式传递给到训练脚本.
-    parser.add_argument("--train_data", type=str, help="Input train data path.")
+    parser.add_argument(
+        "--train_data",
+        type=str,
+        default=os.environ.get("PAI_INPUT_TRAIN", None),
+        help="Input train data path.",
+    )
+    parser.add_argument(
+        "--test_data",
+        type=str,
+        default=os.environ.get("PAI_INPUT_TEST", None),
+        help="Input train data path.",
+    )
     args, _ = parser.parse_known_args()
     print(vars(args))
 
     # 读取传入到容器内的数据
-    train_x, train_y = load_dataset("train")
+    train_x, train_y = load_dataset(args.train_data)
     print("Train dataset: train_shape={}".format(train_x.shape))
-    test_x, test_y = load_dataset("test")
+    test_x, test_y = load_dataset(args.test_data)
     if test_x is None or test_y is None:
         print("Test dataset not found")
         eval_set = [(train_x, train_y)]

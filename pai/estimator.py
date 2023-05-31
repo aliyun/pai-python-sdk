@@ -17,10 +17,10 @@ import six
 
 from .api.entity_base import EntityBaseMixin
 from .common import ProviderAlibabaPAI
-from .common.consts import JobType
+from .common.consts import INSTANCE_TYPE_LOCAL_GPU, JobType
 from .common.docker_utils import run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import random_str, to_plain_text
+from .common.utils import is_local_run_instance_type, random_str, to_plain_text
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .schema.training_job_schema import TrainingJobSchema
@@ -213,18 +213,11 @@ class Estimator(object):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
 
-    def _check(self):
-        if not self.image_uri:
-            raise ValueError("Please provide image_uri to create the job.")
-        if not self.entry_point:
-            raise ValueError("Please provide entry_point to create the job.")
-
     def _check_instance_type(self):
         """Check if the given instance_type is supported for training job."""
-        if (
-            self.instance_type != "local"
-            and not self.session.is_supported_training_instance(self.instance_type)
-        ):
+        if not is_local_run_instance_type(
+            self.instance_type
+        ) and not self.session.is_supported_training_instance(self.instance_type):
             raise ValueError(
                 f"Instance type {self.instance_type} not supproted. "
                 "Please provide a supported instance type to create the job."
@@ -385,8 +378,10 @@ class Estimator(object):
         inputs = inputs or dict()
         self._prepare_for_training()
         job_name = self._gen_job_display_name()
-        if self.instance_type == "local":
-            training_job = self._local_run(job_name=job_name, inputs=inputs)
+        if is_local_run_instance_type(self.instance_type):
+            training_job = self._local_run(
+                job_name=job_name, inputs=inputs, instance_type=self.instance_type
+            )
         else:
             training_job = self._fit(inputs=inputs, job_name=job_name)
         self._latest_training_job = training_job
@@ -431,10 +426,19 @@ class Estimator(object):
         return self.session.patch_oss_endpoint(uri)
 
     def _local_run(
-        self, job_name, inputs: Dict[str, Any] = None
+        self,
+        job_name,
+        instance_type: str,
+        inputs: Dict[str, Any] = None,
     ) -> "_LocalTrainingJob":
+        if self.instance_count > 1:
+            raise RuntimeError("Local training job only supports single instance.")
+
         training_job = _LocalTrainingJob(
-            estimator=self, inputs=inputs, job_name=job_name
+            estimator=self,
+            inputs=inputs,
+            job_name=job_name,
+            instance_type=instance_type,
         )
         training_job.run()
         return training_job
@@ -553,6 +557,8 @@ _TRAINING_LAUNCH_SCRIPT_TEMPLATE = textwrap.dedent(
     """\
 #!/bin/sh
 
+env
+
 # change to working directory
 if [ -n "$PAI_WORKING_DIR" ]; then
     echo "Change to Working Directory", $PAI_WORKING_DIR
@@ -599,6 +605,7 @@ class _LocalTrainingJob(object):
         self,
         estimator: Estimator,
         inputs: Dict[str, Any],
+        instance_type: str = None,
         temp_dir: str = None,
         job_name: str = None,
     ):
@@ -606,6 +613,7 @@ class _LocalTrainingJob(object):
         self.inputs = inputs
         self.tmp_dir = temp_dir or tempfile.mkdtemp()
         self.job_name = job_name
+        self.instance_type = instance_type
         logger.info("Local TrainingJob temporary directory: {}".format(self.tmp_dir))
         self._container_run = None
 
@@ -619,7 +627,7 @@ class _LocalTrainingJob(object):
         # Hyperparameters environment variables
         def _normalize_name(name: str) -> str:
             # replace all non-alphanumeric characters with underscore
-            return _ENV_NOT_ALLOWED_CHARS.sub("_", name)
+            return _ENV_NOT_ALLOWED_CHARS.sub("_", name).upper()
 
         env = {}
         user_args = []
@@ -711,6 +719,9 @@ class _LocalTrainingJob(object):
             "mode": "rw",
         }
 
+        gpu_count = (
+            -1 if self.instance_type.strip() == INSTANCE_TYPE_LOCAL_GPU else None
+        )
         self._container_run = run_container(
             environment_variables=self.prepare_env(),
             image_uri=self.estimator.image_uri,
@@ -720,6 +731,7 @@ class _LocalTrainingJob(object):
             ],
             volumes=volumes,
             working_dir=_TrainingJobConfig.WORKING_DIR,
+            gpu_count=gpu_count,
         )
 
     def prepare_input_config(self, input_config_path):
@@ -919,12 +931,23 @@ class _TrainingJob(EntityBaseMixin):
         self._on_job_completed()
 
     def _on_job_completed(self):
+        # print an empty line to separate the training job logs and the following logs
+        print()
         if self.status == TrainingJobStatus.Succeed:
+            print(
+                f"Training job ({self.training_job_id}) succeeded, you can check the"
+                f" logs/metrics/output in  the console:\n{self.console_uri}"
+            )
             return
         elif self.status in TrainingJobStatus.failed_status():
+            print(
+                f"Training job ({self.training_job_id}) failed, please check the logs"
+                f" in the console: \n{self.console_uri}"
+            )
             raise RuntimeError(
-                f"TrainingJob failed: training_job_id={self.training_job_id} "
-                f"reason_code={self.reason_code} status={self.status} "
+                f"TrainingJob failed: name={self.training_job_name}, "
+                f"training_job_id={self.training_job_id}, "
+                f"reason_code={self.reason_code}, status={self.status}, "
                 f"reason_message={self.reason_message}",
             )
 

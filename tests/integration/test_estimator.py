@@ -1,7 +1,7 @@
 import os
 from unittest import skipUnless
 
-from pai.common.oss_utils import OssUriObj
+from pai.common.oss_utils import OssUriObj, upload
 from pai.estimator import Estimator
 from pai.image import retrieve
 from pai.session import get_default_session
@@ -64,9 +64,13 @@ class TestEstimator(BaseIntegTestCase):
 
         return oss_bucket.object_exists(uri_obj.object_key)
 
-    @skipUnless(t_context.has_docker, "Estimator local train requires docker.")
-    def test_xgb_train_local(self):
+
+@skipUnless(t_context.has_docker, "Estimator local train requires docker.")
+class TestEstimatorLocalRun(BaseIntegTestCase):
+    def test_local_data(self):
         image_uri = retrieve("xgboost", framework_version="latest").image_uri
+        train_file = os.path.join(test_data_dir, "breast_cancer_data/train.csv")
+        test_file = os.path.join(test_data_dir, "breast_cancer_data/test.csv")
 
         est = Estimator(
             image_uri=image_uri,
@@ -83,8 +87,61 @@ class TestEstimator(BaseIntegTestCase):
 
         est.fit(
             inputs={
-                "train": self.breast_cancer_train_data_uri,
-                "test": self.breast_cancer_test_data_uri,
+                "train": train_file,
+                "test": test_file,
             },
         )
         self.assertTrue(os.path.exists(os.path.join(est.model_data(), "model.json")))
+
+    def test_remote_data(self):
+        image_uri = retrieve("xgboost", framework_version="latest").image_uri
+        train_data_uri = upload(
+            os.path.join(test_data_dir, "breast_cancer_data/train.csv"),
+            oss_path="sdk-test/test_data/breast_cancer_data/train/",
+        )
+        test_data_uri = upload(
+            os.path.join(test_data_dir, "breast_cancer_data/test.csv"),
+            oss_path="sdk-test/test_data/breast_cancer_data/test/",
+        )
+
+        est = Estimator(
+            image_uri=image_uri,
+            source_dir=os.path.join(test_data_dir, "xgb_train"),
+            command="python train.py $PAI_USER_ARGS",
+            hyperparameters={
+                "n_estimators": 50,
+                "objective": "binary:logistic",
+                "max_depth": 5,
+                "eval_metric": "auc",
+            },
+            instance_type="local",
+        )
+
+        est.fit(
+            inputs={
+                "train": train_data_uri,
+                "test": test_data_uri,
+            },
+        )
+        self.assertTrue(os.path.exists(os.path.join(est.model_data(), "model.json")))
+
+
+@skipUnless(
+    t_context.has_docker and t_context.has_gpu,
+    "Estimator local gpu train requires docker and gpu.",
+)
+class TestEstimatorLocalRunGPU(BaseIntegTestCase):
+    def test(self):
+        image_uri = retrieve(
+            "pytorch",
+            "1.12",
+            accelerator_type="GPU",
+        ).image_uri
+
+        est = Estimator(
+            image_uri=image_uri,
+            command="python train.py",
+            source_dir=os.path.join(test_data_dir, "local_gpu_torch"),
+            instance_type="local_gpu",
+        )
+        est.fit()

@@ -60,6 +60,10 @@ class TestContext(object):
         return shutil.which("docker") is not None
 
     @property
+    def has_gpu(self):
+        return shutil.which("nvidia-smi") is not None
+
+    @property
     def is_inner(self):
         return self.pai_service_config.region_id == "center"
 

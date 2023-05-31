@@ -271,7 +271,7 @@ class TestInferenceSpec(BaseIntegTestCase):
         self.assertEqual(storage_config["oss"]["path"], oss_uri)
 
 
-@skipUnless(t_context.has_docker, "Estimator local train requires docker.")
+@skipUnless(t_context.has_docker, "Model local deployment requires docker.")
 class TestModelLocalDeploy(BaseIntegTestCase):
     def test_from_serving_local_scripts(self):
         xgb_image_uri = retrieve("xgboost", framework_version="latest").image_uri
@@ -323,3 +323,31 @@ class TestModelLocalDeploy(BaseIntegTestCase):
         f = io.BytesIO(resp2.content)
         res3 = np.load(f)
         self.assertListEqual(res.tolist(), res3.tolist())
+
+
+@skipUnless(
+    t_context.has_docker and t_context.has_gpu,
+    "Local deployment using GPU requires docker and GPU.",
+)
+class TestModelLocalGpuDeploy(BaseIntegTestCase):
+    def test(self):
+        torch_image_uri = retrieve(
+            "pytorch", framework_version="1.12", accelerator_type="GPU"
+        ).image_uri
+        inference_spec = container_serving_spec(
+            source_dir=os.path.join(test_data_dir, "local_gpu_serve"),
+            command="python run.py",
+            image_uri=torch_image_uri,
+            port=8000,
+        )
+        m = Model(
+            model_data=None,
+            inference_spec=inference_spec,
+        )
+        p = m.deploy(
+            instance_type="local_gpu",
+        )
+        res = p.raw_predict(
+            b"HelloWorld",
+        )
+        self.assertTrue(isinstance(res.json(), list))
