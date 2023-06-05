@@ -209,9 +209,8 @@ class TestPredictorOperation(BaseIntegTestCase):
                 "name": name,
                 "metadata": {
                     "instance": 2,
-                    "cpu": 2,
-                    "memory": 4000,
                 },
+                "cloud.computing.instance_type": "ecs.c6.xlarge",
                 "processor": _BuiltinProcessor.get_default_by_model_format(
                     model_format=cls.model_format,
                 ),

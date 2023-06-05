@@ -137,8 +137,9 @@ class ModelScopeModel(ModelBase):
     def serving_image_uri(self, instance_type: str) -> str:
         """Return the Docker image to use for serving.
 
-        The deploy() method, that does the model deployment, calls this method to
-        find the image to use for the inference service.
+        The :meth:`pai.modelscope.model.ModelScopeModel.deploy` method, that does the
+        model deployment, calls this method to find the image to use for the
+        inference service.
 
         Returns:
             str: The URI of the Docker image.
@@ -161,7 +162,7 @@ class ModelScopeModel(ModelBase):
 
     def deploy(
         self,
-        service_name: Optional[str] = None,
+        service_name: str,
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = 1,
         resource_config: Optional[Union[Dict[str, int], ResourceConfig]] = None,
@@ -169,6 +170,7 @@ class ModelScopeModel(ModelBase):
         options: Optional[Dict[str, Any]] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
+        **kwargs,
     ):
         """Deploy an online prediction service.
 

@@ -1,7 +1,6 @@
 import io
 import json
 import os.path
-from typing import Union
 from unittest import skipUnless
 
 import numpy as np
@@ -11,29 +10,14 @@ from pai.common.oss_utils import is_oss_uri, upload
 from pai.common.utils import camel_to_snake
 from pai.image import retrieve
 from pai.model import InferenceSpec, Model, ResourceConfig, container_serving_spec
-from pai.predictor import LocalPredictor
-from pai.serializers import JsonSerializer, SerializerBase
+from pai.serializers import JsonSerializer
 from tests.integration import BaseIntegTestCase
-from tests.integration.utils import make_eas_service_name, t_context
+from tests.integration.utils import (
+    NumpyBytesSerializer,
+    make_eas_service_name,
+    t_context,
+)
 from tests.test_data import PMML_MODEL_PATH, test_data_dir
-
-
-class NumpyBytesSerializer(SerializerBase):
-    def serialize(self, data: Union[np.ndarray, pd.DataFrame, bytes]) -> bytes:
-        if isinstance(data, bytes):
-            return data
-        elif isinstance(data, str):
-            return data.encode()
-        elif isinstance(data, pd.DataFrame):
-            data = data.to_numpy()
-
-        res = io.BytesIO()
-        np.save(res, data)
-        return res.getvalue()
-
-    def deserialize(self, data: bytes) -> np.ndarray:
-        f = io.BytesIO(data)
-        return np.load(f)
 
 
 class TestModelContainerDeploy(BaseIntegTestCase):
@@ -66,7 +50,6 @@ class TestModelContainerDeploy(BaseIntegTestCase):
         cls.x_test = np.load(x_test_path)
 
     def test_container_serving(self):
-
         image_uri = retrieve("xgboost", framework_version="latest").image_uri
         inference_spec = container_serving_spec(
             source_dir=os.path.join(test_data_dir, "xgb_serving"),
@@ -332,7 +315,9 @@ class TestModelLocalDeploy(BaseIntegTestCase):
 class TestModelLocalGpuDeploy(BaseIntegTestCase):
     def test(self):
         torch_image_uri = retrieve(
-            "pytorch", framework_version="1.12", accelerator_type="GPU"
+            "pytorch",
+            framework_version="1.12",
+            accelerator_type="GPU",
         ).image_uri
         inference_spec = container_serving_spec(
             source_dir=os.path.join(test_data_dir, "local_gpu_serve"),
@@ -341,10 +326,10 @@ class TestModelLocalGpuDeploy(BaseIntegTestCase):
             port=8000,
         )
         m = Model(
-            model_data=None,
             inference_spec=inference_spec,
         )
         p = m.deploy(
+            service_name="local_gpu_serve",
             instance_type="local_gpu",
         )
         res = p.raw_predict(

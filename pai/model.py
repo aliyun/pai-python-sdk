@@ -19,7 +19,7 @@ from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import is_local_run_instance_type, random_str, to_plain_text
 from .image import ImageInfo
-from .predictor import LocalPredictor, Predictor
+from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
 from .session import Session, config_default_session
 
@@ -73,8 +73,8 @@ class ResourceConfig(object):
 
     def __repr__(self):
         return (
-            f"<ResourceConfig:cpu={self.cpu} memory={self.memory}MB gpu={self.gpu or 0}"
-            f" gpu_memory={self.gpu_memory or 0}GB>"
+            f"ResourceConfig(cpu={self.cpu}, memory={self.memory}MB, gpu={self.gpu or 0},"
+            f" gpu_memory={self.gpu_memory or 0}GB)"
         )
 
     def __str__(self):
@@ -603,12 +603,13 @@ class ModelBase(object):
 
     def deploy(
         self,
-        service_name: Optional[str] = None,
+        service_name: str,
         instance_count: Optional[int] = 1,
         instance_type: Optional[str] = None,
         resource_config: Optional[Union[Dict[str, int], ResourceConfig]] = None,
         resource_id: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
+        service_type: Optional[str] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
         **kwargs,
@@ -626,6 +627,7 @@ class ModelBase(object):
                 instance_count=instance_count,
                 instance_type=instance_type,
                 resource_config=resource_config,
+                service_type=service_type,
                 resource_id=resource_id,
                 options=options,
                 wait=wait,
@@ -643,6 +645,7 @@ class ModelBase(object):
         instance_type: str = None,
         resource_config: Union[Dict[str, int], ResourceConfig] = None,
         resource_id: str = None,
+        service_type: str = None,
         options: Dict[str, Any] = None,
         wait: bool = True,
         serializer: "SerializerBase" = None,
@@ -661,18 +664,24 @@ class ModelBase(object):
             service_name=service_name,
             instance_count=instance_count,
             instance_type=instance_type,
+            service_type=service_type,
             resource_config=resource_config,
             resource_id=resource_id,
             options=options,
         )
-
         self._service_name = self.session.service_api.create(config=config)
-
-        predictor = Predictor(
-            service_name=service_name,
-            session=self.session,
-            serializer=serializer,
-        )
+        if service_type == ServiceType.Async:
+            predictor = AsyncPredictor(
+                service_name=service_name,
+                session=self.session,
+                serializer=serializer,
+            )
+        else:
+            predictor = Predictor(
+                service_name=service_name,
+                session=self.session,
+                serializer=serializer,
+            )
         print(
             "View the service detail by accessing the console URI: \n{}".format(
                 predictor.console_uri
@@ -691,6 +700,7 @@ class ModelBase(object):
         instance_type: str = None,
         resource_config: Union[ResourceConfig, Dict[str, Any]] = None,
         resource_id: str = None,
+        service_type: str = None,
         options: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """Build a service config dictionary used to create a PAI EAS service."""
@@ -727,6 +737,11 @@ class ModelBase(object):
                     self.model_data,
                     mount_path=_ModelServiceConfig.MODEL_PATH,
                 )
+
+        if service_type:
+            inference_spec.add_option("metadata.type", service_type)
+            if inference_spec.is_container_serving():
+                inference_spec.add_option("metadata.rpc.proxy_path", "/")
 
         if service_name:
             inference_spec.add_option("name", service_name)
@@ -965,11 +980,12 @@ class Model(ModelBase):
 
     def deploy(
         self,
-        service_name: Optional[str] = None,
+        service_name: str,
         instance_count: Optional[int] = 1,
         instance_type: Optional[str] = None,
         resource_config: Optional[Union[Dict[str, int], ResourceConfig]] = None,
         resource_id: Optional[str] = None,
+        service_type: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
@@ -1021,8 +1037,8 @@ class Model(ModelBase):
                 serializer object used to serialize the prediction request and
                 deserialize the prediction response.
         Returns:
-            :class:`pai.predictor.Predictor` : A PAI ``Predictor`` instance used for
-                making prediction to the prediction service.
+            A ``PredictorBase`` instance used for making prediction to the prediction
+            service.
         """
         return super(Model, self).deploy(
             service_name=service_name,
@@ -1033,5 +1049,6 @@ class Model(ModelBase):
             options=options,
             wait=wait,
             serializer=serializer,
+            service_type=service_type,
             **kwargs,
         )

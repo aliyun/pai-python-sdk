@@ -6,7 +6,6 @@ from random import randint
 from typing import Any, Dict, List, Optional, Union
 
 import docker
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +105,7 @@ class ContainerRun(object):
             follow=True,
         )
         for log in log_iter:
-            logger.info(log)
+            print(log.decode())
         self.container.reload()
         exit_code = self.container.attrs["State"]["ExitCode"]
         if exit_code != 0:

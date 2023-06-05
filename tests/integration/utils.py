@@ -1,11 +1,17 @@
 import configparser
 import datetime
+import io
 import os
 import shutil
 import uuid
 from collections import namedtuple
+from typing import Union
+
+import numpy as np
+import pandas as pd
 
 from pai.common.utils import random_str
+from pai.serializers import SerializerBase
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -170,3 +176,21 @@ def gen_run_node_scoped_placeholder(suffix=None):
         return "{0}_{1}".format(
             PAI_PIPELINE_NODE_ID_PLACEHOLDER, PAI_PIPELINE_RUN_ID_PLACEHOLDER
         )
+
+
+class NumpyBytesSerializer(SerializerBase):
+    def serialize(self, data: Union[np.ndarray, pd.DataFrame, bytes]) -> bytes:
+        if isinstance(data, bytes):
+            return data
+        elif isinstance(data, str):
+            return data.encode()
+        elif isinstance(data, pd.DataFrame):
+            data = data.to_numpy()
+
+        res = io.BytesIO()
+        np.save(res, data)
+        return res.getvalue()
+
+    def deserialize(self, data: bytes) -> np.ndarray:
+        f = io.BytesIO(data)
+        return np.load(f)

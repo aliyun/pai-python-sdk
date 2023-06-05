@@ -21,3 +21,4 @@ semantic-version
 tqdm
 prompt-toolkit
 pyOpenSSL>=23.0.0
+aiohttp

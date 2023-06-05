@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import random
 import re
 import string
-from typing import Callable
+import sys
+from typing import Callable, Dict, Optional, Union
 
 import six
 
@@ -94,9 +95,14 @@ def to_plain_text(
     return "".join([c if c in allowed_characters else repl_ch for c in input_str])
 
 
-def default_user_agent() -> str:
-    """Generate default User-Agent that represents current client."""
-    return "PAI-Python-SDK/{}".format(__version__)
+def http_user_agent(user_agent: Optional[Union[Dict, str]] = None) -> str:
+    """Generate HTTP User-Agent that represents current client."""
+    ua = f"pai-python-sdk/{__version__}; python/{sys.version.split()[0]}"
+    if isinstance(user_agent, dict):
+        ua += "; " + "; ".join(f"{k}/{v}" for k, v in user_agent.items())
+    elif isinstance(user_agent, str):
+        ua += "; " + user_agent
+    return ua
 
 
 def is_notebook() -> bool:

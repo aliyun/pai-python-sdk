@@ -7,7 +7,7 @@ from alibabacloud_tea_openapi.models import Config
 
 import pai
 from pai.api.base import PAIServiceName
-from pai.common.utils import default_user_agent
+from pai.common.utils import http_user_agent
 from pai.libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
 from pai.libs.alibabacloud_eas20210701.client import Client as EasClient
 from pai.libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
@@ -78,7 +78,7 @@ class ClientFactory(object):
                 endpoint=endpoint,
             ),
             signature_algorithm="v2",
-            user_agent=default_user_agent(),
+            user_agent=http_user_agent(),
             **kwargs,
         )
         client = cls.ClientClsByServiceName.get(service_name)(config)
