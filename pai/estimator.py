@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Union
 import six
 
 from .api.entity_base import EntityBaseMixin
-from .common import ProviderAlibabaPAI
+from .common import ProviderAlibabaPAI, git_utils
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, JobType
 from .common.docker_utils import run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
@@ -79,6 +79,7 @@ class Estimator(object):
         image_uri: str,
         command: str,
         source_dir: Optional[str] = None,
+        git_config: Optional[Dict[str, str]] = None,
         job_type: str = JobType.PyTorchJob,
         hyperparameters: Optional[Dict[str, Any]] = None,
         base_job_name: Optional[str] = None,
@@ -104,8 +105,41 @@ class Estimator(object):
                 job container. If there is a `requirements.txt` file in the source code
                 directory, the corresponding dependencies will be installed before the
                 training script runs.
+
+                If 'git_config' is provided, 'source_dir' should be a relative location
+                to a directory in the Git repo. With the following GitHub repo directory
+                structure:
+
+                .. code::
+
+                    |----- README.md
+                    |----- src
+                             |----- train.py
+                             |----- test.py
+
+                if you need 'src' directory as the source code directory, you can assign
+                source_dir='./src/'.
+            git_config (Dict[str, str]): Git configuration used to clone the repo.
+                Including ``repo``, ``branch``, ``commit``, ``username``, ``password``
+                and ``token``. The ``repo`` is required. All other fields are optional.
+                ``repo`` specifies the Git repository. If you don't provide ``branch``,
+                the default value 'master' is used. If you don't provide ``commit``, the
+                latest commit in the specified branch is used. ``username``, ``password``
+                and ``token`` are for authentication purpose.
+                For example, the following config:
+
+                .. code:: python
+
+                    git_config = {
+                        'repo': 'https://github.com/modelscope/modelscope.git',
+                        'branch': 'master',
+                        'commit': '9bfc4a9d83c4beaf8378d0a186261ffc1cd9f960'
+                    }
+
+                results in cloning the git repo specified in 'repo', then checking out
+                the 'master' branch, and checking out the specified commit.
             job_type (str): The type of job, which can be TFJob, PyTorchJob, XGBoostJob,
-             etc.
+                etc.
             hyperparameters (dict, optional): A dictionary that represents the
                 hyperparameters used in the training job. The hyperparameters will be
                 stored in the `/ml/input/config/hyperparameters.json` as a JSON
@@ -186,6 +220,7 @@ class Estimator(object):
         self.image_uri = image_uri
         self.command = command
         self.source_dir = source_dir
+        self.git_config = git_config
         self.hyperparameters = hyperparameters or dict()
         self.instance_type = instance_type
         self.instance_count = instance_count
@@ -204,7 +239,12 @@ class Estimator(object):
 
     def _prepare_for_training(self):
         """Update args before starting the training job."""
-        # TODO: used for git config
+        if self.git_config:
+            updated_args = git_utils.git_clone_repo(
+                git_config=self.git_config,
+                source_dir=self.source_dir,
+            )
+            self.source_dir = updated_args["source_dir"]
 
     def _gen_job_display_name(self, job_name=None):
         """Generate job display name."""
@@ -212,6 +252,10 @@ class Estimator(object):
             return job_name
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
+
+    def _check(self):
+        if not self.image_uri:
+            raise ValueError("Please provide image_uri to create the job.")
 
     def _check_instance_type(self):
         """Check if the given instance_type is supported for training job."""

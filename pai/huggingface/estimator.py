@@ -33,6 +33,7 @@ class HuggingFaceEstimator(Estimator):
         self,
         command: str,
         source_dir: Optional[str] = None,
+        git_config: Optional[Dict[str, str]] = None,
         image_uri: Optional[str] = None,
         transformers_version: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
@@ -54,6 +55,39 @@ class HuggingFaceEstimator(Estimator):
                 job container. If there is a `requirements.txt` file in the source code
                 directory, the corresponding dependencies will be installed before the
                 training script runs.
+
+                If 'git_config' is provided, 'source_dir' should be a relative location
+                to a directory in the Git repo. With the following GitHub repo directory
+                structure:
+
+                .. code::
+
+                    |----- README.md
+                    |----- src
+                             |----- train.py
+                             |----- test.py
+
+                if you need 'src' directory as the source code directory, you can assign
+                source_dir='./src/'.
+            git_config (Dict[str, str]): Git configuration used to clone the repo.
+                Including ``repo``, ``branch``, ``commit``, ``username``, ``password``
+                and ``token``. The ``repo`` is required. All other fields are optional.
+                ``repo`` specifies the Git repository. If you don't provide ``branch``,
+                the default value 'master' is used. If you don't provide ``commit``, the
+                latest commit in the specified branch is used. ``username``, ``password``
+                and ``token`` are for authentication purpose.
+                For example, the following config:
+
+                .. code:: python
+
+                    git_config = {
+                        'repo': 'https://github.com/huggingface/transformers.git',
+                        'branch': 'main',
+                        'commit': '5ba0c332b6bef130ab6dcb734230849c903839f7'
+                    }
+
+                results in cloning the git repo specified in 'repo', then checking out
+                the 'main' branch, and checking out the specified commit.
             image_uri (str, optional): If specified, the estimator will use this image
                 in the training job, instead of selecting the appropriate PAI official
                 image based on transformers_version. It can be an image provided by PAI
@@ -137,6 +171,7 @@ class HuggingFaceEstimator(Estimator):
             image_uri=self.image_uri,
             command=command,
             source_dir=source_dir,
+            git_config=git_config,
             hyperparameters=hyperparameters,
             base_job_name=base_job_name,
             checkpoints_path=checkpoints_path,

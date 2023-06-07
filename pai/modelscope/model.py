@@ -56,6 +56,7 @@ class ModelScopeModel(ModelBase):
         modelscope_version: Optional[str] = None,
         command: Optional[str] = None,
         source_dir: Optional[str] = None,
+        git_config: Optional[Dict[str, str]] = None,
         port: int = DEFAULT_SERVICE_PORT,
         environment_variables: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
@@ -80,8 +81,43 @@ class ModelScopeModel(ModelBase):
                 executing your model serving code. Defaults to ``None``. Required unless
                 ``image_uri`` is provided.
             command (str): The command used to launch the Model server.
-            source_dir (str, optional): Local path to the source code directory to be
-                uploaded and used for the model server.
+            source_dir (str, optional): A relative path or an absolute path to the source
+                code directory used to load model and launch the Model server, it will be
+                uploaded to the OSS bucket and mounted to the container. If there is a
+                ``requirements.txt`` file under the directory, it will be installed before
+                the prediction server started.
+
+                If 'git_config' is provided, 'source_dir' should be a relative location
+                to a directory in the Git repo. With the following GitHub repo directory
+                structure:
+
+                .. code::
+
+                    |----- README.md
+                    |----- src
+                                |----- train.py
+                                |----- test.py
+
+                if you need 'src' directory as the source code directory, you can assign
+                source_dir='./src/'.
+            git_config (Dict[str, str]): Git configuration used to clone the repo.
+                Including ``repo``, ``branch``, ``commit``, ``username``, ``password`` and
+                ``token``. The ``repo`` is required. All other fields are optional. ``repo``
+                specifies the Git repository. If you don't provide ``branch``, the default
+                value 'master' is used. If you don't provide ``commit``, the latest commit
+                in the specified branch is used. ``username``, ``password`` and ``token``
+                are for authentication purpose. For example, the following config:
+
+                .. code:: python
+
+                    git_config = {
+                        'repo': 'https://github.com/modelscope/modelscope.git',
+                        'branch': 'master',
+                        'commit': '9bfc4a9d83c4beaf8378d0a186261ffc1cd9f960'
+                    }
+
+                results in cloning the repo specified in 'repo', then checking out the
+                'master' branch, and checking out the specified commit.
             port (int, optional): Expose port of the server in container, the prediction
                 request will be forward to the port. The environment variable ``LISTENING_PORT``
                 in the container will be set to this value.
@@ -93,7 +129,7 @@ class ModelScopeModel(ModelBase):
                 the container.
             health_check (Dict[str, Any], optional): The health check configuration. If it
                 not set, A TCP readiness probe will be used to check the health of the
-                HTTP server.
+                Model server.
             session (:class:`pai.session.Session`, optional): A pai session object
                 manages interactions with PAI REST API.
 
@@ -111,6 +147,7 @@ class ModelScopeModel(ModelBase):
         self.modelscope_version = modelscope_version
         self.command = command
         self.source_dir = source_dir
+        self.git_config = git_config
         self.port = port
         self.environment_variables = environment_variables
         self.requirements = requirements
@@ -228,6 +265,7 @@ class ModelScopeModel(ModelBase):
             image_uri=self.image_uri,
             port=self.port,
             source_dir=self.source_dir,
+            git_config=self.git_config,
             environment_variables=self.environment_variables,
             requirements=self.requirements,
             requirements_path=self.requirements_path,

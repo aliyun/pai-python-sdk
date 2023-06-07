@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import requests
 from addict import Dict as AttrDict
 
+from .common import git_utils
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
@@ -339,6 +340,7 @@ def container_serving_spec(
     command: str,
     image_uri: Union[str, ImageInfo],
     source_dir: Optional[str] = None,
+    git_config: Optional[Dict[str, Any]] = None,
     port: int = DEFAULT_SERVICE_PORT,
     environment_variables: Optional[Dict[str, str]] = None,
     requirements: Optional[List[str]] = None,
@@ -373,8 +375,39 @@ def container_serving_spec(
             uploaded to the OSS bucket and mounted to the container. If there is a
             ``requirements.txt`` file under the directory, it will be installed before
             the prediction server started.
-        image_uri (Union[str, ImageInfo]): The Docker image used to run the prediction
-            service.
+
+            If 'git_config' is provided, 'source_dir' should be a relative location
+            to a directory in the Git repo. With the following GitHub repo directory
+            structure:
+
+            .. code::
+
+                |----- README.md
+                |----- src
+                            |----- train.py
+                            |----- test.py
+
+            if you need 'src' directory as the source code directory, you can assign
+            source_dir='./src/'.
+        git_config (Dict[str, str]): Git configuration used to clone the repo.
+            Including ``repo``, ``branch``, ``commit``, ``username``, ``password`` and
+            ``token``. The ``repo`` is required. All other fields are optional. ``repo``
+            specifies the Git repository. If you don't provide ``branch``, the default
+            value 'master' is used. If you don't provide ``commit``, the latest commit
+            in the specified branch is used. ``username``, ``password`` and ``token``
+            are for authentication purpose. For example, the following config:
+
+            .. code:: python
+
+                git_config = {
+                    'repo': 'https://github.com/modelscope/modelscope.git',
+                    'branch': 'master',
+                    'commit': '9bfc4a9d83c4beaf8378d0a186261ffc1cd9f960'
+                }
+
+            results in cloning the repo specified in 'repo', then checking out the
+            'master' branch, and checking out the specified commit.
+        image_uri (str): The Docker image used to run the prediction service.
         port (int): Expose port of the server in container, the prediction request
             will be forward to the port. The environment variable ``LISTENING_PORT``
             in the container will be set to this value.
@@ -393,6 +426,13 @@ def container_serving_spec(
     Returns:
         :class:`pai.model.InferenceSpec`: An InferenceSpec instance.
     """
+    if git_config:
+        updated_args = git_utils.git_clone_repo(
+            git_config=git_config,
+            source_dir=source_dir,
+        )
+        source_dir = updated_args["source_dir"]
+
     if port and int(port) in _ModelServiceConfig.NOT_ALLOWED_PORTS:
         raise ValueError(
             "Port {} is reserved by PAI, it is not allowed to configure"
