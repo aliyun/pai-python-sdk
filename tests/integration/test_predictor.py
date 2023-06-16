@@ -249,18 +249,21 @@ class TestPredictorOperation(BaseIntegTestCase):
         self.assertTrue(isinstance(resp, list), "resp is not a list")
         self.assertTrue(len(resp) == 2, "resp doesn't have length 2")
         self.assertTrue("p_0" in resp[0], "p_0 is not in resp[0]")
-        self.assertTrue(
-            self.predictor.service_status == ServiceStatus.Running,
+        self.assertEqual(
+            self.predictor.service_status,
+            ServiceStatus.Running,
             "service is not running",
         )
         self.predictor.stop_service()
-        self.assertTrue(
-            self.predictor.service_status == ServiceStatus.Stopped,
+        self.assertEqual(
+            self.predictor.service_status,
+            ServiceStatus.Stopped,
             "service does not stop",
         )
         self.predictor.start_service()
-        self.assertTrue(
-            self.predictor.service_status == ServiceStatus.Running,
+        self.assertEqual(
+            self.predictor.service_status,
+            ServiceStatus.Running,
             "service does not start",
         )
         self.predictor.delete_service()

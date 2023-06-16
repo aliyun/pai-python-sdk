@@ -5,6 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from pai.exception import PredictionException
 from pai.image import retrieve
 from pai.model import InferenceSpec, Model, container_serving_spec
 from pai.predictor import AsyncPredictor, ServiceType
@@ -30,9 +31,9 @@ class TestAsyncPredictorBuiltinProcessor(BaseIntegTestCase):
             model_data=PMML_MODEL_PATH,
         )
         predictor: AsyncPredictor = m.deploy(
-            service_name=make_eas_service_name("async_predictor"),
+            service_name=make_eas_service_name("async_pmml"),
             instance_type="ecs.c6.xlarge",
-            service_type="Async",
+            service_type=ServiceType.Async,
         )
         type(self).predictors.append(predictor)
         data = [
@@ -48,11 +49,11 @@ class TestAsyncPredictorBuiltinProcessor(BaseIntegTestCase):
             },
         ]
 
-        res1 = predictor.predict(data=data).wait()
+        res1 = predictor.predict(data=data).result()
         res2 = asyncio.run(predictor.predict_async(data=data))
         self.assertListEqual(res1, res2)
 
-        raw_res1 = predictor.raw_predict(data=data).wait().json()
+        raw_res1 = predictor.raw_predict(data=data).result().json()
         raw_res2 = asyncio.run(predictor.raw_predict_async(data=data)).json()
         self.assertListEqual(raw_res1, raw_res2)
 
@@ -77,31 +78,60 @@ class TestAsyncPredictorContainerServing(BaseIntegTestCase):
             model_data=os.path.join(test_data_dir, "xgb_model/model.json"),
         )
         predictor: AsyncPredictor = m.deploy(
-            service_name=make_eas_service_name("async_predictor"),
+            service_name=make_eas_service_name("async_container"),
             instance_type="ecs.c6.xlarge",
             service_type=ServiceType.Async,
             serializer=NumpyBytesSerializer(),
         )
 
         type(self).predictors.append(predictor)
+
+        # get test data
         df = pd.read_csv(
             os.path.join(test_data_dir, "breast_cancer_data/test.csv"),
         )
         x = df.drop(["target"], axis=1)[:10]
 
         # test predict
-        res1 = predictor.predict(data=x).wait()
+        results = []
+        task = predictor.predict(data=x, callback=lambda x: results.append(x))
+        res1 = task.result()
         res2 = asyncio.run(predictor.predict_async(data=x))
+        self.assertTrue(len(results) > 0)
+        self.assertListEqual(results[0].tolist(), res1.tolist())
         self.assertListEqual(res1.tolist(), res2.tolist())
 
         # test raw predict
+        raw_results = []
         data = io.BytesIO()
         np.save(data, x.to_numpy())
-        resp1 = predictor.raw_predict(data=data.getvalue())
-        raw_res1 = np.load(io.BytesIO(resp1.wait().content))
+        resp1 = predictor.raw_predict(
+            data=data.getvalue(), callback=lambda x: raw_results.append(x)
+        ).result()
+
+        self.assertTrue(len(raw_results) > 0)
+        self.assertEqual(raw_results[0].content, resp1.content)
+        raw_res1 = np.load(io.BytesIO(resp1.content))
         raw_res2 = np.load(
             io.BytesIO(
                 asyncio.run(predictor.raw_predict_async(data=data.getvalue())).content
             )
         )
         self.assertEqual(raw_res1.tolist(), raw_res2.tolist())
+
+        # test multi callbacks
+        multi_callback_results = []
+        predictor.raw_predict(
+            data=data.getvalue(),
+            callback=[
+                lambda x: print(x),
+                lambda x: multi_callback_results.append(x),
+                lambda x: multi_callback_results.append(x),
+            ],
+        ).result()
+
+        self.assertEqual(len(multi_callback_results), 2)
+
+        # test error response
+        with self.assertRaises(PredictionException):
+            predictor.raw_predict(data="test").result()

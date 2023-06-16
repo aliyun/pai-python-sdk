@@ -1,12 +1,14 @@
 import asyncio
 import base64
+import functools
 import json
 import logging
 import posixpath
 import time
 from abc import ABC, abstractmethod
+from concurrent.futures import Future, ThreadPoolExecutor
 from io import IOBase
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode
 
 import aiohttp
@@ -34,6 +36,7 @@ _PAI_SERVICE_CONSOLE_URI_PATTERN = (
 
 _QUEUE_SERVICE_REQUEST_ID_HEADER = "X-Eas-Queueservice-Request-Id"
 _QUEUE_SERVICE_SINK_PATH = "sink"
+_DEFAULT_ASYNC_WORKER_COUNT = 30
 
 
 class ServiceStatus(object):
@@ -123,20 +126,6 @@ class _ServicePredictorMixin(object):
         endpoint_type: str = EndpointType.INTERNET,
         serializer: Optional[SerializerBase] = None,
     ):
-        """Construct a `Predictor` object using an existing prediction service.
-
-        Args:
-            service_name (str): Name of the existing prediction service.
-            endpoint_type (str): Selects the endpoint used by the predictor, which
-                should be one of `INTERNET` or `INTRANET`. The `INTERNET` endpoint type
-                means that the predictor calls the service over a public endpoint, while
-                the `INTRANET` endpoint type is over a VPC endpoint.
-            serializer (SerializerBase, optional): A serializer object that transforms
-                the input Python object for data transmission and deserialize the
-                response data to Python object.
-            session (Session, optional): A PAI session object used for communicating
-                with PAI service.
-        """
         self.service_name = service_name
         self.session = session
         self._service_api_object = self.describe_service()
@@ -149,6 +138,9 @@ class _ServicePredictorMixin(object):
             self.service_name,
             self.endpoint_type,
         )
+
+    def refresh(self):
+        self._service_api_object = self.describe_service()
 
     @property
     def endpoint(self):
@@ -257,6 +249,7 @@ class _ServicePredictorMixin(object):
                 unexpected_status=unexpected_status,
                 session=self.session,
             )
+        self.refresh()
 
     def stop_service(self, wait=True):
         """Stop the running service."""
@@ -273,6 +266,7 @@ class _ServicePredictorMixin(object):
                 unexpected_status=unexpected_status,
                 session=self.session,
             )
+        self.refresh()
 
     def delete_service(self):
         """Delete the service."""
@@ -292,6 +286,7 @@ class _ServicePredictorMixin(object):
             unexpected_status=unexpected_status,
             session=self.session,
         )
+        self.refresh()
 
     @classmethod
     @config_default_session
@@ -655,43 +650,45 @@ class WaitConfig(object):
         self.interval = interval
 
 
-class AsyncResponse(object):
-    """A class representing the response of an asynchronous prediction request."""
+class AsyncTask(object):
+    """AsyncTask is a wrapper class for `concurrent.futures.Future` object that represents
+    a prediction call submitted to an async prediction service.
+    """
 
     def __init__(
-        self, request_id, predictor: "AsyncPredictor", is_raw_request: bool = False
+        self,
+        future: Future,
     ):
-        self.request_id = request_id
-        self.predictor = predictor
-        self.is_raw_request = is_raw_request
+        self.future = future
+        super(AsyncTask, self).__init__()
 
-    def __repr__(self):
-        return "{}(request_id={}, service_name={})".format(
-            type(self).__name__,
-            self.request_id,
-            self.predictor.service_name,
-        )
+    def result(self, timeout: Optional[float] = None):
+        """
+        Returns the prediction result of the call.
 
-    def wait(self, wait_config: WaitConfig = WaitConfig()):
-        """Wait for the asynchronous request to complete."""
-        status_code, headers, content = self.predictor._poll_result(
-            self.request_id, wait_config
-        )
-        if self.is_raw_request:
-            return self.predictor._handle_raw_output(status_code, headers, content)
-        else:
-            return self.predictor._handle_output(content)
+        Args:
+            timeout (float, optional): Timeout setting  (Default None).
 
-    async def wait_async(self, wait_config: WaitConfig = WaitConfig()):
-        """Wait for the asynchronous request to complete."""
-        status_code, headers, content = await self.predictor._poll_result_async(
-            self.request_id, wait_config
-        )
+        Returns:
+            The result of the prediction call.
 
-        if self.is_raw_request:
-            return self.predictor._handle_raw_output(status_code, headers, content)
-        else:
-            return self.predictor._handle_output(content)
+        """
+        return self.future.result(timeout=timeout)
+
+    def done(self):
+        return self.future.done()
+
+    def exception(self, timeout: Optional[float] = None) -> Optional[Exception]:
+        return self.future.exception()
+
+    def running(self):
+        return self.future.running()
+
+    def cancel(self):
+        return self.future.cancel()
+
+    def cancelled(self):
+        return self.future.cancelled()
 
 
 class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
@@ -716,17 +713,55 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
     def __init__(
         self,
         service_name: str,
+        max_workers: Optional[int] = None,
         endpoint_type: str = EndpointType.INTERNET,
         serializer: Optional[SerializerBase] = None,
         session: Optional[Session] = None,
     ):
+        """Construct a `AsyncPredictor` object using an existing async prediction service.
+
+        Args:
+            service_name (str): Name of the existing prediction service.
+            max_workers (int): The maximum number of threads that can be used to
+                execute the given prediction calls.
+            endpoint_type (str): Selects the endpoint used by the predictor, which
+                should be one of `INTERNET` or `INTRANET`. The `INTERNET` endpoint type
+                means that the predictor calls the service over a public endpoint, while
+                the `INTRANET` endpoint type is over a VPC endpoint.
+            serializer (SerializerBase, optional): A serializer object that transforms
+                the input Python object for data transmission and deserialize the
+                response data to Python object.
+            session (Session, optional): A PAI session object used for communicating
+                with PAI service.
+        """
+
         super(AsyncPredictor, self).__init__(
             service_name=service_name,
             session=session,
             endpoint_type=endpoint_type,
             serializer=serializer,
         )
+        self._max_workers = max_workers
+        self.executor = ThreadPoolExecutor(max_workers=self._max_workers)
         self._check()
+
+    @property
+    def max_workers(self):
+        return self._max_workers
+
+    @max_workers.setter
+    def max_workers(self, n: int):
+        if hasattr(self, "executor"):
+            logger.info("Waiting for all submitted tasks in the queue to complete...")
+            self.executor.shutdown()
+        self._max_workers = n
+        self.executor = ThreadPoolExecutor(max_workers=self._max_workers)
+
+    def __del__(self):
+        """wait for all pending tasks to complete before exit."""
+        if hasattr(self, "executor"):
+            logger.info("Waiting for all pending tasks to complete...")
+            self.executor.shutdown()
 
     def _check(self):
         config = json.loads(self._service_api_object["ServiceConfig"])
@@ -749,17 +784,16 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
                 "_raw_": "false",
             },
         )
-        if resp.status_code == 204:
-            # Status code 204 means could not find prediction response for the specific
-            # request id.
-            return
-
         logger.debug(
             "Poll prediction result: request_id=%s status_code=%s, content=%s",
             request_id,
             resp.status_code,
             resp.content,
         )
+        if resp.status_code == 204:
+            # Status code 204 means could not find prediction response for the specific
+            # request id.
+            return
 
         # Raise exception if status code is not 2xx.
         if resp.status_code // 100 != 2:
@@ -774,7 +808,7 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
         tags = data["tags"]
         # If the status code from prediction service is not 200, a tag with
         # key 'lastCode' will be added to the tags in response.
-        status_code = tags.get("lateCode", 200)
+        status_code = int(tags.get("lastCode", 200))
         data = base64.b64decode(data["data"])
         # currently, headers are not supported in async prediction service.
         headers = dict()
@@ -795,6 +829,12 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
         )
         status_code = resp.status
         content = await resp.read()
+        logger.debug(
+            "Get prediction result: request_id=%s status_code=%s, content=%s",
+            request_id,
+            status_code,
+            content,
+        )
         if status_code == 204:
             # Status code 204 means could not find prediction response for the specific
             # request id.
@@ -805,12 +845,6 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
                     status_code, content.decode("utf-8")
                 )
             )
-        logger.debug(
-            "Get prediction result: request_id=%s status_code=%s, content=%s",
-            request_id,
-            status_code,
-            content,
-        )
         data = (await resp.json())[0]
         return self._parse_encapsulated_response(data)
 
@@ -826,6 +860,13 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
                 time.sleep(wait_config.interval)
                 continue
             status_code, headers, content = result
+            # check real prediction response
+            if status_code // 100 != 2:
+                raise PredictionException(
+                    code=status_code,
+                    message=f"Prediction failed: status_code={status_code}"
+                    f" content={content.decode()}",
+                )
             return status_code, headers, content
 
         # Polling prediction result timeout.
@@ -846,6 +887,11 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
                 await asyncio.sleep(wait_config.interval)
                 continue
             status_code, headers, content = result
+            # check real prediction response
+            if status_code // 100 != 2:
+                raise PredictionException(
+                    f"Prediction failed: status_code={status_code} content={content.decode()}"
+                )
             return status_code, headers, content
 
         # Polling prediction result timeout.
@@ -896,31 +942,65 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
         )
         return request_id
 
-    def predict(self, data) -> AsyncResponse:
+    def _predict_fn(
+        self,
+        data,
+    ):
+        """Make a prediction with the async prediction service."""
+        # serialize input data
+        data = self._handle_input(data)
+        resp = self._send_request(data=data)
+        request_id = self._get_request_id(resp)
+        logger.debug("Async prediction RequestId: ", request_id)
+        # poll prediction result
+        status, headers, content = self._poll_result(
+            request_id=request_id, wait_config=WaitConfig()
+        )
+
+        return self._handle_output(content)
+
+    def _wrap_callback_fn(self, cb: Callable):
+        """Wrap the callback function to handle the prediction result."""
+
+        @functools.wraps(cb)
+        def _(future: Future):
+            return cb(future.result())
+
+        return _
+
+    def predict(
+        self,
+        data,
+        callback: Optional[Union[Callable, List[Callable]]] = None,
+    ):
         """Make a prediction with the async prediction service.
 
-        The serializer object for the predictor is responsible for data transformation
-        when the 'predict' method is invoked. The input data is serialized using the
-        `serializer.serialize` method before it is sent, and the response is
-        deserialized using the `serializer.deserialize` method before the prediction
-        result returns.
+        The input data is serialized using the `serializer.serialize` method before it
+        is sent, and the response body is deserialized using the
+        `serializer.deserialize` method the prediction result returns.
 
         Args:
             data: The input data for the prediction. It will be serialized using the
                 serializer of the predictor before transmitted to the prediction
                 service.
+            callback (Union[Callable, List[Callable]], optional): A Callback function,
+                or a list of callback functions used to process the prediction result.
 
         Returns:
-            AsyncResponse: A AsyncResponse object that can be used to get the prediction
+            AsyncTask: The task object that can be used to retrieve the prediction
                 result.
         """
         self._post_init_serializer()
+        future = self.executor.submit(self._predict_fn, data)
 
-        # serialize input data
-        data = self._handle_input(data)
-        resp = self._send_request(data=data)
-        request_id = self._get_request_id(resp)
-        return AsyncResponse(request_id=request_id, predictor=self)
+        if isinstance(callback, Callable):
+            callback = [callback]
+
+        if callback:
+            for cb in callback:
+                future.add_done_callback(self._wrap_callback_fn(cb))
+
+        return AsyncTask(future=future)
 
     async def predict_async(self, data, wait_config: WaitConfig = WaitConfig()):
         """Make a prediction with the async prediction service.
@@ -952,30 +1032,7 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
         )
         return self._handle_output(content)
 
-    def raw_predict(
-        self,
-        data: Any = None,
-        method: str = "POST",
-        path: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        **kwargs,
-    ) -> AsyncResponse:
-        """Make a prediction with the online prediction service.
-
-        Args:
-            data (Any): Input data to be sent to the prediction service. If it is a
-                file-like object, bytes, or string, it will be sent as the request body.
-                Otherwise, it will be treated as a JSON serializable object and sent as
-                JSON.
-            path (str, optional): Path for the request to be sent to. If it is provided,
-                it will be appended to the endpoint URL (Default None).
-            headers (dict, optional): Request headers.
-            method (str, optional): Request method, default to 'POST'.
-            **kwargs: Additional keyword arguments for the request.
-        Returns:
-            AsyncResponse: A AsyncResponse object which can be used to get prediction
-                result.
-        """
+    def _raw_predict_fn(self, data, method, path, headers, **kwargs):
         json_data, data = self._handle_raw_input(data)
         resp = self._send_request(
             path=path,
@@ -986,8 +1043,57 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
             **kwargs,
         )
         request_id = self._get_request_id(resp)
+        status, headers, content = self._poll_result(
+            request_id, wait_config=WaitConfig()
+        )
+        return RawResponse(status, headers, content)
 
-        return AsyncResponse(request_id=request_id, predictor=self, is_raw_request=True)
+    def raw_predict(
+        self,
+        data: Any = None,
+        callback: Optional[Union[Callable, List[Callable], None]] = None,
+        method: str = "POST",
+        path: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None,
+        **kwargs,
+    ) -> AsyncTask:
+        """Make a prediction with the online prediction service.
+
+        Args:
+            data (Any): Input data to be sent to the prediction service. If it is a
+                file-like object, bytes, or string, it will be sent as the request body.
+                Otherwise, it will be treated as a JSON serializable object and sent as
+                JSON.
+            callback (Union[Callable, List[Callable]], optional): A Callback function,
+                or a list of callback functions used to process the prediction result.
+            path (str, optional): Path for the request to be sent to. If it is provided,
+                it will be appended to the endpoint URL (Default None).
+            headers (dict, optional): Request headers.
+            method (str, optional): Request method, default to 'POST'.
+            **kwargs: Additional keyword arguments for the request.
+        Returns:
+            AsyncTask: The task object that can be used to retrieve the prediction
+                result.
+
+        Examples:
+
+            from pai.predictor import AsyncPredictor, AsyncTask
+
+            predictor = AsyncPredictor()
+            task: AsyncTask = predictor.raw_predict(data="YourPredictionData")
+            print(task.result())
+
+        """
+
+        future = self.executor.submit(
+            self._raw_predict_fn, data, method, path, headers, **kwargs
+        )
+        cbs = [callback] if isinstance(callback, Callable) else callback
+        if cbs:
+            for cb in cbs:
+                future.add_done_callback(self._wrap_callback_fn(cb))
+
+        return AsyncTask(future=future)
 
     async def raw_predict_async(
         self,

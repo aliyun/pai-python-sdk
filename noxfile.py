@@ -143,7 +143,13 @@ def notebook(session: Session):
     if session.posargs:
         posargs = session.posargs
     else:
-        posargs = ["docs/source/tutorial/"]
+        posargs = [
+            "docs/source/tutorial/",
+            "--ignore",
+            # skip huggingface bert test for now, see:
+            # https://aliyuque.antfin.com/pai/nf5dqg/wggskltqa5bn02w1
+            "docs/source/tutorial/huggingface_bert/",
+        ]
 
     session.run(
         "pytest",

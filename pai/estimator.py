@@ -32,11 +32,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
 DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
 
-TRAINING_UTILS_PKG = (
-    "https://pai-sdk.oss-cn-shanghai.aliyuncs.com/training_utils/dist"
-    "/training_utils-1.0.6-py3-none-any.whl"
-)
-
 _TRAINING_JOB_URL_PATTERN = (
     "https://pai.console.aliyun.com/?regionId={region_id}"
     "&workspaceId={workspace_id}#/training/jobs/{job_id}/configs"

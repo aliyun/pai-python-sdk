@@ -709,7 +709,8 @@ class ModelBase(object):
             resource_id=resource_id,
             options=options,
         )
-        self._service_name = self.session.service_api.create(config=config)
+        service_name = self.session.service_api.create(config=config)
+        self._wait_service_visible(service_name)
         if service_type == ServiceType.Async:
             predictor = AsyncPredictor(
                 service_name=service_name,
@@ -732,6 +733,21 @@ class ModelBase(object):
             time.sleep(5)
 
         return predictor
+
+    def _wait_service_visible(self, service_name, attempts=3, interval=2):
+        """Wait for the service to be visible in DescribeService API.
+
+        hack:
+        https://aone.alibaba-inc.com/v2/project/1134421/bug#viewIdentifier=5dfb195e2e2b84f6b2f24718&openWorkitemIdentifier=50192431
+
+        """
+        while attempts > 0:
+            obj = self.session.service_api.get(service_name)
+            if "ServiceUid" in obj:
+                return
+            attempts -= 1
+            time.sleep(interval)
+        logger.warning("DescribeService API failed to get the Service object.")
 
     def _build_service_config(
         self,
@@ -1068,7 +1084,7 @@ class Model(ModelBase):
                 * If the service deployed in a dedicated resource group, provide
                     the parameter as the ID of the resource group. Example:
                     "eas-r-6dbzve8ip0xnzte5rp".
-
+            service_type (str, optional): The type of the service.
             options (Dict[str, Any], optional): Advanced deploy parameters used
                 to create the online prediction service.
             wait (bool): Whether the call should wait until the online prediction
