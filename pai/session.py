@@ -4,6 +4,7 @@ import functools
 import json
 import logging
 import os.path
+import posixpath
 import typing
 from datetime import datetime
 from typing import Callable, Optional
@@ -376,7 +377,7 @@ class Session(ResourceAPIsContainerMixin):
 
         """
         dir_name = dir_name or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        storage_path = os.path.join("pai", category, dir_name).strip()
+        storage_path = posixpath.join("pai", category, dir_name).strip()
 
         if not storage_path.endswith("/"):
             storage_path += "/"

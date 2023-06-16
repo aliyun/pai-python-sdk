@@ -340,13 +340,13 @@ class Estimator(object):
         def as_oss_dir_uri(uri: str):
             return uri if uri.endswith("/") else uri + "/"
 
-        model_path = os.path.join(
+        model_path = posixpath.join(
             job_base_output_path,
             DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
         )
         # Use checkpoints_path from user or construct a checkpoint path using
         # default output path.
-        checkpoints_path = self.checkpoints_path or os.path.join(
+        checkpoints_path = self.checkpoints_path or posixpath.join(
             job_base_output_path,
             DEFAULT_CHECKPOINT_CHANNEL_NAME,
         )
