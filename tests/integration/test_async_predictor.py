@@ -1,6 +1,7 @@
 import asyncio
 import io
 import os
+import time
 
 import numpy as np
 import pandas as pd
@@ -130,6 +131,8 @@ class TestAsyncPredictorContainerServing(BaseIntegTestCase):
             ],
         ).result()
 
+        # wait for callbacks to finish
+        time.sleep(1)
         self.assertEqual(len(multi_callback_results), 2)
 
         # test error response
