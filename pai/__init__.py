@@ -1,14 +1,12 @@
 from __future__ import absolute_import
 
-import os
+# noinspection PyCompatibility
+from importlib.metadata import PackageNotFoundError, version
 
+PACKAGE_NAME = "alipai"
 
-def read_version():
-    version_file = os.path.join(os.path.dirname(__file__), "VERSION")
-
-    if os.path.exists(version_file):
-        with open(version_file, "r") as f:
-            return f.read().strip()
-
-
-__version__ = read_version()
+try:
+    __version__ = version(PACKAGE_NAME)
+except PackageNotFoundError:
+    # package is not installed
+    __version__ = None

@@ -50,12 +50,11 @@ function build_and_publish() {
   index_repo=$1
   pkg_version=$2
   # install build/publish tools
-  python3 -m pip install --upgrade setuptools
-  python3 -m pip install wheel
+  python3 -m pip install --upgrade setuptools build
   python3 -m pip install twine
 
-  python3 setup.py clean --all && python3 setup.py bdist_wheel --universal
-  wheel_pkg="dist/$PKG_DISTRIBUTE_NAME-$pkg_version-py2.py3-none-any.whl"
+  rm -rf dist/ && python3 -m build
+  wheel_pkg="dist/$PKG_DISTRIBUTE_NAME-$pkg_version-py3-none-any.whl"
 
   [ -f "$wheel_pkg" ] || ( echo "build failure, wheel package($wheel_pkg) not found." && exit 1)
   python3 -m twine check "$wheel_pkg" || (echo "twine check failed" && exit 1)
@@ -72,7 +71,8 @@ function build_and_publish() {
     echo "publish package($wheel_pkg) to OSS Bucket"
     ossutilmac64 cp $wheel_pkg oss://pai-sdk/$PKG_DISTRIBUTE_NAME/dist/
     echo "Succeed upload package to OSS, please visit:"
-    echo "https://pai-sdk.oss-cn-shanghai.aliyuncs.com/$PKG_DISTRIBUTE_NAME/$wheel_pkg"
+    # Encode the url to avoid the '+' in the url be decoded to ' ' by the browser.
+    echo $(echo "https://pai-sdk.oss-cn-shanghai.aliyuncs.com/$PKG_DISTRIBUTE_NAME/$wheel_pkg" | sed 's/+/%2B/g')
   else
     echo "unknown PyPI repository."
   fi
@@ -87,9 +87,9 @@ function main() {
 
   if [ $repo != "oss" ]; then
     checkout_release_version
-  else
-    release_version=$(cat $PKG_IMPORT_NAME/VERSION)
   fi
+  release_version=$(python setup.py --version)
+  echo "ReleaseVersion" $release_version
 
   build_and_publish $repo $release_version
 

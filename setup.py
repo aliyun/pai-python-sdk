@@ -6,13 +6,7 @@ from setuptools import find_packages, setup
 
 pkg_root = os.path.dirname(os.path.abspath(__file__))
 
-PKG_VERSION_FILE = "pai/VERSION"
 REQUIREMENTS_FILE = "requirements/requirements.txt"
-
-
-def read_version():
-    with open(os.path.join(pkg_root, PKG_VERSION_FILE), "r") as f:
-        return f.readline().strip()
 
 
 def read_requirements():
@@ -28,7 +22,8 @@ if os.path.exists("README.md"):
 setup(
     name="alipai",
     python_requires=">=3.6",
-    version=read_version(),
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
     description="Alibaba Cloud PAI Python SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",

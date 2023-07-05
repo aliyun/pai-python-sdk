@@ -1,5 +1,6 @@
 aliyun-python-sdk-core>=2.13.25
 alibabacloud_sts20150401
+importlib-metadata; python_version < "3.8"
 graphviz
 numpy>=1.16.0
 oss2>=2.8.0
