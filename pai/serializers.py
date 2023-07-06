@@ -8,7 +8,6 @@ from urllib.error import HTTPError
 import backoff
 import numpy
 import numpy as np
-import pandas as pd
 import six
 from eas_prediction import pytorch_predict_pb2 as pt_pb
 from eas_prediction import tf_request_pb2 as tf_pb
@@ -23,6 +22,24 @@ def _is_pil_image(data) -> bool:
         from PIL import Image
 
         return isinstance(data, Image.Image)
+    except ImportError:
+        return False
+
+
+def _is_numpy_ndarray(data) -> bool:
+    try:
+        import numpy
+
+        return isinstance(data, numpy.ndarray)
+    except ImportError:
+        return False
+
+
+def _is_pandas_dataframe(data) -> bool:
+    try:
+        import pandas
+
+        return isinstance(data, pandas.DataFrame)
     except ImportError:
         return False
 
@@ -92,9 +109,10 @@ class JsonSerializer(SerializerBase):
     def serialize(self, data) -> bytes:
         if isinstance(data, six.string_types):
             return data
-        if isinstance(data, pd.DataFrame):
+
+        if _is_pandas_dataframe(data):
             data = data.to_numpy().tolist()
-        elif isinstance(data, np.ndarray):
+        elif _is_numpy_ndarray(data):
             data = data.tolist()
         return json.dumps(data).encode()
 

@@ -348,7 +348,13 @@ class Pipeline(UnRegisteredComponent):
         return name
 
     def dot(self):
-        from graphviz import Digraph
+        try:
+            from graphviz import Digraph
+        except ImportError:
+            raise ImportError(
+                "Unable to display pipeline, install graphviz first: "
+                "pip install graphviz"
+            )
 
         graph = Digraph()
         for step in self.steps:

@@ -5,13 +5,21 @@ import os
 import shutil
 import uuid
 from collections import namedtuple
-from typing import Union
 
 import numpy as np
-import pandas as pd
 
 from pai.common.utils import random_str
 from pai.serializers import SerializerBase
+
+
+def _is_pandas_dataframe(data) -> bool:
+    try:
+        import pandas
+
+        return isinstance(data, pandas.DataFrame)
+    except ImportError:
+        return False
+
 
 _test_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -179,12 +187,12 @@ def gen_run_node_scoped_placeholder(suffix=None):
 
 
 class NumpyBytesSerializer(SerializerBase):
-    def serialize(self, data: Union[np.ndarray, pd.DataFrame, bytes]) -> bytes:
+    def serialize(self, data) -> bytes:
         if isinstance(data, bytes):
             return data
         elif isinstance(data, str):
             return data.encode()
-        elif isinstance(data, pd.DataFrame):
+        elif _is_pandas_dataframe(data):
             data = data.to_numpy()
 
         res = io.BytesIO()

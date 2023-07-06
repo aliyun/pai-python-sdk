@@ -462,7 +462,6 @@ class TestPipelineBuild(BaseIntegTestCase):
             return p
 
         p = create_pipeline()
-        p.dot()
 
         pmml_oss_endpoint = self.to_internal_endpoint(self.oss_config.endpoint)
         pmml_oss_path = "/test/pai/model_transfer2oss_test/"
