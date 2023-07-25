@@ -83,6 +83,7 @@ class TrainingJobSchema(BaseAPIResourceSchema):
     status = fields.Str()
     status_transitions = fields.List(fields.Dict)
     training_job_id = fields.Str()
+    training_job_url = fields.Str()
 
     @post_load
     def _make(self, data, **kwargs):

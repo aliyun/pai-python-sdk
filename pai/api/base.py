@@ -2,10 +2,12 @@ import logging
 from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Union
 
+import backoff
 import six
 from alibabacloud_tea_openapi.client import Client
 from alibabacloud_tea_util.models import RuntimeOptions
 from six import with_metaclass
+from Tea.exceptions import TeaException
 from Tea.model import TeaModel
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,10 @@ class PAIRestResourceTypes(object):
     TrainingJob = "TrainingJob"
     Pipeline = "Pipeline"
     PipelineRun = "PipelineRun"
+    TensorBoard = "TensorBoard"
+
+
+RETRYABLE_REQUEST_METHOD_PREFIX = ["list_", "get_", "describe_"]
 
 
 class ResourceAPI(with_metaclass(ABCMeta, object)):
@@ -63,14 +69,27 @@ class ResourceAPI(with_metaclass(ABCMeta, object)):
         """Returns headers and runtime for client."""
         return self.header or dict(), self.runtime or RuntimeOptions()
 
-    def _do_request(self, method_, *args, **kwargs):
+    def _do_request(self, method_: str, *args, **kwargs):
         headers, runtime = self._make_extra_request_options()
         if "headers" not in kwargs:
             kwargs["headers"] = headers
         if "runtime" not in kwargs:
             kwargs["runtime"] = runtime
-        resp = getattr(self.acs_client, method_)(*args, **kwargs)
-        return resp.body
+        request_method = getattr(self.acs_client, method_)
+
+        if self.is_retryable_method(method_):
+            request_method = backoff.on_exception(
+                backoff.expo, exception=TeaException, max_tries=3
+            )(request_method)
+
+        return request_method(*args, **kwargs).body
+
+    @classmethod
+    def is_retryable_method(cls, method_: str):
+        for prefix in RETRYABLE_REQUEST_METHOD_PREFIX:
+            if method_.startswith(prefix):
+                return True
+        return False
 
     def get_api_object_by_resource_id(self, resource_id):
         raise NotImplementedError
@@ -130,11 +149,6 @@ class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
         self.workspace_id = workspace_id
 
     def _do_request(self, method_, **kwargs):
-        headers, runtime = self._make_extra_request_options()
-        if "headers" not in kwargs:
-            kwargs["headers"] = headers
-        if "runtime" not in kwargs:
-            kwargs["runtime"] = runtime
         request = kwargs.get("request")
 
         # Automatically configure the workspace ID for the request
@@ -148,9 +162,7 @@ class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
                 # request.workspace_id is 0 or request.workspace_id is empty string,
                 # we do not inject workspace_id of the scope.
                 request.workspace_id = None
-
-        resp = getattr(self.acs_client, method_)(**kwargs)
-        return resp.body
+        return super(WorkspaceScopedResourceAPI, self)._do_request(method_, **kwargs)
 
 
 class PaginatedResult(object):

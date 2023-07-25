@@ -64,6 +64,27 @@ class TestEstimator(BaseIntegTestCase):
 
         return oss_bucket.object_exists(uri_obj.object_key)
 
+    def test_torch_run(self):
+        torch_image_uri = retrieve("pytorch", framework_version="1.12").image_uri
+        est = Estimator(
+            image_uri=torch_image_uri,
+            command="python -c 'import torch; print(torch.__version__);'",
+            instance_type="ecs.c6.large",
+            base_job_name="torch_run_",
+        )
+
+        est.fit(
+            inputs={
+                "training": self.breast_cancer_train_data_uri,
+                "test": self.breast_cancer_test_data_uri,
+            },
+            wait=False,
+        )
+
+        tb = est.tensorboard()
+        self.assertIsNotNone(tb.app_uri)
+        tb.delete()
+
 
 @skipUnless(t_context.has_docker, "Estimator local train requires docker.")
 class TestEstimatorLocalRun(BaseIntegTestCase):

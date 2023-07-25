@@ -5,8 +5,6 @@ import time
 from random import randint
 from typing import Any, Dict, List, Optional, Union
 
-import docker
-
 logger = logging.getLogger(__name__)
 
 
@@ -36,9 +34,7 @@ class ContainerRun(object):
     CONTAINER_STATUS_EXITED = "exited"
     CONTAINER_STATUS_PAUSED = "paused"
 
-    def __init__(
-        self, container: docker.models.containers.Container, port: Optional[int] = None
-    ):
+    def __init__(self, container, port: Optional[int] = None):
         """Initialize a container run.
 
         Args:
@@ -98,14 +94,18 @@ class ContainerRun(object):
             self.container.stop()
         self.container.remove()
 
-    def watch(self):
+    def watch(self, show_logs: bool = True):
         """Watch container log and wait for container to exit."""
-        log_iter = self.container.logs(
-            stream=True,
-            follow=True,
-        )
-        for log in log_iter:
-            print(log.decode())
+        if not show_logs:
+            self.container.wait()
+        else:
+            log_iter = self.container.logs(
+                stream=True,
+                follow=True,
+            )
+            for log in log_iter:
+                print(log.decode())
+
         self.container.reload()
         exit_code = self.container.attrs["State"]["ExitCode"]
         if exit_code != 0:
@@ -155,6 +155,11 @@ def run_container(
         ContainerRun: A ContainerRun object.
 
     """
+    try:
+        import docker
+    except ImportError:
+        raise ImportError("Please install docker first: pip install docker")
+
     client = docker.from_env()
     # use a random host port.
     host_port = randint(49152, 65535)

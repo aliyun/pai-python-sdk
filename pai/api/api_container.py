@@ -11,6 +11,7 @@ from pai.api.model import ModelAPI
 from pai.api.pipeline import PipelineAPI
 from pai.api.pipeline_run import PipelineRunAPI
 from pai.api.service import ServiceAPI
+from pai.api.tensorboard import TensorBoardAPI
 from pai.api.training_job import TrainingJobAPI
 from pai.api.workspace import WorkspaceAPI
 
@@ -178,6 +179,13 @@ class ResourceAPIsContainerMixin(object):
             runtime=self.runtime,
         )
 
+        self.api_container[PAIRestResourceTypes.TensorBoard] = TensorBoardAPI(
+            workspace_id=self._workspace_id,
+            acs_client=self._acs_dlc_client,
+            header=self.header,
+            runtime=self.runtime,
+        )
+
     def get_api_by_resource(self, resource_type):
         return self.api_container[resource_type]
 
@@ -185,6 +193,10 @@ class ResourceAPIsContainerMixin(object):
     def job_api(self) -> JobAPI:
         """Returns JobAPI for job operation."""
         return self.api_container[PAIRestResourceTypes.DlcJob]
+
+    @property
+    def tensorboard_api(self) -> TensorBoardAPI:
+        return self.api_container[PAIRestResourceTypes.TensorBoard]
 
     @property
     def code_source_api(self) -> CodeSourceAPI:

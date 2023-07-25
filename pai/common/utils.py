@@ -6,23 +6,10 @@ import string
 import sys
 from typing import Callable, Dict, Optional, Union
 
-import six
-
-from .. import __version__
-from .consts import INSTANCE_TYPE_LOCAL, INSTANCE_TYPE_LOCAL_GPU
+from pai import __version__
+from pai.common.consts import INSTANCE_TYPE_LOCAL, INSTANCE_TYPE_LOCAL_GPU
 
 DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS = string.ascii_letters + string.digits + "_"
-
-
-def iter_with_limit(iterator, limit):
-    if not isinstance(limit, six.integer_types) or limit <= 0:
-        raise ValueError("'limit' should be positive integer")
-    idx = 0
-    for item in iterator:
-        yield item
-        idx += 1
-        if idx >= limit:
-            return
 
 
 def is_iterable(arg):

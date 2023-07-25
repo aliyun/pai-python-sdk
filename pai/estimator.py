@@ -13,29 +13,24 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-import six
-
-from .api.entity_base import EntityBaseMixin
-from .common import ProviderAlibabaPAI, git_utils
-from .common.consts import INSTANCE_TYPE_LOCAL_GPU, JobType
-from .common.docker_utils import run_container
-from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import is_local_run_instance_type, random_str, to_plain_text
-from .model import InferenceSpec, Model, ResourceConfig
-from .predictor import Predictor
-from .schema.training_job_schema import TrainingJobSchema
-from .serializers import SerializerBase
-from .session import Session, config_default_session, get_default_session
+from pai.api.entity_base import EntityBaseMixin
+from pai.common import ProviderAlibabaPAI, git_utils
+from pai.common.consts import INSTANCE_TYPE_LOCAL_GPU, JobType
+from pai.common.docker_utils import ContainerRun, run_container
+from pai.common.oss_utils import OssUriObj, download, is_oss_uri, upload
+from pai.common.utils import is_local_run_instance_type, random_str, to_plain_text
+from pai.exception import UnexpectedStatusException
+from pai.model import InferenceSpec, Model, ResourceConfig
+from pai.predictor import Predictor
+from pai.schema.training_job_schema import TrainingJobSchema
+from pai.serializers import SerializerBase
+from pai.session import Session, config_default_session, get_default_session
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
 DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
-
-_TRAINING_JOB_URL_PATTERN = (
-    "https://pai.console.aliyun.com/?regionId={region_id}"
-    "&workspaceId={workspace_id}#/training/jobs/{job_id}/configs"
-)
+DEFAULT_LOGS_CHANNEL_NAME = "logs"
 
 
 class Estimator(object):
@@ -301,29 +296,39 @@ class Estimator(object):
             if self.metric_definitions
             else [],
             "CodeDir": code_input,
+            "OutputChannels": [
+                {
+                    "Name": "logs",
+                    "Properties": {
+                        "ossAppendable": "true",
+                    },
+                }
+            ],
         }
         return algo_spec
 
-    @classmethod
     def _build_input_data_configs(
-        cls, inputs: Dict[str, Any] = None
+        self, inputs: Dict[str, Any] = None
     ) -> List[Dict[str, str]]:
         inputs = inputs or dict()
         res = []
         for name, item in inputs.items():
-            if isinstance(item, six.string_types):
-                # TODO: check input URI schema && support dataset_id as training input.
-                res.append(
-                    {
-                        "Name": name,
-                        "InputUri": item,
-                    }
-                )
-            else:
+            if not isinstance(item, str):
                 raise ValueError(
-                    "The Estimator supports OSS URI or NAS URI as input data, "
+                    f"The Estimator supports OSS URI or NAS URI as input data, "
                     f"Input data of type {type(item)} is not supported."
                 )
+            if is_oss_uri(item):
+                input_uri = item
+            elif os.path.exists(item):
+                store_path = self.session.get_storage_path_by_category("train_data")
+                input_uri = upload(item, store_path)
+            else:
+                raise ValueError(
+                    f"Input data path should be a valid OSS URI or local path: "
+                    f"input={item}"
+                )
+            res.append({"Name": name, "InputUri": input_uri})
 
         return res
 
@@ -345,6 +350,12 @@ class Estimator(object):
             job_base_output_path,
             DEFAULT_CHECKPOINT_CHANNEL_NAME,
         )
+
+        # Output logs path
+        logs_path = posixpath.join(
+            job_base_output_path,
+            DEFAULT_LOGS_CHANNEL_NAME,
+        )
         res = [
             {
                 "Name": DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
@@ -353,6 +364,10 @@ class Estimator(object):
             {
                 "Name": DEFAULT_CHECKPOINT_CHANNEL_NAME,
                 "OutputUri": as_oss_dir_uri(checkpoints_path),
+            },
+            {
+                "Name": DEFAULT_LOGS_CHANNEL_NAME,
+                "OutputUri": as_oss_dir_uri(logs_path),
             },
         ]
         return res
@@ -402,7 +417,14 @@ class Estimator(object):
         """
         return self.image_uri
 
-    def fit(self, inputs: Dict[str, Any] = None, wait=True):
+    @property
+    def latest_training_job(self):
+        """Return the latest submitted training job."""
+        return self._latest_training_job
+
+    def fit(
+        self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
+    ):
         """Submit a training job with the given input data.
 
         Args:
@@ -413,6 +435,11 @@ class Estimator(object):
                 `/ml/input/data/{channel_name}` directory in the training container.
             wait (bool): Specifies whether to block until the training job is completed,
                 either succeeded, failed, or stopped. (Default True).
+            show_logs (bool): Specifies whether to show the logs produced by the
+                training job (Default True).
+        Raises:
+            UnExpectedStatusException: If the training job fails.
+
         """
         inputs = inputs or dict()
         self._prepare_for_training()
@@ -426,7 +453,59 @@ class Estimator(object):
         self._latest_training_job = training_job
 
         if wait:
-            self._latest_training_job.wait_for_completion()
+            self.wait(show_logs=show_logs)
+
+    def wait(self, show_logs: bool = True):
+        """Block until the latest training job is completed.
+
+        Args:
+            show_logs(bool): Specifies whether to fetch and print the logs produced by
+                the training job.
+
+        """
+        if not self._latest_training_job:
+            raise RuntimeError("Could not find a submitted training job.")
+        self._latest_training_job.wait(show_logs=show_logs)
+
+    def tensorboard(self, wait=True):
+        """Launch a TensorBoard Application to view the output TensorBoard logs.
+
+        Args:
+            wait (bool): Specifies whether to block until the TensorBoard is running.
+
+        Returns:
+            :class:`pai.tensorboard.TensorBoard`: A TensorBoard instance.
+        """
+        from pai.tensorboard import TensorBoard
+
+        if not self.latest_training_job:
+            raise RuntimeError("Could not find a submitted training job.")
+
+        if isinstance(self.latest_training_job, _LocalTrainingJob):
+            raise RuntimeError("Local training job does not support tensorboard.")
+        res = self.session.tensorboard_api.list(
+            source_type="TrainingJob",
+            source_id=self.latest_training_job.training_job_id,
+        )
+
+        if res.items:
+            if len(res.items) > 1:
+                logger.warning(
+                    "Found multiple TensorBoard instances, use the first one."
+                )
+            tb_id = res.items[0]["TensorboardId"]
+            tb = TensorBoard(tensorboard_id=tb_id, session=self.session)
+            tb.start(wait=wait)
+        else:
+            tb = TensorBoard.create(
+                uri=self.logs_data(),
+                wait=wait,
+                display_name=self._latest_training_job.training_job_name,
+                source_id=self.latest_training_job.training_job_id,
+                source_type="TrainingJob",
+                session=self.session,
+            )
+        return tb
 
     def _fit(self, job_name, inputs: Dict[str, Any] = None):
         input_configs = self._build_input_data_configs(inputs)
@@ -440,7 +519,9 @@ class Estimator(object):
 
         # prepare input code.
         code_input = self._build_code_input(job_name)
-        algo_spec = self._build_algorithm_spec(code_input=code_input)
+        algo_spec = self._build_algorithm_spec(
+            code_input=code_input,
+        )
 
         training_job_id = self.session.training_job_api.create(
             instance_count=self.instance_count,
@@ -517,6 +598,21 @@ class Estimator(object):
             )
         return self._latest_training_job.output_path(
             channel_name=DEFAULT_CHECKPOINT_CHANNEL_NAME
+        )
+
+    def logs_data(self) -> str:
+        """Output logs path.
+
+        Returns:
+            str: A string in OSS URI format refers to the checkpoints of submitted
+                training job.
+        """
+        if not self._latest_training_job:
+            raise RuntimeError(
+                "No TrainingJob for the estimator, output logs data not found."
+            )
+        return self._latest_training_job.output_path(
+            channel_name=DEFAULT_LOGS_CHANNEL_NAME,
         )
 
     def create_model(self, inference_spec: Union[InferenceSpec, Dict]) -> Model:
@@ -654,7 +750,22 @@ class _LocalTrainingJob(object):
         self.job_name = job_name
         self.instance_type = instance_type
         logger.info("Local TrainingJob temporary directory: {}".format(self.tmp_dir))
-        self._container_run = None
+        self._container_run: ContainerRun = None
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        if self._container_run:
+            container = self._container_run.container
+            container_name, container_id, status = (
+                container.name,
+                container.id,
+                container.status,
+            )
+        else:
+            container_name, container_id, status = None, None, None
+        return f"LocalTrainingJob(container_name={container_name}, container_id={container_id}, status={status})"
 
     @property
     def session(self) -> Session:
@@ -821,8 +932,8 @@ class _LocalTrainingJob(object):
 
         return input_data_configs
 
-    def wait_for_completion(self):
-        self._container_run.watch()
+    def wait(self, show_logs: bool = True):
+        self._container_run.watch(show_logs=show_logs)
 
     def output_path(self, channel_name="model"):
         return os.path.join(self.tmp_dir, "output", f"{channel_name}/")
@@ -833,6 +944,7 @@ class _LocalTrainingJob(object):
 
 
 class TrainingJobStatus(object):
+    CreateFailed = "CreateFailed"
     InitializeFailed = "InitializeFailed"
     Succeed = "Succeed"
     Failed = "Failed"
@@ -857,7 +969,7 @@ class TrainingJobStatus(object):
         return [
             cls.InitializeFailed,
             cls.Failed,
-            cls.Terminated,
+            cls.CreateFailed,
         ]
 
 
@@ -911,6 +1023,13 @@ class _TrainingJob(EntityBaseMixin):
         self.status = kwargs.pop("status", None)
         self.status_transitions = kwargs.pop("status_transitions", None)
         self.training_job_id = kwargs.pop("training_job_id", None)
+        self.training_job_url = kwargs.pop("training_job_url", None)
+
+    def __repr__(self):
+        return "TrainingJob(id={})".format(self.training_job_id)
+
+    def __str__(self):
+        return self.__repr__()
 
     @property
     def id(self):
@@ -949,46 +1068,54 @@ class _TrainingJob(EntityBaseMixin):
         if not self.training_job_id:
             raise ValueError("The TrainingJob is not submitted")
 
-        return _TRAINING_JOB_URL_PATTERN.format(
-            region_id=self.session.region_id,
-            workspace_id=self.session.workspace_id,
-            job_id=self.training_job_id,
-        )
+        return self.training_job_url
 
-    def wait_for_completion(self, interval=2):
+    def wait(self, interval=2, show_logs: bool = True):
         self.session.training_job_api.refresh_entity(self.training_job_id, self)
-        job_logger = _TrainingJobLogger(training_job=self, page_size=20)
-        future = job_logger.start()
+
+        if show_logs:
+            job_log_printer = _TrainingJobLogPrinter(
+                training_job_id=self.training_job_id, page_size=20, session=self.session
+            )
+            job_log_printer.start()
+        else:
+            job_log_printer = None
         try:
             while self.status not in TrainingJobStatus.completed_status():
                 time.sleep(interval)
                 self.session.training_job_api.refresh_entity(self.training_job_id, self)
         finally:
-            job_logger.stop()
-            future.result()
+            if job_log_printer:
+                job_log_printer.stop(wait=True)
 
         self._on_job_completed()
 
     def _on_job_completed(self):
-        # print an empty line to separate the training job logs and the following logs
+        # Print an empty line to separate the training job logs and the following logs
         print()
         if self.status == TrainingJobStatus.Succeed:
             print(
                 f"Training job ({self.training_job_id}) succeeded, you can check the"
                 f" logs/metrics/output in  the console:\n{self.console_uri}"
             )
-            return
+        elif self.status == TrainingJobStatus.Terminated:
+            print(
+                f"Training job is ended with status {self.status}: "
+                f"reason_code={self.reason_code}, reason_message={self.reason_message}."
+                f"Check the training job in the console:\n{self.console_uri}"
+            )
         elif self.status in TrainingJobStatus.failed_status():
             print(
                 f"Training job ({self.training_job_id}) failed, please check the logs"
                 f" in the console: \n{self.console_uri}"
             )
-            raise RuntimeError(
-                f"TrainingJob failed: name={self.training_job_name}, "
-                f"training_job_id={self.training_job_id}, "
-                f"reason_code={self.reason_code}, status={self.status}, "
-                f"reason_message={self.reason_message}",
-            )
+
+            message = f"TrainingJob failed: name={self.training_job_name}, "
+            f"training_job_id={self.training_job_id}, "
+            f"reason_code={self.reason_code}, status={self.status}, "
+            f"reason_message={self.reason_message}"
+
+            raise UnexpectedStatusException(message=message, status=self.status)
 
     def _reload(self):
         """Reload the training job from the PAI Service,"""
@@ -1000,45 +1127,73 @@ class _TrainingJob(EntityBaseMixin):
         return self.status == TrainingJobStatus.Succeed
 
 
-class _TrainingJobLogger(object):
-    """TrainingJobLogger instance used to print logs for a training job"""
+class _TrainingJobLogPrinter(object):
+    """A class used to print logs for a training job"""
 
     executor = ThreadPoolExecutor(5)
 
-    def __init__(self, training_job: _TrainingJob, page_size=10):
-        self.training_job = training_job
-        self.page_offset = 0
+    def __init__(
+        self, training_job_id: str, page_size=10, session: Optional[Session] = None
+    ):
+        self.training_job_id = training_job_id
+        self.session = session
         self.page_size = page_size
-        self._following = True
+        self._future = None
+        self._stop = False
 
     def _list_logs(self):
         page_number, page_offset = 1, 0
-        while self._following:
-            res = self.training_job.session.training_job_api.list_logs(
-                self.training_job.training_job_id,
+        # print training job logs.
+        while not self._stop:
+            res = self.session.training_job_api.list_logs(
+                self.training_job_id,
                 page_number=page_number,
                 page_size=self.page_size,
             )
             # 1. move to next page
             if len(res.items) == self.page_size:
-                # print new logs
+                # print new logs starting from page_offset
                 self._print_logs(logs=res.items[page_offset:])
                 page_number += 1
                 page_offset = 0
             # 2. stay at the current page.
             else:
                 if len(res.items) > page_offset:
+                    # print new logs starting from page_offset
                     self._print_logs(logs=res.items[page_offset:])
                     page_offset = len(res.items)
                 time.sleep(1)
+
+        # When _stop is True, wait and print remaining logs.
+        time.sleep(10)
+        while True:
+            res = self.session.training_job_api.list_logs(
+                self.training_job_id,
+                page_number=page_number,
+                page_size=self.page_size,
+            )
+            # There maybe more logs in the next page
+            if len(res.items) == self.page_size:
+                self._print_logs(logs=res.items[page_offset:])
+                page_number += 1
+                page_offset = 0
+            # No more logs in the next page.
+            else:
+                if len(res.items) > page_offset:
+                    self._print_logs(logs=res.items[page_offset:])
+                break
 
     def _print_logs(self, logs: List[str]):
         for log in logs:
             print(log)
 
     def start(self):
-        self._following = True
-        return self.executor.submit(self._list_logs)
+        if self._future:
+            raise ValueError("The training job log printer is already started")
+        self._stop = False
+        self._future = self.executor.submit(self._list_logs)
 
-    def stop(self):
-        self._following = False
+    def stop(self, wait: bool = True):
+        self._stop = True
+        if self._future:
+            self._future.result()
