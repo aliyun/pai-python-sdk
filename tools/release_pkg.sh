@@ -28,8 +28,8 @@ fi
 
 pkg_version=${version_tag#v*}
 
-# checkout current git HEAD to specific version tag.
-function checkout_release_version() {
+# switch current git HEAD to specific version tag.
+function switch_to_release_version() {
 
   if [ $repo != "oss" ]; then
     git fetch origin refs/tags/"$version_tag"
@@ -37,7 +37,7 @@ function checkout_release_version() {
   fi
 
   expected_version=$pkg_version
-  current_version=$(cat $PKG_IMPORT_NAME/VERSION)
+  current_version=$(python setup.py --version)
 
   # shellcheck disable=SC2053
   if [[ $expected_version != $current_version ]]; then
@@ -83,10 +83,8 @@ function main() {
   pkg_root_dir="$(dirname "$0")/.."
   cd "$pkg_root_dir" || (echo "cd the workdir $(pkg_root_dir) fail" && exit 1)
 
-  release_version=$pkg_version
-
   if [ $repo != "oss" ]; then
-    checkout_release_version
+    switch_to_release_version
   fi
   release_version=$(python setup.py --version)
   echo "ReleaseVersion" $release_version
