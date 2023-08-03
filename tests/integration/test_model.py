@@ -5,11 +5,18 @@ from unittest import skipUnless
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from pai.common.oss_utils import is_oss_uri, upload
 from pai.common.utils import camel_to_snake
 from pai.image import retrieve
-from pai.model import InferenceSpec, Model, ResourceConfig, container_serving_spec
+from pai.model import (
+    InferenceSpec,
+    Model,
+    RegisteredModel,
+    ResourceConfig,
+    container_serving_spec,
+)
 from pai.serializers import JsonSerializer
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import (
@@ -232,6 +239,81 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
         pred_y = p.predict(val_x)
         p.delete_service()
         self.assertEqual(len(pred_y), len(val_y))
+
+
+class TestRegisteredModel(BaseIntegTestCase):
+    """Test :class:`pai.model.RegisteredModel` class"""
+
+    predictors = []
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestRegisteredModel, cls).tearDownClass()
+        for p in cls.predictors:
+            p.delete_service()
+
+    @pytest.mark.timeout(60 * 10)
+    def test_tmp_algo_rm_train(self):
+        """Test training registered model with temporary algorithm"""
+        m = RegisteredModel(
+            model_name="easynlp_pai_bert_tiny_zh",
+            model_version="0.1.0",
+            model_provider="pai",
+        )
+
+        est = m.get_estimator()
+        inputs = m.get_estimator_inputs()
+        est.fit(inputs=inputs)
+
+        outputs_data = est.get_outputs_data()
+        self.assertTrue(isinstance(outputs_data, dict))
+        self.assertTrue(outputs_data)
+        self.assertTrue(len(outputs_data) == 1)
+
+        model_path = os.path.join(outputs_data["model"], "pytorch_model.bin")
+        self.assertTrue(self.is_oss_object_exists(model_path))
+
+    @pytest.mark.timeout(60 * 10)
+    def test_builtin_algo_rm_train(self):
+        """Test training registered model with builtin algorithm"""
+        m = RegisteredModel(
+            model_name="easycv_object_detection_yolox_nano",
+            model_version="0.1.0",
+            model_provider="pai",
+        )
+
+        est = m.get_estimator()
+        inputs = m.get_estimator_inputs()
+        est.hyperparameters["max_epochs"] = 5
+        est.hyperparameters["warmup_epochs"] = 2
+        est.fit(inputs=inputs)
+
+        outputs_data = est.get_outputs_data()
+        self.assertTrue(isinstance(outputs_data, dict))
+        self.assertTrue(outputs_data)
+        self.assertTrue(len(outputs_data) == 2)
+
+        model_path = os.path.join(outputs_data["model"], "epoch_5_export.pt")
+        checkpoint_path = os.path.join(outputs_data["checkpoints"], "epoch_5.pth")
+        self.assertTrue(self.is_oss_object_exists(model_path))
+        self.assertTrue(self.is_oss_object_exists(checkpoint_path))
+
+    def test_rm_deploy(self):
+        """Test deploying registered model"""
+        m = RegisteredModel(
+            model_name="easynlp_pai_bert_tiny_zh",
+            model_version="0.1.0",
+            model_provider="pai",
+        )
+
+        p = m.deploy()
+        self.predictors.append(p)
+        self.assertTrue(p.service_name)
+        res = p.predict(["开心", "死亡"])
+        self.assertTrue(isinstance(res, list))
+        self.assertTrue(len(res) == 2)
+        self.assertTrue(res[0]["label"] == "正向")
+        self.assertTrue(res[1]["label"] == "负向")
 
 
 class TestInferenceSpec(BaseIntegTestCase):

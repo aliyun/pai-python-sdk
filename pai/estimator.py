@@ -1,3 +1,4 @@
+import copy
 import distutils.dir_util
 import json
 import logging
@@ -18,7 +19,12 @@ from pai.common import ProviderAlibabaPAI, git_utils
 from pai.common.consts import INSTANCE_TYPE_LOCAL_GPU, JobType
 from pai.common.docker_utils import ContainerRun, run_container
 from pai.common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from pai.common.utils import is_local_run_instance_type, random_str, to_plain_text
+from pai.common.utils import (
+    is_local_run_instance_type,
+    make_list_resource_iterator,
+    random_str,
+    to_plain_text,
+)
 from pai.exception import UnexpectedStatusException
 from pai.model import InferenceSpec, Model, ResourceConfig
 from pai.predictor import Predictor
@@ -205,6 +211,8 @@ class Estimator(object):
                                      r"([-+]?[0-9]*.?[0-9]+(?:[eE][-+]?[0-9]+)?).*",
                         },
                     ]
+            session (Session, optional): A PAI session instance used for communicating
+                with PAI service.
 
         """
         self.image_uri = image_uri
@@ -253,8 +261,8 @@ class Estimator(object):
             self.instance_type
         ) and not self.session.is_supported_training_instance(self.instance_type):
             raise ValueError(
-                f"Instance type {self.instance_type} not supproted. "
-                "Please provide a supported instance type to create the job."
+                f"Instance type='{self.instance_type}' is not supported."
+                " Please provide a supported instance type to create the job."
             )
 
     def _upload_source_files(self, job_name: str) -> Optional[str]:
@@ -315,8 +323,8 @@ class Estimator(object):
         for name, item in inputs.items():
             if not isinstance(item, str):
                 raise ValueError(
-                    f"The Estimator supports OSS URI or NAS URI as input data, "
-                    f"Input data of type {type(item)} is not supported."
+                    f"The Estimator supports OSS URI or NAS URI as input data."
+                    f" Input data of type {type(item)} is not supported."
                 )
             if is_oss_uri(item):
                 input_uri = item
@@ -325,8 +333,8 @@ class Estimator(object):
                 input_uri = upload(item, store_path)
             else:
                 raise ValueError(
-                    f"Input data path should be a valid OSS URI or local path: "
-                    f"input={item}"
+                    f"Input data path should be a valid OSS URI or local path:"
+                    f" input={item}"
                 )
             res.append({"Name": name, "InputUri": input_uri})
 
@@ -535,9 +543,7 @@ class Estimator(object):
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
-            "View the job detail by accessing the console URI: {}".format(
-                training_job.console_uri
-            )
+            f"View the job detail by accessing the console URI: {training_job.console_uri}"
         )
         return training_job
 
@@ -686,6 +692,584 @@ class Estimator(object):
             wait=wait,
         )
         return p
+
+
+class AlgorithmEstimator(Estimator):
+    """Handle training jobs with algorithms
+
+    The AlgorithmEstimator provides a simple way for submitting training jobs with
+    algorithms.
+
+    Example::
+
+        # Create an AlgorithmEstimator with built-in algorithms
+        est = AlgorithmEstimator(
+            algorithm_name="pai-algorithm-test",
+            algorithm_version="0.1.0",
+            algorithm_provider="pai",
+        )
+
+        # Inspect the definition of hyperparameters, input channels and output channels
+        print(est.hyperparameters_definition)
+        print(est.input_channels_definition)
+        print(est.output_channels_definition)
+        print(est.supported_instance_types)
+
+        # Submit a training job
+        est.fit(
+            inputs={
+                "train": "oss://bucket/path/to/train/data",
+                "test": "oss://bucket/path/to/test/data",
+            },
+        )
+
+        # Inspect all outputs data
+        print(est.get_outputs_data())
+
+    """
+
+    def __init__(
+        self,
+        algorithm_name: Optional[str] = None,
+        algorithm_version: Optional[str] = None,
+        algorithm_provider: Optional[str] = None,
+        algorithm_spec: Optional[Dict[str, Any]] = None,
+        hyperparameters: Optional[Dict[str, Any]] = None,
+        base_job_name: Optional[str] = None,
+        max_run_time: Optional[int] = None,
+        output_path: Optional[str] = None,
+        instance_type: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        session: Optional[Session] = None,
+    ):
+        """Initialize an AlgorithmEstimator.
+
+        Args:
+            algorithm_name (str, optional): The name of the registered algorithm. If not
+                provided, the algorithm_spec must be provided.
+            algorithm_version (str, optional): The version of the algorithm. If not
+                provided, the latest version of the algorithm will be used. If algorithm
+                name is not provided, this argument will be ignored.
+            algorithm_provider (str, optional): The provider of the algorithm. Currently
+                only "pai" or None are supported. Set it to "pai" to retrieve a PAI
+                official algorithm. If not provided, the default provider is user's PAI
+                account. If algorithm name is not provided, this argument will be
+                ignored.
+            algorithm_spec (Dict[str, Any], optional): A temporary algorithm spec.
+                Required if algorithm_name is not provided.
+            hyperparameters (dict, optional): A dictionary that represents the
+                hyperparameters used in the training job. Default hyperparameters will
+                be retrieved from the algorithm definition. The hyperparameters will be
+                stored in the `/ml/input/config/hyperparameters.json` as a JSON
+                dictionary in the training container.
+            base_job_name (str, optional): The base name used to generate the training
+                job name. If not provided, a default job name will be generated.
+            max_run_time (int, optional): The maximum time in seconds that the training
+                job can run. The training job will be terminated after the time is
+                reached (Default None).
+            output_path (str, optional): An OSS URI to store the outputs of the training
+                jobs. If not provided, an OSS URI will be generated using the default
+                OSS bucket in the session. When the `estimator.fit` method is called,
+                a specific OSS URI under the output_path for each channel is generated
+                and mounted to the training container.
+
+                A completed training container directory structure example::
+
+                    /ml
+                    |-- usercode            			// User source code directory.
+                    |   |-- requirements.txt
+                    |   `-- train.py
+                    |-- input               			// TrainingJob input
+                    |   `-- config
+                    |       |-- hyperparameters.json	// Hyperparameters in JSON
+                    |       |                           // dictionary format for the
+                    |       |                           // TrainingJob
+                    |       |
+                    |   `-- data            			// TrainingJob input channels
+                    |       |                           // `/ml/input/data/` is a input
+                    |       |                           // channel, and the directory
+                    |       |                           // name is the channel name.
+                    |       |                           // Each directory under the
+                    |       |-- test-data
+                    |       |   `-- test.csv
+                    |       `-- train-data
+                    |           `-- train.csv
+                    `-- output              			// TrainingJob output channels.
+                            |                           // Each directory under the
+                            |                           // `/ml/output/` is an output
+                            |                           // channel, and the directory
+                            |                           // name is the channel name.
+                            `-- model
+                            `-- checkpoints
+
+            instance_type (str, optional): The machine instance type used to run the
+                training job. If not provider, the default instance type will be
+                retrieved from the algorithm definition. To view the supported machine
+                instance types, please refer to the document:
+                https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
+            instance_count (int, optional): The number of machines used to run the
+                training job. If not provider, the default instance count will be
+                retrieved from the algorithm definition.
+            session (:class:`pai.session.Session`, optional): A PAI session object
+                used for interacting with PAI Service.
+        """
+        self._check_args(
+            algorithm_name=algorithm_name,
+            algorithm_spec=algorithm_spec,
+        )
+
+        self.session = session or get_default_session()
+
+        # Use _algo_spec to store the algorithm spec for inner use no matter the
+        # algorithm_name is provided or the algorithm_spec is provided.
+        # If algorithm_name is provided, retrieve the algorithm spec from the registry.
+        if algorithm_name:
+            _algo_version = self._get_algo_version(
+                algorithm_name=algorithm_name,
+                algorithm_version=algorithm_version,
+                algorithm_provider=algorithm_provider,
+            )
+            self._algo_spec = _algo_version["AlgorithmSpec"]
+            self.algorithm_name = _algo_version["AlgorithmName"]
+            self.algorithm_version = _algo_version["AlgorithmVersion"]
+            self.algorithm_provider = _algo_version["AlgorithmProvider"]
+            self.algorithm_spec = None
+        # If algorithm_name is not provided, use the provided algorithm_spec.
+        else:
+            self._algo_spec = algorithm_spec
+            self.algorithm_name = None
+            self.algorithm_version = None
+            self.algorithm_provider = None
+            self.algorithm_spec = algorithm_spec
+
+        self.hyperparameters = self._get_hyperparameters(hyperparameters)
+        self.base_job_name = base_job_name
+        self.max_run_time = max_run_time
+        self.output_path = output_path
+        self.instance_type = (
+            instance_type
+            if instance_type
+            else self._get_default_training_instance_type()
+        )
+        self.instance_count = instance_count if instance_count else 1
+
+        self._latest_training_job = None
+        self._output_channels = None
+
+        self._check_instance_type()
+
+    @property
+    def hyperparameters_definition(self) -> List[Dict[str, Any]]:
+        """Get the hyperparameters definition from the algorithm spec."""
+        res = (
+            self._algo_spec["HyperParameters"]
+            if "HyperParameters" in self._algo_spec
+            else []
+        )
+        return res
+
+    @property
+    def input_channels_definition(self) -> List[Dict[str, Any]]:
+        """Get the input channels definition from the algorithm spec."""
+        res = (
+            self._algo_spec["InputChannels"]
+            if "InputChannels" in self._algo_spec
+            else []
+        )
+        return res
+
+    @property
+    def output_channels_definition(self) -> List[Dict[str, Any]]:
+        """Get the output channels definition from the algorithm spec."""
+        res = (
+            self._algo_spec["OutputChannels"]
+            if "OutputChannels" in self._algo_spec
+            else []
+        )
+        return res
+
+    @property
+    def supported_instance_types(self) -> List[str]:
+        """Get the supported instance types from the algorithm spec."""
+        res = (
+            self._algo_spec["SupportedInstanceTypes"]
+            if "SupportedInstanceTypes" in self._algo_spec
+            else []
+        )
+        return res
+
+    def _check_args(
+        self,
+        algorithm_name: str,
+        algorithm_spec: Dict[str, Any],
+    ):
+        """Check the algorithm_name and algorithm_spec.
+
+        If neither algorithm_name nor algorithm_spec is provided, raise a ValueError.
+        If both algorithm_name and algorithm_spec are provided, use the algorithm_name
+        by default and ignore the algorithm_spec.
+
+        Args:
+            algorithm_name (str): The name of the algorithm.
+            algorithm_spec (dict): The algorithm spec.
+        """
+        if not algorithm_name and not algorithm_spec:
+            raise ValueError(
+                "Either algorithm_name or algorithm_spec should be provided."
+            )
+        if algorithm_name and algorithm_spec:
+            logger.warning(
+                "Both a tuple of (algorithm_name, algorithm_version,"
+                " algorithm_provider) and algorithm_spec are provided. Use the tuple of"
+                " (algorithm_name, algorithm_version, algorithm_provider) by default."
+                " The provided algorithm_spec will be ignored."
+            )
+
+    def _check_instance_type(self):
+        """Check if the given instance_type is supported for training job."""
+        if not self.session.is_supported_training_instance(self.instance_type):
+            raise ValueError(
+                f"Instance type='{self.instance_type}' is not supported."
+                " Please provide a supported instance type to create the job."
+            )
+
+    def _get_algo_version(
+        self,
+        algorithm_name: str,
+        algorithm_version: Optional[str] = None,
+        algorithm_provider: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get the algorithm version object.
+
+        Args:
+            algorithm_name (str): The name of the algorithm.
+            algorithm_version (str, optional): The version of the algorithm.
+            algorithm_provider (str, optional): The provider of the algorithm.
+
+        Returns:
+            dict: A dict that represents algorithm version object.
+        """
+        if not algorithm_name:
+            raise ValueError(
+                "Parameter algorithm_name cannot be None or empty. Please provide a"
+                " valid algorithm name."
+            )
+
+        resp_list_algo = self.session.algorithm_api.list(
+            algorithm_name=algorithm_name,
+            algorithm_provider=algorithm_provider,
+        )
+        if resp_list_algo.total_count == 0:
+            raise ValueError(
+                f"Could not find any algorithm with the specific"
+                f" name='{algorithm_name}' and provider='{algorithm_provider}'."
+                f" Please check the arguments."
+            )
+        algo_obj = resp_list_algo.items[0]
+        algorithm_id = algo_obj["AlgorithmId"]
+
+        if not algorithm_version:
+            resp_list_algo_versions = self.session.algorithm_api.list_versions(
+                algorithm_id=algorithm_id,
+            )
+            algo_version_obj = resp_list_algo_versions.items[-1]
+            algorithm_version = algo_version_obj["AlgorithmVersion"]
+            logger.warning(
+                f"Parameter algorithm_version is not provided, the latest"
+                f" version='{algorithm_version}' of the algorithm will be used."
+            )
+
+        resp_algo_version = self.session.algorithm_api.get_version(
+            algorithm_id=algorithm_id,
+            algorithm_version=algorithm_version,
+        )
+        return resp_algo_version
+
+    def _get_hyperparameters(
+        self, hyperparameters: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Get hyperparameters.
+
+        Get the default hyperparameters from the algorithm spec and update it with the
+        user provided hyperparameters.
+
+        Args:
+            hyperparameters (dict, optional): The user provided hyperparameters.
+
+        Returns:
+            dict: The dict of hyperparameters.
+        """
+        res = {}
+        hps_def = self.hyperparameters_definition
+        if hps_def:
+            # Get default hyperparameters.
+            for hp in hps_def:
+                res.update({hp["Name"]: hp["DefaultValue"]})
+            # Update with user provided hyperparameters.
+            for hp in hyperparameters if hyperparameters else {}:
+                if hp not in res:
+                    logger.warning(
+                        f"Hyperparameter='{hp}' is not defined in hyperparameters"
+                        f" definition. Make sure you are using the right"
+                        f" hyperparameters and check the hyperparameters_definition."
+                    )
+                    res.update({hp: hyperparameters[hp]})
+                else:
+                    res[hp] = hyperparameters[hp]
+        else:
+            # Use user provided hyperparameters.
+            res = hyperparameters
+        return res
+
+    def _get_default_training_instance_type(self) -> str:
+        """Get the default training instance type from the algorithm spec."""
+        instance_generator = make_list_resource_iterator(
+            self.session.job_api.list_ecs_specs
+        )
+        sup_instance_types = self.supported_instance_types
+        machine_spec = next(
+            (
+                item
+                for item in instance_generator
+                if not sup_instance_types or item["InstanceType"] in sup_instance_types
+            ),
+            None,
+        )
+        if not machine_spec:
+            raise RuntimeError(
+                "No supported training instance type found. Please check the supported"
+                " instance types."
+            )
+        return machine_spec["InstanceType"]
+
+    def _build_input_data_configs(
+        self,
+        inputs: Dict[str, Any] = None,
+    ) -> List[Dict[str, str]]:
+        """Build input data configs."""
+
+        def _check_input_uri(uri: str):
+            if not isinstance(uri, str):
+                raise ValueError(
+                    f"The Estimator supports OSS URI or NAS URI as input data."
+                    f" Input data of type{type(uri)} is not supported."
+                )
+            if is_oss_uri(uri):
+                input_uri = uri
+            elif os.path.exists(uri):
+                store_path = self.session.get_storage_path_by_category("train_data")
+                input_uri = upload(uri, store_path)
+            else:
+                raise ValueError(
+                    f"Input data path should be a valid OSS URI or local path:"
+                    f" input={uri}"
+                )
+            return input_uri
+
+        inputs = copy.deepcopy(inputs) or {}
+        res = []
+        input_channels_def = self.input_channels_definition
+        if input_channels_def:
+            for channel in input_channels_def:
+                channel_name = channel["Name"]
+                channel_required = channel["Required"]
+                if channel_required is True and channel_name not in inputs:
+                    raise ValueError(
+                        f"Input channel {channel_name} is required but not provided."
+                        " Please check the input channels definition."
+                    )
+                elif channel_name in inputs:
+                    input_uri = _check_input_uri(inputs[channel_name])
+                    res.append({"Name": channel_name, "InputUri": input_uri})
+                    inputs.pop(channel_name)
+                else:
+                    pass
+            if inputs != {}:
+                raise ValueError(
+                    f"Following input channels={inputs.keys()} are not defined in input"
+                    " channels definition. Please check the input channels definition."
+                )
+        else:
+            for name, item in inputs.items():
+                input_uri = _check_input_uri(item)
+                res.append({"Name": name, "InputUri": input_uri})
+
+        return res
+
+    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
+        """Build output data configs."""
+        job_base_output_path = self._generate_job_base_output_path(job_name)
+
+        # OSS URI for output channel will be mounted to directory
+        # "/ml/output/{ChannelName}/" and the output OSS URI should be a "directory"
+        def as_oss_dir_uri(uri: str):
+            return uri if uri.endswith("/") else uri + "/"
+
+        model_path = posixpath.join(
+            job_base_output_path,
+            DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+        )
+        # Use checkpoints_path from user or construct a checkpoint path using default
+        # output path.
+        checkpoints_path = posixpath.join(
+            job_base_output_path,
+            DEFAULT_CHECKPOINT_CHANNEL_NAME,
+        )
+        # Output logs path
+        logs_path = posixpath.join(
+            job_base_output_path,
+            DEFAULT_LOGS_CHANNEL_NAME,
+        )
+
+        # Record the output channels
+        self._output_channels = []
+        res = []
+        output_channels_def = self.output_channels_definition
+        if output_channels_def:
+            for channel in output_channels_def:
+                channel_name = channel["Name"]
+                channel_path = posixpath.join(
+                    job_base_output_path,
+                    channel_name,
+                )
+                res.append(
+                    {
+                        "Name": channel_name,
+                        "OutputUri": as_oss_dir_uri(channel_path),
+                    }
+                )
+                self._output_channels.append(channel_name)
+        else:
+            res = [
+                {
+                    "Name": DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+                    "OutputUri": as_oss_dir_uri(model_path),
+                },
+                {
+                    "Name": DEFAULT_CHECKPOINT_CHANNEL_NAME,
+                    "OutputUri": as_oss_dir_uri(checkpoints_path),
+                },
+                {
+                    "Name": DEFAULT_LOGS_CHANNEL_NAME,
+                    "OutputUri": as_oss_dir_uri(logs_path),
+                },
+            ]
+            self._output_channels = [
+                DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+                DEFAULT_CHECKPOINT_CHANNEL_NAME,
+                DEFAULT_LOGS_CHANNEL_NAME,
+            ]
+
+        return res
+
+    def fit(
+        self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
+    ):
+        """Submit a training job with the given input data.
+
+        Args:
+            inputs (Dict[str, Any]): A dictionary representing the input data for the
+                training job. Each key/value pair in the dictionary is an input channel,
+                the key is the channel name, and the value is the input data. The input
+                data can be an OSS URI or a NAS URI object and will be mounted to the
+                `/ml/input/data/{channel_name}` directory in the training container.
+            wait (bool): Specifies whether to block until the training job is completed,
+                either succeeded, failed, or stopped. (Default True).
+            show_logs (bool): Specifies whether to show the logs produced by the
+                training job (Default True).
+        Raises:
+            UnExpectedStatusException: If the training job fails.
+
+        """
+        inputs = inputs or dict()
+        job_name = self._gen_job_display_name()
+        training_job = self._fit(inputs=inputs, job_name=job_name)
+        self._latest_training_job = training_job
+
+        if wait:
+            self.wait(show_logs=show_logs)
+
+    def _fit(self, job_name, inputs: Dict[str, Any] = None):
+        input_configs = self._build_input_data_configs(inputs)
+        for c in input_configs:
+            if "InputUri" in c and is_oss_uri(c["InputUri"]):
+                c["InputUri"] = self._patch_default_oss_endpoint(c["InputUri"])
+        output_configs = self._build_output_data_configs(job_name)
+        for c in output_configs:
+            if "OutputUri" in c and is_oss_uri(c["OutputUri"]):
+                c["OutputUri"] = self._patch_default_oss_endpoint(c["OutputUri"])
+
+        training_job_id = self.session.training_job_api.create(
+            instance_count=self.instance_count,
+            instance_type=self.instance_type,
+            job_name=job_name,
+            hyperparameters=self.hyperparameters,
+            max_running_in_seconds=self.max_run_time,
+            input_channels=input_configs,
+            output_channels=output_configs,
+            algorithm_name=self.algorithm_name,
+            algorithm_version=self.algorithm_version,
+            algorithm_provider=self.algorithm_provider,
+            algorithm_spec=self.algorithm_spec,
+        )
+        training_job = _TrainingJob.get(training_job_id)
+        print(
+            f"View the job detail by accessing the console URI:"
+            f" {training_job.console_uri}"
+        )
+        return training_job
+
+    def model_data(self) -> str:
+        """Model data output path.
+
+        Returns:
+            str: A string in OSS URI format refers to the output model of the submitted
+                job.
+        """
+        if not self._latest_training_job:
+            raise RuntimeError(
+                "No TrainingJob for the estimator, output model data not found."
+            )
+
+        if not self._latest_training_job.is_succeeded():
+            logger.warning(
+                "The TrainingJob is currently not in a succeeded status, which means"
+                " that the model data output may not be accessible."
+            )
+
+        if DEFAULT_OUTPUT_MODEL_CHANNEL_NAME not in self._output_channels:
+            raise RuntimeError(
+                f"Default output model channel={DEFAULT_OUTPUT_MODEL_CHANNEL_NAME} not"
+                " found in the output channels definition. Please check the output"
+                " channels definition."
+            )
+
+        res = self._latest_training_job.output_path(
+            channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
+        )
+        return res
+
+    def get_outputs_data(self) -> Dict[str, str]:
+        """Show all outputs data paths.
+
+        Returns:
+            dict[str, str]: A dictionary of all outputs data paths.
+        """
+        if not self._latest_training_job:
+            raise RuntimeError(
+                "No TrainingJob for the estimator, output checkpoints data not found."
+            )
+
+        res = {}
+        for channel_name in self._output_channels:
+            res.update(
+                {
+                    channel_name: self._latest_training_job.output_path(
+                        channel_name=channel_name
+                    )
+                }
+            )
+        return res
 
 
 _TRAINING_LAUNCH_SCRIPT_TEMPLATE = textwrap.dedent(

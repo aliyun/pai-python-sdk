@@ -330,6 +330,15 @@ class InferenceSpec(object):
                 "Source path is not a valid OSS URI or a existing local path."
             )
 
+        # Check if the mount infomation is already in the config.
+        for conf in configs:
+            if conf.get("oss").get("path") == oss_uri_obj.get_dir_uri():
+                logger.warning(
+                    f"Source {oss_uri_obj.get_dir_uri()} is already mounted."
+                    " Skip mounting."
+                )
+                return None
+
         configs.append(storage_config)
         self.storage = configs
         return storage_config
@@ -585,7 +594,6 @@ class ModelBase(object):
         inference_spec: InferenceSpec,
         session: Session = None,
     ):
-
         if not model_data and "model_data" in inference_spec:
             model_data = inference_spec.model_data
         self.model_data = model_data
@@ -667,8 +675,8 @@ class ModelBase(object):
                 instance_count=instance_count,
                 instance_type=instance_type,
                 resource_config=resource_config,
-                service_type=service_type,
                 resource_id=resource_id,
+                service_type=service_type,
                 options=options,
                 wait=wait,
                 serializer=serializer,
@@ -697,8 +705,6 @@ class ModelBase(object):
                 "Service name is not specified, using a generated service"
                 f" name to create the service: service_name={service_name}"
             )
-
-        self.model_data = self._upload_model_data()
 
         config = self._build_service_config(
             service_name=service_name,
@@ -760,6 +766,7 @@ class ModelBase(object):
         options: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """Build a service config dictionary used to create a PAI EAS service."""
+        self.model_data = self._upload_model_data()
 
         resource_config = (
             ResourceConfig(**resource_config)
@@ -967,6 +974,115 @@ class ModelBase(object):
                 time.sleep(interval)
                 continue
 
+    def register(
+        self,
+        model_name: str,
+        model_labels: Optional[Dict[str, str]] = None,
+        model_description: Optional[str] = None,
+        model_doc: Optional[str] = None,
+        origin: Optional[str] = None,
+        domain: Optional[str] = None,
+        task: Optional[str] = None,
+        accessibility: Optional[str] = None,
+        version: str = None,
+        version_labels: Optional[Dict[str, str]] = None,
+        version_description: Optional[str] = None,
+        format_type: Optional[str] = None,
+        framework_type: Optional[str] = None,
+        training_spec: Optional[Dict[str, Any]] = None,
+        inference_spec: Optional[Dict[str, Any]] = None,
+        approval_status: Optional[str] = None,
+        metrics: Optional[Dict[str, Any]] = None,
+        options: Optional[str] = None,
+    ) -> "RegisteredModel":
+        """Register a model to the PAI model registry.
+
+        Use ``self.model_data`` to register a model to the PAI model registry.
+
+        Args:
+            model_name (str): The name of the model. If the model name already exists in
+                workspace, the model will be updated with a new model version,
+                parameters like ``model_labels``, ``model_description``, ``model_doc``,
+                ``origin``, ``domain``, ``task``, ``accessibility`` will be ignored. If
+                the model name does not exist, a new model will be created.
+            model_labels (dict, optional): The labels of the model.
+            model_description (str, optional): The description of the model.
+            model_doc (str, optional): The documentation uri of the model.
+            origin (str, optional): The origin of the model. For example, "huggingface",
+                "modelscope" etc. Default to None.
+            domain (str, optional): The domain that the model is used for. For example,
+                "aigc", "audio", "nlp", "cv" etc. Default to None.
+            task (str, optional): The task that the model is used for. For example,
+                "large-language-model", "text-classification", "image-classification",
+                "sequence-labeling" etc. Default to None.
+            accessibility (str, optional): The accessibility of the model. The value
+                can be "PUBLIC" or "PRIVATE". Default to "PRIVATE".
+            version (str, optional): The version of the model. If not specified, a new
+                version will be created. If the version already exists, registration
+                will fail.
+            version_labels (dict, optional): The labels of the model version.
+            version_description (str, optional): The description of the model version.
+            format_type (str, optional): The format type of the model version. The value
+                can be "OfflineModel", "SavedModel", "Keras H5", "Frozen Pb",
+                "Caffe Prototxt", "TorchScript", "XGBoost", "PMML", "AlinkModel",
+                "ONNX". Default to None.
+            framework_type (str, optional): The framework type of the model version. The
+                value can be "Pyrotch", "TensorFlow", "Keras", "Caffe", "Alink",
+                "Xflow", "XGBoost". Default to None.
+            training_spec (dict, optional): The training spec of the model version.
+                Usually, it is got from the training job. Default to None.
+            inference_spec (dict, optional): The complete inference spec of the model
+                version. Usually, it is got from the inference service. Default to None.
+            approval_status (str, optional): The approval status of the model version.
+                The value can be "APPROVED", "PENDING". Default to None.
+            metrics (dict, optional): The metrics of the model version.
+            options (str, optional): Any other options that you want to pass to the
+                model registry. Default to None.
+
+        Returns:
+            :class:`pai.model.RegisteredModel`: The registered model object.
+        """
+
+        if not self.model_data:
+            raise ValueError(
+                "Register model failed, ``model_data`` is required to register a model."
+            )
+
+        # By specifying model_name with double quotes, the list api will process the
+        # precise search. Otherwise, the list api will process the fuzzy search.
+        resp = self.session.model_api.list(
+            model_name=f'"{model_name}"',
+        )
+        if resp.total_count == 0:
+            model_id = self.session.model_api.create(
+                model_name=model_name,
+                labels=model_labels,
+                model_description=model_description,
+                model_doc=model_doc,
+                origin=origin,
+                domain=domain,
+                task=task,
+                accessibility=accessibility,
+            )
+        else:
+            model_id = resp.items[0]["ModelId"]
+
+        version_name = self.session.model_api.create_version(
+            model_id=model_id,
+            uri=self.model_data,
+            version_name=version,
+            labels=version_labels,
+            version_description=version_description,
+            format_type=format_type,
+            framework_type=framework_type,
+            training_spec=training_spec,
+            inference_spec=inference_spec,
+            approval_status=approval_status,
+            metrics=metrics,
+            options=options,
+        )
+        return RegisteredModel(model_name=model_name, model_version=version_name)
+
 
 class Model(ModelBase):
     """The Class representing a ready-to-deploy model.
@@ -989,7 +1105,7 @@ class Model(ModelBase):
 
         # register model to PAI ModelRegistry
         registered_model = m.register(
-            name="example_xgb_model"
+            model_name="example_xgb_model"
             version="1.0.0",
         )
 
@@ -1050,8 +1166,8 @@ class Model(ModelBase):
         """Deploy an online prediction service.
 
         Args:
-            service_name (str, optional): Name for the online prediction service. The name
-                must be unique in a region.
+            service_name (str, optional): Name for the online prediction service. The
+                name must be unique in a region.
             instance_count (int): Number of instance request for the service deploy
                 (Default 1).
             instance_type (str, optional): Type of the machine instance, for example,
@@ -1108,3 +1224,444 @@ class Model(ModelBase):
             service_type=service_type,
             **kwargs,
         )
+
+
+class RegisteredModel(ModelBase):
+    """A class that represents a registered model in PAI model registry.
+
+    A RegisteredModel instance has a unique tuple of (model_name, model_version,
+    model_provider), and can be used for downstream tasks such as creating an online
+    prediction service, or creating an AlgorithmEstimator to start a training job.
+
+    Examples::
+
+        from pai.model import RegisteredModel
+
+        # retrieve a registered model from PAI model registry by
+        # specifying the model_name, model_version and model_provider
+        m = RegisteredModel(
+            model_name="easynlp_pai_bert_small_zh",
+            model_version="0.1.0",
+            model_provider="pai",
+        )
+
+
+        # deploy the Registered Model to create an online prediction
+        # service if the model has inference_spec
+        m.deploy()
+
+
+        # create an AlgorithmEstimator to start a training job if the
+        # model has training_spec
+        est = m.get_estimator()
+        inputs = m.get_estimator_inputs()
+        est.fit(inputs)
+
+    """
+
+    @config_default_session
+    def __init__(
+        self,
+        model_name: str,
+        model_version: Optional[str] = None,
+        model_provider: Optional[str] = None,
+        session: Session = None,
+    ):
+        """Get a RegisteredModel instance from PAI model registry.
+
+        Args:
+            model_name (str): The name of the registered model.
+            model_version (str, optional): The version of the registered model. If not
+                provided, the latest version is retrieved from the model registry.
+            model_provider (str, optional): The provider of the registered model.
+                Currently only "pai" or None are supported. Set it to "pai" to retrieve
+                a PAI official model. If not provided, the default provider is user's
+                PAI account.
+            session (:class:`pai.session.Session`, optional): A PAI session object used
+                for interacting with PAI Service.
+        """
+        self.session = session
+        model_version_obj = self._get_model_version_obj(
+            model_name=model_name,
+            model_version=model_version,
+            model_provider=model_provider,
+        )
+
+        self._model_id = model_version_obj.get("ModelId")
+        self.model_name = model_version_obj.get("ModelName")
+        self.model_version = model_version_obj.get("VersionName")
+        self.model_provider = model_version_obj.get("Provider")
+        self.framework_type = model_version_obj.get("FrameworkType")
+        self.format_type = model_version_obj.get("FormatType")
+        self.training_spec = model_version_obj.get("TrainingSpec")
+        self.source_type = model_version_obj.get("SourceType")
+        self.source_id = model_version_obj.get("SourceId")
+        self.labels = {
+            lb["Key"]: lb["Value"] for lb in model_version_obj.get("Labels", [])
+        }
+
+        super(RegisteredModel, self).__init__(
+            model_data=model_version_obj.get("Uri"),
+            inference_spec=InferenceSpec.from_dict(
+                model_version_obj.get("InferenceSpec", dict())
+            ),
+        )
+
+    def __eq__(self, other: "RegisteredModel") -> bool:
+        """Compare two RegisteredModel instances."""
+        return (
+            isinstance(other, RegisteredModel)
+            and other._model_id == self._model_id
+            and other.model_version == other.model_version
+        )
+
+    def _generate_service_name(self) -> str:
+        """Generate a service name for the online prediction service."""
+        base_name = self.model_name.replace("-", "_")[:36]
+        if base_name.endswith("_"):
+            base_name = base_name[:-1]
+        gen_name = f"{base_name}_{random_str(8)}"
+        return to_plain_text(gen_name)
+
+    def _get_inference_spec(self) -> InferenceSpec:
+        """Get the inference_spec of the registered model."""
+        return self.inference_spec
+
+    def _get_model_version_obj(
+        self,
+        model_name: str,
+        model_version: Optional[str] = None,
+        model_provider: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get the model version object from PAI model registry.
+
+        Args:
+            model_name (str): The name of the registered model.
+            model_version (str, optional): The version of the registered model. If not
+                provided, the latest version is retrieved from the model registry.
+            model_provider (str, optional): The provider of the registered model.
+                Currently only "pai" or None are supported. Set it to "pai" to retrieve
+                a PAI official model. If not provided, the default provider is user's
+                PAI account.
+
+        Returns:
+            A dict that represents the model version object.
+        """
+        if not model_name:
+            raise ValueError(
+                "Parameter model_name cannot be None or empty. Please provide a valid"
+                " model_name."
+            )
+
+        # Use model_name to get the model_id
+        # By specifying model_name with double quotes, the list api will process the
+        # precise search. Otherwise, the list api will process the fuzzy search.
+        result = self.session.model_api.list(
+            model_name=f'"{model_name}"', provider=model_provider
+        )
+        if result.total_count == 0:
+            raise RuntimeError(
+                f"Could not find any Registered Model with the specific"
+                f" name='{model_name}' and provider='{model_provider}'. Please check"
+                f" the arguments."
+            )
+        model_obj = result.items[0]
+        model_id = model_obj["ModelId"]
+
+        if model_version:
+            model_version_obj = self.session.model_api.get_version(
+                model_id=model_id, version=model_version
+            )
+            model_version_obj.update(
+                {
+                    "ModelName": model_name,
+                    "Provider": model_provider,
+                }
+            )
+        else:
+            # Get the latest model version of the specific model if model_version is not provided.
+            if "LatestVersion" not in model_obj:
+                raise RuntimeError(
+                    f"Could not find any model version under the specific"
+                    f" name='{model_name}' and provider='{model_provider}'. Please"
+                    f" check the arguments."
+                )
+            model_version_obj = model_obj["LatestVersion"]
+            model_version = model_version_obj["VersionName"]
+            model_version_obj["ModelId"] = model_id
+            model_version_obj["ModelName"] = model_name
+            model_version_obj["Provider"] = model_provider
+            logger.warning(
+                f"Parameter model_version is not provided, the latest"
+                f" version='{model_version}' of the model will be used."
+            )
+        return model_version_obj
+
+    def delete(self):
+        """Delete the specific registered model from PAI model registry"""
+        self.session.model_api.delete_version(self._model_id, self.model_version)
+
+    def deploy(
+        self,
+        service_name: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        instance_type: Optional[str] = None,
+        resource_config: Optional[Union[Dict[str, int], ResourceConfig]] = None,
+        resource_id: Optional[str] = None,
+        options: Optional[Dict[str, Any]] = None,
+        service_type: Optional[str] = None,
+        wait: bool = True,
+        serializer: Optional["SerializerBase"] = None,
+        **kwargs,
+    ):
+        """Deploy an online prediction service with the registered model.
+
+        If the RegisteredModel already has a registered inference_spec, then the model
+        can be deployed directly. Give more specific arguments to override the registered
+        inference_spec. Otherwise, the model will be deployed through the same process
+        as the :meth:`deploy` method of :class:`pai.model.Model`.
+
+        Args:
+            service_name (str, optional): Name for the online prediction service. The
+                name must be unique in a region.
+            instance_count (int, optional): Number of instance requested for the service
+                deploy.
+            instance_type (str, optional): Type of the machine instance, for example,
+                'ecs.c6.large'. For all supported instance, view the appendix of the
+                link:
+                https://help.aliyun.com/document_detail/144261.htm?#section-mci-qh9-4j7
+            resource_config (Union[ResourceConfig, Dict[str, int]], optional):
+                Request resource for each instance of the service. Required if
+                instance_type is not set.  Example config:
+
+                .. code::
+
+                    resource_config = {
+                        "cpu": 2,       # The number of CPUs that each instance requires
+                        "memory: 4000,  # The amount of memory that each instance
+                                        # requires, must be an integer, Unit: MB.
+                        # "gpu": 1,         # The number of GPUs that each instance
+                                            # requires.
+                        # "gpu_memory": 3   # The amount of GPU memory that each
+                                            # instance requires, must be an integer,
+                                            # Unit: GB.
+                    }
+
+            resource_id (str, optional): The ID of the resource group. The service
+                can be deployed to ``public resource group`` and
+                ``dedicated resource group``.
+
+                * If `resource_id` is not specified, the service is deployed
+                    to public resource group.
+                * If the service deployed in a dedicated resource group, provide
+                    the parameter as the ID of the resource group. Example:
+                    "eas-r-6dbzve8ip0xnzte5rp".
+            service_type (str, optional): The type of the service.
+            options (Dict[str, Any], optional): Advanced deploy parameters used
+                to create the online prediction service.
+            wait (bool): Whether the call should wait until the online prediction
+                service is ready (Default True).
+            serializer (:class:`pai.predictor.serializers.BaseSerializer`, optional): A
+                serializer object used to serialize the prediction request and
+                deserialize the prediction response.
+        Returns:
+            A ``PredictorBase`` instance used for making prediction to the prediction
+            service.
+        """
+        if is_local_run_instance_type(instance_type):
+            return self._deploy_local(
+                instance_type=instance_type,
+                serializer=serializer,
+                wait=wait,
+            )
+        else:
+            return self._deploy(
+                service_name=service_name,
+                instance_count=instance_count,
+                instance_type=instance_type,
+                resource_config=resource_config,
+                resource_id=resource_id,
+                service_type=service_type,
+                options=options,
+                wait=wait,
+                serializer=serializer,
+            )
+
+    def _build_service_config(
+        self,
+        service_name: str = None,
+        instance_count: int = None,
+        instance_type: str = None,
+        resource_config: Union[ResourceConfig, Dict[str, Any]] = None,
+        resource_id: str = None,
+        service_type: str = None,
+        options: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
+        """Build a service config dictionary with RegisteredModel's inference_spec.
+
+        When the RegisteredModel builds a service config, it will ignore the model_data
+        parameter and use the inference_spec of the RegisteredModel as default config.
+        User can override the inference_spec by providing more specific arguments.
+        """
+
+        resource_config = (
+            ResourceConfig(**resource_config)
+            if resource_config and isinstance(resource_config, dict)
+            else None
+        )
+
+        if resource_config and instance_type:
+            raise ValueError(
+                f"Only one of 'instance_type' and 'resource_config' is required, but"
+                f" both have been provided: instance_type={instance_type},"
+                f" resource_config={resource_config}."
+            )
+
+        inference_spec = InferenceSpec(
+            self._get_inference_spec().to_dict() if self.inference_spec else dict()
+        )
+
+        if service_type:
+            inference_spec.add_option("metadata.type", service_type)
+            if inference_spec.is_container_serving():
+                inference_spec.add_option("metadata.rpc.proxy_path", "/")
+
+        if service_name:
+            inference_spec.add_option("name", service_name)
+
+        if instance_count:
+            inference_spec.add_option("metadata.instance", instance_count)
+
+        if instance_type:
+            inference_spec.add_option("cloud.computing.instance_type", instance_type)
+        elif resource_config:
+            inference_spec.add_option("metadata.cpu", resource_config.cpu)
+            inference_spec.add_option("metadata.memory", resource_config.memory)
+            if resource_config.gpu:
+                inference_spec.add_option("metadata.gpu", resource_config.gpu)
+            if resource_config.gpu_memory:
+                inference_spec.add_option(
+                    "metadata.gpu_memory", resource_config.gpu_memory
+                )
+                if resource_config.gpu:
+                    logger.warning(
+                        "Parameters 'gpu' is set, the 'gpu_memory' parameter does not"
+                        " take effect."
+                    )
+
+        if resource_id:
+            inference_spec.add_option("metadata.resource", resource_id)
+
+        if options:
+            inference_spec.merge_options(options=options)
+
+        return inference_spec.to_dict()
+
+    def get_estimator(self):
+        """Generate an AlgorithmEstimator
+
+        Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
+
+        Returns:
+            :class:`pai.estimator.AlgorithmEstimator`: An AlgorithmEstimator object.
+        """
+        from .estimator import AlgorithmEstimator
+
+        if not self.training_spec:
+            raise ValueError(
+                "The provided registered model does not contain training spec."
+            )
+        ts = self.training_spec
+        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
+            raise ValueError(
+                "The provided registered model's training spec does not contain any"
+                " algorithms."
+            )
+
+        algorithm_name = ts["AlgorithmName"] if "AlgorithmName" in ts else None
+        algorithm_provider = (
+            ts["AlgorithmProvider"] if "AlgorithmProvider" in ts else None
+        )
+        algorithm_version = ts["AlgorithmVersion"] if "AlgorithmVersion" in ts else None
+        algorithm_spec = ts["AlgorithmSpec"] if "AlgorithmSpec" in ts else None
+
+        if "HyperParameters" in ts:
+            hyperparameters = {}
+            for i in ts["HyperParameters"]:
+                hyperparameters.update(
+                    {
+                        i["Name"]: i["Value"],
+                    }
+                )
+        else:
+            hyperparameters = None
+
+        base_job_name = f"{self.model_name}_training" if self.model_name else None
+
+        if "Scheduler" in ts and "MaxRunningTimeInSeconds" in ts["Scheduler"]:
+            max_run_time = ts["Scheduler"]["MaxRunningTimeInSeconds"]
+        else:
+            max_run_time = None
+
+        if "ComputeResource" in ts:
+            if (
+                "EcsSpec" in ts["ComputeResource"]
+                and "EcsCount" in ts["ComputeResource"]
+            ):
+                instance_type = ts["ComputeResource"]["EcsSpec"]
+                instance_count = ts["ComputeResource"]["EcsCount"]
+            elif (
+                "EcsSpec" not in ts["ComputeResource"]
+                and "EcsCount" not in ts["ComputeResource"]
+            ):
+                instance_type = None
+                instance_count = None
+            else:
+                instance_type = None
+                instance_count = None
+                logger.warning(
+                    "Only one of EcsCount and EcsType is provided. Please check the"
+                    " AlgorithmSpec."
+                )
+
+        return AlgorithmEstimator(
+            algorithm_name=algorithm_name,
+            algorithm_version=algorithm_version,
+            algorithm_provider=algorithm_provider,
+            algorithm_spec=algorithm_spec,
+            hyperparameters=hyperparameters,
+            base_job_name=base_job_name,
+            max_run_time=max_run_time,
+            instance_type=instance_type,
+            instance_count=instance_count,
+        )
+
+    def get_estimator_inputs(self) -> Dict[str, str]:
+        """Get the AlgorithmEstimator's default input channels
+
+        Get the AlgorithmEstimator's default input channels from RegisteredModel's
+        training_spec.
+
+        Returns:
+            dict[str, str]: A dict of input channels.
+        """
+        if not self.training_spec:
+            raise ValueError(
+                "The provided registered model does not contain training spec."
+            )
+        ts = self.training_spec
+        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
+            raise ValueError(
+                "The provided registered model's training spec does not contain any"
+                " algorithms."
+            )
+
+        input_channels = {}
+        if "InputChannels" in ts:
+            for i in ts["InputChannels"]:
+                input_channels.update(
+                    {
+                        i["Name"]: i["InputUri"],
+                    }
+                )
+        return input_channels

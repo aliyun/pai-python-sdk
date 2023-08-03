@@ -7,6 +7,7 @@ import unittest
 import oss2
 from odps import ODPS
 
+from pai.common.oss_utils import OssUriObj
 from pai.session import setup_default_session
 
 from .utils import TestContext
@@ -195,6 +196,13 @@ class BaseIntegTestCase(unittest.TestCase):
             "- %(message)s",
             datefmt="%Y/%m/%d %H:%M:%S",
         )
+
+    def is_oss_object_exists(self, model_path):
+        uri_obj = OssUriObj(model_path)
+
+        oss_bucket = self.default_session.get_oss_bucket(uri_obj.bucket_name)
+
+        return oss_bucket.object_exists(uri_obj.object_key)
 
     @classmethod
     def upload_file(cls, oss_bucket, location, file):

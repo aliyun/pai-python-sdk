@@ -1,8 +1,10 @@
 import os
 from unittest import skipUnless
 
-from pai.common.oss_utils import OssUriObj, upload
-from pai.estimator import Estimator
+import pytest
+
+from pai.common.oss_utils import upload
+from pai.estimator import AlgorithmEstimator, Estimator
 from pai.image import retrieve
 from pai.session import get_default_session
 from tests.integration import BaseIntegTestCase
@@ -11,7 +13,6 @@ from tests.test_data import test_data_dir
 
 
 class TestEstimator(BaseIntegTestCase):
-
     job_output_path = None
 
     @classmethod
@@ -57,13 +58,6 @@ class TestEstimator(BaseIntegTestCase):
 
         self.assertTrue(self.is_oss_object_exists(model_path))
 
-    def is_oss_object_exists(self, model_path):
-        uri_obj = OssUriObj(model_path)
-
-        oss_bucket = self.default_session.get_oss_bucket(uri_obj.bucket_name)
-
-        return oss_bucket.object_exists(uri_obj.object_key)
-
     def test_torch_run(self):
         torch_image_uri = retrieve("pytorch", framework_version="1.12").image_uri
         est = Estimator(
@@ -84,6 +78,56 @@ class TestEstimator(BaseIntegTestCase):
         tb = est.tensorboard()
         self.assertIsNotNone(tb.app_uri)
         tb.delete()
+
+
+class TestAlgorithmEstimator(BaseIntegTestCase):
+    """Test :class:`pai.estimator.AlgorithmEstimator`."""
+
+    @pytest.mark.timeout(60 * 10)
+    def test_algo_train(self):
+        """Test training job with AlgorithmEstimator."""
+        region = self.default_session.region_id
+
+        est = AlgorithmEstimator(
+            algorithm_name="easycv_detection_yolox",
+            algorithm_version="v0.1.0",
+            algorithm_provider="pai",
+            hyperparameters={
+                "model_size_type": "nano",
+                "learning_rate": "0.001",
+                "max_epochs": "5",
+                "last_fixed_lr_epochs": "15",
+                "warmup_epochs": "2",
+                "image_scale": "640,640",
+                "train_batch_size": "8",
+                "num_workers_per_gpu": "1",
+                "save_ckpt_epoch_interval": "1",
+                "eval_interval": "1",
+                "log_interval": "10",
+                "num_visualizations": "20",
+                "score_threshold": "0.5",
+                "resume_from": "",
+            },
+            base_job_name="easycv_detection_yolox_training",
+        )
+
+        est.fit(
+            inputs={
+                "pretrained_model": f"oss://pai-quickstart-{region}.oss-{region}.aliyuncs.com/easycv/models/detection/yolox/v0.1.0/pth/yolox_nano_epoch_300/",
+                "train": f"oss://pai-quickstart-{region}.oss-{region}.aliyuncs.com/easycv/datasets/small_coco/train_data/",
+                "validation": f"oss://pai-quickstart-{region}.oss-{region}.aliyuncs.com/easycv/datasets/small_coco/val_data/",
+            },
+        )
+
+        outputs_data = est.get_outputs_data()
+        self.assertTrue(isinstance(outputs_data, dict))
+        self.assertTrue(outputs_data)
+        self.assertTrue(len(outputs_data) == 2)
+
+        model_path = os.path.join(outputs_data["model"], "epoch_5_export.pt")
+        checkpoint_path = os.path.join(outputs_data["checkpoints"], "epoch_5.pth")
+        self.assertTrue(self.is_oss_object_exists(model_path))
+        self.assertTrue(self.is_oss_object_exists(checkpoint_path))
 
 
 @skipUnless(t_context.has_docker, "Estimator local train requires docker.")
