@@ -11,4 +11,7 @@ class TestTensorBoard(BaseIntegTestCase):
         self.assertEqual(tb.status, TensorBoardStatus.Running)
         self.assertIsNotNone(tb.app_uri)
 
+        tb.stop()
+        tb.start()
+        self.assertTrue(TensorBoardStatus.is_running(tb.status))
         tb.delete()

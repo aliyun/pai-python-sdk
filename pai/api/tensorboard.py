@@ -98,9 +98,11 @@ class TensorBoardAPI(WorkspaceScopedResourceAPI):
         )
         return self.make_paginated_result(resp)
 
-    def stop(self):
+    def stop(self, tensorboard_id: str):
+        """Stop the TensorBoard application."""
         request = StopTensorboardRequest()
         self._do_request(
             self._stop_method,
+            tensorboard_id=tensorboard_id,
             request=request,
         )
