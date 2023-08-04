@@ -23,7 +23,7 @@ $docker run -it -v /directory/contains/script:/work/directory test_dockerfile:1.
 ### release_pkg_to_oss.sh:
 Specify a git branch name `$BRANCH` to build and publish the package to OSS bucket. OSS config and git config are required.
 
-git branch name `$BRANCH`, OSS username `$OSS_ACCESS_KEY_ID`, OSS password `$OSS_ACCESS_KEY_SECRET`, git username `$GIT_USERNAME` and git private token `$GIT_PRIVATE_TOKEN` are needed to be passed as enviornment variables to use the script.
+git branch name `$BRANCH`, OSS username `$OSS_ACCESS_KEY_ID`, OSS password `$OSS_ACCESS_KEY_SECRET`, git username `$GIT_USERNAME` and git private token `$GIT_PRIVATE_TOKEN` are needed to be passed as environment variables to use the script.
 
 ```bash
 # e.g.	run the shell script:

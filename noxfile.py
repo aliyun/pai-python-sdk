@@ -95,6 +95,7 @@ def lint(session: Session):
     session.install("-r", LINT_REQUIREMENTS)
     session.run("flake8", "--config", ".flake8")
     session.run("black", "--check", ".")
+    session.run("typos", "--config", "typos.toml", "-w")
 
 
 @nox.session(reuse_venv=True)

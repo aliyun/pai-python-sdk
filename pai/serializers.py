@@ -143,7 +143,7 @@ class TensorFlowSerializer(SerializerBase):
         """TensorflowSerializer initializer."""
 
         self._input_specs = []
-        self._output_fileter = []
+        self._output_filter = []
         self._signature_name = None
         super(TensorFlowSerializer, self).__init__()
 
@@ -243,8 +243,8 @@ class TensorFlowSerializer(SerializerBase):
             return data.SerializeToString()
 
         request = tf_pb.PredictRequest()
-        if self._output_fileter:
-            for output_name in self._output_fileter:
+        if self._output_filter:
+            for output_name in self._output_filter:
                 request.output_filter.append(output_name)
 
         if not isinstance(data, dict):
@@ -347,8 +347,8 @@ class TensorFlowSerializer(SerializerBase):
 
         if not self._input_specs:
             self._input_specs = input_specs
-        if not self._output_fileter:
-            self._output_fileter = [spec.name for spec in output_specs]
+        if not self._output_filter:
+            self._output_filter = [spec.name for spec in output_specs]
 
     def deserialize(self, data: bytes):
         response = tf_pb.PredictResponse()

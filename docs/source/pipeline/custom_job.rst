@@ -235,7 +235,7 @@ SDK，使用本地Python脚本和自定义镜像在PAI-DLC上执行一个训练�
    `-- output                                    // 输出的path, 作业指定的OutputPath（OSS）会被挂载到这个目录下.
        |-- model
        `-- output_parameters
-           `-- test_accurary.txt
+           `-- test_accuracy.txt
 
 .. code:: python
 

@@ -230,7 +230,7 @@ class Pipeline(UnRegisteredComponent):
         elif isinstance(outputs, (list, OutputsSpec)):
             items = [(item.name, item) for item in outputs]
         else:
-            raise ValueError("Require list or dict, unexpect type:%s" % type(outputs))
+            raise ValueError("Require list or dict, unexpected type:%s" % type(outputs))
 
         results = []
         for name, item in items:

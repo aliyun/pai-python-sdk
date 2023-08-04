@@ -552,7 +552,7 @@ class MaxComputeResourceArtifact(LocationArtifactValue):
             resource_url: An ODPS(MaxCompute) table, tablePartition, offline-model or volume in url schema.
 
         Returns:
-            tuple: A tuple of  MaxCompute artifact value and aritfact metadata.
+            tuple: A tuple of  MaxCompute artifact value and artifact metadata.
 
         """
         matches = cls.MaxComputeResourceUrlPattern.match(resource_url)

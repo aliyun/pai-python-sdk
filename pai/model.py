@@ -330,7 +330,7 @@ class InferenceSpec(object):
                 "Source path is not a valid OSS URI or a existing local path."
             )
 
-        # Check if the mount infomation is already in the config.
+        # Check if the mount information is already in the config.
         for conf in configs:
             if conf.get("oss").get("path") == oss_uri_obj.get_dir_uri():
                 logger.warning(

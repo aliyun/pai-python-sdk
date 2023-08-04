@@ -283,7 +283,7 @@ PAI_HPS_{HYPERPARAMETER_NAME}
 .. code-block:: python
 
     est = Estimator(
-        command="python train.py --epochs $PAI_HPS_EPOCHS --batch-size $PAI_HPS_BATCH_SZIE",
+        command="python train.py --epochs $PAI_HPS_EPOCHS --batch-size $PAI_HPS_BATCH_SIZE",
         hyperparameters={
             "epochs": 10,
             "batch-size": 32,

@@ -141,7 +141,7 @@ class HuggingFaceModel(ModelBase):
             :class:`~pai.model.ModelBase`.
         """
         self._validate_args(
-            image_uri=image_uri, transformers_verison=transformers_version
+            image_uri=image_uri, transformers_version=transformers_version
         )
 
         self.model_data = model_data
@@ -165,9 +165,9 @@ class HuggingFaceModel(ModelBase):
             **kwargs,
         )
 
-    def _validate_args(self, image_uri: str, transformers_verison: str) -> None:
+    def _validate_args(self, image_uri: str, transformers_version: str) -> None:
         """Check if image_uri or transformers_version arguments are specified."""
-        if not image_uri and not transformers_verison:
+        if not image_uri and not transformers_version:
             raise ValueError(
                 "transformers_version, and image_uri are both None. "
                 "Specify either transformers_version or image_uri."

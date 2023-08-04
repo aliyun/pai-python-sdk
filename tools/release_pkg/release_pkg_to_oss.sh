@@ -5,7 +5,7 @@
 #		OSS config and git config are required to upload the package to OSS bucket.
 #		git branch name($BRANCH), OSS username ($OSS_ACCESS_KEY_ID), OSS password ($OSS_ACCESS_KEY_SECRET),
 #		git username ($GIT_USERNAME) and git private token($GIT_PRIVATE_TOKEN) are needed to be
-#		passed as enviornment variables to use the script.
+#		passed as environment variables to use the script.
 #
 # usage:
 #

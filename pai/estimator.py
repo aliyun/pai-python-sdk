@@ -667,10 +667,10 @@ class Estimator(object):
             resource_id (str, optional): The ID of the resource group. If not provided,
                 the prediction service is deployed to ``public resource group``.
             serializer (SerializerBase): A SerializerBase instance used to serialize
-                the prediction reqeust data and deserialize the response data.
+                the prediction request data and deserialize the response data.
             options (Dict[str, Any], optional): Additional options for the prediction
                 service.
-            wait (bool): If ture, wait until the service is ready (Default True).
+            wait (bool): If true, wait until the service is ready (Default True).
 
         Returns:
             :class:`pai.predictor.Predictor`: A predictor instance refers to the created
