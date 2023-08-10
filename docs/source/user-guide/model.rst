@@ -50,7 +50,7 @@ SDK提供了HighLevel API，:class:`pai.model.Model` 和 :class:`pai.predictor.P
     )
 
     # 4. 部署模型到PAI-EAS，创建在线推理服务，返回Predictor对象
-    predictor = m.deploy(
+    predictor = model.deploy(
         service_name="example_torch_service",
         instance_type="ecs.c6.xlarge",
     )

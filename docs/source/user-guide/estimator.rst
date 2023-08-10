@@ -228,6 +228,51 @@ SDK提供了HighLevel的训练API： :class:`pai.estimator.Estimator` 支持用�
     est.model_data()
 
 
+使用TensorBoard
+******************************
+
+`TensorBoard <https://www.tensorflow.org/tensorboard/get_started>`_ 是一个用于机器学习实验的可视化工具包，他支持用户跟踪和可视化机器学习实验指标，例如损失和准确性、可视化模型图、查看直方图、显示图像等。PAI支持使用TensorBoard可视化云上训练作业的训练过程，用户可以在训练脚本中将TensorBoard日志写出到指定的路径，然后可以通过PAI提供的TensorBoard服务，查看训练作业写出的日志。
+
+训练脚本写出TensorBoard日志的示例代码如下：
+
+.. code-block:: python
+
+    import torch
+    from torch.utils.tensorboard import SummaryWriter
+    import os
+
+    # 训练脚本需要将TensorBoard日志写出到环境变量PAI_OUTPUT_LOGS指定的目录下
+    writer = SummaryWriter(log_dir=os.environ.get("PAI_OUTPUT_LOGS"))
+
+    writer.add_scalar("train/loss", 0.1, 1)
+    writer.add_image("train/image", torch.rand(3, 64, 64), 1)
+    writer.flush()
+
+
+用户可以通过 ``Estimator`` 的 ``tensorboard`` 方法，在PAI上启动一个TensorBoard应用，查看训练作业的TensorBoard日志。
+
+.. code-block:: python
+
+    estimator = Estimator(
+        image_uri="<TrainingImageUri>",
+        entry_point="train.py",
+        instance_type="<TrainingInstanceType>",
+    )
+    estimator.fit(wait=False)
+
+    # 启动TensorBoard服务，查看训练作业的TensorBoard日志
+    estimator.tensorboard()
+
+    # 查看TensorBoard 应用的控制台链接
+    print(tensorboard.app_uri)
+
+    # 在使用完成之后，删除TensorBoard应用
+    tensorboard.delete()
+
+
+.. note::
+
+    在PAI使用TensorBoard的账号和权限要求可以参考帮助文档 `创建及管理Tensorboard应用 <https://help.aliyun.com/zh/pai/user-guide/create-and-manage-tensorboard-tasks>`_ 。每一个阿里云子账号下最多能够创建5个TensorBoard应用，如果超出限制，创建时会返回 ``TensorboardLimitExceeded`` 错误，用户需要先停止或是删除之前创建的TensorBoard任务。
 
 
 本地执行训练作业
@@ -256,6 +301,8 @@ SDK提供了HighLevel的训练API： :class:`pai.estimator.Estimator` 支持用�
 
     # 返回一个本地的模型输出目录
     print(estimator.model_data())
+
+
 
 
 附录：训练作业预置环境变量
@@ -392,3 +439,4 @@ PAI_OUTPUT_{channel_name}
     `-- output                          # 作业的输出Channels: 默认包含两个OutputChannel: model/checkpoints
             `-- model                   # 通过环境变量 `PAI_OUTPUT_{CHANNEL_NAME}` 可以获输出路径.
             `-- checkpoints
+            `-- logs

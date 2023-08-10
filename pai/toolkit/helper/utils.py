@@ -230,7 +230,8 @@ class UserProfile(object):
             None,
         )
 
-        return member_info["Roles"]
+        # If user has PAIFullAccess policy, 'member_info' may be None.
+        return member_info["Roles"] if member_info else []
 
     def has_permission_edit_config(self, workspace_id: str) -> bool:
         """Return True if the current user has permission to edit workspace config.
