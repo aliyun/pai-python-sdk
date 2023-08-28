@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode
 
 import aiohttp
-import docker
 import requests
 
 from .common.consts import FrameworkTypes
@@ -1169,6 +1168,10 @@ class LocalPredictor(PredictorBase):
 
     @classmethod
     def _build_container_run(cls, container_id, port):
+        try:
+            import docker
+        except ImportError:
+            raise ImportError("Please install docker first: pip install docker")
         client = docker.from_env()
         container = client.containers.get(container_id)
 
