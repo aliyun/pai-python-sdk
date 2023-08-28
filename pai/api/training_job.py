@@ -48,7 +48,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         )
         res = self._do_request(
             method_=self._list_method,
-            request=request,
+            tmp_req=request,
         )
 
         return self.make_paginated_result(res)

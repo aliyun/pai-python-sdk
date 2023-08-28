@@ -142,6 +142,9 @@ class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
     # the request should not be replaced.
     workspace_id_none_placeholder = "WORKSPACE_ID_NONE_PLACEHOLDER"
 
+    # Default parameter name for request object.
+    default_param_name_for_request = "request"
+
     def __init__(self, workspace_id, acs_client, **kwargs):
         super(WorkspaceScopedResourceAPI, self).__init__(
             acs_client=acs_client, **kwargs
@@ -149,7 +152,16 @@ class WorkspaceScopedResourceAPI(with_metaclass(ABCMeta, ResourceAPI)):
         self.workspace_id = workspace_id
 
     def _do_request(self, method_, **kwargs):
-        request = kwargs.get("request")
+        request = kwargs.get(self.default_param_name_for_request)
+
+        if not request:
+            # Sometimes, request object is not named as "request", we need to find it.
+            for param_name, param_value in kwargs.items():
+                if isinstance(param_value, TeaModel) and type(
+                    param_value
+                ).__name__.endswith("Request"):
+                    request = param_value
+                    break
 
         # Automatically configure the workspace ID for the request
         if request and hasattr(request, "workspace_id"):
