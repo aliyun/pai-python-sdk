@@ -39,6 +39,29 @@ DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
 DEFAULT_LOGS_CHANNEL_NAME = "logs"
 
 
+class HyperParameterType(object):
+    """Hyperparameter type."""
+
+    INT = "Int"
+    FLOAT = "Float"
+    STRING = "String"
+    BOOL = "Boolean"
+    CHANNEL = "Channel"
+
+    @classmethod
+    def convert(
+        cls,
+        hp_value: Any,
+        hp_type: str,
+    ):
+        """Convert hyperparameter value to the specified type."""
+        if hp_type == cls.INT:
+            hp_value = int(hp_value)
+        elif hp_type == cls.FLOAT:
+            hp_value = float(hp_value)
+        return hp_value
+
+
 class Estimator(object):
     """The Estimator object is responsible for submitting TrainingJob.
 
@@ -1004,7 +1027,20 @@ class AlgorithmEstimator(Estimator):
         if hps_def:
             # Get default hyperparameters.
             for hp in hps_def:
-                res.update({hp["Name"]: hp["DefaultValue"]})
+                hp_name = hp.get("Name")
+                hp_value = hp.get("DefaultValue", "")
+                hp_type = hp.get("Type", "String")
+                # For hyperparameters with type INT or FLOAT, if the default value is
+                # empty, skip it.
+                if (
+                    hp_type in [HyperParameterType.INT, HyperParameterType.FLOAT]
+                    and not hp_value
+                ):
+                    continue
+                else:
+                    # Convert the value to the corresponding type.
+                    hp_value = HyperParameterType.convert(hp_value, hp_type)
+                    res.update({hp_name: hp_value})
             # Update with user provided hyperparameters.
             for hp in hyperparameters if hyperparameters else {}:
                 if hp not in res:

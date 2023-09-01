@@ -80,15 +80,6 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         algorithm_spec: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create a TrainingJob."""
-        input_channels = [
-            CreateTrainingJobRequestInputChannels().from_map(ch)
-            for ch in input_channels
-        ]
-        output_channels = [
-            CreateTrainingJobRequestOutputChannels().from_map(ch)
-            for ch in output_channels
-        ]
-
         if algorithm_spec and (
             algorithm_name or algorithm_version or algorithm_provider
         ):
@@ -102,32 +93,48 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         else:
             algo_spec = None
 
-        request = CreateTrainingJobRequest(
-            algorithm_name=algorithm_name,
-            algorithm_provider=algorithm_provider,
-            algorithm_version=algorithm_version,
-            compute_resource=CreateTrainingJobRequestComputeResource(
-                ecs_count=instance_count,
-                ecs_spec=instance_type,
-            ),
-            hyper_parameters=[
-                CreateTrainingJobRequestHyperParameters(
-                    name=name,
-                    value=str(value),
-                )
-                for name, value in hyperparameters.items()
-            ],
-            input_channels=input_channels,
-            labels=[
+        input_channels = [
+            CreateTrainingJobRequestInputChannels().from_map(ch)
+            for ch in input_channels
+        ]
+        output_channels = [
+            CreateTrainingJobRequestOutputChannels().from_map(ch)
+            for ch in output_channels
+        ]
+        compute_resource = CreateTrainingJobRequestComputeResource(
+            ecs_count=instance_count,
+            ecs_spec=instance_type,
+        )
+        hyper_parameters = [
+            CreateTrainingJobRequestHyperParameters(
+                name=name,
+                value=str(value),
+            )
+            for name, value in hyperparameters.items()
+        ]
+        labels = (
+            [
                 CreateTrainingJobRequestLabels(key=key, value=value)
                 for key, value in labels.items()
             ]
             if labels
-            else None,
+            else None
+        )
+
+        scheduler = CreateTrainingJobRequestScheduler(
+            max_running_time_in_seconds=max_running_in_seconds
+        )
+
+        request = CreateTrainingJobRequest(
+            algorithm_name=algorithm_name,
+            algorithm_provider=algorithm_provider,
+            algorithm_version=algorithm_version,
+            compute_resource=compute_resource,
+            hyper_parameters=hyper_parameters,
+            input_channels=input_channels,
+            labels=labels,
             output_channels=output_channels,
-            scheduler=CreateTrainingJobRequestScheduler(
-                max_running_time_in_seconds=max_running_in_seconds
-            ),
+            scheduler=scheduler,
             training_job_description=description,
             training_job_name=job_name,
             algorithm_spec=algo_spec,
