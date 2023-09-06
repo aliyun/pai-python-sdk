@@ -1,6 +1,8 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
+from pai.api.image import ImageLabel
+from pai.common.utils import to_semantic_version
 from pai.estimator import Estimator
 from pai.image import ImageScope, retrieve
 from pai.session import Session
@@ -201,15 +203,68 @@ class ModelScopeEstimator(Estimator):
         """
         if self.image_uri:
             return self.image_uri
-        framework_name = "modelscope"
-        framework_version = self.modelscope_version
-        if self.session.is_gpu_training_instance(self.instance_type):
-            accelerator_type = "GPU"
+
+        labels = [
+            ImageLabel.OFFICIAL_LABEL,
+            ImageLabel.DLC_LABEL,
+            ImageLabel.PROVIDER_COMMUNITY_LABEL,
+            ImageLabel.DEVICE_TYPE_GPU,
+            ImageLabel.framework_version("PyTorch", "*"),
+        ]
+
+        # Filter images by ModelScope version
+        if self.modelscope_version == "latest":
+            latest_version = self._get_latest_ms_version_for_training()
+            labels.append(ImageLabel.framework_version("ModelScope", latest_version))
         else:
-            accelerator_type = "CPU"
-        return retrieve(
-            framework_name=framework_name,
-            framework_version=framework_version,
-            accelerator_type=accelerator_type,
-            image_scope=ImageScope.TRAINING,
-        ).image_uri
+            labels.append(
+                ImageLabel.framework_version("ModelScope", self.modelscope_version)
+            )
+
+        resp = self.session.image_api.list(
+            labels=labels,
+            workspace_id=0,
+            verbose=True,
+        )
+
+        if resp.total_count == 0:
+            raise ValueError(
+                "No official image found for modelscope version:"
+                f" {self.modelscope_version}. Currently supported versions are:"
+                f" {self._get_supported_ms_versions_for_training()}"
+            )
+
+        image = resp.items[0]["ImageUri"]
+        return image
+
+    def _get_supported_ms_versions_for_training(self) -> List[str]:
+        """Return the list of supported ModelScope versions for training."""
+        label_keys = "system.framework.ModelScope"
+        label_filter = [
+            ImageLabel.OFFICIAL_LABEL,
+            ImageLabel.DLC_LABEL,
+            ImageLabel.PROVIDER_COMMUNITY_LABEL,
+            ImageLabel.DEVICE_TYPE_GPU,
+            ImageLabel.framework_version("PyTorch", "*"),
+            ImageLabel.framework_version("ModelScope", "*"),
+        ]
+        list_image_labels = self.session.image_api.list_labels(
+            label_keys=label_keys,
+            label_filter=label_filter,
+            workspace_id=0,
+        )
+
+        res = []
+        for label in list_image_labels:
+            if label["Value"] not in res:
+                res.append(label["Value"])
+
+        return res
+
+    def _get_latest_ms_version_for_training(self) -> str:
+        """Return the latest ModelScope version for training."""
+        res = self._get_supported_ms_versions_for_training()
+        return max(
+            res,
+            key=lambda x: to_semantic_version(x),
+        )

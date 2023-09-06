@@ -6,6 +6,8 @@ import string
 import sys
 from typing import Callable, Dict, Optional, Union
 
+from semantic_version import Version
+
 from pai import __version__
 from pai.common.consts import INSTANCE_TYPE_LOCAL, INSTANCE_TYPE_LOCAL_GPU
 
@@ -129,3 +131,22 @@ def generate_repr(repr_obj, *attr_names: str, **kwargs) -> str:
     cls_name = repr_obj.__class__.__name__
 
     return f"{cls_name}({attr_repr})"
+
+
+def to_semantic_version(version_str: str) -> Version:
+    """Convert version_str to semantic version.
+
+    Convert version_str to semantic version, if version_str is not a valid
+    semantic version, return '0.0.0'.
+
+    Args:
+        version_str[str]: Version string, such as '1.0.0', '1.0.0-rc1', '1.0.0+build.1'.
+
+    Returns:
+        :class:`semantic_version.Version`: Semantic version.
+    """
+    try:
+        return Version.coerce(version_str)
+    except ValueError:
+        # if version_str is not a valid semantic version, return '0.0.0'
+        return Version.coerce("0.0.0")

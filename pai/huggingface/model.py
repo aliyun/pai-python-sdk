@@ -1,6 +1,9 @@
 import logging
+import re
 from typing import Any, Dict, List, Optional, Union
 
+from pai.api.image import ImageLabel
+from pai.common.utils import to_semantic_version
 from pai.image import ImageScope, retrieve
 from pai.model import (
     DEFAULT_SERVICE_PORT,
@@ -12,6 +15,10 @@ from pai.serializers import SerializerBase
 from pai.session import Session, config_default_session
 
 logger = logging.getLogger(__name__)
+
+_PAI_HF_IMAGE_TAG_PATTERN_INFERENCE = re.compile(
+    r"huggingface-inference:transformers-(\d.+)-(gpu|cpu)"
+)
 
 
 class HuggingFaceModel(ModelBase):
@@ -186,18 +193,69 @@ class HuggingFaceModel(ModelBase):
         if self.image_uri:
             return self.image_uri
 
-        framework_name = "huggingface"
-        framework_version = self.transformers_version
-        if self.session.is_gpu_inference_instance(instance_type):
-            accelerator_type = "GPU"
+        labels = [
+            ImageLabel.OFFICIAL_LABEL,
+            ImageLabel.EAS_LABEL,
+            ImageLabel.PROVIDER_PAI_LABEL,
+            ImageLabel.DEVICE_TYPE_GPU,
+        ]
+
+        # Filter images by Transformers version
+        if self.transformers_version == "latest":
+            latest_version = self._get_latest_tf_version_for_inference()
+            name = f"huggingface-inference:transformers-{latest_version}-"
         else:
-            accelerator_type = "CPU"
-        return retrieve(
-            framework_name=framework_name,
-            framework_version=framework_version,
-            accelerator_type=accelerator_type,
-            image_scope=ImageScope.INFERENCE,
-        ).image_uri
+            name = f"huggingface-inference:transformers-{self.transformers_version}-"
+
+        resp = self.session.image_api.list(
+            name=name,
+            labels=labels,
+            workspace_id=0,
+            verbose=True,
+        )
+
+        if resp.total_count == 0:
+            raise ValueError(
+                "No official image found for Transformers version:"
+                f" {self.transformers_version}. Currently supported versions are:"
+                f" {self._get_supported_tf_versions_for_inference()}"
+            )
+
+        image = resp.items[0]["ImageUri"]
+        return image
+
+    def _get_supported_tf_versions_for_inference(self) -> List[str]:
+        """Return the list of supported Transformers versions for inference."""
+
+        labels = [
+            ImageLabel.OFFICIAL_LABEL,
+            ImageLabel.EAS_LABEL,
+            ImageLabel.PROVIDER_PAI_LABEL,
+            ImageLabel.DEVICE_TYPE_GPU,
+        ]
+        name = "huggingface-inference:transformers-"
+        list_images = self.session.image_api.list(
+            name=name,
+            labels=labels,
+            workspace_id=0,
+        ).items
+
+        res = []
+        for image in list_images:
+            tag_match = _PAI_HF_IMAGE_TAG_PATTERN_INFERENCE.match(image["Name"])
+            transformer_version, _ = tag_match.groups()
+            if transformer_version not in res:
+                res.append(transformer_version)
+
+        return res
+
+    def _get_latest_tf_version_for_inference(self) -> str:
+        """Return the latest Transformers version for inference."""
+        res = self._get_supported_tf_versions_for_inference()
+        return max(
+            res,
+            key=lambda x: to_semantic_version(x),
+        )
 
     def deploy(
         self,

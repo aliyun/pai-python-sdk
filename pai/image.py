@@ -2,24 +2,15 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from semantic_version import Version
-
-from pai.api.image import ImageLabel
-from pai.common.utils import make_list_resource_iterator
+from pai.api.image import SUPPORTED_IMAGE_FRAMEWORKS, ImageLabel
+from pai.common.utils import make_list_resource_iterator, to_semantic_version
 from pai.session import Session, config_default_session
 
 logger = logging.getLogger(__name__)
 
-_SUPPORTED_IMAGE_FRAMEWORKS = [
-    "XGBoost",
-    "TensorFlow",
-    "PyTorch",
-    "OneFlow",
-    "ModelScope",
-]
 
 _NORMALIZED_FRAMEWORK_NAMES = {
-    name.lower(): name for name in _SUPPORTED_IMAGE_FRAMEWORKS
+    name.lower(): name for name in SUPPORTED_IMAGE_FRAMEWORKS
 }
 
 # Regex expression pattern for PAI Docker Image Tag.
@@ -148,9 +139,9 @@ def _make_image_info(
 
     # use image label as ground truth to set the image property, python version, etc.
     labels = labels or dict()
-    if labels.get(ImageLabel.DEVICE_TYPE_GPU):
+    if labels.get("system.chipType") == "GPU":
         cpu_or_gpu = "GPU"
-    elif labels.get(ImageLabel.DEVICE_TYPE_CPU):
+    elif labels.get("system.chipType") == "CPU":
         cpu_or_gpu = "CPU"
     py_version = labels.get(ImageLabel.PYTHON_VERSION)
 
@@ -243,12 +234,12 @@ def retrieve(
         RuntimeError: A RuntimeErrors is raised if the specific image is not found.
     """
     framework_name = framework_name.lower()
-    supports_fw = [fw.lower() for fw in _SUPPORTED_IMAGE_FRAMEWORKS]
+    supports_fw = [fw.lower() for fw in SUPPORTED_IMAGE_FRAMEWORKS]
     if framework_name not in supports_fw:
         raise ValueError(
             f"The framework ({framework_name}) is not supported by the"
             f" retrieve method: supported frameworks"
-            f" {', '.join(_SUPPORTED_IMAGE_FRAMEWORKS)}",
+            f" {', '.join(SUPPORTED_IMAGE_FRAMEWORKS)}",
         )
 
     # label filter used to list official images of specific scope.
@@ -287,14 +278,6 @@ def retrieve(
 
     if framework_version.lower() == "latest":
         # select the latest framework version.
-        def to_semantic_version(version_str) -> Version:
-            try:
-                return Version.coerce(version_str)
-            except ValueError:
-                # some version_str from image tag could not be converted to semantic
-                # version, for example 'deeprec202212' for tensorflow.
-                return Version.coerce("0.0.0")
-
         candidates = sorted(
             candidates,
             key=lambda img: to_semantic_version(img.framework_version),

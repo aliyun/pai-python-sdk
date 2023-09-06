@@ -2,12 +2,33 @@ from typing import Any, Dict, List, Union
 
 from pai.api.base import PaginatedResult, PAIServiceName, WorkspaceScopedResourceAPI
 from pai.libs.alibabacloud_aiworkspace20210204.models import (
+    ListImageLabelsRequest,
+    ListImageLabelsResponseBody,
     ListImagesRequest,
     ListImagesResponseBody,
 )
 
+SUPPORTED_IMAGE_FRAMEWORKS = [
+    "DeepRec",
+    "DeepSpeed",
+    "Megatron-LM",
+    "ModelScope",
+    "Nemo",
+    "OneFlow",
+    "PyTorch",
+    "TensorFlow",
+    "Transformers",
+    "XGBoost",
+]
+
+SUPPORTED_IMAGE_LANGUAGES = [
+    "python",  # TODO: "Python"
+]
+
 
 class ImageLabel(object):
+    """Image Label Class."""
+
     # Unofficial Image Label
     UNOFFICIAL_LABEL = "system.official=false"
     # Official Image Label
@@ -30,7 +51,59 @@ class ImageLabel(object):
     DEVICE_TYPE_CPU = "system.chipType=CPU"
 
     # Python Version
+    # TODO: delete this label key
     PYTHON_VERSION = "system.pythonVersion"
+
+    @staticmethod
+    def framework_version(
+        framework: str,
+        version: str,
+    ):
+        """Create a label for filtering images that support specific framework version.
+
+        Args:
+            framework (str): framework name, which is case sensitive.
+            version (str): framework version. If version is '*', it will match all
+                versions.
+
+        Returns:
+            str: framework version label string.
+
+        Raises:
+            ValueError: If the framework is not supported.
+        """
+        if framework not in SUPPORTED_IMAGE_FRAMEWORKS:
+            raise ValueError(
+                f"Unsupported framework: {framework}. Current supported frameworks are:"
+                f" {SUPPORTED_IMAGE_FRAMEWORKS}"
+            )
+        return f"system.framework.{framework}={version}"
+
+    @staticmethod
+    def language_version(
+        language: str,
+        version: str,
+    ):
+        """Create a label for filtering images that support specific language version.
+
+        Args:
+            language (str): language name, which is case sensitive.
+            version (str): language version. If version is '*', it will match all
+                versions.
+
+        Returns:
+            str: language version label string.
+
+        Raises:
+            ValueError: If the language is not supported.
+        """
+        if language not in SUPPORTED_IMAGE_LANGUAGES:
+            raise ValueError(
+                f"Unsupported language: {language}. Current supported languages are:"
+                f" {SUPPORTED_IMAGE_LANGUAGES}"
+            )
+        # TODO: "system.language.{language}={version}"
+        return f"system.{language}Version={version}"
 
 
 class ImageAPI(WorkspaceScopedResourceAPI):
@@ -40,11 +113,11 @@ class ImageAPI(WorkspaceScopedResourceAPI):
 
     _list_method = "list_images_with_options"
     _create_method = "create_image_with_options"
-    _delete_method = "add_image_with_options"
+    _list_labels_method = "list_image_labels_with_options"
 
     def list(
         self,
-        labels: Union[Dict[str, Any], List[str]] = ImageLabel.UNOFFICIAL_LABEL,
+        labels: Union[Dict[str, Any], List[str]] = None,
         name: str = None,
         order: str = "DESC",
         page_number: int = 1,
@@ -85,3 +158,31 @@ class ImageAPI(WorkspaceScopedResourceAPI):
         )
 
         return self.make_paginated_result(resp)
+
+    def list_labels(
+        self,
+        image_id: str = None,
+        label_filter: Union[Dict[str, Any], List[str]] = None,
+        label_keys: str = None,
+        region: str = None,
+        **kwargs,
+    ) -> dict:
+        workspace_id = kwargs.pop("workspace_id", None)
+        if isinstance(label_filter, dict):
+            label_filter = ",".join(
+                ["{}={}".format(k, v) for k, v in label_filter.items()]
+            )
+        elif isinstance(label_filter, list):
+            label_filter = ",".join([item for item in label_filter])
+
+        request = ListImageLabelsRequest(
+            image_id=image_id,
+            label_filter=label_filter,
+            label_keys=label_keys,
+            region=region,
+            workspace_id=workspace_id,
+        )
+        resp: ListImageLabelsResponseBody = self._do_request(
+            method_=self._list_labels_method, request=request
+        )
+        return resp.to_map()["Labels"]
