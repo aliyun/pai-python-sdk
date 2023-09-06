@@ -9,16 +9,22 @@ import shutil
 import tempfile
 import textwrap
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
 from addict import Dict as AttrDict
+from oss2 import ObjectIterator
 
 from .common import git_utils
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import is_local_run_instance_type, random_str, to_plain_text
+from .common.utils import (
+    generate_repr,
+    is_local_run_instance_type,
+    random_str,
+    to_plain_text,
+)
 from .image import ImageInfo
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
@@ -600,6 +606,24 @@ class ModelBase(object):
         self.inference_spec = inference_spec
         self.session = session
 
+    def download(self, target_dir: str):
+        """Download the model data from OSS to local directory.
+
+        Args:
+            target_dir (str): The target directory to download the model data.
+
+        Returns:
+            str: Local directory path stores the model data.
+
+        """
+        if not self.model_data:
+            raise ValueError("Could not find the model data for this model.")
+        if not is_oss_uri(self.model_data):
+            raise RuntimeError("Download method only support model data stored in OSS.")
+        self._download_model_data(target_dir)
+
+        return target_dir
+
     def _download_model_data(self, target_dir):
         if not self.model_data:
             return
@@ -645,6 +669,42 @@ class ModelBase(object):
             bucket=self.session.oss_bucket,
         )
         return upload_model_data
+
+    def list_model_files(self, uri_format: bool = False) -> Iterator[str]:
+        """List model files under the model path.
+
+        Args:
+            uri_format (bool): If True, return the model file path in OSS URI format.
+
+        Returns:
+            Iterator[str]: Iterator of model files.
+        """
+        if not self.model_data:
+            raise ValueError("Model data path is not specified.")
+
+        if not is_oss_uri(self.model_data):
+            raise ValueError("Method only support model data stored in OSS.")
+
+        oss_uri_obj = OssUriObj(self.model_data)
+        bucket = self.session.get_oss_bucket(
+            bucket_name=oss_uri_obj.bucket_name,
+        )
+
+        def _get_relative_path(obj_key: str):
+            # if the model_data is reference an object, return the object file
+            # name.
+            if oss_uri_obj.object_key == obj_key:
+                return os.path.basename(obj_key)
+
+            path = obj_key[len(oss_uri_obj.object_key) :]
+            return path.lstrip("/") if path.startswith("/") else path
+
+        obj_iter = ObjectIterator(bucket=bucket, prefix=oss_uri_obj.object_key)
+        for obj_info in obj_iter:
+            if uri_format:
+                yield f"oss://{bucket.bucket_name}/{obj_info.key}"
+            else:
+                yield _get_relative_path(obj_info.key)
 
     def _get_inference_spec(self):
         return self.inference_spec
@@ -977,23 +1037,22 @@ class ModelBase(object):
     def register(
         self,
         model_name: str,
+        version: str = None,
+        accessibility: Optional[str] = None,
+        version_labels: Optional[Dict[str, str]] = None,
+        version_description: Optional[str] = None,
+        format_type: Optional[str] = None,
+        framework_type: Optional[str] = None,
+        training_spec: Optional[Dict[str, Any]] = None,
+        approval_status: Optional[str] = None,
+        metrics: Optional[Dict[str, Any]] = None,
+        options: Optional[str] = None,
         model_labels: Optional[Dict[str, str]] = None,
         model_description: Optional[str] = None,
         model_doc: Optional[str] = None,
         origin: Optional[str] = None,
         domain: Optional[str] = None,
         task: Optional[str] = None,
-        accessibility: Optional[str] = None,
-        version: str = None,
-        version_labels: Optional[Dict[str, str]] = None,
-        version_description: Optional[str] = None,
-        format_type: Optional[str] = None,
-        framework_type: Optional[str] = None,
-        training_spec: Optional[Dict[str, Any]] = None,
-        inference_spec: Optional[Dict[str, Any]] = None,
-        approval_status: Optional[str] = None,
-        metrics: Optional[Dict[str, Any]] = None,
-        options: Optional[str] = None,
     ) -> "RegisteredModel":
         """Register a model to the PAI model registry.
 
@@ -1005,6 +1064,27 @@ class ModelBase(object):
                 parameters like ``model_labels``, ``model_description``, ``model_doc``,
                 ``origin``, ``domain``, ``task``, ``accessibility`` will be ignored. If
                 the model name does not exist, a new model will be created.
+            version (str, optional): The version of the model. If not specified, a new
+                version will be created. If the version already exists, registration
+                will fail.
+            accessibility (str, optional): The accessibility of the model. The value
+                can be "PUBLIC" or "PRIVATE". Default to "PRIVATE".
+            version_labels (dict, optional): The labels of the model version.
+            version_description (str, optional): The description of the model version.
+            format_type (str, optional): The format type of the model version. The value
+                can be "OfflineModel", "SavedModel", "Keras H5", "Frozen Pb",
+                "Caffe Prototxt", "TorchScript", "XGBoost", "PMML", "AlinkModel",
+                "ONNX". Default to None.
+            framework_type (str, optional): The framework type of the model version. The
+                value can be "PyTorch", "TensorFlow", "Keras", "Caffe", "Alink",
+                "Xflow", "XGBoost". Default to None.
+            training_spec (dict, optional): The training spec of the model version.
+                Usually, it is got from the training job. Default to None.
+            approval_status (str, optional): The approval status of the model version.
+                The value can be "APPROVED", "PENDING". Default to None.
+            metrics (dict, optional): The metrics of the model version.
+            options (str, optional): Any other options that you want to pass to the
+                model registry. Default to None.
             model_labels (dict, optional): The labels of the model.
             model_description (str, optional): The description of the model.
             model_doc (str, optional): The documentation uri of the model.
@@ -1015,29 +1095,6 @@ class ModelBase(object):
             task (str, optional): The task that the model is used for. For example,
                 "large-language-model", "text-classification", "image-classification",
                 "sequence-labeling" etc. Default to None.
-            accessibility (str, optional): The accessibility of the model. The value
-                can be "PUBLIC" or "PRIVATE". Default to "PRIVATE".
-            version (str, optional): The version of the model. If not specified, a new
-                version will be created. If the version already exists, registration
-                will fail.
-            version_labels (dict, optional): The labels of the model version.
-            version_description (str, optional): The description of the model version.
-            format_type (str, optional): The format type of the model version. The value
-                can be "OfflineModel", "SavedModel", "Keras H5", "Frozen Pb",
-                "Caffe Prototxt", "TorchScript", "XGBoost", "PMML", "AlinkModel",
-                "ONNX". Default to None.
-            framework_type (str, optional): The framework type of the model version. The
-                value can be "Pyrotch", "TensorFlow", "Keras", "Caffe", "Alink",
-                "Xflow", "XGBoost". Default to None.
-            training_spec (dict, optional): The training spec of the model version.
-                Usually, it is got from the training job. Default to None.
-            inference_spec (dict, optional): The complete inference spec of the model
-                version. Usually, it is got from the inference service. Default to None.
-            approval_status (str, optional): The approval status of the model version.
-                The value can be "APPROVED", "PENDING". Default to None.
-            metrics (dict, optional): The metrics of the model version.
-            options (str, optional): Any other options that you want to pass to the
-                model registry. Default to None.
 
         Returns:
             :class:`pai.model.RegisteredModel`: The registered model object.
@@ -1047,6 +1104,9 @@ class ModelBase(object):
             raise ValueError(
                 "Register model failed, ``model_data`` is required to register a model."
             )
+
+        # Ensure model data is uploaded to OSS.
+        self.model_data = self._upload_model_data()
 
         # By specifying model_name with double quotes, the list api will process the
         # precise search. Otherwise, the list api will process the fuzzy search.
@@ -1076,7 +1136,9 @@ class ModelBase(object):
             format_type=format_type,
             framework_type=framework_type,
             training_spec=training_spec,
-            inference_spec=inference_spec,
+            inference_spec=self.inference_spec.to_dict()
+            if self.inference_spec
+            else None,
             approval_status=approval_status,
             metrics=metrics,
             options=options,
@@ -1265,7 +1327,8 @@ class RegisteredModel(ModelBase):
         model_name: str,
         model_version: Optional[str] = None,
         model_provider: Optional[str] = None,
-        session: Session = None,
+        session: Optional[Session] = None,
+        **kwargs,
     ):
         """Get a RegisteredModel instance from PAI model registry.
 
@@ -1274,36 +1337,43 @@ class RegisteredModel(ModelBase):
             model_version (str, optional): The version of the registered model. If not
                 provided, the latest version is retrieved from the model registry.
             model_provider (str, optional): The provider of the registered model.
-                Currently only "pai" or None are supported. Set it to "pai" to retrieve
-                a PAI official model. If not provided, the default provider is user's
-                PAI account.
+                Currently, only "pai", "huggingface" or None are supported.
             session (:class:`pai.session.Session`, optional): A PAI session object used
                 for interacting with PAI Service.
         """
         self.session = session
-        model_version_obj = self._get_model_version_obj(
-            model_name=model_name,
-            model_version=model_version,
-            model_provider=model_provider,
-        )
+        model_info = kwargs.pop("model_info", None)
+        if model_info:
+            self._model_version_info = kwargs.pop("model_version_info", {})
+            self._model_info = model_info
+        else:
+            self._model_info, self._model_version_info = self._get_model_version_obj(
+                model_name=model_name,
+                model_version=model_version,
+                model_provider=model_provider,
+            )
 
-        self._model_id = model_version_obj.get("ModelId")
-        self.model_name = model_version_obj.get("ModelName")
-        self.model_version = model_version_obj.get("VersionName")
-        self.model_provider = model_version_obj.get("Provider")
-        self.framework_type = model_version_obj.get("FrameworkType")
-        self.format_type = model_version_obj.get("FormatType")
-        self.training_spec = model_version_obj.get("TrainingSpec")
-        self.source_type = model_version_obj.get("SourceType")
-        self.source_id = model_version_obj.get("SourceId")
-        self.labels = {
-            lb["Key"]: lb["Value"] for lb in model_version_obj.get("Labels", [])
+        self.model_id = self._model_info.get("ModelId")
+        self.model_name = self._model_info.get("ModelName")
+        self.model_provider = self._model_info.get("Provider")
+        self.task = self._model_info.get("Task")
+        self.framework_type = self._model_version_info.get("FrameworkType")
+        self.source_type = self._model_version_info.get("SourceType")
+        self.source_id = self._model_version_info.get("SourceId")
+        self.format_type = self._model_version_info.get("FormatType")
+        self.uri = self._model_version_info.get("Uri")
+        self.model_version = self._model_version_info.get("VersionName")
+        self.training_spec = self._model_version_info.get("TrainingSpec")
+        self.model_labels = {
+            lb["Key"]: lb["Value"] for lb in self._model_info.get("Labels", [])
         }
-
+        self.version_labels = {
+            lb["Key"]: lb["Value"] for lb in self._model_version_info.get("Labels", [])
+        }
         super(RegisteredModel, self).__init__(
-            model_data=model_version_obj.get("Uri"),
+            model_data=self.uri,
             inference_spec=InferenceSpec.from_dict(
-                model_version_obj.get("InferenceSpec", dict())
+                self._model_version_info.get("InferenceSpec", dict())
             ),
         )
 
@@ -1311,9 +1381,99 @@ class RegisteredModel(ModelBase):
         """Compare two RegisteredModel instances."""
         return (
             isinstance(other, RegisteredModel)
-            and other._model_id == self._model_id
-            and other.model_version == other.model_version
+            and self.model_id == other.model_id
+            and self.model_version == other.model_version
         )
+
+    def __repr__(self):
+        if not self.model_provider:
+            return generate_repr(
+                self,
+                "model_name",
+                "model_version",
+            )
+        else:
+            return generate_repr(self, "model_name", "model_version", "model_provider")
+
+    @classmethod
+    @config_default_session
+    def list(
+        cls,
+        model_name: Optional[str] = None,
+        model_provider: Optional[str] = None,
+        task: Optional[str] = None,
+        session: Optional[Session] = None,
+    ) -> Iterator["RegisteredModel"]:
+        """List registered models in model registry.
+
+        Args:
+            model_name (str, optional): The name of the registered model. Default to
+                None.
+            model_provider (str, optional): The provider of the registered model.
+                Optional values are "pai", "huggingface" or None. If None, list
+                registered models in the workspace of the current session. Default to
+                None.
+            task (str, optional): The task of the registered model. Default to None.
+            session (Session, optional): A PAI session object used for interacting with
+                PAI Service.
+        Returns:
+            Iterator[RegisteredModel]: An iterator of RegisteredModel instances matching
+                the given criteria.
+        """
+        page_size = 50
+        page_number = 1
+
+        while True:
+            result = session.model_api.list(
+                model_name=model_name,
+                provider=model_provider,
+                task=task,
+                page_size=page_size,
+                page_number=page_number,
+            ).items
+            if not result:
+                break
+
+            for item in result:
+                model_version_info = item.pop("LatestVersion", {})
+                model_info = item
+                yield cls(
+                    model_name=item["ModelName"],
+                    session=session,
+                    model_info=model_info,
+                    model_version_info=model_version_info,
+                )
+            page_number += 1
+
+    def list_versions(
+        self, model_version: Optional[str] = None
+    ) -> Iterator["RegisteredModel"]:
+        """List all versions of the registered model.
+
+        Args:
+            model_version (str, optional): The version of the registered model. Default
+                to None.
+        """
+        page_size = 50
+        page_number = 1
+
+        while True:
+            items = self.session.model_api.list_versions(
+                model_id=self.model_id,
+                page_number=page_number,
+                page_size=page_size,
+                version_name=model_version,
+            ).items
+            if not items:
+                break
+            for item in items:
+                yield RegisteredModel(
+                    model_name=self.model_name,
+                    session=self.session,
+                    model_info=self._model_info,
+                    model_version_info=item,
+                )
+            page_number += 1
 
     def _generate_service_name(self) -> str:
         """Generate a service name for the online prediction service."""
@@ -1332,20 +1492,19 @@ class RegisteredModel(ModelBase):
         model_name: str,
         model_version: Optional[str] = None,
         model_provider: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Get the model version object from PAI model registry.
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Get the model info from PAI model registry.
 
         Args:
             model_name (str): The name of the registered model.
             model_version (str, optional): The version of the registered model. If not
                 provided, the latest version is retrieved from the model registry.
             model_provider (str, optional): The provider of the registered model.
-                Currently only "pai" or None are supported. Set it to "pai" to retrieve
-                a PAI official model. If not provided, the default provider is user's
-                PAI account.
+                Currently, only "pai" or None are supported. Set it to "pai" to retrieve
+                a PAI official model.
 
         Returns:
-            A dict that represents the model version object.
+            A tuple of model object and model version object.
         """
         if not model_name:
             raise ValueError(
@@ -1372,34 +1531,35 @@ class RegisteredModel(ModelBase):
             model_version_obj = self.session.model_api.get_version(
                 model_id=model_id, version=model_version
             )
-            model_version_obj.update(
-                {
-                    "ModelName": model_name,
-                    "Provider": model_provider,
-                }
-            )
+            return model_obj, model_version_obj
         else:
-            # Get the latest model version of the specific model if model_version is not provided.
+            # Get the latest model version of the specific model if model_version
+            # is not provided.
             if "LatestVersion" not in model_obj:
                 raise RuntimeError(
                     f"Could not find any model version under the specific"
                     f" name='{model_name}' and provider='{model_provider}'. Please"
                     f" check the arguments."
                 )
-            model_version_obj = model_obj["LatestVersion"]
-            model_version = model_version_obj["VersionName"]
-            model_version_obj["ModelId"] = model_id
-            model_version_obj["ModelName"] = model_name
-            model_version_obj["Provider"] = model_provider
-            logger.warning(
-                f"Parameter model_version is not provided, the latest"
-                f" version='{model_version}' of the model will be used."
-            )
-        return model_version_obj
+            return model_obj, model_obj["LatestVersion"]
 
-    def delete(self):
-        """Delete the specific registered model from PAI model registry"""
-        self.session.model_api.delete_version(self._model_id, self.model_version)
+    def delete(self, delete_all_version: bool = False):
+        """Delete the specific registered model from PAI model registry.
+
+        Args:
+            delete_all_version (bool): Whether to delete all versions of the registered
+                model.
+        """
+        if delete_all_version:
+            self.session.model_api.delete(self.model_id)
+        else:
+            if not self.model_version:
+                logger.warning(
+                    "No model version is specified for the registered model, "
+                    "skipping deletion."
+                )
+                return
+            self.session.model_api.delete_version(self.model_id, self.model_version)
 
     def deploy(
         self,
@@ -1468,6 +1628,8 @@ class RegisteredModel(ModelBase):
             A ``PredictorBase`` instance used for making prediction to the prediction
             service.
         """
+        if not self._model_version_info:
+            raise ValueError("No model version is available for deployment.")
         if is_local_run_instance_type(instance_type):
             return self._deploy_local(
                 instance_type=instance_type,
@@ -1623,6 +1785,8 @@ class RegisteredModel(ModelBase):
                     "Only one of EcsCount and EcsType is provided. Please check the"
                     " AlgorithmSpec."
                 )
+        else:
+            instance_type, instance_count = None, None
 
         return AlgorithmEstimator(
             algorithm_name=algorithm_name,

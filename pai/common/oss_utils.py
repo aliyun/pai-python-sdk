@@ -53,7 +53,7 @@ def _download_with_progress(
         total=total,
         unit="B",
         unit_scale=True,
-        desc=f"Downloading file: {object_key}",
+        desc=f"Downloading file: {filename}",
     ) as pbar:
         oss2.resumable_download(
             bucket=oss_bucket,

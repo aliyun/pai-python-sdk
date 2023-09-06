@@ -110,3 +110,22 @@ def is_local_run_instance_type(instance_type: str) -> bool:
         INSTANCE_TYPE_LOCAL_GPU,
         INSTANCE_TYPE_LOCAL,
     ]
+
+
+def generate_repr(repr_obj, *attr_names: str, **kwargs) -> str:
+    """Generate a string representation of the given object.
+
+    Args:
+        repr_obj: The object used to generate the string representation.
+        attr_names: A list of attribute names to include in the string representation.
+
+    Returns:
+        str: A string representation of the object.
+
+    """
+    attrs = {name: getattr(repr_obj, name) for name in attr_names}
+    attrs.update(kwargs)
+    attr_repr = ", ".join(["{}={}".format(k, v) for k, v in attrs.items()])
+    cls_name = repr_obj.__class__.__name__
+
+    return f"{cls_name}({attr_repr})"

@@ -106,7 +106,7 @@ class Estimator(object):
         checkpoints_path: Optional[str] = None,
         output_path: Optional[str] = None,
         metric_definitions: Optional[List[Dict[str, str]]] = None,
-        instance_type: str = "ecs.c6.xlarge",
+        instance_type: Optional[str] = None,
         instance_count: int = 1,
         session: Optional[Session] = None,
     ):

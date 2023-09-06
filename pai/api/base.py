@@ -2,12 +2,10 @@ import logging
 from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Union
 
-import backoff
 import six
 from alibabacloud_tea_openapi.client import Client
 from alibabacloud_tea_util.models import RuntimeOptions
 from six import with_metaclass
-from Tea.exceptions import TeaException
 from Tea.model import TeaModel
 
 logger = logging.getLogger(__name__)
@@ -77,19 +75,7 @@ class ResourceAPI(with_metaclass(ABCMeta, object)):
             kwargs["runtime"] = runtime
         request_method = getattr(self.acs_client, method_)
 
-        if self.is_retryable_method(method_):
-            request_method = backoff.on_exception(
-                backoff.expo, exception=TeaException, max_tries=3
-            )(request_method)
-
         return request_method(*args, **kwargs).body
-
-    @classmethod
-    def is_retryable_method(cls, method_: str):
-        for prefix in RETRYABLE_REQUEST_METHOD_PREFIX:
-            if method_.startswith(prefix):
-                return True
-        return False
 
     def get_api_object_by_resource_id(self, resource_id):
         raise NotImplementedError

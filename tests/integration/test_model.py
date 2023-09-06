@@ -1,11 +1,13 @@
 import io
 import json
 import os.path
+from itertools import islice
 from unittest import skipUnless
 
 import numpy as np
 import pandas as pd
 import pytest
+from Tea.exceptions import TeaException
 
 from pai.common.oss_utils import is_oss_uri, upload
 from pai.common.utils import camel_to_snake
@@ -22,6 +24,7 @@ from tests.integration import BaseIntegTestCase
 from tests.integration.utils import (
     NumpyBytesSerializer,
     make_eas_service_name,
+    make_resource_name,
     t_context,
 )
 from tests.test_data import PMML_MODEL_PATH, test_data_dir
@@ -241,14 +244,14 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
         self.assertEqual(len(pred_y), len(val_y))
 
 
-class TestRegisteredModel(BaseIntegTestCase):
+class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
     """Test :class:`pai.model.RegisteredModel` class"""
 
     predictors = []
 
     @classmethod
     def tearDownClass(cls):
-        super(TestRegisteredModel, cls).tearDownClass()
+        super(TestRegisteredModelTrainDeploy, cls).tearDownClass()
         for p in cls.predictors:
             p.delete_service()
 
@@ -418,3 +421,108 @@ class TestModelLocalGpuDeploy(BaseIntegTestCase):
             b"HelloWorld",
         )
         self.assertTrue(isinstance(res.json(), list))
+
+
+class TestRegisteredModelBaseOperation(BaseIntegTestCase):
+    def test_create_delete(self):
+        torch_image_uri = retrieve(
+            "pytorch",
+            framework_version="1.12",
+            accelerator_type="GPU",
+        ).image_uri
+
+        m = Model(
+            model_data="oss://example-bucket/path/to/model/",
+            inference_spec=container_serving_spec(
+                source_dir=os.path.join(test_data_dir, "local_gpu_serve"),
+                command="python run.py",
+                image_uri=torch_image_uri,
+                port=8000,
+            ),
+        )
+
+        model_name = make_resource_name(case_name="test_reg_model")
+        reg_model_1 = m.register(
+            model_name=model_name,
+            version="1.0.0",
+            version_labels={
+                "Alice": "Bob",
+            },
+        )
+        reg_model_2 = m.register(
+            model_name=model_name,
+            version="1.1.0",
+            version_labels={
+                "Foo": "Bar",
+            },
+        )
+
+        latest_model = RegisteredModel(model_name=model_name)
+
+        self.assertTrue(bool(latest_model.model_data))
+        self.assertTrue(bool(latest_model.uri))
+        self.assertTrue(bool(latest_model.version_labels))
+        self.assertDictEqual(latest_model.version_labels, {"Foo": "Bar"})
+        self.assertEqual(latest_model.model_version, "1.1.0")
+
+        self.assertEqual(reg_model_2, latest_model)
+        models = [m for m in islice(RegisteredModel.list(), 10)]
+        self.assertTrue(len(models) >= 0)
+
+        versions = [m for m in islice(latest_model.list_versions(), 2)]
+        self.assertTrue(len(versions) >= 2)
+
+        reg_model_1.delete()
+        # try to get delete model version.
+        with self.assertRaises(TeaException):
+            RegisteredModel(model_name, model_version=reg_model_1.model_version)
+
+        new_reg_model_2 = RegisteredModel(
+            model_name=model_name, model_version=reg_model_2.model_version
+        )
+        self.assertEqual(new_reg_model_2, reg_model_2)
+
+    def test_list_public(self):
+        models = [m for m in islice(RegisteredModel.list(model_provider="pai"), 10)]
+        self.assertTrue(len(models) >= 10)
+        self.assertTrue(all(m for m in models if m.model_provider == "pai"))
+
+        models = [
+            m
+            for m in islice(
+                RegisteredModel.list(
+                    model_provider="huggingface", task="text-generation"
+                ),
+                10,
+            )
+        ]
+        self.assertTrue(len(models) >= 10)
+        self.assertTrue(all(m for m in models if m.model_provider == "huggingface"))
+
+    def test_list_files_case_upload_file(self):
+        # test upload single model file
+        model_v1 = Model(
+            model_data=os.path.join(test_data_dir, "xgb_model/model.json"),
+        )
+        model_name = make_resource_name(case_name="test_list_file")
+        reg_model_v1 = model_v1.register(model_name=model_name)
+        self.assertTrue(self.is_oss_object_exists(reg_model_v1.model_data))
+        model_files = [f for f in reg_model_v1.list_model_files()]
+        self.assertListEqual(model_files, ["model.json"])
+        reg_model_v1.delete()
+
+        # test upload directory
+        model_v2 = Model(
+            model_data=os.path.join(test_data_dir, "xgb_model/"),
+        )
+        reg_model_v2 = model_v2.register(model_name=model_name)
+        self.assertFalse(self.is_oss_object_exists(reg_model_v2.model_data))
+        model_files = [f for f in reg_model_v2.list_model_files()]
+        self.assertListEqual(sorted(model_files), sorted(["model.json", "README.md"]))
+        model_file_objs = [
+            uri for uri in reg_model_v2.list_model_files(uri_format=True)
+        ]
+        self.assertTrue(
+            (all(self.is_oss_object_exists(uri) for uri in model_file_objs))
+        )
+        reg_model_v2.delete(delete_all_version=True)
