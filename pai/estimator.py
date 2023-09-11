@@ -733,9 +733,9 @@ class AlgorithmEstimator(Estimator):
         )
 
         # Inspect the definition of hyperparameters, input channels and output channels
-        print(est.hyperparameters_definition)
-        print(est.input_channels_definition)
-        print(est.output_channels_definition)
+        print(est.hyperparameter_definitions)
+        print(est.input_channel_definitions)
+        print(est.output_channel_definitions)
         print(est.supported_instance_types)
 
         # Submit a training job
@@ -882,33 +882,21 @@ class AlgorithmEstimator(Estimator):
         self._check_instance_type()
 
     @property
-    def hyperparameters_definition(self) -> List[Dict[str, Any]]:
-        """Get the hyperparameters definition from the algorithm spec."""
-        res = (
-            self._algo_spec["HyperParameters"]
-            if "HyperParameters" in self._algo_spec
-            else []
-        )
+    def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
+        """Get the hyperparameter definitions from the algorithm spec."""
+        res = self._algo_spec.get("HyperParameters", [])
         return res
 
     @property
-    def input_channels_definition(self) -> List[Dict[str, Any]]:
-        """Get the input channels definition from the algorithm spec."""
-        res = (
-            self._algo_spec["InputChannels"]
-            if "InputChannels" in self._algo_spec
-            else []
-        )
+    def input_channel_definitions(self) -> List[Dict[str, Any]]:
+        """Get the input channel definitions from the algorithm spec."""
+        res = self._algo_spec.get("InputChannels", [])
         return res
 
     @property
-    def output_channels_definition(self) -> List[Dict[str, Any]]:
-        """Get the output channels definition from the algorithm spec."""
-        res = (
-            self._algo_spec["OutputChannels"]
-            if "OutputChannels" in self._algo_spec
-            else []
-        )
+    def output_channel_definitions(self) -> List[Dict[str, Any]]:
+        """Get the output channel definitions from the algorithm spec."""
+        res = self._algo_spec.get("OutputChannels", [])
         return res
 
     @property
@@ -1023,7 +1011,7 @@ class AlgorithmEstimator(Estimator):
             dict: The dict of hyperparameters.
         """
         res = {}
-        hps_def = self.hyperparameters_definition
+        hps_def = self.hyperparameter_definitions
         if hps_def:
             # Get default hyperparameters.
             for hp in hps_def:
@@ -1047,7 +1035,7 @@ class AlgorithmEstimator(Estimator):
                     logger.warning(
                         f"Hyperparameter='{hp}' is not defined in hyperparameters"
                         f" definition. Make sure you are using the right"
-                        f" hyperparameters and check the hyperparameters_definition."
+                        f" hyperparameters and check the hyperparameter_definitions."
                     )
                     res.update({hp: hyperparameters[hp]})
                 else:
@@ -1104,7 +1092,7 @@ class AlgorithmEstimator(Estimator):
 
         inputs = copy.deepcopy(inputs) or {}
         res = []
-        input_channels_def = self.input_channels_definition
+        input_channels_def = self.input_channel_definitions
         if input_channels_def:
             for channel in input_channels_def:
                 channel_name = channel["Name"]
@@ -1160,7 +1148,7 @@ class AlgorithmEstimator(Estimator):
         # Record the output channels
         self._output_channels = []
         res = []
-        output_channels_def = self.output_channels_definition
+        output_channels_def = self.output_channel_definitions
         if output_channels_def:
             for channel in output_channels_def:
                 channel_name = channel["Name"]
