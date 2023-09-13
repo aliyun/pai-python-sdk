@@ -1477,7 +1477,7 @@ class RegisteredModel(ModelBase):
 
     def _generate_service_name(self) -> str:
         """Generate a service name for the online prediction service."""
-        base_name = self.model_name.replace("-", "_")[:36]
+        base_name = self.model_name.lower().replace("-", "_")[:36]
         if base_name.endswith("_"):
             base_name = base_name[:-1]
         gen_name = f"{base_name}_{random_str(8)}"
