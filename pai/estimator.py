@@ -10,6 +10,7 @@ import shutil
 import tempfile
 import textwrap
 import time
+from abc import ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
@@ -62,7 +63,284 @@ class HyperParameterType(object):
         return hp_value
 
 
-class Estimator(object):
+class EstimatorBase(metaclass=ABCMeta):
+    """EstimatorBase is the base class for other Estimator classes, such as Estimator.
+
+    The EstimatorBase class contains common attributes and methods for all estimators,
+    such as the hyperparameters, instance type, instance count, etc. The EstimatorBase
+    class is not intended to be used directly, please use the other Estimator classes
+    instead.
+
+    """
+
+    def __init__(
+        self,
+        hyperparameters: Optional[Dict[str, Any]] = None,
+        base_job_name: Optional[str] = None,
+        max_run_time: Optional[int] = None,
+        output_path: Optional[str] = None,
+        instance_type: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        session: Optional[Session] = None,
+    ):
+        """EstimatorBase constructor.
+
+        Args:
+            hyperparameters (dict, optional): A dictionary that represents the
+                hyperparameters used in the training job. The hyperparameters will be
+                stored in the `/ml/input/config/hyperparameters.json` as a JSON
+                dictionary in the training container.
+            base_job_name (str, optional): The base name used to generate the training
+                job name.
+            max_run_time (int, optional): The maximum time in seconds that the training
+                job can run. The training job will be terminated after the time is
+                reached (Default None).
+            output_path (str, optional): An OSS URI to store the outputs of the training
+                jobs. If not provided, an OSS URI will be generated using the default
+                OSS bucket in the session. When the `estimator.fit` method is called,
+                a specific OSS URI under the output_path for each channel is generated
+                and mounted to the training container.
+
+                A completed training container directory structure example::
+
+                    /ml
+                    |-- usercode            			// User source code directory.
+                    |   |-- requirements.txt
+                    |   `-- train.py
+                    |-- input               			// TrainingJob input
+                    |   `-- config
+                    |       |-- hyperparameters.json	// Hyperparameters in JSON
+                    |       |                           // dictionary format for the
+                    |       |                           // TrainingJob
+                    |       |
+                    |   `-- data            			// TrainingJob input channels
+                    |       |                           // `/ml/input/data/` is a input
+                    |       |                           // channel, and the directory
+                    |       |                           // name is the channel name.
+                    |       |                           // Each directory under the
+                    |       |-- test-data
+                    |       |   `-- test.csv
+                    |       `-- train-data
+                    |           `-- train.csv
+                    `-- output              			// TrainingJob output channels.
+                            |                           // Each directory under the
+                            |                           // `/ml/output/` is an output
+                            |                           // channel, and the directory
+                            |                           // name is the channel name.
+                            `-- model
+                            `-- checkpoints
+            instance_type (str, optional): The machine instance type used to run the
+                training job. To view the supported machine instance types, please refer
+                to the document:
+                https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
+                If the instance_type is "local", the training job is executed locally
+                using docker.
+            instance_count (int): The number of machines used to run the training job.
+            session (Session, optional): A PAI session instance used for communicating
+                with PAI service.
+
+        """
+        self.hyperparameters = hyperparameters or dict()
+        self.instance_type = instance_type
+        self.instance_count = instance_count if instance_count else 1
+        self.max_run_time = max_run_time
+        self.base_job_name = base_job_name
+        self.output_path = output_path
+        self.session = session or get_default_session()
+        self._latest_training_job = None
+
+        self._check_instance_type()
+
+    @property
+    def latest_training_job(self):
+        """Return the latest submitted training job."""
+        return self._latest_training_job
+
+    def _check_instance_type(self):
+        """Check if the given instance_type is supported for training job."""
+        if not is_local_run_instance_type(
+            self.instance_type
+        ) and not self.session.is_supported_training_instance(self.instance_type):
+            raise ValueError(
+                f"Instance type='{self.instance_type}' is not supported."
+                " Please provide a supported instance type to create the job."
+            )
+
+    def _gen_job_display_name(self, job_name=None):
+        """Generate job display name."""
+        if job_name:
+            return job_name
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return "{}_{}".format(self.base_job_name or "training_job", ts)
+
+    def _check_input_uri(self, uri: str):
+        """Check if the given input uri is valid."""
+        if not isinstance(uri, str):
+            raise ValueError(
+                f"The Estimator supports OSS URI or NAS URI as input data."
+                f" Input data of type{type(uri)} is not supported."
+            )
+        if is_oss_uri(uri):
+            input_uri = uri
+        elif os.path.exists(uri):
+            store_path = self.session.get_storage_path_by_category("train_data")
+            input_uri = upload(uri, store_path)
+        else:
+            raise ValueError(
+                f"Input data path should be a valid OSS URI or local path:"
+                f" input={uri}"
+            )
+        return input_uri
+
+    @abstractmethod
+    def _build_input_data_configs(
+        self, inputs: Dict[str, Any] = None
+    ) -> List[Dict[str, str]]:
+        """Build the input data config for the training job."""
+
+    def _generate_job_base_output_path(self, job_name: str) -> str:
+        """Generate the base output path for the training job."""
+        bucket = self.session.oss_bucket
+        bucket_name = bucket.bucket_name
+        # replace non-alphanumeric character in training job name.
+        name = to_plain_text(job_name)
+
+        if self.output_path:
+            return os.path.join(self.output_path, f"{name}_{random_str(6)}")
+        else:
+            job_output_path = self.session.get_storage_path_by_category(
+                "training_job", f"{name}_{random_str(6)}"
+            )
+            return f"oss://{bucket_name}/{job_output_path}"
+
+    @abstractmethod
+    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
+        """Build the output data config for the training job."""
+
+    @abstractmethod
+    def fit(
+        self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
+    ):
+        """Submit a training job with the given input data."""
+
+    def _patch_default_oss_endpoint(self, uri: str):
+        """Patch default OSS endpoint for Input/Output OSS data uri for TrainingJob."""
+        return self.session.patch_oss_endpoint(uri)
+
+    def wait(self, show_logs: bool = True):
+        """Block until the latest training job is completed.
+
+        Args:
+            show_logs(bool): Specifies whether to fetch and print the logs produced by
+                the training job.
+
+        """
+        if not self._latest_training_job:
+            raise RuntimeError("Could not find a submitted training job.")
+        self._latest_training_job.wait(show_logs=show_logs)
+
+    def attach(
+        self,
+        training_job_name: str,
+    ):
+        """Attach to a training job."""
+
+    def model_data(self) -> str:
+        """Model data output path.
+
+        Returns:
+            str: A string in OSS URI format refers to the output model of the submitted
+                job.
+        """
+        if not self._latest_training_job:
+            raise RuntimeError(
+                "No TrainingJob for the estimator, output model data not found."
+            )
+
+        if not self._latest_training_job.is_succeeded():
+            logger.warning(
+                "The TrainingJob is currently not in a succeeded status, which means"
+                " that the model data output may not be accessible."
+            )
+
+        return self._latest_training_job.output_path(
+            channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
+        )
+
+    def create_model(self, inference_spec: Union[InferenceSpec, Dict]) -> Model:
+        """Create a Model object using output model of the training job.
+
+        Args:
+            inference_spec (InferenceSpec): A ``InferenceSpec`` instance that describe
+             how to create a prediction service with the output model.
+
+        Returns:
+            :class:`pai.model.Model`: A ``Model`` object.
+        """
+
+        if isinstance(inference_spec, Dict):
+            inference_spec = InferenceSpec.from_dict(inference_spec)
+
+        m = Model(
+            model_data=self.model_data(),
+            inference_spec=inference_spec,
+            session=self.session,
+        )
+        return m
+
+    def deploy(
+        self,
+        service_name: str,
+        inference_spec: InferenceSpec,
+        instance_type: Optional[str] = None,
+        instance_count: int = 1,
+        resource_config: Optional[Union[ResourceConfig, Dict[str, int]]] = None,
+        resource_id: str = None,
+        options: Optional[Dict[str, Any]] = None,
+        serializer: SerializerBase = None,
+        wait=True,
+    ) -> Predictor:
+        """Deploy the output model to create an online prediction service.
+
+        Args:
+            service_name (str): Name for the online prediction service.
+            inference_spec (InferenceSpec): A ``InferenceSpec`` instance used for
+                creating the service.
+            instance_type (str, optional): The machine instance type for the service.
+            instance_count (int): Number of machine instance count.
+            resource_config (Union[ResourceConfig, Dict[str, int]], optional): Resource
+                config for each prediction service instance.
+            resource_id (str, optional): The ID of the resource group. If not provided,
+                the prediction service is deployed to ``public resource group``.
+            serializer (SerializerBase): A SerializerBase instance used to serialize
+                the prediction request data and deserialize the response data.
+            options (Dict[str, Any], optional): Additional options for the prediction
+                service.
+            wait (bool): If true, wait until the service is ready (Default True).
+
+        Returns:
+            :class:`pai.predictor.Predictor`: A predictor instance refers to the created
+                prediction service.
+        """
+        m = Model(
+            model_data=self.model_data(),
+            inference_spec=inference_spec,
+        )
+
+        p = m.deploy(
+            service_name=service_name,
+            instance_type=instance_type,
+            instance_count=instance_count,
+            resource_config=resource_config,
+            resource_id=resource_id,
+            serializer=serializer,
+            options=options,
+            wait=wait,
+        )
+        return p
+
+
+class Estimator(EstimatorBase):
     """The Estimator object is responsible for submitting TrainingJob.
 
     The Estimator helps to run a training script in the PAI Training Service with a
@@ -107,7 +385,7 @@ class Estimator(object):
         output_path: Optional[str] = None,
         metric_definitions: Optional[List[Dict[str, str]]] = None,
         instance_type: Optional[str] = None,
-        instance_count: int = 1,
+        instance_count: Optional[int] = None,
         session: Optional[Session] = None,
     ):
         """Estimator constructor.
@@ -242,21 +520,32 @@ class Estimator(object):
         self.command = command
         self.source_dir = source_dir
         self.git_config = git_config
-        self.hyperparameters = hyperparameters or dict()
-        self.instance_type = instance_type
-        self.instance_count = instance_count
         self.job_type = job_type if job_type else JobType.PyTorchJob
-        self.max_run_time = max_run_time
-        self.base_job_name = base_job_name
-        self.output_path = output_path
         self.checkpoints_path = checkpoints_path
         self.metric_definitions = metric_definitions
-        self.session = session or get_default_session()
-        self._latest_training_job = None
+
+        super(Estimator, self).__init__(
+            hyperparameters=hyperparameters,
+            base_job_name=base_job_name,
+            max_run_time=max_run_time,
+            output_path=output_path,
+            instance_type=instance_type,
+            instance_count=instance_count,
+            session=session,
+        )
 
         self.__uploaded_source_files = None
 
-        self._check_instance_type()
+    def training_image_uri(self) -> str:
+        """Return the Docker image to use for training.
+
+        The fit() method, that does the model training, calls this method to
+        find the image to use for model training.
+
+        Returns:
+            str: The URI of the Docker image.
+        """
+        return self.image_uri
 
     def _prepare_for_training(self):
         """Update args before starting the training job."""
@@ -266,27 +555,6 @@ class Estimator(object):
                 source_dir=self.source_dir,
             )
             self.source_dir = updated_args["source_dir"]
-
-    def _gen_job_display_name(self, job_name=None):
-        """Generate job display name."""
-        if job_name:
-            return job_name
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        return "{}_{}".format(self.base_job_name or "training_job", ts)
-
-    def _check(self):
-        if not self.image_uri:
-            raise ValueError("Please provide image_uri to create the job.")
-
-    def _check_instance_type(self):
-        """Check if the given instance_type is supported for training job."""
-        if not is_local_run_instance_type(
-            self.instance_type
-        ) and not self.session.is_supported_training_instance(self.instance_type):
-            raise ValueError(
-                f"Instance type='{self.instance_type}' is not supported."
-                " Please provide a supported instance type to create the job."
-            )
 
     def _upload_source_files(self, job_name: str) -> Optional[str]:
         """Upload local source files to OSS."""
@@ -308,6 +576,25 @@ class Estimator(object):
             is_tar=True,
         )
         return self.__uploaded_source_files
+
+    def _build_code_input(self, job_name: str) -> Optional[Dict[str, Any]]:
+        """Build a dict to represent AlgorithmSpecCodeDir used in the TrainingJob."""
+        upload_source_files = self._upload_source_files(job_name)
+        if not upload_source_files:
+            return
+        oss_uri_obj = OssUriObj(
+            uri=self.session.patch_oss_endpoint(upload_source_files)
+        )
+
+        code_dir = {
+            "LocationType": "oss",
+            "LocationValue": {
+                "Bucket": oss_uri_obj.bucket_name,
+                "Key": oss_uri_obj.object_key,
+                "Endpoint": oss_uri_obj.endpoint,
+            },
+        }
+        return code_dir
 
     def _build_algorithm_spec(
         self,
@@ -341,29 +628,16 @@ class Estimator(object):
     def _build_input_data_configs(
         self, inputs: Dict[str, Any] = None
     ) -> List[Dict[str, str]]:
+        """Build the input data config for the training job."""
         inputs = inputs or dict()
         res = []
         for name, item in inputs.items():
-            if not isinstance(item, str):
-                raise ValueError(
-                    f"The Estimator supports OSS URI or NAS URI as input data."
-                    f" Input data of type {type(item)} is not supported."
-                )
-            if is_oss_uri(item):
-                input_uri = item
-            elif os.path.exists(item):
-                store_path = self.session.get_storage_path_by_category("train_data")
-                input_uri = upload(item, store_path)
-            else:
-                raise ValueError(
-                    f"Input data path should be a valid OSS URI or local path:"
-                    f" input={item}"
-                )
+            input_uri = self._check_input_uri(item)
             res.append({"Name": name, "InputUri": input_uri})
-
         return res
 
     def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
+        """Build the output data config for the training job."""
         job_base_output_path = self._generate_job_base_output_path(job_name)
 
         # OSS URI for output channel will be mounted to directory
@@ -403,56 +677,6 @@ class Estimator(object):
         ]
         return res
 
-    def _build_code_input(self, job_name: str) -> Optional[Dict[str, Any]]:
-        """Build a dict to represent AlgorithmSpecCodeDir used in the TrainingJob."""
-        upload_source_files = self._upload_source_files(job_name)
-        if not upload_source_files:
-            return
-        oss_uri_obj = OssUriObj(
-            uri=self.session.patch_oss_endpoint(upload_source_files)
-        )
-
-        code_dir = {
-            "LocationType": "oss",
-            "LocationValue": {
-                "Bucket": oss_uri_obj.bucket_name,
-                "Key": oss_uri_obj.object_key,
-                "Endpoint": oss_uri_obj.endpoint,
-            },
-        }
-
-        return code_dir
-
-    def _generate_job_base_output_path(self, job_name: str) -> str:
-        bucket = self.session.oss_bucket
-        bucket_name = bucket.bucket_name
-        # replace non-alphanumeric character in training job name.
-        name = to_plain_text(job_name)
-
-        if self.output_path:
-            return os.path.join(self.output_path, f"{name}_{random_str(6)}")
-        else:
-            job_output_path = self.session.get_storage_path_by_category(
-                "training_job", f"{name}_{random_str(6)}"
-            )
-            return f"oss://{bucket_name}/{job_output_path}"
-
-    def training_image_uri(self) -> str:
-        """Return the Docker image to use for training.
-
-        The fit() method, that does the model training, calls this method to
-        find the image to use for model training.
-
-        Returns:
-            str: The URI of the Docker image.
-        """
-        return self.image_uri
-
-    @property
-    def latest_training_job(self):
-        """Return the latest submitted training job."""
-        return self._latest_training_job
-
     def fit(
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
     ):
@@ -486,17 +710,57 @@ class Estimator(object):
         if wait:
             self.wait(show_logs=show_logs)
 
-    def wait(self, show_logs: bool = True):
-        """Block until the latest training job is completed.
+    def _fit(self, job_name, inputs: Dict[str, Any] = None):
+        """Used by Estimator.fit method to submit a training job."""
+        input_configs = self._build_input_data_configs(inputs)
+        for c in input_configs:
+            if "InputUri" in c and is_oss_uri(c["InputUri"]):
+                c["InputUri"] = self._patch_default_oss_endpoint(c["InputUri"])
+        output_configs = self._build_output_data_configs(job_name)
+        for c in output_configs:
+            if "OutputUri" in c and is_oss_uri(c["OutputUri"]):
+                c["OutputUri"] = self._patch_default_oss_endpoint(c["OutputUri"])
 
-        Args:
-            show_logs(bool): Specifies whether to fetch and print the logs produced by
-                the training job.
+        # prepare input code.
+        code_input = self._build_code_input(job_name)
+        algo_spec = self._build_algorithm_spec(
+            code_input=code_input,
+        )
 
-        """
-        if not self._latest_training_job:
-            raise RuntimeError("Could not find a submitted training job.")
-        self._latest_training_job.wait(show_logs=show_logs)
+        training_job_id = self.session.training_job_api.create(
+            instance_count=self.instance_count,
+            instance_type=self.instance_type,
+            job_name=job_name,
+            hyperparameters=self.hyperparameters,
+            max_running_in_seconds=self.max_run_time,
+            input_channels=input_configs,
+            output_channels=output_configs,
+            algorithm_spec=algo_spec,
+        )
+        training_job = _TrainingJob.get(training_job_id)
+        print(
+            f"View the job detail by accessing the console URI: {training_job.console_uri}"
+        )
+        return training_job
+
+    def _local_run(
+        self,
+        job_name,
+        instance_type: str,
+        inputs: Dict[str, Any] = None,
+    ) -> "_LocalTrainingJob":
+        """Used by Estimator.fit method to run a training job locally."""
+        if self.instance_count > 1:
+            raise RuntimeError("Local training job only supports single instance.")
+
+        training_job = _LocalTrainingJob(
+            estimator=self,
+            inputs=inputs,
+            job_name=job_name,
+            instance_type=instance_type,
+        )
+        training_job.run()
+        return training_job
 
     def tensorboard(self, wait=True):
         """Launch a TensorBoard Application to view the output TensorBoard logs.
@@ -538,82 +802,6 @@ class Estimator(object):
             )
         return tb
 
-    def _fit(self, job_name, inputs: Dict[str, Any] = None):
-        input_configs = self._build_input_data_configs(inputs)
-        for c in input_configs:
-            if "InputUri" in c and is_oss_uri(c["InputUri"]):
-                c["InputUri"] = self._patch_default_oss_endpoint(c["InputUri"])
-        output_configs = self._build_output_data_configs(job_name)
-        for c in output_configs:
-            if "OutputUri" in c and is_oss_uri(c["OutputUri"]):
-                c["OutputUri"] = self._patch_default_oss_endpoint(c["OutputUri"])
-
-        # prepare input code.
-        code_input = self._build_code_input(job_name)
-        algo_spec = self._build_algorithm_spec(
-            code_input=code_input,
-        )
-
-        training_job_id = self.session.training_job_api.create(
-            instance_count=self.instance_count,
-            instance_type=self.instance_type,
-            job_name=job_name,
-            hyperparameters=self.hyperparameters,
-            max_running_in_seconds=self.max_run_time,
-            input_channels=input_configs,
-            output_channels=output_configs,
-            algorithm_spec=algo_spec,
-        )
-        training_job = _TrainingJob.get(training_job_id)
-        print(
-            f"View the job detail by accessing the console URI: {training_job.console_uri}"
-        )
-        return training_job
-
-    def _patch_default_oss_endpoint(self, uri: str):
-        """Patch default OSS endpoint for Input/Output OSS data uri for TrainingJob."""
-        return self.session.patch_oss_endpoint(uri)
-
-    def _local_run(
-        self,
-        job_name,
-        instance_type: str,
-        inputs: Dict[str, Any] = None,
-    ) -> "_LocalTrainingJob":
-        if self.instance_count > 1:
-            raise RuntimeError("Local training job only supports single instance.")
-
-        training_job = _LocalTrainingJob(
-            estimator=self,
-            inputs=inputs,
-            job_name=job_name,
-            instance_type=instance_type,
-        )
-        training_job.run()
-        return training_job
-
-    def model_data(self) -> str:
-        """Model data output path.
-
-        Returns:
-            str: A string in OSS URI format refers to the output model of the submitted
-                job.
-        """
-        if not self._latest_training_job:
-            raise RuntimeError(
-                "No TrainingJob for the estimator, output model data not found."
-            )
-
-        if not self._latest_training_job.is_succeeded():
-            logger.warning(
-                "The TrainingJob is currently not in a succeeded status, which means"
-                " that the model data output may not be accessible."
-            )
-
-        return self._latest_training_job.output_path(
-            channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
-        )
-
     def checkpoints_data(self) -> str:
         """Checkpoints data output path.
 
@@ -644,80 +832,8 @@ class Estimator(object):
             channel_name=DEFAULT_LOGS_CHANNEL_NAME,
         )
 
-    def create_model(self, inference_spec: Union[InferenceSpec, Dict]) -> Model:
-        """Create a Model object using output model of the training job.
 
-        Args:
-            inference_spec (InferenceSpec): A ``InferenceSpec`` instance that describe
-             how to create a prediction service with the output model.
-
-        Returns:
-            :class:`pai.model.Model`: A ``Model`` object.
-        """
-
-        if isinstance(inference_spec, Dict):
-            inference_spec = InferenceSpec.from_dict(inference_spec)
-
-        m = Model(
-            model_data=self.model_data(),
-            inference_spec=inference_spec,
-            session=self.session,
-        )
-        return m
-
-    def deploy(
-        self,
-        service_name: str,
-        inference_spec: InferenceSpec,
-        instance_type: Optional[str] = None,
-        instance_count: int = 1,
-        resource_config: Optional[Union[ResourceConfig, Dict[str, int]]] = None,
-        resource_id: str = None,
-        options: Optional[Dict[str, Any]] = None,
-        serializer: SerializerBase = None,
-        wait=True,
-    ) -> Predictor:
-        """Deploy the output model to create an online prediction service.
-
-        Args:
-            service_name (str): Name for the online prediction service.
-            inference_spec (InferenceSpec): A ``InferenceSpec`` instance used for
-                creating the service.
-            instance_type (str, optional): The machine instance type for the service.
-            instance_count (int): Number of machine instance count.
-            resource_config (Union[ResourceConfig, Dict[str, int]], optional): Resource
-                config for each prediction service instance.
-            resource_id (str, optional): The ID of the resource group. If not provided,
-                the prediction service is deployed to ``public resource group``.
-            serializer (SerializerBase): A SerializerBase instance used to serialize
-                the prediction request data and deserialize the response data.
-            options (Dict[str, Any], optional): Additional options for the prediction
-                service.
-            wait (bool): If true, wait until the service is ready (Default True).
-
-        Returns:
-            :class:`pai.predictor.Predictor`: A predictor instance refers to the created
-                prediction service.
-        """
-        m = Model(
-            model_data=self.model_data(),
-            inference_spec=inference_spec,
-        )
-
-        p = m.deploy(
-            service_name=service_name,
-            instance_type=instance_type,
-            instance_count=instance_count,
-            resource_config=resource_config,
-            resource_id=resource_id,
-            serializer=serializer,
-            options=options,
-            wait=wait,
-        )
-        return p
-
-
-class AlgorithmEstimator(Estimator):
+class AlgorithmEstimator(EstimatorBase):
     """Handle training jobs with algorithms
 
     The AlgorithmEstimator provides a simple way for submitting training jobs with
@@ -865,21 +981,19 @@ class AlgorithmEstimator(Estimator):
             self.algorithm_provider = None
             self.algorithm_spec = algorithm_spec
 
-        self.hyperparameters = self._get_hyperparameters(hyperparameters)
-        self.base_job_name = base_job_name
-        self.max_run_time = max_run_time
-        self.output_path = output_path
-        self.instance_type = (
-            instance_type
+        super(AlgorithmEstimator, self).__init__(
+            hyperparameters=self._get_hyperparameters(hyperparameters),
+            base_job_name=base_job_name,
+            max_run_time=max_run_time,
+            output_path=output_path,
+            instance_type=instance_type
             if instance_type
-            else self._get_default_training_instance_type()
+            else self._get_default_training_instance_type(),
+            instance_count=instance_count,
+            session=session,
         )
-        self.instance_count = instance_count if instance_count else 1
 
-        self._latest_training_job = None
         self._output_channels = None
-
-        self._check_instance_type()
 
     @property
     def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
@@ -1072,24 +1186,6 @@ class AlgorithmEstimator(Estimator):
     ) -> List[Dict[str, str]]:
         """Build input data configs."""
 
-        def _check_input_uri(uri: str):
-            if not isinstance(uri, str):
-                raise ValueError(
-                    f"The Estimator supports OSS URI or NAS URI as input data."
-                    f" Input data of type{type(uri)} is not supported."
-                )
-            if is_oss_uri(uri):
-                input_uri = uri
-            elif os.path.exists(uri):
-                store_path = self.session.get_storage_path_by_category("train_data")
-                input_uri = upload(uri, store_path)
-            else:
-                raise ValueError(
-                    f"Input data path should be a valid OSS URI or local path:"
-                    f" input={uri}"
-                )
-            return input_uri
-
         inputs = copy.deepcopy(inputs) or {}
         res = []
         input_channels_def = self.input_channel_definitions
@@ -1103,7 +1199,7 @@ class AlgorithmEstimator(Estimator):
                         " Please check the input channels definition."
                     )
                 elif channel_name in inputs:
-                    input_uri = _check_input_uri(inputs[channel_name])
+                    input_uri = self._check_input_uri(inputs[channel_name])
                     res.append({"Name": channel_name, "InputUri": input_uri})
                     inputs.pop(channel_name)
                 else:
@@ -1115,7 +1211,7 @@ class AlgorithmEstimator(Estimator):
                 )
         else:
             for name, item in inputs.items():
-                input_uri = _check_input_uri(item)
+                input_uri = self._check_input_uri(item)
                 res.append({"Name": name, "InputUri": input_uri})
 
         return res
