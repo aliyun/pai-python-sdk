@@ -4,15 +4,14 @@ from typing import Any, Dict, List, Optional, Union
 
 from pai.api.image import ImageLabel
 from pai.common.utils import to_semantic_version
-from pai.image import ImageScope, retrieve
 from pai.model import (
-    DEFAULT_SERVICE_PORT,
+    DefaultServiceConfig,
     ModelBase,
     ResourceConfig,
     container_serving_spec,
 )
 from pai.serializers import SerializerBase
-from pai.session import Session, config_default_session
+from pai.session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class HuggingFaceModel(ModelBase):
     """A HuggingFace ``Model`` that can be deployed in PAI to create a prediction service.
 
     A HuggingFaceModel instance includes the model artifact path and information on how to create
-    prediction service in PAI. By calling the deploy() method, a prediction service is created in
+    prediction service in PAI. By calling the deploy method, a prediction service is created in
     PAI and a :class:`pai.predictor.Predictor` instance is returned that can be used to make
     prediction to the service.
 
@@ -55,7 +54,6 @@ class HuggingFaceModel(ModelBase):
 
     """
 
-    @config_default_session
     def __init__(
         self,
         model_data: Optional[str] = None,
@@ -64,13 +62,12 @@ class HuggingFaceModel(ModelBase):
         command: Optional[str] = None,
         source_dir: Optional[str] = None,
         git_config: Optional[Dict[str, str]] = None,
-        port: int = DEFAULT_SERVICE_PORT,
+        port: Optional[int] = None,
         environment_variables: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
         requirements_path: Optional[str] = None,
         health_check: Optional[Dict[str, Any]] = None,
         session: Optional[Session] = None,
-        **kwargs,
     ):
         """Initialize a HuggingFace Model.
 
@@ -127,7 +124,8 @@ class HuggingFaceModel(ModelBase):
                 'main' branch, and checking out the specified commit.
             port (int, optional): Expose port of the server in container, the prediction
                 request will be forward to the port. The environment variable ``LISTENING_PORT``
-                in the container will be set to this value.
+                in the container will be set to this value. If not set, the default
+                value is 8000.
             environment_variables (Dict[str, str], optional): Dictionary of environment
                 variable key-value pairs to set on the running container.
             requirements (List[str], optional): A list of Python package dependency, it
@@ -150,6 +148,7 @@ class HuggingFaceModel(ModelBase):
         self._validate_args(
             image_uri=image_uri, transformers_version=transformers_version
         )
+        session = session or get_default_session()
 
         self.model_data = model_data
         self.image_uri = image_uri
@@ -157,19 +156,15 @@ class HuggingFaceModel(ModelBase):
         self.command = command
         self.source_dir = source_dir
         self.git_config = git_config
-        self.port = port
+        self.port = port or DefaultServiceConfig.listen_port
         self.environment_variables = environment_variables
         self.requirements = requirements
         self.requirements_path = requirements_path
         self.health_check = health_check
-        self.session = session
-        inference_spec = dict()
 
         super(HuggingFaceModel, self).__init__(
             model_data=self.model_data,
-            inference_spec=inference_spec,
-            session=self.session,
-            **kwargs,
+            session=session or get_default_session(),
         )
 
     def _validate_args(self, image_uri: str, transformers_version: str) -> None:
@@ -199,7 +194,7 @@ class HuggingFaceModel(ModelBase):
             ImageLabel.PROVIDER_PAI_LABEL,
             ImageLabel.DEVICE_TYPE_GPU,
         ]
-
+        # TODO: Filter images by instance type (CPU/GPU)
         # Filter images by Transformers version
         if self.transformers_version == "latest":
             latest_version = self._get_latest_tf_version_for_inference()
@@ -318,11 +313,10 @@ class HuggingFaceModel(ModelBase):
             :class:`pai.predictor.Predictor` : A PAI ``Predictor`` instance used for
                 making prediction to the prediction service.
         """
-
-        self.image_uri = self.serving_image_uri(instance_type=instance_type)
+        image_uri = self.serving_image_uri(instance_type=instance_type)
         self.inference_spec = container_serving_spec(
             command=self.command,
-            image_uri=self.image_uri,
+            image_uri=image_uri,
             port=self.port,
             source_dir=self.source_dir,
             git_config=self.git_config,
@@ -332,6 +326,7 @@ class HuggingFaceModel(ModelBase):
             health_check=self.health_check,
             session=self.session,
         )
+
         return super(HuggingFaceModel, self).deploy(
             service_name=service_name,
             instance_type=instance_type,

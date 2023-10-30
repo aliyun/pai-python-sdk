@@ -4,7 +4,7 @@ from pai.common.yaml_utils import dump as yaml_dump
 from pai.common.yaml_utils import safe_load as yaml_safe_load
 from pai.pipeline.component._base import ComponentBase, UnRegisteredComponent
 from pai.pipeline.types.spec import load_input_output_spec
-from pai.session import config_default_session, get_default_session
+from pai.session import get_default_session
 
 
 class RegisteredComponent(ComponentBase):
@@ -140,7 +140,6 @@ class RegisteredComponent(ComponentBase):
         )
 
     @classmethod
-    @config_default_session
     def list(
         cls,
         identifier=None,
@@ -167,6 +166,7 @@ class RegisteredComponent(ComponentBase):
         Yields:
               pai.component.SavedOperator: SavedOperator match the query.
         """
+        session = session or get_default_session()
 
         if not provider:
             provider = session.provider
@@ -236,7 +236,6 @@ class RegisteredComponent(ComponentBase):
         return True
 
     @classmethod
-    @config_default_session
     def get(cls, pipeline_id, session=None):
         """Get SavedOperator with pipeline_id.
 
@@ -248,6 +247,7 @@ class RegisteredComponent(ComponentBase):
              specific pipeline_id
 
         """
+        session = session or get_default_session()
         return cls.deserialize(session.pipeline_api.get_schema(pipeline_id=pipeline_id))
 
     def save(self, identifier=None, version=None):

@@ -24,7 +24,7 @@ from .serializers import (
     SerializerBase,
     TensorFlowSerializer,
 )
-from .session import Session, config_default_session
+from .session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,6 @@ class RawResponse(object):
 
 
 class _ServicePredictorMixin(object):
-    @config_default_session
     def __init__(
         self,
         service_name: str,
@@ -126,7 +125,7 @@ class _ServicePredictorMixin(object):
         serializer: Optional[SerializerBase] = None,
     ):
         self.service_name = service_name
-        self.session = session
+        self.session = session or get_default_session()
         self._service_api_object = self.describe_service()
         self.endpoint_type = endpoint_type
         self.serializer = serializer or self._get_default_serializer()
@@ -288,7 +287,6 @@ class _ServicePredictorMixin(object):
         self.refresh()
 
     @classmethod
-    @config_default_session
     def _wait_for_status(
         cls,
         service_name: str,
@@ -297,6 +295,7 @@ class _ServicePredictorMixin(object):
         interval: int = 3,
         session: Optional[Session] = None,
     ):
+        session = session or get_default_session()
         service_api_object = session.service_api.get(service_name)
         last_status = service_api_object["Status"]
         last_msg = service_api_object["Message"]
@@ -357,7 +356,6 @@ class _ServicePredictorMixin(object):
         self.session.service_api.update_version(self.service_name, version=version)
 
     @classmethod
-    @config_default_session
     def deploy(
         cls,
         config: Dict[str, Any],
@@ -382,6 +380,7 @@ class _ServicePredictorMixin(object):
                 online prediction service.
 
         """
+        session = session or get_default_session()
         name = session.service_api.create(config=config)
 
         if wait:
@@ -517,7 +516,6 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
 
     """
 
-    @config_default_session
     def __init__(
         self,
         service_name: str,
@@ -541,7 +539,7 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
         """
         super(Predictor, self).__init__(
             service_name=service_name,
-            session=session,
+            session=session or get_default_session(),
             endpoint_type=endpoint_type,
             serializer=serializer,
         )
@@ -708,7 +706,6 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
 
     """
 
-    @config_default_session
     def __init__(
         self,
         service_name: str,
@@ -736,7 +733,7 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
 
         super(AsyncPredictor, self).__init__(
             service_name=service_name,
-            session=session,
+            session=session or get_default_session(),
             endpoint_type=endpoint_type,
             serializer=serializer,
         )

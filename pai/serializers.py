@@ -12,7 +12,7 @@ import six
 from eas_prediction import pytorch_predict_pb2 as pt_pb
 from eas_prediction import tf_request_pb2 as tf_pb
 
-from pai.session import Session, config_default_session
+from pai.session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,6 @@ class SerializerBase(ABC):
     def deserialize(self, data: bytes):
         """Deserialize the data from raw bytes to Python object ."""
 
-    @config_default_session
     def inspect_from_service(
         self, service_name: str, *, session: Optional[Session] = None
     ):
@@ -147,7 +146,6 @@ class TensorFlowSerializer(SerializerBase):
         self._signature_name = None
         super(TensorFlowSerializer, self).__init__()
 
-    @config_default_session
     def inspect_from_service(
         self, service_name: str, *, session: Optional[Session] = None
     ):
@@ -159,11 +157,11 @@ class TensorFlowSerializer(SerializerBase):
                 communicating with PAI services.
 
         """
+        session = session or get_default_session()
         sig_def = self.inspect_model_signature_def(service_name, session=session)
         self._init_from_signature_def(sig_def)
 
     @classmethod
-    @config_default_session
     def inspect_model_signature_def(
         cls, service_name: str, *, session: Session = None
     ) -> Dict[str, Any]:
@@ -205,6 +203,8 @@ class TensorFlowSerializer(SerializerBase):
 
         """
         from pai.predictor import ServiceStatus
+
+        session = session or get_default_session()
 
         service_api_object = session.service_api.get(service_name)
         if service_api_object["Status"] != ServiceStatus.Running:

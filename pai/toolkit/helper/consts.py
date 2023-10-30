@@ -42,6 +42,13 @@ REGION_INFOS = [
         ],
     },
     {
+        "regionId": "cn-wulanchabu",
+        "regionName": [
+            "China (Wulanchabu)",
+            "华北6（乌兰察布）",
+        ],
+    },
+    {
         "regionId": "cn-shenzhen",
         "regionName": [
             "China (Shenzhen)",

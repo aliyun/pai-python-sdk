@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from pai.api.image import SUPPORTED_IMAGE_FRAMEWORKS, ImageLabel
 from pai.common.utils import make_list_resource_iterator, to_semantic_version
-from pai.session import Session, config_default_session
+from pai.session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
@@ -113,17 +113,20 @@ def _make_image_info(
     image_uri = image_obj["ImageUri"]
     match = _PAI_IMAGE_URI_PATTERN.match(image_uri)
     if not match:
-        logger.warning(
+        # ignore if image uri is not recognized
+        logger.debug(
             "Could not recognize the given image uri, ignore the image:"
             f" image_uri={image_uri}"
         )
         return
     host, namespace, repo_name, tag = match.groups()
+
     tag_match = _PAI_IMAGE_TAG_PATTERN_TRAINING.match(
         tag
     ) or _PAI_IMAGE_TAG_PATTERN_INFERENCE.match(tag)
     if not tag_match:
-        logger.warning(
+        # ignore if image tag is not recognized
+        logger.debug(
             f"Could not recognize the given image tag, ignore the image:"
             f" image_uri={image_uri}."
         )
@@ -191,7 +194,6 @@ def _list_images(
     return gen
 
 
-@config_default_session
 def retrieve(
     framework_name: str,
     framework_version: str,
@@ -210,7 +212,7 @@ def retrieve(
         retrieve(
             framework_name="PyTorch",
             framework_version="latest",
-            accelerator="GPU",
+            accelerator_type="GPU",
             scope=ImageScope.INFERENCE,
         )
 
@@ -233,6 +235,7 @@ def retrieve(
     Raises:
         RuntimeError: A RuntimeErrors is raised if the specific image is not found.
     """
+    session = session or get_default_session()
     framework_name = framework_name.lower()
     supports_fw = [fw.lower() for fw in SUPPORTED_IMAGE_FRAMEWORKS]
     if framework_name not in supports_fw:
@@ -301,7 +304,6 @@ def retrieve(
             return img
 
 
-@config_default_session
 def list_images(
     framework_name: str,
     session: Optional[Session] = None,
@@ -321,6 +323,7 @@ def list_images(
         List[ImageInfo]: A list of image URIs.
 
     """
+    session = session or get_default_session()
     if not framework_name or not framework_name.strip():
         framework_name = None
     else:

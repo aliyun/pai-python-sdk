@@ -71,7 +71,8 @@ class TestPredictorBase(BaseIntegTestCase):
 
         p = Predictor(service_name=service_name)
         p.wait_for_ready()
-        time.sleep(5)
+        # hack: wait for service to be really ready
+        time.sleep(15)
         return p
 
     @classmethod
@@ -220,9 +221,8 @@ class TestPredictorOperation(BaseIntegTestCase):
 
         p = Predictor(service_name=service_name)
         p.wait_for_ready()
-
-        # hack: wait for the service to be 'really' ready
-        time.sleep(5)
+        # hack: wait for service to be really ready
+        time.sleep(15)
         return p
 
     @classmethod

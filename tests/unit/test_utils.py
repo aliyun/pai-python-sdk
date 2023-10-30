@@ -4,7 +4,7 @@ from __future__ import absolute_import, print_function
 import os
 
 from pai.common.oss_utils import is_oss_uri
-from pai.common.utils import generate_repr
+from pai.common.utils import generate_repr, is_filesystem_uri, is_odps_table_uri
 from tests.test_data import SCRIPT_DIR_PATH
 from tests.unit import BaseUnitTestCase
 from tests.unit.utils import extract_odps_table_info, file_checksum
@@ -115,4 +115,70 @@ class TestUtils(BaseUnitTestCase):
                     *tc["arguments"]["attrs"],
                     **tc["arguments"]["extra"],
                 )
+                self.assertEqual(result, tc["expected"])
+
+    def test_is_odps_table(self):
+        test_cases = [
+            {
+                "arguments": {
+                    "uri": "odps://test_project/tables/test_table",
+                },
+                "expected": True,
+            },
+            {
+                "arguments": {
+                    "uri": "odps://test_project/table/test_table",
+                },
+                "expected": False,
+            },
+            {
+                "arguments": {
+                    "uri": "odps://test_project/table",
+                },
+                "expected": False,
+            },
+            {
+                "arguments": {
+                    "uri": "oss://tables/test_table",
+                },
+                "expected": False,
+            },
+        ]
+
+        for tc in test_cases:
+            with self.subTest(tc=tc):
+                result = is_odps_table_uri(tc["arguments"]["uri"])
+                self.assertEqual(result, tc["expected"])
+
+    def test_is_filesystem_uri(self):
+        test_cases = [
+            {
+                "arguments": {
+                    "uri": "nas://dummy_file_system_id.cn-hangzhou/path/to/dir",
+                },
+                "expected": True,
+            },
+            {
+                "arguments": {
+                    "uri": "cpfs://dummy_file_system_id/path/to/dir",
+                },
+                "expected": True,
+            },
+            {
+                "arguments": {
+                    "uri": "odps://test_project/table/test_table",
+                },
+                "expected": False,
+            },
+            {
+                "arguments": {
+                    "uri": "oss://test_project/table",
+                },
+                "expected": False,
+            },
+        ]
+
+        for tc in test_cases:
+            with self.subTest(tc=tc):
+                result = is_filesystem_uri(tc["arguments"]["uri"])
                 self.assertEqual(result, tc["expected"])

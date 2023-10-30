@@ -9,7 +9,7 @@ from typing import Callable, Optional
 from pai.api.base import PaginatedResult
 from pai.exception import PAIException
 from pai.pipeline.artifact import ArchivedArtifact
-from pai.session import Session, config_default_session
+from pai.session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,6 @@ class PipelineRunStatus(object):
 class PipelineRun(object):
     """Class represent a pipeline run resource."""
 
-    @config_default_session
     def __init__(
         self,
         run_id,
@@ -79,15 +78,14 @@ class PipelineRun(object):
         self.source = source
         self.user_id = user_id
         self.parent_user_id = parent_user_id
-        self.session = session
+        self.session = session or get_default_session()
 
     @classmethod
-    @config_default_session
     def get(cls, run_id, session=None) -> "PipelineRun":
+        session = session or get_default_session()
         return cls.deserialize(session.pipeline_run_api.get(run_id=run_id))
 
     @classmethod
-    @config_default_session
     def run(
         cls,
         name,
@@ -118,6 +116,7 @@ class PipelineRun(object):
             str:run id if run workflow init success.
 
         """
+        session = session or get_default_session()
         run_id = session.pipeline_run_api.create(
             name=name,
             arguments=arguments,
@@ -136,7 +135,6 @@ class PipelineRun(object):
         return run_id
 
     @classmethod
-    @config_default_session
     def list(
         cls,
         name=None,
@@ -150,6 +148,7 @@ class PipelineRun(object):
         session=None,
         **kwargs,
     ):
+        session = session or get_default_session()
         result = session.pipeline_run_api.list(
             name=name,
             run_id=run_id,

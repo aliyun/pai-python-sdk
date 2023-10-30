@@ -3,8 +3,7 @@ from __future__ import absolute_import
 import logging
 import os
 import unittest
-
-from mock import patch
+from unittest.mock import patch
 
 from tests.unit.utils import get_mock_session
 

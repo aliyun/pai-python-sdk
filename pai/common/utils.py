@@ -9,7 +9,11 @@ from typing import Callable, Dict, Optional, Union
 from semantic_version import Version
 
 from pai import __version__
-from pai.common.consts import INSTANCE_TYPE_LOCAL, INSTANCE_TYPE_LOCAL_GPU
+from pai.common.consts import (
+    INSTANCE_TYPE_LOCAL,
+    INSTANCE_TYPE_LOCAL_GPU,
+    FileSystemInputScheme,
+)
 
 DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS = string.ascii_letters + string.digits + "_"
 
@@ -150,3 +154,44 @@ def to_semantic_version(version_str: str) -> Version:
     except ValueError:
         # if version_str is not a valid semantic version, return '0.0.0'
         return Version.coerce("0.0.0")
+
+
+def is_odps_table_uri(uri: str) -> bool:
+    """Return True if uri is an odps table input URI.
+
+    Args:
+        uri (str): URI of input table, such as 'odps://<project_name>/tables/<table_name>'.
+
+    Examples:
+        >>> is_odps_table_uri('odps://<project_name>/tables/<table_name>')
+        True
+
+    """
+    if not uri.startswith("odps://"):
+        return False
+    info = uri[7:].split("/", 2)
+    if len(info) != 3:
+        return False
+    return info[1] == "tables"
+
+
+def is_filesystem_uri(uri: str) -> bool:
+    """Return True if uri is a filesystem input URI.
+
+    Args:
+        uri (str): URI of input NAS, such as 'nas://<FileSystemId>/path/to/data/directory/'.
+
+    Examples:
+        # Standard or Extreme file system type
+        >>> is_filesystem_uri('nas://<FileSystemId>/path/to/data/directory/')
+        True
+        # CPFS file system type
+        >>> is_filesystem_uri('cpfs://<FileSystemId>/<ProtocolServiceId>/<ExportId>')
+        True
+
+    """
+    schemas = {
+        v for k, v in FileSystemInputScheme.__dict__.items() if not k.startswith("__")
+    }
+
+    return any(uri.startswith(f"{schema}://") for schema in schemas)

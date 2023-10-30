@@ -79,6 +79,16 @@ class TestEstimator(BaseIntegTestCase):
         self.assertIsNotNone(tb.app_uri)
         tb.delete()
 
+    def test_max_compute_input(self):
+        image_uri = retrieve("xgboost", framework_version="latest").image_uri
+        est = Estimator(
+            image_uri=image_uri,
+            command="ls -lh /ml/input/credential/",
+            instance_type="ecs.c6.large",
+            base_job_name="test_mc_table",
+        )
+        est.fit(inputs={"training": "odps://pai_online_project/tables/wumai_data"})
+
 
 class TestAlgorithmEstimator(BaseIntegTestCase):
     """Test :class:`pai.estimator.AlgorithmEstimator`."""
@@ -113,9 +123,9 @@ class TestAlgorithmEstimator(BaseIntegTestCase):
 
         est.fit(
             inputs={
-                "pretrained_model": f"oss://pai-quickstart-{region}.oss-{region}.aliyuncs.com/easycv/models/detection/yolox/v0.1.0/pth/yolox_nano_epoch_300/",
-                "train": f"oss://pai-quickstart-{region}.oss-{region}.aliyuncs.com/easycv/datasets/small_coco/train_data/",
-                "validation": f"oss://pai-quickstart-{region}.oss-{region}.aliyuncs.com/easycv/datasets/small_coco/val_data/",
+                "pretrained_model": f"oss://pai-quickstart-{region}/easycv/models/detection/yolox/v0.1.0/pth/yolox_nano_epoch_300/",
+                "train": f"oss://pai-quickstart-{region}/easycv/datasets/small_coco/train_data/",
+                "validation": f"oss://pai-quickstart-{region}/easycv/datasets/small_coco/val_data/",
             },
         )
 

@@ -1,3 +1,4 @@
+from pai.exception import DuplicatedMountException, MountPathIsOccupiedException
 from pai.model import InferenceSpec
 from tests.unit import BaseUnitTestCase
 
@@ -65,7 +66,17 @@ class TestInferenceSpec(BaseUnitTestCase):
             },
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(DuplicatedMountException):
             infer_spec.mount(
-                "oss://pai-sdk-example/path/to/model/", mount_path="/ml/model/"
+                "oss://pai-sdk-example/path/to/model/", mount_path="/ml/hello/"
+            )
+
+        with self.assertRaises(DuplicatedMountException):
+            infer_spec.mount(
+                "oss://pai-sdk-example/path/to/model/", mount_path="/ml/world/"
+            )
+
+        with self.assertRaises(MountPathIsOccupiedException):
+            infer_spec.mount(
+                "oss://pai-sdk-example/path/to/abc/", mount_path="/ml/code/"
             )

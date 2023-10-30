@@ -1,5 +1,5 @@
 import os
-from unittest import skipUnless
+from unittest import skipIf
 
 import pytest
 
@@ -9,15 +9,37 @@ from tests.integration import BaseIntegTestCase
 from tests.integration.utils import make_eas_service_name, t_context
 
 
-@skipUnless(
-    t_context.pai_service_config.region_id == "ap-southeast-1",
-    "HuggingFaceEstimator train only support ap-southeast-1 region for now.",
-)
 class TestHuggingFaceEstimator(BaseIntegTestCase):
     """Test :class:`pai.huggingface.estimator.HuggingFaceEstimator`."""
 
+    def test_base(self):
+        est = HuggingFaceEstimator(
+            command="python -c 'import transformers; print(transformers.__version__)'",
+            instance_type="ecs.c6.large",
+            transformers_version="4.29.2",
+            base_job_name="sdk-hf-base",
+        )
+        self.assertIsNotNone(est.training_image_uri())
+        est.fit()
+
+    def test_latest_version(self):
+        """Test training job with HuggingFaceFaceEstimator."""
+
+        est = HuggingFaceEstimator(
+            command="python -c 'import transformers; print(transformers.__version__)'",
+            instance_type="ecs.c6.large",
+            transformers_version="latest",
+            base_job_name="sdk-hf-latest",
+        )
+        self.assertIsNotNone(est.training_image_uri())
+        est.fit()
+
+    @skipIf(
+        t_context.pai_service_config.region_id.startswith("cn-"),
+        "HuggingFaceEstimator github repo train only support oversea region for now.",
+    )
     @pytest.mark.timeout(60 * 10)
-    def test_huggingface_estimator_train(self):
+    def test_git_repo_train(self):
         """Test training job with HuggingFaceEstimator."""
 
         git_config = {
@@ -43,13 +65,11 @@ class TestHuggingFaceEstimator(BaseIntegTestCase):
             instance_type="ecs.gn7i-c32g1.8xlarge",
             transformers_version="4.29.2",
             hyperparameters=hyperparameters,
-            base_job_name="huggingface-sdk-train",
+            base_job_name="sdk-hf-git-repo-train",
         )
 
-        # 进行训练
         est.fit()
 
-        # 训练任务产出的模型地址
         model_path = os.path.join(est.model_data(), "pytorch_model.bin")
         self.assertTrue(self.is_oss_object_exists(model_path))
 
@@ -79,7 +99,6 @@ class TestHuggingFaceModel(BaseIntegTestCase):
 
         p = m.deploy(
             service_name=make_eas_service_name("huggingface_model_deploy"),
-            instance_count=1,
             instance_type="ecs.gn6i-c4g1.xlarge",
             options={
                 "metadata.rpc.keepalive": 5000000,

@@ -1,18 +1,43 @@
 import os
+from unittest import skipIf
 
 import pytest
 
 from pai.modelscope.estimator import ModelScopeEstimator
 from pai.modelscope.model import ModelScopeModel
 from tests.integration import BaseIntegTestCase
-from tests.integration.utils import make_eas_service_name
+from tests.integration.utils import make_eas_service_name, t_context
 
 
 class TestModelScopeEstimator(BaseIntegTestCase):
     """Test :class:`pai.modelscope.estimator.ModelScopeEstimator`."""
 
+    def test_base(self):
+        est = ModelScopeEstimator(
+            command="python -c 'import modelscope; print(modelscope.__version__)'",
+            instance_type="ecs.c6.large",
+            modelscope_version="1.6.1",
+            base_job_name="sdk-ms-train",
+        )
+        self.assertIsNotNone(est.training_image_uri())
+        est.fit()
+
+    def test_latest_version(self):
+        est = ModelScopeEstimator(
+            command="python -c 'import modelscope; print(modelscope.__version__)'",
+            instance_type="ecs.c6.large",
+            modelscope_version="latest",
+            base_job_name="sdk-ms-latest",
+        )
+        self.assertIsNotNone(est.training_image_uri())
+        est.fit()
+
+    @skipIf(
+        t_context.pai_service_config.region_id.startswith("cn-"),
+        "ModelScope github repo train only support oversea region for now.",
+    )
     @pytest.mark.timeout(60 * 25)
-    def test_modelscope_estimator_train(self):
+    def test_git_repo_train(self):
         """Test training job with ModelScopeEstimator."""
 
         git_config = {
@@ -45,17 +70,16 @@ class TestModelScopeEstimator(BaseIntegTestCase):
             instance_type="ecs.gn7i-c32g1.8xlarge",
             modelscope_version="1.6.1",
             hyperparameters=hyperparameters,
-            base_job_name="modelscope-sdk-train",
+            base_job_name="sdk-ms-git-repo",
         )
 
-        # 进行训练
         est.fit()
 
-        # 训练任务产出的模型地址
         model_path = os.path.join(est.model_data(), "epoch_1.pth")
         self.assertTrue(self.is_oss_object_exists(model_path))
 
 
+@pytest.mark.timeout(60 * 10)
 class TestModelScopeModel(BaseIntegTestCase):
     """Test :class:`pai.modelscope.model.ModelScopeModel`."""
 

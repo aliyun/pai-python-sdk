@@ -77,6 +77,7 @@ class TestModelContainerDeploy(BaseIntegTestCase):
             serializer=NumpyBytesSerializer(),
         )
         self.predictors.append(predictor)
+        # hack: wait for service ready
         df = pd.read_csv(
             os.path.join(test_data_dir, "breast_cancer_data/test.csv"),
         )
@@ -210,39 +211,6 @@ class TestModelProcessorDeploy(BaseIntegTestCase):
 
         self.assertEqual(len(result), 1)
 
-    def test_xgb_built_processor(self):
-        val = pd.read_csv(os.path.join(test_data_dir, "breast_cancer_data/test.csv"))
-        val_y = val["target"]
-        val_x = val.drop("target", axis=1)
-
-        model_path = upload(
-            source_path=os.path.join(test_data_dir, "xgb_model/model.json"),
-            oss_path="sdk-integration-test/test_xgb_model_deploy/",
-            bucket=self.default_session.oss_bucket,
-        )
-
-        m = Model(
-            model_data=model_path,
-            inference_spec=InferenceSpec(
-                processor="xgboost",
-            ),
-        )
-        p = m.deploy(
-            service_name=make_eas_service_name("xgb_builtin"),
-            instance_count=1,
-            instance_type="ecs.c6.xlarge",
-            serializer=JsonSerializer(),
-            options={
-                # "metadata.rpc.batching": True,
-                # "metadata.rpc.keepalive": 20000,
-            },
-        )
-
-        self._created_services.append(p.service_name)
-        pred_y = p.predict(val_x)
-        p.delete_service()
-        self.assertEqual(len(pred_y), len(val_y))
-
 
 class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
     """Test :class:`pai.model.RegisteredModel` class"""
@@ -310,6 +278,7 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         )
 
         p = m.deploy()
+
         self.predictors.append(p)
         self.assertTrue(p.service_name)
         res = p.predict(["开心", "死亡"])

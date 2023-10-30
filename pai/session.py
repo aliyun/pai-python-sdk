@@ -1,13 +1,12 @@
 from __future__ import absolute_import
 
-import functools
 import json
 import logging
 import os.path
 import posixpath
 import typing
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Optional
 
 import oss2
 
@@ -26,19 +25,6 @@ INNER_REGION_IDS = ["center"]
 
 # Global default session used by the program.
 _default_session = None
-
-
-def config_default_session(f: Callable) -> Callable:
-    """Decorator to config default session for the function."""
-
-    @functools.wraps(f)
-    def _(*args, **kwargs):
-        if not kwargs.get("session"):
-            kwargs["session"] = get_default_session()
-
-        return f(*args, **kwargs)
-
-    return _
 
 
 def setup_default_session(
@@ -384,6 +370,7 @@ class Session(ResourceAPIsContainerMixin):
         return storage_path
 
     def is_supported_training_instance(self, instance_type: str) -> bool:
+        """Check if the instance type is supported for training."""
         instance_generator = make_list_resource_iterator(self.job_api.list_ecs_specs)
         machine_spec = next(
             (
@@ -393,11 +380,10 @@ class Session(ResourceAPIsContainerMixin):
             ),
             None,
         )
-        if machine_spec:
-            return True
-        return False
+        return bool(machine_spec)
 
     def is_gpu_training_instance(self, instance_type: str) -> bool:
+        """Check if the instance type is GPU instance for training."""
         instance_generator = make_list_resource_iterator(self.job_api.list_ecs_specs)
         machine_spec = next(
             (
@@ -412,27 +398,26 @@ class Session(ResourceAPIsContainerMixin):
                 f"Instance type {instance_type} is not supported for training job. "
                 "Please provide a supported instance type."
             )
-        if machine_spec["AcceleratorType"] == "GPU":
-            return True
-        return False
+        return machine_spec["AcceleratorType"] == "GPU"
 
     def is_supported_inference_instance(self, instance_type: str) -> bool:
-        resp = self.service_api.describe_machine(instance_type=instance_type)[
-            "InstanceMetas"
-        ][0]
-        if not resp["CPU"] and not resp["GPU"]:
-            return False
-        return True
+        """Check if the instance type is supported for inference."""
+        res = self.service_api.describe_machine()["InstanceMetas"]
+        spec = next(
+            (item for item in res if item["InstanceType"] == instance_type), None
+        )
+        return bool(spec)
 
     def is_gpu_inference_instance(self, instance_type: str) -> bool:
-        resp = self.service_api.describe_machine(instance_type=instance_type)[
-            "InstanceMetas"
-        ][0]
-        if not resp["CPU"] and not resp["GPU"]:
+        """Check if the instance type is GPU instance for inference."""
+        res = self.service_api.describe_machine()["InstanceMetas"]
+        spec = next(
+            (item for item in res if item["InstanceType"] == instance_type), None
+        )
+
+        if not spec:
             raise ValueError(
                 f"Instance type {instance_type} is not supported for deploying. "
                 "Please provide a supported instance type."
             )
-        if not resp["GPU"]:
-            return False
-        return True
+        return bool(spec["GPU"])

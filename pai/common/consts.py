@@ -72,3 +72,13 @@ class FrameworkTypes(object):
 
 INSTANCE_TYPE_LOCAL = "local"
 INSTANCE_TYPE_LOCAL_GPU = "local_gpu"
+
+
+class FileSystemInputScheme(object):
+
+    # Standard/Extreme/CPFS 1.0 file system type
+    NAS = "nas"
+    # CPFS2.0 file system type
+    CPFS = "cpfs"
+    # BMCPFS file system type
+    BMCPFS = "bmcpfs"

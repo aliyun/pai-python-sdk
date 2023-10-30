@@ -42,7 +42,7 @@ class ModelScopeEstimator(Estimator):
         base_job_name: Optional[str] = None,
         checkpoints_path: Optional[str] = None,
         output_path: Optional[str] = None,
-        instance_type: str = "ecs.c6.xlarge",
+        instance_type: Optional[str] = None,
         instance_count: int = 1,
         session: Optional[Session] = None,
         **kwargs,

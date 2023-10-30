@@ -1,8 +1,5 @@
 from typing import Any, Dict, List, Optional
 
-import backoff
-from Tea.exceptions import TeaException
-
 from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
 from pai.libs.alibabacloud_paistudio20220112.models import (
     AlgorithmSpec,
@@ -13,7 +10,9 @@ from pai.libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequestLabels,
     CreateTrainingJobRequestOutputChannels,
     CreateTrainingJobRequestScheduler,
+    CreateTrainingJobRequestUserVpc,
     CreateTrainingJobResponseBody,
+    GetTrainingJobRequest,
     GetTrainingJobResponseBody,
     ListTrainingJobLogsRequest,
     ListTrainingJobLogsResponseBody,
@@ -57,6 +56,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         res: GetTrainingJobResponseBody = self._do_request(
             method_=self._get_method,
             training_job_id=resource_id,
+            request=GetTrainingJobRequest(),
         )
         return res.to_map()
 
@@ -78,6 +78,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         algorithm_version: Optional[str] = None,
         algorithm_provider: Optional[str] = None,
         algorithm_spec: Optional[Dict[str, Any]] = None,
+        user_vpc_config: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create a TrainingJob."""
         if algorithm_spec and (
@@ -138,6 +139,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             training_job_description=description,
             training_job_name=job_name,
             algorithm_spec=algo_spec,
+            user_vpc=CreateTrainingJobRequestUserVpc().from_map(user_vpc_config),
         )
 
         resp: CreateTrainingJobResponseBody = self._do_request(

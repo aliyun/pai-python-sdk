@@ -6,7 +6,7 @@ import requests
 
 from pai.common.oss_utils import is_oss_uri
 from pai.exception import UnexpectedStatusException
-from pai.session import Session, config_default_session
+from pai.session import Session, get_default_session
 
 
 class TensorBoardStatus(object):
@@ -35,9 +35,8 @@ class TensorBoardStatus(object):
 
 
 class TensorBoard(object):
-    @config_default_session
     def __init__(self, tensorboard_id: str, session: Optional[Session] = None):
-        self.session = session
+        self.session = session or get_default_session()
         self.tensorboard_id = tensorboard_id
         self._api_object = session.tensorboard_api.get(tensorboard_id)
 
@@ -73,7 +72,6 @@ class TensorBoard(object):
         self._api_object = self.session.tensorboard_api.get(self.tensorboard_id)
 
     @classmethod
-    @config_default_session
     def create(
         cls,
         uri: str,
@@ -105,6 +103,7 @@ class TensorBoard(object):
             >>> # Get TensorBoard Application URL.
             >>> print(tb.app_uri)
         """
+        session = session or get_default_session()
 
         if not is_oss_uri(uri):
             raise RuntimeError("Currently only support OSS uri to create TensorBoard.")

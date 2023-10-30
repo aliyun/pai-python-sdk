@@ -1,4 +1,3 @@
-import copy
 import distutils.dir_util
 import json
 import logging
@@ -10,6 +9,7 @@ import shutil
 import tempfile
 import textwrap
 import time
+import webbrowser
 from abc import ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -17,11 +17,13 @@ from typing import Any, Dict, List, Optional, Union
 
 from pai.api.entity_base import EntityBaseMixin
 from pai.common import ProviderAlibabaPAI, git_utils
-from pai.common.consts import INSTANCE_TYPE_LOCAL_GPU, JobType
+from pai.common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
 from pai.common.docker_utils import ContainerRun, run_container
 from pai.common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from pai.common.utils import (
+    is_filesystem_uri,
     is_local_run_instance_type,
+    is_odps_table_uri,
     make_list_resource_iterator,
     random_str,
     to_plain_text,
@@ -31,13 +33,13 @@ from pai.model import InferenceSpec, Model, ResourceConfig
 from pai.predictor import Predictor
 from pai.schema.training_job_schema import TrainingJobSchema
 from pai.serializers import SerializerBase
-from pai.session import Session, config_default_session, get_default_session
+from pai.session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
 DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
-DEFAULT_LOGS_CHANNEL_NAME = "logs"
+DEFAULT_TENSORBOARD_CHANNEL_NAME = "tensorboard"
 
 
 class HyperParameterType(object):
@@ -63,6 +65,145 @@ class HyperParameterType(object):
         return hp_value
 
 
+class FileSystemInputBase(metaclass=ABCMeta):
+    """Base class for FileSystemInput."""
+
+    @abstractmethod
+    def to_input_uri(self):
+        pass
+
+
+class FileSystemInput(FileSystemInputBase):
+    """FileSystemInput is used to mount a Standard/Extreme NAS file system for a
+    TrainingJob.
+
+    Examples::
+
+        est = Estimator(
+            image_uri="<TrainingImageUri>",
+            command="sh train.sh",
+            instance_type="ecs.c6.xlarge",
+        )
+
+        est.fit({
+            "input": FileSystemInput(
+                file_system_id="<FileSystemId>",
+                directory_path="/path/to/data/"),
+        })
+
+    """
+
+    def __init__(self, file_system_id: str, directory_path: Optional[str] = None):
+        self.file_system_id = file_system_id
+        self.directory_path = (
+            directory_path.lstrip("/")
+            if directory_path and directory_path.startswith("/")
+            else directory_path
+        )
+
+    def to_input_uri(self):
+        """Convert FileSystemInput to input uri used for TrainingJob."""
+        region_id = get_default_session().region_id
+        return "{schema}://{file_system_id}.{region_id}/{directory}".format(
+            schema=FileSystemInputScheme.NAS,
+            file_system_id=self.file_system_id,
+            region_id=region_id,
+            directory=self.directory_path or "",
+        )
+
+
+class CpfsFileSystemInput(FileSystemInputBase):
+    """CpfsFileSystemInput is used to mount a CPFS file system for a TrainingJob.
+
+    More details about CPFS, please refer to documentation:
+    https://help.aliyun.com/product/111536.html
+
+    Examples::
+
+        est = Estimator(
+            image_uri="<TrainingImageUri>",
+            command="sh train.sh",
+            instance_type="ecs.c6.xlarge",
+        )
+
+        est.fit(
+            inputs={"train": CpfsFileSystemInput(
+                file_system_id="<FileSystemId>",
+                protocol_service_id="<ProtocolServiceId>",
+                export_id="<ExportId>",
+            )},
+        )
+
+    """
+
+    def __init__(self, file_system_id: str, protocol_service_id: str, export_id: str):
+        """Initialize CpfsFileSystemInput.
+
+        Args:
+            file_system_id (str): CPFS file system id.
+            protocol_service_id (str): CPFS protocol service id.
+            export_id (str): CPFS export id.
+        """
+
+        self.file_system_id = file_system_id
+        self.protocol_service_id = protocol_service_id
+        self.export_id = export_id
+
+    def to_input_uri(self):
+        """Convert CpfsFileSystemInput instance to input uri used for TrainingJob."""
+        region_id = get_default_session().region_id
+        return (
+            "{schema}://{file_system_id}.{region_id}/{protocol_service_id}/"
+            "{export_id}/".format(
+                schema=FileSystemInputScheme.CPFS,
+                file_system_id=self.file_system_id,
+                region_id=region_id,
+                protocol_service_id=self.protocol_service_id,
+                export_id=self.export_id,
+            )
+        )
+
+
+class UserVpcConfig(object):
+    """UserVpcConfig is used to give training job access to resources in your VPC."""
+
+    def __init__(
+        self,
+        vpc_id: str,
+        security_group_id: str,
+        switch_id: Optional[str] = None,
+        extended_cidrs: List[str] = None,
+    ):
+        """Initialize UserVpcConfig.
+
+        Args:
+            vpc_id (str): Specifies the ID of the VPC that training job instance
+                connects to.
+            security_group_id (str): The ID of the security group that training job
+                instances belong to.
+            switch_id (str, optional): The ID of the vSwitch to which the instance
+                belongs. Defaults to None.
+            extended_cidrs (List[str], optional): The CIDR blocks configured for the
+                ENI of the training job instance. If it is not specified, the CIDR block
+                will be configured as the same as the VPC network segmentation, which
+                means that the training job instance can access all resources in the
+                VPC. Defaults to None.
+        """
+
+        self.vpc_id = vpc_id
+        self.security_group_id = security_group_id
+        self.switch_id = switch_id
+        self.extended_cidrs = extended_cidrs
+
+    def to_dict(self):
+        return {
+            "VpcId": self.vpc_id,
+            "SecurityGroupId": self.security_group_id,
+            "SwitchId": self.switch_id,
+            "ExtendedCIDRs": self.extended_cidrs,
+        }
+
+
 class EstimatorBase(metaclass=ABCMeta):
     """EstimatorBase is the base class for other Estimator classes, such as Estimator.
 
@@ -79,8 +220,10 @@ class EstimatorBase(metaclass=ABCMeta):
         base_job_name: Optional[str] = None,
         max_run_time: Optional[int] = None,
         output_path: Optional[str] = None,
+        checkpoints_path: Optional[str] = None,
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
+        user_vpc_config: Optional[UserVpcConfig] = None,
         session: Optional[Session] = None,
     ):
         """EstimatorBase constructor.
@@ -129,6 +272,9 @@ class EstimatorBase(metaclass=ABCMeta):
                             |                           // name is the channel name.
                             `-- model
                             `-- checkpoints
+            checkpoints_path (str, optional): An OSS URI that stores the checkpoint of the
+                training job. If provided, the OSS URI will be mounted to the directory
+                `/ml/output/checkpoints/`.
             instance_type (str, optional): The machine instance type used to run the
                 training job. To view the supported machine instance types, please refer
                 to the document:
@@ -136,6 +282,12 @@ class EstimatorBase(metaclass=ABCMeta):
                 If the instance_type is "local", the training job is executed locally
                 using docker.
             instance_count (int): The number of machines used to run the training job.
+            user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
+                configuration used to enable the training job instance to connect to the
+                specified user VPC. If provided, an Elastic Network Interface (ENI) will
+                be created and attached to the training job instance, allowing the
+                instance to access the resources within the specified VPC. Default to
+                None.
             session (Session, optional): A PAI session instance used for communicating
                 with PAI service.
 
@@ -146,10 +298,20 @@ class EstimatorBase(metaclass=ABCMeta):
         self.max_run_time = max_run_time
         self.base_job_name = base_job_name
         self.output_path = output_path
+        self.user_vpc_config = user_vpc_config
+        self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
         self._latest_training_job = None
 
         self._check_instance_type()
+
+    def set_hyperparameters(self, **kwargs):
+        """Set hyperparameters for the training job.
+
+        Args:
+            **kwargs: Hyperparameters in key-value pairs.
+        """
+        self.hyperparameters.update(**kwargs)
 
     @property
     def latest_training_job(self):
@@ -173,30 +335,59 @@ class EstimatorBase(metaclass=ABCMeta):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
 
-    def _check_input_uri(self, uri: str):
-        """Check if the given input uri is valid."""
-        if not isinstance(uri, str):
-            raise ValueError(
-                f"The Estimator supports OSS URI or NAS URI as input data."
-                f" Input data of type{type(uri)} is not supported."
-            )
-        if is_oss_uri(uri):
-            input_uri = uri
-        elif os.path.exists(uri):
+    def _get_input_uri(self, item: str):
+        """Get input uri for training_job from given input."""
+        if not isinstance(item, (str, FileSystemInputBase)):
+            raise ValueError(f"Input data of type {type(item)} is not supported.")
+
+        if isinstance(item, FileSystemInputBase):
+            input_uri = item.to_input_uri()
+        elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
+            input_uri = item
+        elif os.path.exists(item):
             store_path = self.session.get_storage_path_by_category("train_data")
-            input_uri = upload(uri, store_path)
+            input_uri = upload(item, store_path)
         else:
             raise ValueError(
-                f"Input data path should be a valid OSS URI or local path:"
-                f" input={uri}"
+                "Invalid input data, supported inputs are OSS, NAS, MaxCompute "
+                "table or local path."
             )
+
         return input_uri
 
-    @abstractmethod
     def _build_input_data_configs(
-        self, inputs: Dict[str, Any] = None
+        self,
+        inputs: Dict[str, Any] = None,
+        input_channel_defs: Optional[List[Dict[str, str]]] = None,
     ) -> List[Dict[str, str]]:
         """Build the input data config for the training job."""
+        res = []
+
+        if input_channel_defs:
+            remains = set(inputs.keys())
+            for channel in input_channel_defs:
+                channel_name = channel["Name"]
+                channel_required = channel["Required"]
+                if channel_name in inputs:
+                    input_uri = self._get_input_uri(inputs[channel_name])
+                    res.append({"Name": channel_name, "InputUri": input_uri})
+                    remains.remove(channel_name)
+                elif channel_required:
+                    raise ValueError(
+                        f"Input channel {channel_name} is required but not provided."
+                        " Please check the input channels definition."
+                    )
+            if remains:
+                raise ValueError(
+                    f"Following input channels={list(remains)} are not defined in input"
+                    " channels definition. Please check the input channels definition."
+                )
+        else:
+            for name, item in inputs.items():
+                input_uri = self._get_input_uri(item)
+                res.append({"Name": name, "InputUri": input_uri})
+
+        return res
 
     def _generate_job_base_output_path(self, job_name: str) -> str:
         """Generate the base output path for the training job."""
@@ -213,19 +404,58 @@ class EstimatorBase(metaclass=ABCMeta):
             )
             return f"oss://{bucket_name}/{job_output_path}"
 
-    @abstractmethod
-    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
+    @classmethod
+    def _get_default_output_channel_defs(cls):
+        channel_defs = [
+            {
+                "Name": DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+            },
+            {
+                "Name": DEFAULT_CHECKPOINT_CHANNEL_NAME,
+            },
+            {
+                "Name": DEFAULT_TENSORBOARD_CHANNEL_NAME,
+                "Properties": {
+                    "ossAppendable": "true",
+                },
+            },
+        ]
+        return channel_defs
+
+    def _build_output_data_configs(
+        self, job_name: str, output_channel_defs: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         """Build the output data config for the training job."""
+        job_base_output_path = self._generate_job_base_output_path(job_name)
+
+        # OSS URI for output channel will be mounted to directory
+        # "/ml/output/{ChannelName}/" and the output OSS URI should be a "directory"
+        def as_oss_dir_uri(uri: str):
+            return uri if uri.endswith("/") else uri + "/"
+
+        res = []
+        for ch in output_channel_defs:
+            # if checkpoint path is provided, use it as the checkpoint channel output.
+            if ch["Name"] == DEFAULT_CHECKPOINT_CHANNEL_NAME and self.checkpoints_path:
+                oss_uri = self.checkpoints_path
+            else:
+                oss_uri = as_oss_dir_uri(
+                    posixpath.join(job_base_output_path, ch["Name"])
+                )
+            res.append(
+                {
+                    "Name": ch["Name"],
+                    "OutputUri": oss_uri,
+                }
+            )
+
+        return res
 
     @abstractmethod
     def fit(
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
     ):
         """Submit a training job with the given input data."""
-
-    def _patch_default_oss_endpoint(self, uri: str):
-        """Patch default OSS endpoint for Input/Output OSS data uri for TrainingJob."""
-        return self.session.patch_oss_endpoint(uri)
 
     def wait(self, show_logs: bool = True):
         """Block until the latest training job is completed.
@@ -234,16 +464,13 @@ class EstimatorBase(metaclass=ABCMeta):
             show_logs(bool): Specifies whether to fetch and print the logs produced by
                 the training job.
 
+        Raises:
+            RuntimeError: If no training job is submitted.
+
         """
         if not self._latest_training_job:
             raise RuntimeError("Could not find a submitted training job.")
         self._latest_training_job.wait(show_logs=show_logs)
-
-    def attach(
-        self,
-        training_job_name: str,
-    ):
-        """Attach to a training job."""
 
     def model_data(self) -> str:
         """Model data output path.
@@ -265,6 +492,38 @@ class EstimatorBase(metaclass=ABCMeta):
 
         return self._latest_training_job.output_path(
             channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
+        )
+
+    def checkpoints_data(self) -> str:
+        """Checkpoints data output path.
+
+        Returns:
+            str: A string in OSS URI format refers to the checkpoints of submitted
+                training job.
+        """
+        if not self._latest_training_job:
+            raise RuntimeError(
+                "No TrainingJob for the Estimator, output checkpoints data path "
+                "not found."
+            )
+        return self._latest_training_job.output_path(
+            channel_name=DEFAULT_CHECKPOINT_CHANNEL_NAME
+        )
+
+    def tensorboard_data(self) -> str:
+        """Output TensorBoard logs path.
+
+        Returns:
+            str: A string in OSS URI format refers to the tensorboard log of submitted
+                training job.
+        """
+        if not self._latest_training_job:
+            raise RuntimeError(
+                "No TrainingJob for the Estimator, output TensorBoard logs data path"
+                " not found."
+            )
+        return self._latest_training_job.output_path(
+            channel_name=DEFAULT_TENSORBOARD_CHANNEL_NAME,
         )
 
     def create_model(self, inference_spec: Union[InferenceSpec, Dict]) -> Model:
@@ -386,6 +645,7 @@ class Estimator(EstimatorBase):
         metric_definitions: Optional[List[Dict[str, str]]] = None,
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
+        user_vpc_config: Optional[UserVpcConfig] = None,
         session: Optional[Session] = None,
     ):
         """Estimator constructor.
@@ -456,6 +716,12 @@ class Estimator(EstimatorBase):
             checkpoints_path (str, optional): An OSS URI that stores the checkpoint of the
                 training job. If provided, the OSS URI will be mounted to the directory
                 `/ml/output/checkpoints/`.
+            user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
+                configuration used to enable the training job instance to connect to the
+                specified user VPC. If provided, an Elastic Network Interface (ENI) will
+                be created and attached to the training job instance, allowing the
+                instance to access the resources within the specified VPC. Default to
+                None.
             output_path (str, optional): An OSS URI to store the outputs of the training
                 jobs. If not provided, an OSS URI will be generated using the default
                 OSS bucket in the session. When the `estimator.fit` method is called,
@@ -521,7 +787,6 @@ class Estimator(EstimatorBase):
         self.source_dir = source_dir
         self.git_config = git_config
         self.job_type = job_type if job_type else JobType.PyTorchJob
-        self.checkpoints_path = checkpoints_path
         self.metric_definitions = metric_definitions
 
         super(Estimator, self).__init__(
@@ -529,8 +794,10 @@ class Estimator(EstimatorBase):
             base_job_name=base_job_name,
             max_run_time=max_run_time,
             output_path=output_path,
+            checkpoints_path=checkpoints_path,
             instance_type=instance_type,
             instance_count=instance_count,
+            user_vpc_config=user_vpc_config,
             session=session,
         )
 
@@ -610,72 +877,11 @@ class Estimator(EstimatorBase):
             "Command": command,
             "Image": self.training_image_uri(),
             "JobType": self.job_type,
-            "MetricDefinitions": [m for m in self.metric_definitions]
-            if self.metric_definitions
-            else [],
+            "MetricDefinitions": self.metric_definitions,
             "CodeDir": code_input,
-            "OutputChannels": [
-                {
-                    "Name": "logs",
-                    "Properties": {
-                        "ossAppendable": "true",
-                    },
-                }
-            ],
+            "OutputChannels": self._get_default_output_channel_defs(),
         }
         return algo_spec
-
-    def _build_input_data_configs(
-        self, inputs: Dict[str, Any] = None
-    ) -> List[Dict[str, str]]:
-        """Build the input data config for the training job."""
-        inputs = inputs or dict()
-        res = []
-        for name, item in inputs.items():
-            input_uri = self._check_input_uri(item)
-            res.append({"Name": name, "InputUri": input_uri})
-        return res
-
-    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
-        """Build the output data config for the training job."""
-        job_base_output_path = self._generate_job_base_output_path(job_name)
-
-        # OSS URI for output channel will be mounted to directory
-        # "/ml/output/{ChannelName}/" and the output OSS URI should be a "directory"
-        def as_oss_dir_uri(uri: str):
-            return uri if uri.endswith("/") else uri + "/"
-
-        model_path = posixpath.join(
-            job_base_output_path,
-            DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-        )
-        # Use checkpoints_path from user or construct a checkpoint path using
-        # default output path.
-        checkpoints_path = self.checkpoints_path or posixpath.join(
-            job_base_output_path,
-            DEFAULT_CHECKPOINT_CHANNEL_NAME,
-        )
-
-        # Output logs path
-        logs_path = posixpath.join(
-            job_base_output_path,
-            DEFAULT_LOGS_CHANNEL_NAME,
-        )
-        res = [
-            {
-                "Name": DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-                "OutputUri": as_oss_dir_uri(model_path),
-            },
-            {
-                "Name": DEFAULT_CHECKPOINT_CHANNEL_NAME,
-                "OutputUri": as_oss_dir_uri(checkpoints_path),
-            },
-            {
-                "Name": DEFAULT_LOGS_CHANNEL_NAME,
-                "OutputUri": as_oss_dir_uri(logs_path),
-            },
-        ]
-        return res
 
     def fit(
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
@@ -710,17 +916,56 @@ class Estimator(EstimatorBase):
         if wait:
             self.wait(show_logs=show_logs)
 
-    def _fit(self, job_name, inputs: Dict[str, Any] = None):
-        """Used by Estimator.fit method to submit a training job."""
-        input_configs = self._build_input_data_configs(inputs)
-        for c in input_configs:
-            if "InputUri" in c and is_oss_uri(c["InputUri"]):
-                c["InputUri"] = self._patch_default_oss_endpoint(c["InputUri"])
-        output_configs = self._build_output_data_configs(job_name)
-        for c in output_configs:
-            if "OutputUri" in c and is_oss_uri(c["OutputUri"]):
-                c["OutputUri"] = self._patch_default_oss_endpoint(c["OutputUri"])
+    def tensorboard(self, wait=True):
+        """Launch a TensorBoard Application to view the output TensorBoard logs.
 
+        Args:
+            wait (bool): Specifies whether to block until the TensorBoard is running.
+
+        Returns:
+            :class:`pai.tensorboard.TensorBoard`: A TensorBoard instance.
+        """
+        from pai.tensorboard import TensorBoard
+
+        if not self.latest_training_job:
+            raise RuntimeError("Could not find a submitted training job.")
+
+        source_type = "TrainingJob"
+        if isinstance(self.latest_training_job, _LocalTrainingJob):
+            raise RuntimeError("Local training job does not support tensorboard.")
+        res = self.session.tensorboard_api.list(
+            source_type=source_type,
+            source_id=self.latest_training_job.training_job_id,
+        )
+
+        if res.items:
+            if len(res.items) > 1:
+                logger.warning(
+                    "Found multiple TensorBoard instances for the submitted training "
+                    "job, use the first one."
+                )
+            tb_id = res.items[0]["TensorboardId"]
+            tb = TensorBoard(tensorboard_id=tb_id, session=self.session)
+            tb.start(wait=wait)
+        else:
+            tb = TensorBoard.create(
+                uri=self.tensorboard_data(),
+                wait=wait,
+                display_name=self._latest_training_job.training_job_name,
+                source_id=self.latest_training_job.training_job_id,
+                source_type=source_type,
+                session=self.session,
+            )
+
+        # Open the TensorBoard in the default browser.
+        webbrowser.open(tb.app_uri)
+        return tb
+
+    def _fit(self, job_name, inputs: Dict[str, Any] = None):
+        input_configs = self._build_input_data_configs(inputs)
+        output_configs = self._build_output_data_configs(
+            job_name, output_channel_defs=self._get_default_output_channel_defs()
+        )
         # prepare input code.
         code_input = self._build_code_input(job_name)
         algo_spec = self._build_algorithm_spec(
@@ -736,6 +981,9 @@ class Estimator(EstimatorBase):
             input_channels=input_configs,
             output_channels=output_configs,
             algorithm_spec=algo_spec,
+            user_vpc_config=self.user_vpc_config.to_dict()
+            if self.user_vpc_config
+            else None,
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
@@ -749,7 +997,6 @@ class Estimator(EstimatorBase):
         instance_type: str,
         inputs: Dict[str, Any] = None,
     ) -> "_LocalTrainingJob":
-        """Used by Estimator.fit method to run a training job locally."""
         if self.instance_count > 1:
             raise RuntimeError("Local training job only supports single instance.")
 
@@ -761,76 +1008,6 @@ class Estimator(EstimatorBase):
         )
         training_job.run()
         return training_job
-
-    def tensorboard(self, wait=True):
-        """Launch a TensorBoard Application to view the output TensorBoard logs.
-
-        Args:
-            wait (bool): Specifies whether to block until the TensorBoard is running.
-
-        Returns:
-            :class:`pai.tensorboard.TensorBoard`: A TensorBoard instance.
-        """
-        from pai.tensorboard import TensorBoard
-
-        if not self.latest_training_job:
-            raise RuntimeError("Could not find a submitted training job.")
-
-        if isinstance(self.latest_training_job, _LocalTrainingJob):
-            raise RuntimeError("Local training job does not support tensorboard.")
-        res = self.session.tensorboard_api.list(
-            source_type="TrainingJob",
-            source_id=self.latest_training_job.training_job_id,
-        )
-
-        if res.items:
-            if len(res.items) > 1:
-                logger.warning(
-                    "Found multiple TensorBoard instances, use the first one."
-                )
-            tb_id = res.items[0]["TensorboardId"]
-            tb = TensorBoard(tensorboard_id=tb_id, session=self.session)
-            tb.start(wait=wait)
-        else:
-            tb = TensorBoard.create(
-                uri=self.logs_data(),
-                wait=wait,
-                display_name=self._latest_training_job.training_job_name,
-                source_id=self.latest_training_job.training_job_id,
-                source_type="TrainingJob",
-                session=self.session,
-            )
-        return tb
-
-    def checkpoints_data(self) -> str:
-        """Checkpoints data output path.
-
-        Returns:
-            str: A string in OSS URI format refers to the checkpoints of submitted
-                training job.
-        """
-        if not self._latest_training_job:
-            raise RuntimeError(
-                "No TrainingJob for the estimator, output checkpoints data not found."
-            )
-        return self._latest_training_job.output_path(
-            channel_name=DEFAULT_CHECKPOINT_CHANNEL_NAME
-        )
-
-    def logs_data(self) -> str:
-        """Output logs path.
-
-        Returns:
-            str: A string in OSS URI format refers to the checkpoints of submitted
-                training job.
-        """
-        if not self._latest_training_job:
-            raise RuntimeError(
-                "No TrainingJob for the estimator, output logs data not found."
-            )
-        return self._latest_training_job.output_path(
-            channel_name=DEFAULT_LOGS_CHANNEL_NAME,
-        )
 
 
 class AlgorithmEstimator(EstimatorBase):
@@ -879,6 +1056,7 @@ class AlgorithmEstimator(EstimatorBase):
         output_path: Optional[str] = None,
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
+        user_vpc_config: Optional[UserVpcConfig] = None,
         session: Optional[Session] = None,
     ):
         """Initialize an AlgorithmEstimator.
@@ -889,18 +1067,16 @@ class AlgorithmEstimator(EstimatorBase):
             algorithm_version (str, optional): The version of the algorithm. If not
                 provided, the latest version of the algorithm will be used. If algorithm
                 name is not provided, this argument will be ignored.
-            algorithm_provider (str, optional): The provider of the algorithm. Currently
-                only "pai" or None are supported. Set it to "pai" to retrieve a PAI
-                official algorithm. If not provided, the default provider is user's PAI
-                account. If algorithm name is not provided, this argument will be
-                ignored.
+            algorithm_provider (str, optional): The provider of the algorithm.
+                Currently, only "pai" or None are supported. Set it to "pai" to retrieve
+                 a PAI official algorithm. If not provided, the default provider is
+                 user's PAI account. If algorithm name is not provided, this argument
+                  will be ignored.
             algorithm_spec (Dict[str, Any], optional): A temporary algorithm spec.
                 Required if algorithm_name is not provided.
             hyperparameters (dict, optional): A dictionary that represents the
                 hyperparameters used in the training job. Default hyperparameters will
-                be retrieved from the algorithm definition. The hyperparameters will be
-                stored in the `/ml/input/config/hyperparameters.json` as a JSON
-                dictionary in the training container.
+                be retrieved from the algorithm definition.
             base_job_name (str, optional): The base name used to generate the training
                 job name. If not provided, a default job name will be generated.
             max_run_time (int, optional): The maximum time in seconds that the training
@@ -911,36 +1087,6 @@ class AlgorithmEstimator(EstimatorBase):
                 OSS bucket in the session. When the `estimator.fit` method is called,
                 a specific OSS URI under the output_path for each channel is generated
                 and mounted to the training container.
-
-                A completed training container directory structure example::
-
-                    /ml
-                    |-- usercode            			// User source code directory.
-                    |   |-- requirements.txt
-                    |   `-- train.py
-                    |-- input               			// TrainingJob input
-                    |   `-- config
-                    |       |-- hyperparameters.json	// Hyperparameters in JSON
-                    |       |                           // dictionary format for the
-                    |       |                           // TrainingJob
-                    |       |
-                    |   `-- data            			// TrainingJob input channels
-                    |       |                           // `/ml/input/data/` is a input
-                    |       |                           // channel, and the directory
-                    |       |                           // name is the channel name.
-                    |       |                           // Each directory under the
-                    |       |-- test-data
-                    |       |   `-- test.csv
-                    |       `-- train-data
-                    |           `-- train.csv
-                    `-- output              			// TrainingJob output channels.
-                            |                           // Each directory under the
-                            |                           // `/ml/output/` is an output
-                            |                           // channel, and the directory
-                            |                           // name is the channel name.
-                            `-- model
-                            `-- checkpoints
-
             instance_type (str, optional): The machine instance type used to run the
                 training job. If not provider, the default instance type will be
                 retrieved from the algorithm definition. To view the supported machine
@@ -949,6 +1095,12 @@ class AlgorithmEstimator(EstimatorBase):
             instance_count (int, optional): The number of machines used to run the
                 training job. If not provider, the default instance count will be
                 retrieved from the algorithm definition.
+            user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
+                configuration used to enable the training job instance to connect to the
+                specified user VPC. If provided, an Elastic Network Interface (ENI) will
+                be created and attached to the training job instance, allowing the
+                instance to access the resources within the specified VPC. Default to
+                None.
             session (:class:`pai.session.Session`, optional): A PAI session object
                 used for interacting with PAI Service.
         """
@@ -991,9 +1143,13 @@ class AlgorithmEstimator(EstimatorBase):
             else self._get_default_training_instance_type(),
             instance_count=instance_count,
             session=session,
+            user_vpc_config=user_vpc_config,
         )
 
-        self._output_channels = None
+    # TODO: check if the hyperparameters are valid
+    def set_hyperparameters(self, **kwargs):
+        """Set hyperparameters for the algorithm training."""
+        super(AlgorithmEstimator, self).set_hyperparameters(**kwargs)
 
     @property
     def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
@@ -1180,108 +1336,6 @@ class AlgorithmEstimator(EstimatorBase):
             )
         return machine_spec["InstanceType"]
 
-    def _build_input_data_configs(
-        self,
-        inputs: Dict[str, Any] = None,
-    ) -> List[Dict[str, str]]:
-        """Build input data configs."""
-
-        inputs = copy.deepcopy(inputs) or {}
-        res = []
-        input_channels_def = self.input_channel_definitions
-        if input_channels_def:
-            for channel in input_channels_def:
-                channel_name = channel["Name"]
-                channel_required = channel["Required"]
-                if channel_required is True and channel_name not in inputs:
-                    raise ValueError(
-                        f"Input channel {channel_name} is required but not provided."
-                        " Please check the input channels definition."
-                    )
-                elif channel_name in inputs:
-                    input_uri = self._check_input_uri(inputs[channel_name])
-                    res.append({"Name": channel_name, "InputUri": input_uri})
-                    inputs.pop(channel_name)
-                else:
-                    pass
-            if inputs != {}:
-                raise ValueError(
-                    f"Following input channels={inputs.keys()} are not defined in input"
-                    " channels definition. Please check the input channels definition."
-                )
-        else:
-            for name, item in inputs.items():
-                input_uri = self._check_input_uri(item)
-                res.append({"Name": name, "InputUri": input_uri})
-
-        return res
-
-    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
-        """Build output data configs."""
-        job_base_output_path = self._generate_job_base_output_path(job_name)
-
-        # OSS URI for output channel will be mounted to directory
-        # "/ml/output/{ChannelName}/" and the output OSS URI should be a "directory"
-        def as_oss_dir_uri(uri: str):
-            return uri if uri.endswith("/") else uri + "/"
-
-        model_path = posixpath.join(
-            job_base_output_path,
-            DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-        )
-        # Use checkpoints_path from user or construct a checkpoint path using default
-        # output path.
-        checkpoints_path = posixpath.join(
-            job_base_output_path,
-            DEFAULT_CHECKPOINT_CHANNEL_NAME,
-        )
-        # Output logs path
-        logs_path = posixpath.join(
-            job_base_output_path,
-            DEFAULT_LOGS_CHANNEL_NAME,
-        )
-
-        # Record the output channels
-        self._output_channels = []
-        res = []
-        output_channels_def = self.output_channel_definitions
-        if output_channels_def:
-            for channel in output_channels_def:
-                channel_name = channel["Name"]
-                channel_path = posixpath.join(
-                    job_base_output_path,
-                    channel_name,
-                )
-                res.append(
-                    {
-                        "Name": channel_name,
-                        "OutputUri": as_oss_dir_uri(channel_path),
-                    }
-                )
-                self._output_channels.append(channel_name)
-        else:
-            res = [
-                {
-                    "Name": DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-                    "OutputUri": as_oss_dir_uri(model_path),
-                },
-                {
-                    "Name": DEFAULT_CHECKPOINT_CHANNEL_NAME,
-                    "OutputUri": as_oss_dir_uri(checkpoints_path),
-                },
-                {
-                    "Name": DEFAULT_LOGS_CHANNEL_NAME,
-                    "OutputUri": as_oss_dir_uri(logs_path),
-                },
-            ]
-            self._output_channels = [
-                DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-                DEFAULT_CHECKPOINT_CHANNEL_NAME,
-                DEFAULT_LOGS_CHANNEL_NAME,
-            ]
-
-        return res
-
     def fit(
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
     ):
@@ -1310,14 +1364,12 @@ class AlgorithmEstimator(EstimatorBase):
             self.wait(show_logs=show_logs)
 
     def _fit(self, job_name, inputs: Dict[str, Any] = None):
-        input_configs = self._build_input_data_configs(inputs)
-        for c in input_configs:
-            if "InputUri" in c and is_oss_uri(c["InputUri"]):
-                c["InputUri"] = self._patch_default_oss_endpoint(c["InputUri"])
-        output_configs = self._build_output_data_configs(job_name)
-        for c in output_configs:
-            if "OutputUri" in c and is_oss_uri(c["OutputUri"]):
-                c["OutputUri"] = self._patch_default_oss_endpoint(c["OutputUri"])
+        input_configs = self._build_input_data_configs(
+            inputs, input_channel_defs=self.input_channel_definitions
+        )
+        output_configs = self._build_output_data_configs(
+            job_name, output_channel_defs=self.output_channel_definitions
+        )
 
         training_job_id = self.session.training_job_api.create(
             instance_count=self.instance_count,
@@ -1331,6 +1383,9 @@ class AlgorithmEstimator(EstimatorBase):
             algorithm_version=self.algorithm_version,
             algorithm_provider=self.algorithm_provider,
             algorithm_spec=self.algorithm_spec,
+            user_vpc_config=self.user_vpc_config.to_dict()
+            if self.user_vpc_config
+            else None,
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
@@ -1338,36 +1393,6 @@ class AlgorithmEstimator(EstimatorBase):
             f" {training_job.console_uri}"
         )
         return training_job
-
-    def model_data(self) -> str:
-        """Model data output path.
-
-        Returns:
-            str: A string in OSS URI format refers to the output model of the submitted
-                job.
-        """
-        if not self._latest_training_job:
-            raise RuntimeError(
-                "No TrainingJob for the estimator, output model data not found."
-            )
-
-        if not self._latest_training_job.is_succeeded():
-            logger.warning(
-                "The TrainingJob is currently not in a succeeded status, which means"
-                " that the model data output may not be accessible."
-            )
-
-        if DEFAULT_OUTPUT_MODEL_CHANNEL_NAME not in self._output_channels:
-            raise RuntimeError(
-                f"Default output model channel={DEFAULT_OUTPUT_MODEL_CHANNEL_NAME} not"
-                " found in the output channels definition. Please check the output"
-                " channels definition."
-            )
-
-        res = self._latest_training_job.output_path(
-            channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
-        )
-        return res
 
     def get_outputs_data(self) -> Dict[str, str]:
         """Show all outputs data paths.
@@ -1380,16 +1405,10 @@ class AlgorithmEstimator(EstimatorBase):
                 "No TrainingJob for the estimator, output checkpoints data not found."
             )
 
-        res = {}
-        for channel_name in self._output_channels:
-            res.update(
-                {
-                    channel_name: self._latest_training_job.output_path(
-                        channel_name=channel_name
-                    )
-                }
-            )
-        return res
+        return {
+            ch["Name"]: ch["OutputUri"]
+            for ch in self._latest_training_job.output_channels
+        }
 
 
 _TRAINING_LAUNCH_SCRIPT_TEMPLATE = textwrap.dedent(
@@ -1687,7 +1706,6 @@ class TrainingJobChannel(object):
 class _TrainingJob(EntityBaseMixin):
     _schema_cls = TrainingJobSchema
 
-    @config_default_session
     def __init__(
         self,
         algorithm_name=None,
@@ -1706,6 +1724,7 @@ class _TrainingJob(EntityBaseMixin):
         **kwargs,
     ):
         super(_TrainingJob, self).__init__(session=session, **kwargs)
+        session = session or get_default_session()
         self.algorithm_name = algorithm_name
         self.algorithm_version = algorithm_version
         self.algorithm_provider = algorithm_provider
@@ -1740,13 +1759,12 @@ class _TrainingJob(EntityBaseMixin):
         return self.training_job_id
 
     @classmethod
-    @config_default_session
     def get(cls, training_job_id, session: Session = None) -> "_TrainingJob":
+        session = session or get_default_session()
         res = session.training_job_api.get(training_job_id=training_job_id)
         return cls.from_api_object(res, session=session)
 
     @classmethod
-    @config_default_session
     def list(
         cls,
         status=None,
@@ -1754,6 +1772,7 @@ class _TrainingJob(EntityBaseMixin):
         page_size=50,
         page_number=1,
     ):
+        session = session or get_default_session()
         res = session.training_job_api.list(
             status=status, page_size=page_size, page_number=page_number
         )
@@ -1764,7 +1783,7 @@ class _TrainingJob(EntityBaseMixin):
             if output_channel["Name"] == channel_name:
                 return output_channel["OutputUri"]
         raise RuntimeError(
-            f"Output model path not found: model_channel_name={channel_name}"
+            f"Output channel is not specified: channel_name={channel_name}"
         )
 
     @property

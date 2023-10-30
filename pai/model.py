@@ -25,22 +25,29 @@ from .common.utils import (
     random_str,
     to_plain_text,
 )
+from .exception import DuplicatedMountException, MountPathIsOccupiedException
 from .image import ImageInfo
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
-from .session import Session, config_default_session
-
-DEFAULT_SERVICE_PORT = 8000
-
+from .session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 
+# Reserved ports for internal use, do not use them for service
+_RESERVED_PORTS = [8080, 9090]
 
-class _ModelServiceConfig(object):
-    DEFAULT_PORT = 8000
-    NOT_ALLOWED_PORTS = [8080, 9090]
-    MODEL_PATH = "/eas/workspace/model/"
-    CODE_MOUNT_PATH = "/ml/usercode/"
+
+class DefaultServiceConfig(object):
+    """Default configuration used in creating prediction service."""
+
+    # Listen Port
+    listen_port = 8000
+
+    # Default model path in container
+    model_path = "/eas/workspace/model/"
+
+    # Default user code path in container
+    code_path = "/ml/usercode/"
 
 
 class ResourceConfig(object):
@@ -258,7 +265,6 @@ class InferenceSpec(object):
         logger.debug("Uploaded source code to OSS: %s", uploaded_source_code)
         return uploaded_source_code
 
-    @config_default_session
     def mount(
         self,
         source: str,
@@ -282,6 +288,10 @@ class InferenceSpec(object):
         Returns:
             Dict[str, Any]: The storage config.
 
+        Raises:
+            DuplicateMountException: If the mount path is already used or source OSS
+                path is mounted to the container.
+
         Examples::
             # Mount a OSS storage path to the running container.
             >>> inference_spec.mount("oss://<YourOssBucket>/path/to/directory/model.json",
@@ -291,6 +301,7 @@ class InferenceSpec(object):
             >>> inference_spec.mount("/path/to/your/data/", "/ml/model/")
 
         """
+        session = session or get_default_session()
 
         # TODO: supports more storages, such as NAS, PAI Dataset, PAI CodeSource, etc.
         if not isinstance(source, str):
@@ -299,20 +310,21 @@ class InferenceSpec(object):
                 " or a local file path."
             )
 
-        # Get current storage configs.
         if "storage" in self._cfg_dict:
             configs = self._cfg_dict.get("storage", [])
         else:
             configs = []
 
-        # check if mount path is already used.
+        uris = set()
         for conf in configs:
+            # check if target mount path is already used.
             if conf.get("mount_path") == mount_path:
-                raise ValueError(
-                    f"Mount path {mount_path} is already used by other storage."
+                raise MountPathIsOccupiedException(
+                    f"The mount path '{mount_path}' has already been used."
                 )
+            mount_uri = conf.get("oss", {}).get("path")
+            uris.add(mount_uri)
 
-        # build new storage config.
         if is_oss_uri(source):
             oss_uri_obj = OssUriObj(source)
             storage_config = {
@@ -336,27 +348,24 @@ class InferenceSpec(object):
                 "Source path is not a valid OSS URI or a existing local path."
             )
 
-        # Check if the mount information is already in the config.
-        for conf in configs:
-            if conf.get("oss").get("path") == oss_uri_obj.get_dir_uri():
-                logger.warning(
-                    f"Source {oss_uri_obj.get_dir_uri()} is already mounted."
-                    " Skip mounting."
-                )
-                return None
+        # check if the source OSS Path is already mounted to the container.
+        if oss_uri_obj.get_dir_uri() in uris:
+            raise DuplicatedMountException(
+                f"Source OSS path '{oss_uri_obj.get_dir_uri()}' is already "
+                f"mounted to the container."
+            )
 
         configs.append(storage_config)
         self.storage = configs
         return storage_config
 
 
-@config_default_session
 def container_serving_spec(
     command: str,
     image_uri: Union[str, ImageInfo],
     source_dir: Optional[str] = None,
     git_config: Optional[Dict[str, Any]] = None,
-    port: int = DEFAULT_SERVICE_PORT,
+    port: Optional[int] = None,
     environment_variables: Optional[Dict[str, str]] = None,
     requirements: Optional[List[str]] = None,
     requirements_path: Optional[str] = None,
@@ -425,7 +434,7 @@ def container_serving_spec(
         image_uri (str): The Docker image used to run the prediction service.
         port (int): Expose port of the server in container, the prediction request
             will be forward to the port. The environment variable ``LISTENING_PORT``
-            in the container will be set to this value.
+            in the container will be set to this value. Default to 8000.
         environment_variables (Dict[str, str], optional): Dictionary of environment
             variable key-value pairs to set on the running container.
         requirements (List[str], optional): A list of Python package dependency, it
@@ -441,6 +450,7 @@ def container_serving_spec(
     Returns:
         :class:`pai.model.InferenceSpec`: An InferenceSpec instance.
     """
+    session = session or get_default_session()
     if git_config:
         updated_args = git_utils.git_clone_repo(
             git_config=git_config,
@@ -448,12 +458,11 @@ def container_serving_spec(
         )
         source_dir = updated_args["source_dir"]
 
-    if port and int(port) in _ModelServiceConfig.NOT_ALLOWED_PORTS:
+    if not port:
+        port = DefaultServiceConfig.listen_port
+    elif int(port) in _RESERVED_PORTS:
         raise ValueError(
-            "Port {} is reserved by PAI, it is not allowed to configure"
-            " as serving port: port={}".format(
-                ", ".join([str(p) for p in _ModelServiceConfig.NOT_ALLOWED_PORTS]), port
-            )
+            "Reserved port {} is not allowed to use as serving port.".format(port),
         )
 
     if source_dir:
@@ -465,7 +474,7 @@ def container_serving_spec(
                 "Source directory {} is not a directory.".format(source_dir)
             )
 
-        code_mount_path = _ModelServiceConfig.CODE_MOUNT_PATH
+        code_mount_path = DefaultServiceConfig.code_path
         # build the command for serving container.
         command = textwrap.dedent(
             f"""\
@@ -593,18 +602,15 @@ class _BuiltinProcessor(object):
 class ModelBase(object):
     """A class represent ModelBase."""
 
-    @config_default_session
     def __init__(
         self,
         model_data: str,
-        inference_spec: InferenceSpec,
+        inference_spec: Optional[InferenceSpec] = None,
         session: Session = None,
     ):
-        if not model_data and "model_data" in inference_spec:
-            model_data = inference_spec.model_data
         self.model_data = model_data
         self.inference_spec = inference_spec
-        self.session = session
+        self.session = session or get_default_session()
 
     def download(self, target_dir: str):
         """Download the model data from OSS to local directory.
@@ -847,8 +853,8 @@ class ModelBase(object):
         )
 
         if self.model_data:
-            # if model_data is an OSS URI string with endpoint, truncate the endpoint.
             if not inference_spec.is_container_serving():
+                # if model_data is an OSS URI with endpoint, truncate the endpoint.
                 oss_uri_obj = OssUriObj(self.model_data)
                 model_path_uri = "oss://{bucket_name}/{key}".format(
                     bucket_name=oss_uri_obj.bucket_name,
@@ -856,10 +862,14 @@ class ModelBase(object):
                 )
                 inference_spec.add_option("model_path", model_path_uri)
             else:
-                inference_spec.mount(
-                    self.model_data,
-                    mount_path=_ModelServiceConfig.MODEL_PATH,
-                )
+                try:
+                    inference_spec.mount(
+                        self.model_data,
+                        mount_path=DefaultServiceConfig.model_path,
+                    )
+                except DuplicatedMountException as e:
+                    # ignore duplicated mount
+                    logger.info("Model is already mounted the container: %s", e)
 
         if service_type:
             inference_spec.add_option("metadata.type", service_type)
@@ -924,7 +934,7 @@ class ModelBase(object):
         self._download_model_data(target_dir=model_dir)
         volumes = {
             model_dir: {
-                "bind": _ModelServiceConfig.MODEL_PATH,
+                "bind": DefaultServiceConfig.model_path,
                 "mode": "rw",
             }
         }
@@ -1187,7 +1197,6 @@ class Model(ModelBase):
 
     """
 
-    @config_default_session
     def __init__(
         self,
         model_data: str = None,
@@ -1209,7 +1218,7 @@ class Model(ModelBase):
         super(Model, self).__init__(
             model_data,
             inference_spec,
-            session=session,
+            session=session or get_default_session(),
         )
 
     def deploy(
@@ -1321,7 +1330,6 @@ class RegisteredModel(ModelBase):
 
     """
 
-    @config_default_session
     def __init__(
         self,
         model_name: str,
@@ -1341,7 +1349,7 @@ class RegisteredModel(ModelBase):
             session (:class:`pai.session.Session`, optional): A PAI session object used
                 for interacting with PAI Service.
         """
-        self.session = session
+        self.session = session or get_default_session()
         model_info = kwargs.pop("model_info", None)
         if model_info:
             self._model_version_info = kwargs.pop("model_version_info", {})
@@ -1396,7 +1404,6 @@ class RegisteredModel(ModelBase):
             return generate_repr(self, "model_name", "model_version", "model_provider")
 
     @classmethod
-    @config_default_session
     def list(
         cls,
         model_name: Optional[str] = None,
@@ -1420,6 +1427,7 @@ class RegisteredModel(ModelBase):
             Iterator[RegisteredModel]: An iterator of RegisteredModel instances matching
                 the given criteria.
         """
+        session = session or get_default_session()
         page_size = 50
         page_number = 1
 
@@ -1719,11 +1727,41 @@ class RegisteredModel(ModelBase):
 
         return inference_spec.to_dict()
 
-    def get_estimator(self):
-        """Generate an AlgorithmEstimator
+    def get_estimator(
+        self,
+        instance_type: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        hyperparameters: Optional[Dict[str, Any]] = None,
+        base_job_name: Optional[str] = None,
+        output_path: Optional[str] = None,
+        max_run_time: Optional[int] = None,
+    ):
+        """Generate an AlgorithmEstimator.
 
         Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
 
+        Args:
+            instance_type (str, optional): The machine instance type used to run the
+                training job. If not provider, the default instance type will be
+                retrieved from the algorithm definition. To view the supported machine
+                instance types, please refer to the document:
+                https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
+            instance_count (int, optional): The number of machines used to run the
+                training job. If not provider, the default instance count will be
+                retrieved from the algorithm definition.
+            hyperparameters (dict, optional): A dictionary that represents the
+                hyperparameters used in the training job. Default hyperparameters will
+                be retrieved from the algorithm definition.
+            base_job_name (str, optional): The base name used to generate the training
+                job name. If not provided, a default job name will be generated.
+            output_path (str, optional): An OSS URI to store the outputs of the training
+                jobs. If not provided, an OSS URI will be generated using the default
+                OSS bucket in the session. When the `estimator.fit` method is called,
+                a specific OSS URI under the output_path for each channel is generated
+                and mounted to the training container.
+            max_run_time (int, optional): The maximum time in seconds that the training
+                job can run. The training job will be terminated after the time is
+                reached (Default None).
         Returns:
             :class:`pai.estimator.AlgorithmEstimator`: An AlgorithmEstimator object.
         """
@@ -1739,54 +1777,38 @@ class RegisteredModel(ModelBase):
                 "The provided registered model's training spec does not contain any"
                 " algorithms."
             )
+        if "AlgorithmSpec" in ts:
+            algorithm_spec = ts.get("AlgorithmSpec")
+            algorithm_name, algorithm_provider, algorithm_version = (None, None, None)
+        else:
+            algorithm_name, algorithm_provider, algorithm_version = (
+                ts.get("AlgorithmName"),
+                ts.get("AlgorithmProvider"),
+                ts.get("AlgorithmVersion"),
+            )
+            algorithm_spec = None
 
-        algorithm_name = ts["AlgorithmName"] if "AlgorithmName" in ts else None
-        algorithm_provider = (
-            ts["AlgorithmProvider"] if "AlgorithmProvider" in ts else None
-        )
-        algorithm_version = ts["AlgorithmVersion"] if "AlgorithmVersion" in ts else None
-        algorithm_spec = ts["AlgorithmSpec"] if "AlgorithmSpec" in ts else None
-
-        if "HyperParameters" in ts:
-            hyperparameters = {}
-            for i in ts["HyperParameters"]:
+        hyperparameters = hyperparameters or {}
+        # TODO: validate the given hyperparameters via algorithm definition
+        for hp in ts.get("HyperParameters", []):
+            if hp["Name"] not in hyperparameters:
                 hyperparameters.update(
                     {
-                        i["Name"]: i["Value"],
+                        hp["Name"]: hp["Value"],
                     }
                 )
-        else:
-            hyperparameters = None
 
-        base_job_name = f"{self.model_name}_training" if self.model_name else None
+        if not base_job_name:
+            base_job_name = f"{self.model_name}_training" if self.model_name else None
 
-        if "Scheduler" in ts and "MaxRunningTimeInSeconds" in ts["Scheduler"]:
-            max_run_time = ts["Scheduler"]["MaxRunningTimeInSeconds"]
-        else:
-            max_run_time = None
+        if not max_run_time:
+            max_run_time = ts.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
 
-        if "ComputeResource" in ts:
-            if (
-                "EcsSpec" in ts["ComputeResource"]
-                and "EcsCount" in ts["ComputeResource"]
-            ):
-                instance_type = ts["ComputeResource"]["EcsSpec"]
-                instance_count = ts["ComputeResource"]["EcsCount"]
-            elif (
-                "EcsSpec" not in ts["ComputeResource"]
-                and "EcsCount" not in ts["ComputeResource"]
-            ):
-                instance_type = None
-                instance_count = None
-            else:
-                instance_type = None
-                instance_count = None
-                logger.warning(
-                    "Only one of EcsCount and EcsType is provided. Please check the"
-                    " AlgorithmSpec."
-                )
-        else:
-            instance_type, instance_count = None, None
+        train_compute_resource = ts.get("ComputeResource")
+        if train_compute_resource and (not instance_type or not instance_count):
+            # If instance_type or instance_count is not provided, use the default
+            instance_type = instance_type or train_compute_resource.get("EcsSpec")
+            instance_count = instance_count or train_compute_resource.get("EcsCount")
 
         return AlgorithmEstimator(
             algorithm_name=algorithm_name,
@@ -1798,6 +1820,7 @@ class RegisteredModel(ModelBase):
             max_run_time=max_run_time,
             instance_type=instance_type,
             instance_count=instance_count,
+            output_path=output_path,
         )
 
     def get_estimator_inputs(self) -> Dict[str, str]:

@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, Type
 
 from pai.schema.base import BaseAPIResourceSchema
-from pai.session import Session, config_default_session, get_default_session
+from pai.session import Session, get_default_session
 
 
 class EntityBaseMixin(object):
@@ -18,7 +18,6 @@ class EntityBaseMixin(object):
         return self._session
 
     @classmethod
-    @config_default_session
     def from_api_object(cls, obj_dict: Dict[str, Any], session: Session = None):
         """Construct an entity representing the API resource from response.
 
@@ -29,6 +28,7 @@ class EntityBaseMixin(object):
         Returns:
             An entity representing the resource.
         """
+        session = session or get_default_session()
         return cls._schema_cls(session=session).load(obj_dict)
 
     def to_api_object(self) -> Dict[str, Any]:

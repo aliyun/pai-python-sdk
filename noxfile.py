@@ -27,7 +27,7 @@ PASSING_ENVIRONMENTS = {
 
 
 UNIT_TEST_PYTHON_VERSIONS = ["3.6", "3.7", "3.8"]
-# INTEGRATION_TEST_PYTHON_VERSIONS = ["3.6"]
+INTEGRATION_TEST_PYTHON_VERSIONS = ["3.7"]
 TEST_VENV_BACKEND = os.environ.get("PAI_TEST_VENV_BACKEND", "conda")
 
 
@@ -39,7 +39,7 @@ def install_test_dependencies(session: Session):
     session.install("-r", TEST_REQUIREMENTS)
 
 
-@nox.session(venv_backend=TEST_VENV_BACKEND)
+@nox.session(venv_backend=TEST_VENV_BACKEND, python=INTEGRATION_TEST_PYTHON_VERSIONS)
 def integration(session: Session):
     """Run integration test."""
     install_test_dependencies(session=session)

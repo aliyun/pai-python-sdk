@@ -84,7 +84,6 @@ class TestAsyncPredictorContainerServing(BaseIntegTestCase):
             service_type=ServiceType.Async,
             serializer=NumpyBytesSerializer(),
         )
-
         type(self).predictors.append(predictor)
 
         # get test data

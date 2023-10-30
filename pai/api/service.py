@@ -70,7 +70,9 @@ class ServiceAPI(ResourceAPI):
     def get(self, name: str) -> Dict[str, Any]:
         return self.get_api_object_by_resource_id(resource_id=name)
 
-    def create(self, config: Union[str, typing.Dict]) -> str:
+    def create(
+        self, config: Union[str, typing.Dict], labels: Dict[str, str] = None
+    ) -> str:
         """Create a PAI EAS Service resource, returns the service name."""
 
         if isinstance(config, str):
@@ -78,7 +80,7 @@ class ServiceAPI(ResourceAPI):
         else:
             config_obj = config
 
-        request = CreateServiceRequest(body=config_obj)
+        request = CreateServiceRequest(body=config_obj, labels=labels)
         resp: CreateServiceResponseBody = self._do_request(self._create_method, request)
         return resp.service_name
 
@@ -141,27 +143,10 @@ class ServiceAPI(ResourceAPI):
         )
         return resp.to_map()
 
-    def describe_machine(self, instance_type: str) -> Dict[str, Any]:
-        """Describe the detailed machine spec based on the given instance type name.
-
-        Args:
-            instance_type (str): Type of the machine instance, for example,
-                'ecs.c6.large'. For all supported instance, view the appendix of the
-                link:
-                https://help.aliyun.com/document_detail/144261.htm?#section-mci-qh9-4j7
-
-        Returns:
-            Dict: dict with detailed machine spec if the given instance_type is supported.
-                If the given instance_type is not supported, values in the dict will be
-                None or zero.
-        """
-        query = DescribeMachineSpecQuery(
-            instance_types=instance_type,
-        )
-        request = DescribeMachineSpecRequest(
-            query=query,
-        )
-
+    def describe_machine(self) -> Dict[str, Any]:
+        """List the machine spec supported by PAI-EAS."""
+        # DescribeMachineSpec API always returns all supported machine specs.
+        request = DescribeMachineSpecRequest()
         resp: DescribeMachineSpecResponseBody = self._do_request(
             self._describe_machine_method,
             request,

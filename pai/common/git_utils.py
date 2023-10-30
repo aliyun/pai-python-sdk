@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import logging
 import os
 import subprocess
 import tempfile
@@ -8,6 +9,8 @@ from typing import Dict, Optional
 
 import six
 from six.moves import urllib
+
+logger = logging.getLogger(__name__)
 
 
 def git_clone_repo(git_config: Dict[str, str], source_dir: Optional[str] = None):
@@ -47,7 +50,7 @@ def git_clone_repo(git_config: Dict[str, str], source_dir: Optional[str] = None)
     _validate_git_config(git_config)
     dest_dir = tempfile.mkdtemp()
     _build_and_run_clone_command(git_config, dest_dir)
-    _checkout_branch_and_commit(git_config, dest_dir)
+    _checkout_commit(git_config, dest_dir)
 
     updated_args = {
         "source_dir": source_dir,
@@ -159,7 +162,7 @@ def _clone_command_for_ssh(git_config, dest_dir):
         warnings.warn(
             "``username``, ``password``, and ``token`` are not used when cloning via SSH."
         )
-    _clone_command(git_config["repo"], dest_dir)
+    _clone_command(git_config["repo"], dest_dir, branch=git_config.get("branch"))
 
 
 def _clone_command_for_github_https(git_config, dest_dir):
@@ -193,7 +196,7 @@ def _clone_command_for_github_https(git_config, dest_dir):
         warnings.warn(
             "No credentials provided. If the repo is private, cloning will fail."
         )
-    _clone_command(updated_url, dest_dir)
+    _clone_command(updated_url, dest_dir, branch=git_config.get("branch"))
 
 
 def _clone_command_for_codeup_https(git_config, dest_dir):
@@ -221,16 +224,25 @@ def _clone_command_for_codeup_https(git_config, dest_dir):
         )
     elif "username" in git_config or "password" in git_config or "token" in git_config:
         warnings.warn(
-            "``username`` and ``password``/``token`` of Codeup account need to be provided together. Credentials provided in git config will be ignored"
+            "``username`` and ``password``/``token`` of Codeup account need to be "
+            "provided together. Credentials provided in git config will be ignored."
         )
     else:
         warnings.warn(
             "No credentials provided. If the repo is private, cloning will fail."
         )
-    _clone_command(updated_url, dest_dir)
+
+    if "commit" not in git_config and "branch" in git_config:
+        # do shallow clone for the specific branch
+        shallow_clone_branch = _clone_command(
+            updated_url, dest_dir, branch=git_config.get("branch")
+        )
+    else:
+        shallow_clone_branch = None
+    _clone_command(updated_url, dest_dir, branch=shallow_clone_branch)
 
 
-def _clone_command(repo_url, dest_dir):
+def _clone_command(repo_url, dest_dir, branch=None):
     """Build and run the clone command.
 
     Clone the repo to ``dest_dir``.
@@ -238,21 +250,40 @@ def _clone_command(repo_url, dest_dir):
     Args:
         repo_url (str): The URL of the repo to be cloned.
         dest_dir (str): The destination directory to clone the repo to.
+        branch (str): The specific branch to be cloned.
 
     Raises:
         ValueError: If ``repo_url`` does not start with ``https://`` or ``git@``.
     """
     my_env = os.environ.copy()
+
+    if branch:
+        # shallow clone the specific branch/tag
+        git_command = [
+            "git",
+            "clone",
+            "-c",
+            "advice.detachedHead=false",  # disable detached head warning
+            "--depth",
+            "1",
+            "--branch",
+            branch,
+            repo_url,
+            dest_dir,
+        ]
+    else:
+        git_command = ["git", "clone", repo_url, dest_dir]
+
     if repo_url.startswith("git@"):
         with tempfile.NamedTemporaryFile() as sshnoprompt:
             with open(sshnoprompt.name, "w") as write_pipe:
                 write_pipe.write("ssh -oBatchMode=yes $@")
             os.chmod(sshnoprompt.name, 0o511)
             my_env["GIT_SSH"] = sshnoprompt.name
-            subprocess.check_call(["git", "clone", repo_url, dest_dir], env=my_env)
+            subprocess.check_call(git_command, env=my_env)
     elif repo_url.startswith("https://"):
         my_env["GIT_TERMINAL_PROMPT"] = "0"
-        subprocess.check_call(["git", "clone", repo_url, dest_dir], env=my_env)
+        subprocess.check_call(git_command, env=my_env)
     else:
         raise ValueError("repo must start with 'https://' or 'git@'.")
 
@@ -295,21 +326,27 @@ def _update_url_with_username_and_password(repo_url, username, password):
     return updated_url
 
 
-def _checkout_branch_and_commit(git_config, dest_dir):
-    """Checkout the branch and commit specified in ``git_config``.
+def _checkout_commit(git_config, dest_dir):
+    """Checkout the commit specified in ``git_config``.
 
-    If ``branch`` is specified in ``git_config``, checkout the branch. If ``commit`` is specified in
-    ``git_config``, checkout the commit.
+    If ``commit`` is specified in ``git_config``, checkout the commit.
 
     Args:
         git_config (Dict[str, str]): Git configuration used to clone the repo.
         dest_dir (str): The destination directory to clone the repo to.
     """
-    if "branch" in git_config:
-        subprocess.check_call(
-            args=["git", "checkout", git_config["branch"]], cwd=str(dest_dir)
+    if "branch" in git_config and "commit" in git_config:
+        logger.warning(
+            "commit and branch are both specified in git config, ignore branch."
         )
     if "commit" in git_config:
         subprocess.check_call(
-            args=["git", "checkout", git_config["commit"]], cwd=str(dest_dir)
+            args=[
+                "git",
+                "-c",
+                "advice.detachedHead=false",  # disable detached head warning
+                "checkout",
+                git_config["commit"],
+            ],
+            cwd=str(dest_dir),
         )
