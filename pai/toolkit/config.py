@@ -11,7 +11,7 @@ from prompt_toolkit.validation import Validator
 from pai.common.oss_utils import OssUriObj
 from pai.common.utils import make_list_resource_iterator, random_str
 from pai.session import Session
-from pai.toolkit.helper.consts import REGION_INFOS, SUPPORTED_REGION_IDS
+from pai.toolkit.helper.consts import REGION_INFOS
 from pai.toolkit.helper.utils import (
     UserProfile,
     WorkspaceRoles,
@@ -69,6 +69,7 @@ def prompt_for_credential():
     region_name_map = {r["regionId"]: r["regionName"] for r in REGION_INFOS}
 
     region_row_format = "{:<30}{}"
+    supported_region_ids = list(region_name_map.keys())
 
     region_list = [
         (
@@ -77,7 +78,7 @@ def prompt_for_credential():
                 region_id, localized_text(*region_name_map[region_id])
             ),
         )
-        for region_id in SUPPORTED_REGION_IDS
+        for region_id in supported_region_ids
     ]
 
     region_id = radio_list_prompt(
