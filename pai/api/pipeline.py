@@ -1,22 +1,37 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import logging
 from typing import Any, Dict
 
-from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
-from pai.libs.alibabacloud_paiflow20210202.models import (
+from ..libs.alibabacloud_paiflow20210202.models import (
     CreatePipelineRequest,
     CreatePipelineResponseBody,
-    GetCallerProviderResponseBody,
     GetPipelineResponseBody,
     GetPipelineSchemaResponseBody,
     ListPipelinesRequest,
     ListPipelinesResponseBody,
     UpdatePipelineRequest,
 )
+from .base import PaginatedResult, ServiceName, WorkspaceScopedResourceAPI
 
 logger = logging.getLogger(__name__)
 
 
 class PipelineAPI(WorkspaceScopedResourceAPI):
+
+    BACKEND_SERVICE_NAME = ServiceName.PAIFLOW
 
     _get_method = "get_pipeline_with_options"
     _get_schema_method = "get_pipeline_schema_with_options"
@@ -32,8 +47,7 @@ class PipelineAPI(WorkspaceScopedResourceAPI):
         )
         return resp.to_map()
 
-    def get_by_identifier(self, identifier, provider=None, version="v1"):
-        provider = provider or self.get_caller_provider()
+    def get_by_identifier(self, identifier, provider, version="v1"):
         res = self.list(identifier=identifier, provider=provider, version=version)
         if not res.items:
             return
@@ -98,9 +112,3 @@ class PipelineAPI(WorkspaceScopedResourceAPI):
         self._do_request(
             method_=self._update_method, pipeline_id=pipeline_id, request=request
         )
-
-    def get_caller_provider(self):
-        resp: GetCallerProviderResponseBody = self._do_request(
-            method_=self._get_caller_provider_method,
-        )
-        return resp.provider

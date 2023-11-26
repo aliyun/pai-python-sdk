@@ -1,41 +1,46 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from __future__ import absolute_import
 
 import logging
-import os
 
+from alibabacloud_credentials.client import Client as CredentialClient
+from alibabacloud_sts20150401.client import Client as StsClient
 from alibabacloud_tea_openapi.models import Config
 
-import pai
-from pai.api.base import PAIServiceName
-from pai.common.utils import http_user_agent
-from pai.libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
-from pai.libs.alibabacloud_eas20210701.client import Client as EasClient
-from pai.libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
-from pai.libs.alibabacloud_paiflow20210202.client import Client as FlowClient
-from pai.libs.alibabacloud_paistudio20220112.client import Client as TrainingClient
+from ..common.utils import http_user_agent
+from ..libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
+from ..libs.alibabacloud_eas20210701.client import Client as EasClient
+from ..libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
+from ..libs.alibabacloud_paiflow20210202.client import Client as FlowClient
+from ..libs.alibabacloud_paistudio20220112.client import Client as PaiClient
+from .base import ServiceName
 
 _logger = logging.getLogger(__name__)
 
-PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN = "{}_SERVICE_ENDPOINT"
-
-PAI_SERVICE_ENDPOINT_BY_REGION_ID_PATTERN = "{}.{}.aliyuncs.com"
-
-PAI_SERVICE_NAME_POP_PRODUCT_NAME_MAPPING = {
-    PAIServiceName.PAI_DLC: "pai-dlc",
-    PAIServiceName.PAI_EAS: "pai-eas",
-    PAIServiceName.AIWORKSPACE: "aiworkspace",
-    PAIServiceName.PAIFLOW: "paiflow",
-    PAIServiceName.TRAINING_SERVICE: "pai",
-}
+DEFAULT_SERVICE_ENDPOINT_PATTERN = "{}.{}.aliyuncs.com"
 
 
 class ClientFactory(object):
-    ClientClsByServiceName = {
-        PAIServiceName.PAI_DLC: DlcClient,
-        PAIServiceName.PAI_EAS: EasClient,
-        PAIServiceName.AIWORKSPACE: WorkspaceClient,
-        PAIServiceName.PAIFLOW: FlowClient,
-        PAIServiceName.TRAINING_SERVICE: TrainingClient,
+    ClientByServiceName = {
+        ServiceName.PAI_DLC: DlcClient,
+        ServiceName.PAI_EAS: EasClient,
+        ServiceName.PAI_WORKSPACE: WorkspaceClient,
+        ServiceName.PAIFLOW: FlowClient,
+        ServiceName.PAI_STUDIO: PaiClient,
+        ServiceName.STS: StsClient,
     }
 
     @staticmethod
@@ -46,82 +51,30 @@ class ClientFactory(object):
     def create_client(
         cls,
         service_name,
-        access_key_id: str,
-        access_key_secret: str,
         region_id: str,
-        security_token: str = None,
-        endpoint: str = None,
+        credential_client: CredentialClient,
         **kwargs,
     ):
-        """Create an OpenAPI client which is responsible to interacted with the PAI service.
-
-        Args:
-            service_name:  PAI Service name.
-            access_key_id:
-            access_key_secret:
-            region_id:
-            security_token:
-            endpoint:
-            **kwargs:
-
-        Returns:
-
-        """
+        """Create an API client which is responsible to interacted with the Alibaba
+        Cloud service."""
         config = Config(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
             region_id=region_id,
-            security_token=security_token,
+            credential=credential_client,
             endpoint=cls.get_endpoint(
                 service_name=service_name,
                 region_id=region_id,
-                endpoint=endpoint,
             ),
             signature_algorithm="v2",
             user_agent=http_user_agent(),
             **kwargs,
         )
-        client = cls.ClientClsByServiceName.get(service_name)(config)
+        client = cls.ClientByServiceName.get(service_name)(config)
         return client
 
     @classmethod
-    def get_endpoint(cls, service_name: str, region_id: str, endpoint: str = None):
-        """Get the endpoint for the service client.
-
-        Args:
-            service_name:
-            region_id:
-            endpoint:
-
-        Returns:
-            str: Endpoint for the service.
-        """
-        # 1. Use specific endpoint.
-        if endpoint:
-            return endpoint
-
-        # 2. Use endpoint configured in environment variable.
-        key = PAI_SERVICE_ENDPOINT_ENV_KEY_PATTERN.format(
-            service_name.upper().replace("-", "_")
-        )
-        if os.environ.get(key):
-            endpoint = os.environ.get(key)
-            logging.info(
-                f"Using PAI service endpoint from environment: "
-                f"service_name={service_name} "
-                f"endpoint={endpoint}"
-            )
-            return endpoint
-
-        # 3. Get endpoint using product_name and region_id.
-        pop_product_name = PAI_SERVICE_NAME_POP_PRODUCT_NAME_MAPPING.get(service_name)
-        if not pop_product_name:
-            raise ValueError(
-                "Unknown service endpoint: Service Name={}".format(service_name)
-            )
-
+    def get_endpoint(cls, service_name: str, region_id: str) -> str:
+        """Get the endpoint for the service client."""
         if not region_id:
             raise ValueError("Please provide region_id to get the endpoint.")
-        return PAI_SERVICE_ENDPOINT_BY_REGION_ID_PATTERN.format(
-            pop_product_name, region_id
-        )
+
+        return DEFAULT_SERVICE_ENDPOINT_PATTERN.format(service_name, region_id)

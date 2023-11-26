@@ -76,20 +76,8 @@ html_static_path = ["_static"]
 autoclass_content = "both"
 autodoc_member_order = "bysource"
 
-
-_release_pkg = (
-    f"https://pai-sdk.oss-cn-shanghai.aliyuncs.com/alipai/dist/"
-    f"alipai-{release}-py2.py3-none-any.whl"
-)
-
 myst_enable_extensions = [
     "substitution",
 ]
-
-
-rst_epilog = f"""
-.. |release| replace:: {release}
-.. |release_pkg| replace:: {_release_pkg}
-"""
 
 nb_execution_mode = "off"

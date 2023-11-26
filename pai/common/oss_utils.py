@@ -1,3 +1,17 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from __future__ import absolute_import
 
 import glob
@@ -10,6 +24,9 @@ from typing import Optional, Tuple, Union
 from urllib.parse import parse_qs, urlparse
 
 import oss2
+from alibabacloud_credentials.client import Client as CredentialClient
+from alibabacloud_credentials.models import Config as CredentialConfig
+from oss2.credentials import Credentials, CredentialsProvider
 from tqdm.autonotebook import tqdm
 
 logger = logging.getLogger(__name__)
@@ -427,3 +444,17 @@ def download(
             )
 
             return dest
+
+
+class CredentialProviderWrapper(CredentialsProvider):
+    """A wrapper class for the credential provider of OSS."""
+
+    def __init__(self, config: CredentialConfig):
+        self.client = CredentialClient(config)
+
+    def get_credentials(self) -> Credentials:
+        return Credentials(
+            access_key_id=self.client.get_access_key_id(),
+            access_key_secret=self.client.get_access_key_secret(),
+            security_token=self.client.get_security_token(),
+        )

@@ -1,27 +1,57 @@
-from __future__ import absolute_import
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
-from pai.api.algorithm import AlgorithmAPI
-from pai.api.base import PAIRestResourceTypes, PAIServiceName
-from pai.api.client_factory import ClientFactory
-from pai.api.code_source import CodeSourceAPI
-from pai.api.dataset import DatasetAPI
-from pai.api.image import ImageAPI
-from pai.api.job import JobAPI
-from pai.api.model import ModelAPI
-from pai.api.pipeline import PipelineAPI
-from pai.api.pipeline_run import PipelineRunAPI
-from pai.api.service import ServiceAPI
-from pai.api.tensorboard import TensorBoardAPI
-from pai.api.training_job import TrainingJobAPI
-from pai.api.workspace import WorkspaceAPI
+
+from alibabacloud_credentials.client import Client as CredentialClient
+from alibabacloud_sts20150401.client import Client as StsClient
+
+from .algorithm import AlgorithmAPI
+from .base import PAIRestResourceTypes, ServiceName, WorkspaceScopedResourceAPI
+from .client_factory import ClientFactory
+from .code_source import CodeSourceAPI
+from .dataset import DatasetAPI
+from .image import ImageAPI
+from .job import JobAPI
+from .model import ModelAPI
+from .pipeline import PipelineAPI
+from .pipeline_run import PipelineRunAPI
+from .service import ServiceAPI
+from .tensorboard import TensorBoardAPI
+from .training_job import TrainingJobAPI
+from .workspace import WorkspaceAPI
+
+_RESOURCE_API_MAPPING = {
+    PAIRestResourceTypes.DlcJob: JobAPI,
+    PAIRestResourceTypes.CodeSource: CodeSourceAPI,
+    PAIRestResourceTypes.Dataset: DatasetAPI,
+    PAIRestResourceTypes.Image: ImageAPI,
+    PAIRestResourceTypes.Service: ServiceAPI,
+    PAIRestResourceTypes.Model: ModelAPI,
+    PAIRestResourceTypes.Workspace: WorkspaceAPI,
+    PAIRestResourceTypes.Algorithm: AlgorithmAPI,
+    PAIRestResourceTypes.TrainingJob: TrainingJobAPI,
+    PAIRestResourceTypes.Pipeline: PipelineAPI,
+    PAIRestResourceTypes.PipelineRun: PipelineRunAPI,
+    PAIRestResourceTypes.TensorBoard: TensorBoardAPI,
+}
 
 
 class ResourceAPIsContainerMixin(object):
     """ResourceAPIsContainerMixin provides Resource Operation APIs."""
 
-    _access_key_id = None
-    _access_key_secret = None
-    _security_token = None
+    _credential_client = None
+    _credential_config = None
     _region_id = None
     _workspace_id = None
 
@@ -30,213 +60,125 @@ class ResourceAPIsContainerMixin(object):
         self.runtime = runtime
         self.api_container = dict()
         self.acs_client_container = dict()
-        self._initialize_clients()
-        self._initialize_apis()
 
-    def _initialize_clients(self):
-        """Initialize AlibabaCloud Service Client."""
-        paiflow_client = ClientFactory.create_client(
-            service_name=PAIServiceName.PAIFLOW,
-            access_key_id=self._access_key_id,
-            access_key_secret=self._access_key_secret,
-            security_token=self._security_token,
+    def _acs_credential_client(self):
+        if self._credential_client:
+            return self._credential_client
+        self._credential_client = CredentialClient(config=self._credential_config)
+        return self._credential_client
+
+    def _get_acs_client(self, service_name):
+        if service_name in self.acs_client_container:
+            return self.acs_client_container[service_name]
+        acs_client = ClientFactory.create_client(
+            service_name=service_name,
+            credential_client=self._acs_credential_client(),
             region_id=self._region_id,
         )
-
-        self.acs_client_container[PAIServiceName.PAIFLOW] = paiflow_client
-
-        dlc_client = ClientFactory.create_client(
-            service_name=PAIServiceName.PAI_DLC,
-            access_key_id=self._access_key_id,
-            access_key_secret=self._access_key_secret,
-            security_token=self._security_token,
-            region_id=self._region_id,
-        )
-        self.acs_client_container[PAIServiceName.PAI_DLC] = dlc_client
-
-        ws_client = ClientFactory.create_client(
-            service_name=PAIServiceName.AIWORKSPACE,
-            access_key_id=self._access_key_id,
-            access_key_secret=self._access_key_secret,
-            security_token=self._security_token,
-            region_id=self._region_id,
-        )
-        self.acs_client_container[PAIServiceName.AIWORKSPACE] = ws_client
-
-        eas_client = ClientFactory.create_client(
-            service_name=PAIServiceName.PAI_EAS,
-            access_key_id=self._access_key_id,
-            access_key_secret=self._access_key_secret,
-            security_token=self._security_token,
-            region_id=self._region_id,
-        )
-        self.acs_client_container[PAIServiceName.PAI_EAS] = eas_client
-
-        training_service_client = ClientFactory.create_client(
-            service_name=PAIServiceName.TRAINING_SERVICE,
-            access_key_id=self._access_key_id,
-            access_key_secret=self._access_key_secret,
-            security_token=self._security_token,
-            region_id=self._region_id,
-        )
-
-        self.acs_client_container[
-            PAIServiceName.TRAINING_SERVICE
-        ] = training_service_client
+        self.acs_client_container[service_name] = acs_client
+        return acs_client
 
     @property
     def _acs_workspace_client(self):
-        return self.acs_client_container[PAIServiceName.AIWORKSPACE]
+        return self._get_acs_client(ServiceName.PAI_WORKSPACE)
 
     @property
     def _acs_dlc_client(self):
-        return self.acs_client_container[PAIServiceName.PAI_DLC]
+        return self._get_acs_client(ServiceName.PAI_DLC)
 
     @property
     def _acs_paiflow_client(self):
-        return self.acs_client_container[PAIServiceName.PAIFLOW]
+        return self._get_acs_client(ServiceName.PAIFLOW)
 
     @property
     def _acs_eas_client(self):
-        return self.acs_client_container[PAIServiceName.PAI_EAS]
+        return self._get_acs_client(ServiceName.PAI_EAS)
 
     @property
     def _acs_training_client(self):
-        return self.acs_client_container[PAIServiceName.TRAINING_SERVICE]
+        return self._get_acs_client(ServiceName.PAI_STUDIO)
 
-    def _initialize_apis(self):
-        """Initialize resource operation APIs."""
-
-        self.api_container[PAIRestResourceTypes.DlcJob] = JobAPI(
-            self._workspace_id,
-            self._acs_dlc_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-        self.api_container[PAIRestResourceTypes.CodeSource] = CodeSourceAPI(
-            self._workspace_id,
-            self._acs_workspace_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-        self.api_container[PAIRestResourceTypes.Dataset] = DatasetAPI(
-            self._workspace_id,
-            self._acs_workspace_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-        self.api_container[PAIRestResourceTypes.Image] = ImageAPI(
-            self._workspace_id,
-            self._acs_workspace_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.Service] = ServiceAPI(
-            region_id=self._region_id,
-            acs_client=self._acs_eas_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.Model] = ModelAPI(
-            self._workspace_id,
-            self._acs_workspace_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.Workspace] = WorkspaceAPI(
-            acs_client=self._acs_workspace_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.Algorithm] = AlgorithmAPI(
-            workspace_id=self._workspace_id,
-            acs_client=self._acs_training_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-        self.api_container[PAIRestResourceTypes.TrainingJob] = TrainingJobAPI(
-            workspace_id=self._workspace_id,
-            acs_client=self._acs_training_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.Pipeline] = PipelineAPI(
-            workspace_id=self._workspace_id,
-            acs_client=self._acs_paiflow_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.PipelineRun] = PipelineRunAPI(
-            workspace_id=self._workspace_id,
-            acs_client=self._acs_paiflow_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
-
-        self.api_container[PAIRestResourceTypes.TensorBoard] = TensorBoardAPI(
-            workspace_id=self._workspace_id,
-            acs_client=self._acs_dlc_client,
-            header=self.header,
-            runtime=self.runtime,
-        )
+    @property
+    def _acs_sts_client(self) -> StsClient:
+        return self._get_acs_client(ServiceName.STS)
 
     def get_api_by_resource(self, resource_type):
-        return self.api_container[resource_type]
+        if resource_type in self.api_container:
+            return self.api_container[resource_type]
+
+        api_cls = _RESOURCE_API_MAPPING[resource_type]
+        acs_client = self._get_acs_client(api_cls.BACKEND_SERVICE_NAME)
+        if issubclass(api_cls, WorkspaceScopedResourceAPI):
+            api = api_cls(
+                workspace_id=self._workspace_id,
+                acs_client=acs_client,
+                header=self.header,
+                runtime=self.runtime,
+            )
+        elif api_cls == ServiceAPI:
+            # for PAI-EAS service api, we need to pass region_id.
+            api = api_cls(
+                acs_client=acs_client,
+                region_id=self._region_id,
+                header=self.header,
+                runtime=self.runtime,
+            )
+        else:
+            api = api_cls(
+                acs_client=acs_client,
+                header=self.header,
+                runtime=self.runtime,
+            )
+        self.api_container[resource_type] = api
+        return api
 
     @property
     def job_api(self) -> JobAPI:
         """Returns JobAPI for job operation."""
-        return self.api_container[PAIRestResourceTypes.DlcJob]
+        return self.get_api_by_resource(PAIRestResourceTypes.DlcJob)
 
     @property
     def tensorboard_api(self) -> TensorBoardAPI:
-        return self.api_container[PAIRestResourceTypes.TensorBoard]
+        return self.get_api_by_resource(PAIRestResourceTypes.TensorBoard)
 
     @property
     def code_source_api(self) -> CodeSourceAPI:
         """Return CodeSource API for code_source operation"""
-        return self.api_container[PAIRestResourceTypes.CodeSource]
+        return self.get_api_by_resource(PAIRestResourceTypes.CodeSource)
 
     @property
     def dataset_api(self) -> DatasetAPI:
         """Return Dataset API for dataset operation"""
-        return self.api_container[PAIRestResourceTypes.Dataset]
+        return self.get_api_by_resource(PAIRestResourceTypes.Dataset)
 
     @property
     def image_api(self) -> ImageAPI:
-        return self.api_container[PAIRestResourceTypes.Image]
+        return self.get_api_by_resource(PAIRestResourceTypes.Image)
 
     @property
     def model_api(self) -> ModelAPI:
-        return self.api_container[PAIRestResourceTypes.Model]
+        return self.get_api_by_resource(PAIRestResourceTypes.Model)
 
     @property
     def service_api(self) -> ServiceAPI:
-        """"""
-        return self.api_container[PAIRestResourceTypes.Service]
+        return self.get_api_by_resource(PAIRestResourceTypes.Service)
 
     @property
     def workspace_api(self) -> WorkspaceAPI:
-        return self.api_container[PAIRestResourceTypes.Workspace]
+        return self.get_api_by_resource(PAIRestResourceTypes.Workspace)
 
     @property
     def algorithm_api(self) -> AlgorithmAPI:
-        return self.api_container[PAIRestResourceTypes.Algorithm]
+        return self.get_api_by_resource(PAIRestResourceTypes.Algorithm)
 
     @property
     def training_job_api(self) -> TrainingJobAPI:
-        return self.api_container[PAIRestResourceTypes.TrainingJob]
+        return self.get_api_by_resource(PAIRestResourceTypes.TrainingJob)
 
     @property
     def pipeline_api(self) -> PipelineAPI:
-        return self.api_container[PAIRestResourceTypes.Pipeline]
+        return self.get_api_by_resource(PAIRestResourceTypes.Pipeline)
 
     @property
     def pipeline_run_api(self) -> PipelineRunAPI:
-        return self.api_container[PAIRestResourceTypes.PipelineRun]
+        return self.get_api_by_resource(PAIRestResourceTypes.PipelineRun)

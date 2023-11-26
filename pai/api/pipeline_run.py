@@ -1,6 +1,19 @@
-from pai.api.base import WorkspaceScopedResourceAPI
-from pai.common.yaml_utils import dump as yaml_dump
-from pai.libs.alibabacloud_paiflow20210202.models import (
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+from ..common.yaml_utils import dump as yaml_dump
+from ..libs.alibabacloud_paiflow20210202.models import (
     CreateRunRequest,
     GetNodeRequest,
     GetNodeResponseBody,
@@ -14,9 +27,12 @@ from pai.libs.alibabacloud_paiflow20210202.models import (
     ListRunsResponseBody,
     UpdateRunRequest,
 )
+from .base import ServiceName, WorkspaceScopedResourceAPI
 
 
 class PipelineRunAPI(WorkspaceScopedResourceAPI):
+
+    BACKEND_SERVICE_NAME = ServiceName.PAIFLOW
 
     _list_method = "list_runs_with_options"
     _get_method = "get_run_with_options"

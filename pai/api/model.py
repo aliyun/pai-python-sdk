@@ -1,8 +1,21 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import typing
 from typing import Any, Dict
 
-from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
-from pai.libs.alibabacloud_aiworkspace20210204.models import (
+from ..libs.alibabacloud_aiworkspace20210204.models import (
     CreateModelRequest,
     CreateModelVersionRequest,
     Label,
@@ -12,12 +25,15 @@ from pai.libs.alibabacloud_aiworkspace20210204.models import (
     ListModelVersionsResponseBody,
     UpdateModelVersionRequest,
 )
+from .base import PaginatedResult, ServiceName, WorkspaceScopedResourceAPI
 
 if typing.TYPE_CHECKING:
     pass
 
 
 class ModelAPI(WorkspaceScopedResourceAPI):
+
+    BACKEND_SERVICE_NAME = ServiceName.PAI_WORKSPACE
 
     _create_model_method = "create_model_with_options"
     _list_model_method = "list_models_with_options"

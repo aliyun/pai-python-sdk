@@ -1,3 +1,17 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import distutils.dir_util
 import json
 import logging
@@ -15,12 +29,12 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pai.api.entity_base import EntityBaseMixin
-from pai.common import ProviderAlibabaPAI, git_utils
-from pai.common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
-from pai.common.docker_utils import ContainerRun, run_container
-from pai.common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from pai.common.utils import (
+from .api.entity_base import EntityBaseMixin
+from .common import ProviderAlibabaPAI, git_utils
+from .common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
+from .common.docker_utils import ContainerRun, run_container
+from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
+from .common.utils import (
     is_filesystem_uri,
     is_local_run_instance_type,
     is_odps_table_uri,
@@ -28,12 +42,12 @@ from pai.common.utils import (
     random_str,
     to_plain_text,
 )
-from pai.exception import UnexpectedStatusException
-from pai.model import InferenceSpec, Model, ResourceConfig
-from pai.predictor import Predictor
-from pai.schema.training_job_schema import TrainingJobSchema
-from pai.serializers import SerializerBase
-from pai.session import Session, get_default_session
+from .exception import UnexpectedStatusException
+from .model import InferenceSpec, Model, ResourceConfig
+from .predictor import Predictor
+from .schema.training_job_schema import TrainingJobSchema
+from .serializers import SerializerBase
+from .session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 

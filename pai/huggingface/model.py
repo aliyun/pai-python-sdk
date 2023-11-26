@@ -1,17 +1,31 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import logging
 import re
 from typing import Any, Dict, List, Optional, Union
 
-from pai.api.image import ImageLabel
-from pai.common.utils import to_semantic_version
-from pai.model import (
+from ..common.utils import to_semantic_version
+from ..image import ImageLabel
+from ..model import (
     DefaultServiceConfig,
     ModelBase,
     ResourceConfig,
     container_serving_spec,
 )
-from pai.serializers import SerializerBase
-from pai.session import Session, get_default_session
+from ..serializers import SerializerBase
+from ..session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
 

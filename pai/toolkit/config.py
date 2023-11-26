@@ -1,22 +1,45 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import locale
 import logging
 import os.path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import oss2
+from alibabacloud_credentials.client import Client as CredentialClient
+from alibabacloud_credentials.exceptions import CredentialException
+from alibabacloud_credentials.models import Config as CredentialConfig
+from alibabacloud_credentials.utils import auth_constant
 from oss2.models import SimplifiedBucketInfo
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from pai.common.oss_utils import OssUriObj
-from pai.common.utils import make_list_resource_iterator, random_str
-from pai.session import Session
-from pai.toolkit.helper.consts import REGION_INFOS
-from pai.toolkit.helper.utils import (
+from ..common.oss_utils import OssUriObj
+from ..common.utils import (
+    is_domain_connectable,
+    make_list_resource_iterator,
+    random_str,
+)
+from ..session import Session
+from .helper.consts import REGION_INFOS
+from .helper.utils import (
     UserProfile,
     WorkspaceRoles,
     confirm,
     localized_text,
+    mask_and_trim,
     mask_secret,
     not_empty,
     print_highlight,
@@ -28,46 +51,133 @@ from pai.toolkit.helper.utils import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".pai", "config.json")
+DEFAULT_CREDENTIAL_INI_PATH = os.path.join(
+    os.path.expanduser("~"), ".alibabacloud", "credentials.ini"
+)
+
+REGION_ID_ENV_KEYS = [
+    "ALIBABACLOUD_REGION_ID",
+    "ALICLOUD_REGION_ID",
+    "REGION",
+    "dsw_region",
+    "DSW_REGION",
+]
+
 local, _ = locale.getdefaultlocale()
 
 
+CREDENTIAL_INI_TEMPLATE = """[default]
+enable = true
+type = access_key
+access_key_id = {access_key_id}
+access_key_secret = {access_key_secret}
+"""
+
+
+def _get_default_credential_client() -> Optional[CredentialClient]:
+    try:
+        return CredentialClient()
+    except CredentialException:
+        logger.debug("Not found credential from default credential provider chain.")
+
+
 def prompt_for_credential():
-
-    # Prompt for Access Key ID
-    access_key_id = prompt(
-        localized_text(
-            "Please enter your Alibaba Cloud account AccessKeyId: ",
-            "请输入您的阿里云账号AccessKeyId: ",
-        ),
-        validator=Validator.from_callable(
-            validate_func=not_empty,
-            error_message=localized_text(
-                "AccessKeyId can not be empty string.",
-                "AccessKeyId 不能为空",
+    default_credential_client = _get_default_credential_client()
+    if not default_credential_client:
+        # Prompt for Access Key ID and Access Key Secret
+        access_key_id = prompt(
+            localized_text(
+                "Please enter your Alibaba Cloud account AccessKeyId: ",
+                "请输入您的阿里云账号AccessKeyId: ",
             ),
-            move_cursor_to_end=True,
-        ),
-    ).strip()
-
-    # Prompt for Access Key Secret
-    access_key_secret = prompt(
-        localized_text(
-            "Please enter your Alibaba Cloud account AccessKeySecret: ",
-            "请输入您的阿里云账号AccessKeySecret: ",
-        ),
-        is_password=True,
-        validator=Validator.from_callable(
-            validate_func=not_empty,
-            error_message=localized_text(
-                "AccessKeySecret can not be empty string.",
-                "AccessKeySecret 不能为空",
+            validator=Validator.from_callable(
+                validate_func=not_empty,
+                error_message=localized_text(
+                    "AccessKeyId can not be empty string.",
+                    "AccessKeyId 不能为空",
+                ),
+                move_cursor_to_end=True,
             ),
-            move_cursor_to_end=True,
-        ),
-    ).strip()
+        ).strip()
+        access_key_secret = prompt(
+            localized_text(
+                "Please enter your Alibaba Cloud account AccessKeySecret: ",
+                "请输入您的阿里云账号AccessKeySecret: ",
+            ),
+            is_password=True,
+            validator=Validator.from_callable(
+                validate_func=not_empty,
+                error_message=localized_text(
+                    "AccessKeySecret can not be empty string.",
+                    "AccessKeySecret 不能为空",
+                ),
+                move_cursor_to_end=True,
+            ),
+        ).strip()
+        credential_config = CredentialConfig(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            type=auth_constant.ACCESS_KEY,
+        )
+        credential_client = CredentialClient(config=credential_config)
+    else:
+        print(
+            localized_text(
+                "Use credential from default credential provider chain.",
+                "使用默认的凭证链获取密钥.",
+            )
+        )
+        credential_client = default_credential_client
+        credential_config = None
+
+    region_id = prompt_for_region()
+    print_highlight(
+        localized_text(
+            "The current configuration of Credential and RegionId:",
+            "当前配置的访问密钥和地域:",
+        )
+    )
+
+    access_key_id = credential_client.get_access_key_id()
+    access_key_secret = credential_client.get_access_key_secret()
+    security_token = credential_client.get_security_token()
+
+    print_highlight(f"AccessKeyId: {access_key_id}")
+    print_highlight(f"AccessKeySecret: { mask_secret(access_key_secret)}")
+    if security_token:
+        print_highlight(f"SecurityToken: {mask_and_trim(security_token)}")
+    print_highlight(f"RegionId: {region_id}")
+    user_profile = UserProfile(
+        credential_config=credential_config,
+        region_id=region_id,
+    )
+    print_highlight(f"IdentityType: {user_profile.identify_type}")
+
+    # Write input credential to default credential config file.
+    if credential_config:
+        raw_config = CREDENTIAL_INI_TEMPLATE.format(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+        )
+        os.makedirs(os.path.dirname(DEFAULT_CREDENTIAL_INI_PATH), exist_ok=True)
+        with open(DEFAULT_CREDENTIAL_INI_PATH, "w") as f:
+            f.write(raw_config)
+        print(
+            localized_text("Credential saved to: ", "密钥已保存至: ")
+            + DEFAULT_CREDENTIAL_INI_PATH
+        )
+
+    check_product_authorization(user_profile)
+    return user_profile
+
+
+def prompt_for_region():
+    for key in REGION_ID_ENV_KEYS:
+        region_id = os.environ.get(key)
+        if region_id:
+            return region_id
 
     region_name_map = {r["regionId"]: r["regionName"] for r in REGION_INFOS}
-
     region_row_format = "{:<30}{}"
     supported_region_ids = list(region_name_map.keys())
 
@@ -89,26 +199,7 @@ def prompt_for_credential():
         values=region_list,
         erase_when_done=True,
     )
-
-    print_highlight(
-        localized_text(
-            "Input credential and region:",
-            "当前配置的访问密钥和地域:",
-        )
-    )
-    print_highlight(f"AccessKeyId: {access_key_id}")
-    print_highlight(f"AccessKeySecret: { mask_secret(access_key_secret)}")
-    print_highlight(f"RegionId: {region_id}")
-
-    user_profile = UserProfile(
-        access_key_id=access_key_id,
-        access_key_secret=access_key_secret,
-        region_id=region_id,
-    )
-    print_highlight(f"IdentityType: {user_profile.identify_type}")
-
-    check_product_authorization(user_profile)
-    return user_profile
+    return region_id
 
 
 def check_product_authorization(user_profile: UserProfile):
@@ -278,34 +369,42 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
         prompt_for_set_default_oss_storage(user_profile, workspace_id, bucket_info)
 
     row_format = "{:<60}{}"
+    intra_endpoint_connectable = is_domain_connectable(
+        bucket_info.intranet_endpoint, timeout=1
+    )
+    candidates = [
+        (
+            bucket_info.intranet_endpoint,
+            row_format.format(
+                bucket_info.intranet_endpoint,
+                localized_text(
+                    "Internal endpoint (Please use in PAI-DSW Notebook, ECS and other "
+                    "intranet environment)",
+                    "内网Endpoint(请在PAI-DSW Notebook, ECS等内网环境中使用)",
+                ),
+            ),
+        ),
+        (
+            bucket_info.extranet_endpoint,
+            row_format.format(
+                bucket_info.extranet_endpoint,
+                localized_text(
+                    "Public endpoint",
+                    "外网Endpoint",
+                ),
+            ),
+        ),
+    ]
+
+    if not intra_endpoint_connectable:
+        candidates = candidates[::-1]
+
     endpoint = radio_list_prompt(
         localized_text(
             "Please select the Endpoint to access OSS:",
             "请选择访问OSS使用的Endpoint：",
         ),
-        values=[
-            (
-                bucket_info.intranet_endpoint,
-                row_format.format(
-                    bucket_info.intranet_endpoint,
-                    localized_text(
-                        "Intranet endpoint,use in the PAI Notebook and ECS in the same "
-                        "region. ",
-                        "内网域名(请在同地域的PAI Notebook, ECS等内网环境中使用)",
-                    ),
-                ),
-            ),
-            (
-                bucket_info.extranet_endpoint,
-                row_format.format(
-                    bucket_info.extranet_endpoint,
-                    localized_text(
-                        "Public endpoint",
-                        "外网域名",
-                    ),
-                ),
-            ),
-        ],
+        values=candidates,
         erase_when_done=True,
     )
     return bucket_name, endpoint
@@ -389,8 +488,6 @@ def prompt_for_config_writing(
 ):
     # Print configuration summary.
     print_highlight(localized_text("Current configuration options:", "当前配置项:"))
-    print_highlight(f"AccessKeyId: {user_profile.access_key_id}")
-    print_highlight(f"AccessKeySecret: { mask_secret(user_profile.access_key_secret)}")
     print_highlight(f"WorkspaceId: { workspace_id}")
     print_highlight(f"RegionId: {user_profile.region_id}")
     print_highlight(f"OSS Bucket Name: {bucket_name}")
@@ -411,8 +508,6 @@ def prompt_for_config_writing(
             return
 
     sess = Session(
-        access_key_id=user_profile.access_key_id,
-        access_key_secret=user_profile.access_key_secret,
         region_id=user_profile.region_id,
         workspace_id=workspace_id,
         oss_bucket_name=bucket_name,

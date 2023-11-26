@@ -1,9 +1,25 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from __future__ import absolute_import
 
 import random
 import re
+import socket
 import string
 import sys
+from functools import lru_cache
 from typing import Callable, Dict, Optional, Union
 
 from semantic_version import Version
@@ -195,3 +211,25 @@ def is_filesystem_uri(uri: str) -> bool:
     }
 
     return any(uri.startswith(f"{schema}://") for schema in schemas)
+
+
+@lru_cache()
+def is_domain_connectable(domain: str, port: int = 80, timeout: int = 1) -> bool:
+    """Check if the domain is connectable."""
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Set the timeout for the socket
+    sock.settimeout(timeout)
+    try:
+        # Get the IP address of the domain
+        ip = socket.gethostbyname(domain)
+        # Try to connect to the IP address on specific port (default 80, HTTP)
+        sock.connect((ip, port))
+        # If the connection is successful, return True
+        return True
+    except (socket.timeout, socket.gaierror, socket.error):
+        # If there is an error connecting, return False
+        return False
+    finally:
+        # Close the socket
+        sock.close()

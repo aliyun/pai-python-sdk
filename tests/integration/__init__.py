@@ -1,3 +1,17 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from __future__ import absolute_import
 
 import logging
@@ -167,10 +181,6 @@ class BaseIntegTestCase(unittest.TestCase):
 
     @classmethod
     def _setup_test_session(cls):
-        oss_access_key_id = cls.oss_config.access_key_id or None
-        oss_access_key_secret = cls.oss_config.access_key_secret or None
-        oss_role_arn = cls.oss_config.role_arn or None
-
         return setup_default_session(
             access_key_id=cls.pai_service_config.access_key_id,
             access_key_secret=cls.pai_service_config.access_key_secret,
@@ -178,10 +188,6 @@ class BaseIntegTestCase(unittest.TestCase):
             workspace_id=cls.pai_service_config.workspace_id,
             oss_bucket_name=cls.oss_config.bucket_name,
             oss_endpoint=cls.oss_config.endpoint,
-            oss_access_key_id=oss_access_key_id,
-            oss_access_key_secret=oss_access_key_secret,
-            oss_role_arn=oss_role_arn,
-            oss_aliyun_uid=cls.oss_config.aliyun_uid,
         )
 
     @classmethod

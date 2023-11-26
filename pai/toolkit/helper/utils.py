@@ -1,3 +1,17 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import locale
 import logging
 import os
@@ -5,6 +19,8 @@ import re
 from typing import List
 
 import oss2
+from alibabacloud_credentials.client import Client as CredentialClient
+from alibabacloud_credentials.models import Config as CredentialConfig
 from alibabacloud_sts20150401.client import Client
 from alibabacloud_sts20150401.models import (
     GetCallerIdentityResponseBody as CallerIdentity,
@@ -18,11 +34,11 @@ from prompt_toolkit.layout import HSplit, Layout
 from prompt_toolkit.shortcuts import confirm as prompt_confirm
 from prompt_toolkit.widgets import Label, RadioList
 
-from pai.api.base import PAIServiceName
-from pai.api.client_factory import ClientFactory
-from pai.api.workspace import WorkspaceAPI, WorkspaceConfigKeys
-from pai.common.oss_utils import OssUriObj
-from pai.common.utils import make_list_resource_iterator
+from ...api.base import ServiceName
+from ...api.client_factory import ClientFactory
+from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
+from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
+from ...common.utils import make_list_resource_iterator
 
 logger = logging.getLogger(__name__)
 
@@ -70,29 +86,47 @@ class CallerIdentityType(object):
 
 
 class UserProfile(object):
+
+    _credential_client = None
+
     def __init__(
         self,
-        access_key_id: str,
-        access_key_secret: str,
+        credential_config: CredentialConfig,
         region_id: str,
     ):
-        self.access_key_id = access_key_id
-        self.access_key_secret = access_key_secret
         self.region_id = region_id
+        self.credential_config = credential_config
         self._caller_identify = self._get_caller_identity()
+
+    def _get_credential_client(self):
+        if self._credential_client:
+            return self._credential_client
+        self._credential_client = CredentialClient(self.credential_config)
+        return self._credential_client
+
+    def get_access_key_id(self):
+        return self._get_credential_client().get_access_key_id()
+
+    def get_access_key_secret(self):
+        return self._get_credential_client().get_access_key_secret()
+
+    def get_security_token(self):
+        return self._get_credential_client().get_security_token()
 
     def _get_caller_identity(self) -> CallerIdentity:
         return (
             Client(
                 config=open_api_models.Config(
-                    access_key_id=self.access_key_id,
-                    access_key_secret=self.access_key_secret,
+                    credential=self._get_credential_client(),
                     region_id=self.region_id,
                 )
             )
             .get_caller_identity()
             .body
         )
+
+    def get_credential(self):
+        return self._credential_client.get_access_key_id()
 
     @property
     def is_ram_user(self) -> bool:
@@ -122,9 +156,10 @@ class UserProfile(object):
     def list_oss_buckets(self):
         buckets: List[SimplifiedBucketInfo] = []
         service = oss2.Service(
-            auth=oss2.Auth(
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+            auth=oss2.ProviderAuth(
+                credentials_provider=CredentialProviderWrapper(
+                    config=self.credential_config,
+                ),
             ),
             endpoint=self.get_default_oss_endpoint(),
         )
@@ -144,9 +179,10 @@ class UserProfile(object):
 
     def get_bucket_info(self, bucket_name):
         service = oss2.Service(
-            auth=oss2.Auth(
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+            auth=oss2.ProviderAuth(
+                credentials_provider=CredentialProviderWrapper(
+                    config=self.credential_config,
+                ),
             ),
             endpoint=self.get_default_oss_endpoint(),
         )
@@ -162,9 +198,10 @@ class UserProfile(object):
     def create_oss_bucket(self, bucket_name):
         bucket = oss2.Bucket(
             bucket_name=bucket_name,
-            auth=oss2.Auth(
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+            auth=oss2.ProviderAuth(
+                credentials_provider=CredentialProviderWrapper(
+                    config=self.credential_config,
+                ),
             ),
             endpoint=self.get_default_oss_endpoint(),
         )
@@ -179,9 +216,8 @@ class UserProfile(object):
 
     def get_workspace_api(self) -> WorkspaceAPI:
         acs_ws_client = ClientFactory.create_client(
-            service_name=PAIServiceName.AIWORKSPACE,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            service_name=ServiceName.PAI_WORKSPACE,
+            credential_client=self._get_credential_client(),
             region_id=self.region_id,
         )
 
@@ -256,8 +292,19 @@ def localized_text(en_text: str, cn_text: str = None):
         return en_text
 
 
-def mask_secret(secret):
-    masked = secret[:4] + (len(secret) - 8) * "*" + secret[-4:]
+def mask_secret(secret, mask_count=4):
+    masked = (
+        secret[:mask_count]
+        + (len(secret) - mask_count * 2) * "*"
+        + secret[-mask_count:]
+    )
+    return masked
+
+
+def mask_and_trim(secret, max_size=20):
+    masked = mask_secret(secret, mask_count=8)
+    if len(masked) > max_size:
+        masked = masked[:max_size] + "..."
     return masked
 
 

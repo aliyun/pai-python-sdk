@@ -1,3 +1,17 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import asyncio
 import base64
 import functools
@@ -129,6 +143,7 @@ class _ServicePredictorMixin(object):
         self._service_api_object = self.describe_service()
         self.endpoint_type = endpoint_type
         self.serializer = serializer or self._get_default_serializer()
+        self._request_session = requests.Session()
 
     def __repr__(self):
         return "{}(service_name={}, endpoint_type={})".format(
@@ -136,6 +151,9 @@ class _ServicePredictorMixin(object):
             self.service_name,
             self.endpoint_type,
         )
+
+    def __del__(self):
+        self._request_session.close()
 
     def refresh(self):
         self._service_api_object = self.describe_service()
@@ -462,7 +480,7 @@ class _ServicePredictorMixin(object):
         **kwargs,
     ):
         url = self._build_url(path)
-        resp = requests.request(
+        resp = self._request_session.request(
             url=url,
             json=json,
             data=data,
@@ -758,6 +776,7 @@ class AsyncPredictor(PredictorBase, _ServicePredictorMixin):
         if hasattr(self, "executor"):
             logger.info("Waiting for all pending tasks to complete...")
             self.executor.shutdown()
+        super(AsyncPredictor, self).__del__()
 
     def _check(self):
         config = json.loads(self._service_api_object["ServiceConfig"])

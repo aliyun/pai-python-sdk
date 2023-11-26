@@ -13,6 +13,8 @@ alibabacloud_tea_util>=0.3.6, <1.0.0, !=0.3.9
 alibabacloud_tea_openapi>=0.3.3, <1.0.0
 alibabacloud_openapi_util>=0.1.6, <1.0.0
 alibabacloud_endpoint_util>=0.0.3, <1.0.0
+alibabacloud-credentials>=0.3.2
+Deprecated
 addict
 backoff<2.0.0
 semantic-version

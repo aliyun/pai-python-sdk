@@ -1,8 +1,20 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from typing import Any, Dict, Tuple
 
-from pai.api.base import PaginatedResult, WorkspaceScopedResourceAPI
-from pai.libs.alibabacloud_paistudio20220112.client import Client
-from pai.libs.alibabacloud_paistudio20220112.models import (
+from ..libs.alibabacloud_paistudio20220112.models import (
     AlgorithmSpec,
     CreateAlgorithmRequest,
     CreateAlgorithmResponseBody,
@@ -13,9 +25,12 @@ from pai.libs.alibabacloud_paistudio20220112.models import (
     ListAlgorithmsResponseBody,
     ListAlgorithmVersionsRequest,
 )
+from .base import PaginatedResult, ServiceName, WorkspaceScopedResourceAPI
 
 
 class AlgorithmAPI(WorkspaceScopedResourceAPI):
+
+    BACKEND_SERVICE_NAME = ServiceName.PAI_STUDIO
 
     _get_method = "get_algorithm_with_options"
     _list_method = "list_algorithms_with_options"
