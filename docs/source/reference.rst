@@ -9,4 +9,4 @@ API 文档
     api/image
     api/predictor
     api/serializers
-    api/pipeline
+    api/tensorboard

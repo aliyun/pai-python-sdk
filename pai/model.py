@@ -1652,6 +1652,10 @@ class RegisteredModel(ModelBase):
         """
         if not self._model_version_info:
             raise ValueError("No model version is available for deployment.")
+
+        if not self.inference_spec:
+            raise RuntimeError("No inference_spec for the registered model.")
+
         if is_local_run_instance_type(instance_type):
             return self._deploy_local(
                 instance_type=instance_type,

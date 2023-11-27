@@ -166,6 +166,14 @@ class _ServicePredictorMixin(object):
             return self._service_api_object["InternetEndpoint"]
 
     @property
+    def intranet_endpoint(self):
+        return self._service_api_object["IntranetEndpoint"]
+
+    @property
+    def internet_endpoint(self):
+        return self._service_api_object["InternetEndpoint"]
+
+    @property
     def service_status(self):
         """Returns the status of the service."""
         return self._service_api_object["Status"]

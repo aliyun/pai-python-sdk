@@ -10,3 +10,6 @@ Model
 
 .. autoclass:: pai.model.InferenceSpec
    :members:
+
+.. autoclass:: pai.model.RegisteredModel
+   :members:

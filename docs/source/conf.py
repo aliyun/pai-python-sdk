@@ -23,7 +23,7 @@ import pai
 # -- Project information -----------------------------------------------------
 
 project = "PAI Python SDK"
-copyright = "2020, Alibaba Cloud"
+copyright = "2023, Alibaba Cloud"
 author = "Alibaba Cloud"
 
 # The full version, including alpha/beta/rc tags

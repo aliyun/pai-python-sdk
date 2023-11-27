@@ -26,3 +26,7 @@ src_paths = ["pai", "tests"]
 
 [tool.pytest.ini_options]
 timeout = 300
+
+[doc8]
+max-line-length=88
+verbose=1

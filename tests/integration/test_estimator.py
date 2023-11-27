@@ -97,11 +97,12 @@ class TestEstimator(BaseIntegTestCase):
         image_uri = retrieve("xgboost", framework_version="latest").image_uri
         est = Estimator(
             image_uri=image_uri,
-            command="ls -lh /ml/input/credential/",
+            source_dir=os.path.join(test_data_dir, "read_mc_table"),
+            command="python run.py",
             instance_type="ecs.c6.large",
-            base_job_name="test_mc_table",
+            base_job_name="test_read_mc_table",
         )
-        est.fit(inputs={"training": "odps://pai_online_project/tables/wumai_data"})
+        est.fit(inputs={"train": "odps://pai_online_project/tables/wumai_data"})
 
 
 class TestAlgorithmEstimator(BaseIntegTestCase):

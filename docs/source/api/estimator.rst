@@ -1,11 +1,13 @@
 Estimator
 ---------
 
-
 .. autoclass:: pai.estimator.Estimator
    :members:
    :show-inheritance:
 
+.. autoclass:: pai.estimator.AlgorithmEstimator
+   :members:
+   :show-inheritance:
 
 .. autoclass:: pai.estimator.UserVpcConfig
    :members:
