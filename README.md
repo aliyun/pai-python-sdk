@@ -73,6 +73,10 @@ For more details, please refer to the [PAI Python SDK Documentation](https://pai
 
 Contributions to the PAI Python SDK are welcome. Please read our contribution guidelines in the [CONTRIBUTING](./CONTRIBUTING.md) file.
 
+## License 📝
+
+PAI Python SDK is developed by Alibaba Cloud and licensed under the Apache License (Version 2.0).
+
 ## Contact 📬
 
 For support or inquiries, please open an issue on the GitHub repository.

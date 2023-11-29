@@ -69,6 +69,10 @@ p.predict(
 
 我们欢迎为PAI Python SDK贡献代码。请阅读 [CONTRIBUTING](./CONTRIBUTING.md) 文件了解如何为本项目贡献代码。
 
+## 许可证 📝
+
+PAI Python SDK是由阿里云开发，并根据Apache许可证（版本2.0）授权使用。
+
 ## 联系方式 📬
 
 如需支持或咨询，请在GitHub仓库中提Issue。
