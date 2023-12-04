@@ -15,7 +15,7 @@ python -m pip install alipai
 
 ## Documentation 📖
 
-Find detailed documentation, including API references and user guides, in the [docs]{.title-ref} directory or visit [PAI Python SDK Documentation](https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai/doc/latest/index.html).
+Find detailed documentation, including API references and user guides, in the [docs]{.title-ref} directory or visit [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
 
 ## Basic Usage 🛠
 
@@ -67,7 +67,7 @@ p.predict(
 )
 ```
 
-For more details, please refer to the [PAI Python SDK Documentation](https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai/doc/latest/index.html).
+For more details, please refer to the [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
 
 ## Contributing 🤝
 
