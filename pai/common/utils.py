@@ -24,12 +24,12 @@ from typing import Callable, Dict, Optional, Union
 
 from semantic_version import Version
 
-from pai import __version__
 from pai.common.consts import (
     INSTANCE_TYPE_LOCAL,
     INSTANCE_TYPE_LOCAL_GPU,
     FileSystemInputScheme,
 )
+from pai.version import VERSION
 
 DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS = string.ascii_letters + string.digits + "_"
 
@@ -106,7 +106,7 @@ def to_plain_text(
 
 def http_user_agent(user_agent: Optional[Union[Dict, str]] = None) -> str:
     """Generate HTTP User-Agent that represents current client."""
-    ua = f"pai-python-sdk/{__version__}; python/{sys.version.split()[0]}"
+    ua = f"pai-python-sdk/{VERSION}; python/{sys.version.split()[0]}"
     if isinstance(user_agent, dict):
         ua += "; " + "; ".join(f"{k}/{v}" for k, v in user_agent.items())
     elif isinstance(user_agent, str):
