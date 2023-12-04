@@ -14,7 +14,7 @@ python -m pip install alipai
 
 ## 文档 📖
 
-请通过访问 [PAI Python SDK文档](https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai/doc/latest/index.html) 或是查看 [docs](./docs) 目录下的文件获取SDK的详细文档，包括用户指南和API文档。
+请通过访问 [PAI Python SDK文档](https://alipai.readthedocs.io/) 或是查看 [docs](./docs) 目录下的文件获取SDK的详细文档，包括用户指南和API文档。
 
 ## 使用示例 🛠
 
@@ -63,7 +63,7 @@ p.predict(
 )
 ```
 
-更多功能介绍，请参阅 [PAI Python SDK文档](https://pai-sdk.oss-cn-shanghai.aliyuncs.com/pai/doc/latest/index.html)。
+更多功能介绍，请参阅 [PAI Python SDK文档](https://alipai.readthedocs.io/) 。
 
 ## 贡献代码 🤝
 
