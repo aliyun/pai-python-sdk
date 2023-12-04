@@ -17,6 +17,7 @@ from os.path import dirname
 
 doc_root_dir = dirname(dirname(os.path.abspath(__file__)))
 sys.path.insert(0, dirname(doc_root_dir))
+pkg_root = dirname(doc_root_dir)
 
 import pai
 
@@ -27,7 +28,8 @@ copyright = "2023, Alibaba Cloud"
 author = "Alibaba Cloud"
 
 # The full version, including alpha/beta/rc tags
-release = pai.__version__
+release = pai.version.VERSION
+version = pai.version.VERSION
 
 
 # -- General configuration ---------------------------------------------------
@@ -37,7 +39,6 @@ release = pai.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    # "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
     "sphinx_markdown_builder",
