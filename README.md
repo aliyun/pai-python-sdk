@@ -79,4 +79,6 @@ PAI Python SDK is developed by Alibaba Cloud and licensed under the Apache Licen
 
 ## Contact 📬
 
-For support or inquiries, please open an issue on the GitHub repository.
+For support or inquiries, please open an issue on the GitHub repository or contact us in the DingTalk group:
+
+<img src="./assets/dingtalk-group.png" alt="DingTalkGroup" width="600"/>
