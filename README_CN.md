@@ -75,4 +75,6 @@ PAI Python SDK是由阿里云开发，并根据Apache许可证（版本2.0）授
 
 ## 联系方式 📬
 
-如需支持或咨询，请在GitHub仓库中提Issue。
+如需支持或咨询，请在GitHub仓库中提交issue，或通过钉钉群联系我们：
+
+<img src="./assets/dingtalk-group.png" alt="DingTalkGroup" width="600"/>
