@@ -9,12 +9,17 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TEST_CONFIG_FILE: ${{ secrets.TEST_CONFIG_FILE }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
+      - name: Prepare test configuration
+        run: echo $TEST_CONFIG_FILE > tests/integration/test.ini
       - name: Install Nox
         run: |
           pip install nox
