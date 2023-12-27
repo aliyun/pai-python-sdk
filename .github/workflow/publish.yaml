@@ -1,0 +1,29 @@
+name: Publish Package
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Install dependencies
+        run: pip install wheel setuptools twine
+      - name: Build package
+        run: python setup.py sdist bdist_wheel
+      - name: Publish package to PyPI
+        run: twine upload dist/* --skip-existing -u __token__ -p $PYPI_TOKEN

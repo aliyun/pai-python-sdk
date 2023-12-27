@@ -1,0 +1,30 @@
+name: Integration test
+
+on:
+  pull_request_review:
+    types: [submitted, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-test:
+    # Integration test only works while the Pull Request is approved or the source repository is trusted repository.
+    if: github.event.review.state == 'APPROVED' || github.event.pull_request.head.repo.full_name == 'aliyun/pai-python-sdk'
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TEST_CONFIG_FILE: ${{ secrets.TEST_CONFIG_FILE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - name: Prepare test configuration
+        run: echo $TEST_CONFIG_FILE > tests/integration/test.ini
+      - name: Install Nox
+        run: pip install nox
+      - name: Run integration test
+        run: nox -s integration
