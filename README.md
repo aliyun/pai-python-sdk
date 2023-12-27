@@ -13,11 +13,11 @@ Install the PAI Python SDK using the following command, which supports Python ve
 python -m pip install alipai
 ```
 
-## Documentation 📖
+## 📖 Documentation
 
-Find detailed documentation, including API references and user guides, in the [docs]{.title-ref} directory or visit [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
+Find detailed documentation, including API references and user guides, in the [docs](./docs/) directory or visit [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
 
-## Basic Usage 🛠
+## 🛠 Basic Usage
 
 - Submit a custom training job
 
@@ -69,16 +69,16 @@ p.predict(
 
 For more details, please refer to the [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
 
-## Contributing 🤝
+## 🤝 Contributing
 
 Contributions to the PAI Python SDK are welcome. Please read our contribution guidelines in the [CONTRIBUTING](./CONTRIBUTING.md) file.
 
-## License 📝
+## 📝 License
 
 PAI Python SDK is developed by Alibaba Cloud and licensed under the Apache License (Version 2.0).
 
-## Contact 📬
+## 📬 Contact
 
 For support or inquiries, please open an issue on the GitHub repository or contact us in the DingTalk group:
 
-<img src="./assets/dingtalk-group.png" alt="DingTalkGroup" width="600"/>
+<img src="./assets/dingtalk-group.png" alt="DingTalkGroup" width="500"/>
