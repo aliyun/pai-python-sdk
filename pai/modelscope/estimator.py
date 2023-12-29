@@ -223,7 +223,6 @@ class ModelScopeEstimator(Estimator):
             ImageLabel.OFFICIAL_LABEL,
             ImageLabel.DSW_LABEL,
             ImageLabel.DEVICE_TYPE_GPU,
-            ImageLabel.framework_version("ModelScope", "*"),
         ]
 
         # Filter images by ModelScope version
@@ -271,6 +270,7 @@ class ModelScopeEstimator(Estimator):
             if label["Value"] not in res:
                 res.append(label["Value"])
 
+        res.sort(key=lambda x: to_semantic_version(x))
         return res
 
     def _get_latest_ms_version_for_training(self) -> str:
