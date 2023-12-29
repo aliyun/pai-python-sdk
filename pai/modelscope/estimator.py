@@ -196,6 +196,8 @@ class ModelScopeEstimator(Estimator):
             session=session,
             **kwargs,
         )
+        # Check image_uri and modelscope_version
+        self.training_image_uri()
 
     def _validate_image_uri(self, image_uri: str, modelscope_version: str) -> None:
         """Check if image_uri or modelscope_version arguments are specified."""
@@ -219,10 +221,9 @@ class ModelScopeEstimator(Estimator):
 
         labels = [
             ImageLabel.OFFICIAL_LABEL,
-            ImageLabel.DLC_LABEL,
-            ImageLabel.PROVIDER_COMMUNITY_LABEL,
+            ImageLabel.DSW_LABEL,
             ImageLabel.DEVICE_TYPE_GPU,
-            ImageLabel.framework_version("PyTorch", "*"),
+            ImageLabel.framework_version("ModelScope", "*"),
         ]
 
         # Filter images by ModelScope version
@@ -255,10 +256,8 @@ class ModelScopeEstimator(Estimator):
         label_keys = "system.framework.ModelScope"
         label_filter = [
             ImageLabel.OFFICIAL_LABEL,
-            ImageLabel.DLC_LABEL,
-            ImageLabel.PROVIDER_COMMUNITY_LABEL,
+            ImageLabel.DSW_LABEL,
             ImageLabel.DEVICE_TYPE_GPU,
-            ImageLabel.framework_version("PyTorch", "*"),
             ImageLabel.framework_version("ModelScope", "*"),
         ]
         list_image_labels = self.session.image_api.list_labels(
