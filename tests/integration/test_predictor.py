@@ -14,7 +14,6 @@
 
 import json
 import os
-import time
 
 import numpy as np
 
@@ -85,8 +84,6 @@ class TestPredictorBase(BaseIntegTestCase):
 
         p = Predictor(service_name=service_name)
         p.wait_for_ready()
-        # hack: wait for service to be really ready
-        time.sleep(15)
         return p
 
     @classmethod
@@ -235,8 +232,6 @@ class TestPredictorOperation(BaseIntegTestCase):
 
         p = Predictor(service_name=service_name)
         p.wait_for_ready()
-        # hack: wait for service to be really ready
-        time.sleep(15)
         return p
 
     @classmethod

@@ -50,6 +50,12 @@ def integration(session: Session):
         if os.environ.get(key, value) is not None
     }
 
+    # set worker to 2 * cpu_count (physical cores) if not specified
+    if "-n" not in session.posargs and "--numprocesses" not in session.posargs:
+        pos_args = session.posargs + ["-n", str(os.cpu_count() * 2)]
+    else:
+        pos_args = session.posargs
+
     session.run(
         "pytest",
         "--cov-config=.coveragerc",
@@ -57,7 +63,7 @@ def integration(session: Session):
         "--cov-report=html",
         "--cov=pai",
         os.path.join("tests", "integration"),
-        *session.posargs,
+        *pos_args,
         env=env,
     )
     session.run(

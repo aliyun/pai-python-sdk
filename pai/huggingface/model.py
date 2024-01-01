@@ -259,7 +259,7 @@ class HuggingFaceModel(ModelBase):
         return res
 
     def _get_latest_tf_version_for_inference(self) -> str:
-        """Return the latest Transformers version for inference."""
+        """Return the latest transformers version for inference."""
         res = self._get_supported_tf_versions_for_inference()
         return max(
             res,

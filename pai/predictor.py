@@ -343,6 +343,7 @@ class _ServicePredictorMixin(object):
                 # Send a probe request to the service.
                 resp = self._send_request(method="GET")
                 if not _is_gateway_not_ready(resp):
+                    logger.info("Gateway for the service is ready.")
                     break
             except requests.exceptions.RequestException as e:
                 err_count += 1
