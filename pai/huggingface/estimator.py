@@ -196,6 +196,8 @@ class HuggingFaceEstimator(Estimator):
             session=session,
             **kwargs,
         )
+        # Check image_uri and transformers_version
+        self.training_image_uri()
 
     def _validate_image_uri(self, image_uri: str, transformers_version: str) -> None:
         """Check if image_uri or transformers_version arguments are specified."""
@@ -272,6 +274,7 @@ class HuggingFaceEstimator(Estimator):
             if label["Value"] not in res:
                 res.append(label["Value"])
 
+        res.sort(key=lambda x: to_semantic_version(x))
         return res
 
     def _get_latest_tf_version_for_training(self) -> str:
