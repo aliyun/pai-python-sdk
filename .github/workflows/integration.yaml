@@ -1,8 +1,9 @@
 name: Integration test
 
 on:
-  pull_request_review:
-    types: [submitted, edited]
+  push:
+    branches:
+      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -10,8 +11,6 @@ concurrency:
 
 jobs:
   integration-test:
-    # Integration test only works while the Pull Request is approved or the source repository is trusted repository.
-    if: github.event.review.state == 'APPROVED' || github.event.pull_request.head.repo.full_name == 'aliyun/pai-python-sdk'
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

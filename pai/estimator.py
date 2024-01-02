@@ -29,6 +29,9 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
+from Tea.exceptions import TeaException
+
+from .api.base import PaginatedResult
 from .api.entity_base import EntityBaseMixin
 from .common import ProviderAlibabaPAI, git_utils
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
@@ -1521,7 +1524,9 @@ class _LocalTrainingJob(object):
         for name, value in self.estimator.hyperparameters.items():
             env[_TrainingEnv.ENV_PAI_HPS_PREFIX + _normalize_name(name)] = str(value)
             user_args.extend(["--" + name, shlex.quote(str(value))])
-        env[_TrainingEnv.ENV_PAI_USER_ARGS] = shlex.join(user_args)
+        env[_TrainingEnv.ENV_PAI_USER_ARGS] = " ".join(
+            [shlex.quote(v) for v in user_args]
+        )
         env[_TrainingEnv.ENV_PAI_HPS] = json.dumps(
             {name: str(value) for name, value in self.estimator.hyperparameters.items()}
         )
@@ -1878,15 +1883,27 @@ class _TrainingJobLogPrinter(object):
         self._future = None
         self._stop = False
 
-    def _list_logs(self):
-        page_number, page_offset = 1, 0
-        # print training job logs.
-        while not self._stop:
+    def _list_logs_api(self, page_number: int = 1):
+        try:
             res = self.session.training_job_api.list_logs(
                 self.training_job_id,
                 page_number=page_number,
                 page_size=self.page_size,
             )
+            return res
+        except TeaException as e:
+            # hack: Backend service may raise an exception when the training job
+            # instance is not found.
+            if e.code == "TRAINING_JOB_INSTANCE_NOT_FOUND":
+                return PaginatedResult(items=[], total_count=0)
+            else:
+                raise e
+
+    def _list_logs(self):
+        page_number, page_offset = 1, 0
+        # print training job logs.
+        while not self._stop:
+            res = self._list_logs_api(page_number=page_number)
             # 1. move to next page
             if len(res.items) == self.page_size:
                 # print new logs starting from page_offset
@@ -1904,11 +1921,7 @@ class _TrainingJobLogPrinter(object):
         # When _stop is True, wait and print remaining logs.
         time.sleep(10)
         while True:
-            res = self.session.training_job_api.list_logs(
-                self.training_job_id,
-                page_number=page_number,
-                page_size=self.page_size,
-            )
+            res = self._list_logs_api(page_number=page_number)
             # There maybe more logs in the next page
             if len(res.items) == self.page_size:
                 self._print_logs(logs=res.items[page_offset:])
