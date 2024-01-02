@@ -816,7 +816,6 @@ class ModelBase(object):
         )
         if wait:
             predictor.wait_for_ready()
-            time.sleep(5)
 
         return predictor
 
@@ -987,12 +986,18 @@ class ModelBase(object):
 
         # build command to install requirements
         if requirements_list:
-            install_requirements = shlex.join(
-                ["python", "-m", "pip", "install"] + requirements_list
+            install_requirements = " ".join(
+                [
+                    shlex.quote(s)
+                    for s in ["python", "-m", "pip", "install"] + requirements_list
+                ]
             )
         elif requirements_path:
-            install_requirements = shlex.join(
-                ["python", "-m", "pip", "install", "-r", requirements_path]
+            install_requirements = " ".join(
+                [
+                    shlex.quote(s)
+                    for s in ["python", "-m", "pip", "install", "-r", requirements_path]
+                ]
             )
         else:
             install_requirements = ""

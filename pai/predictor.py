@@ -73,7 +73,6 @@ class ServiceStatus(object):
 
 
 class EndpointType(object):
-
     # Public Internet Endpoint
     INTERNET = "INTERNET"
 
@@ -82,7 +81,6 @@ class EndpointType(object):
 
 
 class ServiceType(object):
-
     Standard = "Standard"
     Async = "Async"
 
@@ -296,21 +294,65 @@ class _ServicePredictorMixin(object):
         """Delete the service."""
         self.session.service_api.delete(name=self.service_name)
 
-    def wait_for_ready(self):
-        """Wait until the service enter running status."""
+    def wait_for_ready(self, force: bool = False):
+        """Wait until the service enter running status.
+
+        Args:
+            force (bool): Whether to force wait for ready.
+
+        Raises:
+            RuntimeError: Raise if the service terminated unexpectedly.
+
+        """
+        if self.service_status == ServiceStatus.Running and not force:
+            return
+
         logger.info(
             "Service waiting for ready: service_name={}".format(self.service_name)
         )
         unexpected_status = ServiceStatus.completed_status()
         unexpected_status.remove(ServiceStatus.Running)
-
         type(self)._wait_for_status(
             service_name=self.service_name,
             status=ServiceStatus.Running,
             unexpected_status=unexpected_status,
             session=self.session,
         )
+
+        # hack: PAI-EAS gateway may not be ready when the service is ready.
+        self._wait_for_gateway_ready()
         self.refresh()
+
+    def _wait_for_gateway_ready(self, attempts: int = 30, interval: int = 2):
+        """Hacky way to wait for the service gateway to be ready.
+
+        Args:
+            attempts (int): Number of attempts to wait for the service gateway to be
+                ready.
+            interval (int): Interval between each attempt.
+        """
+
+        def _is_gateway_not_ready(resp: requests.Response):
+            return resp.status_code == 503 and resp.content == b"no healthy upstream"
+
+        err_count_threshold = 3
+        err_count = 0
+        while attempts > 0:
+            attempts -= 1
+            try:
+                # Send a probe request to the service.
+                resp = self._send_request(method="GET")
+                if not _is_gateway_not_ready(resp):
+                    logger.info("Gateway for the service is ready.")
+                    break
+            except requests.exceptions.RequestException as e:
+                err_count += 1
+                if err_count >= err_count_threshold:
+                    logger.warning("Failed to check gateway status: %s", e)
+                    break
+            time.sleep(interval)
+        else:
+            logger.warning("Timeout waiting for gateway to be ready.")
 
     @classmethod
     def _wait_for_status(

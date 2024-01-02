@@ -88,12 +88,18 @@ def make_list_resource_iterator(method: Callable, **kwargs):
         kwargs.update(page_number=page_number, page_size=page_size)
         result = method(**kwargs)
         if isinstance(result, PaginatedResult):
+            total_count = result.total_count
             result = result.items
+        else:
+            total_count = None
         for item in result:
             yield item
 
         if len(result) == 0 or len(result) < page_size:
             return
+        if total_count and page_number * page_size >= total_count:
+            return
+
         page_number += 1
 
 
