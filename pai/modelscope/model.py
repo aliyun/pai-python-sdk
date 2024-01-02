@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import logging
-import re
 from typing import Any, Dict, List, Optional, Union
 
 from ..api.image import ImageLabel
@@ -28,8 +27,6 @@ from ..serializers import SerializerBase
 from ..session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
-
-_PAI_MS_IMAGE_TAG_PATTERN_INFERENCE = re.compile(r"modelscope-inference:(\d.+)")
 
 
 class ModelScopeModel(ModelBase):
@@ -175,6 +172,8 @@ class ModelScopeModel(ModelBase):
             model_data=self.model_data,
             session=session,
         )
+        # Check image_uri and modelscope_version
+        self.serving_image_uri()
 
     def _validate_args(self, image_uri: str, modelscope_version: str) -> None:
         """Check if image_uri or modelscope_version arguments are specified."""
@@ -184,7 +183,7 @@ class ModelScopeModel(ModelBase):
                 "Specify either modelscope_version or image_uri."
             )
 
-    def serving_image_uri(self, instance_type: str) -> str:
+    def serving_image_uri(self) -> str:
         """Return the Docker image to use for serving.
 
         The :meth:`pai.modelscope.model.ModelScopeModel.deploy` method, that does the
@@ -208,10 +207,13 @@ class ModelScopeModel(ModelBase):
         # Filter images by Transformers version
         if self.modelscope_version == "latest":
             latest_version = self._get_latest_ms_version_for_inference()
-            name = f"modelscope-inference:{latest_version}"
+            labels.append(ImageLabel.framework_version("ModelScope", latest_version))
         else:
-            name = f"modelscope-inference:{self.modelscope_version}"
+            labels.append(
+                ImageLabel.framework_version("ModelScope", self.modelscope_version)
+            )
 
+        name = "modelscope-inference:"
         list_images = self.session.image_api.list(
             name=name,
             labels=labels,
@@ -236,21 +238,25 @@ class ModelScopeModel(ModelBase):
             ImageLabel.EAS_LABEL,
             ImageLabel.PROVIDER_PAI_LABEL,
             ImageLabel.DEVICE_TYPE_GPU,
+            ImageLabel.framework_version("ModelScope", "*"),
         ]
         name = "modelscope-inference:"
         list_images = self.session.image_api.list(
             name=name,
             labels=labels,
+            verbose=True,
             workspace_id=0,
         ).items
 
         res = []
         for image in list_images:
-            tag_match = _PAI_MS_IMAGE_TAG_PATTERN_INFERENCE.match(image["Name"])
-            (modelscope_version,) = tag_match.groups()
-            if modelscope_version not in res:
-                res.append(modelscope_version)
-
+            for label in image["Labels"]:
+                if (
+                    label["Key"] == "system.framework.ModelScope"
+                    and label["Value"] not in res
+                ):
+                    res.append(label["Value"])
+        res.sort(key=lambda x: to_semantic_version(x))
         return res
 
     def _get_latest_ms_version_for_inference(self) -> str:
@@ -322,7 +328,7 @@ class ModelScopeModel(ModelBase):
             :class:`pai.predictor.Predictor` : A PAI ``Predictor`` instance used for
                 making prediction to the prediction service.
         """
-        image_uri = self.serving_image_uri(instance_type=instance_type)
+        image_uri = self.serving_image_uri()
         self.inference_spec = container_serving_spec(
             command=self.command,
             image_uri=image_uri,
