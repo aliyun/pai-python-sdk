@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import logging
-import re
 from typing import Any, Dict, List, Optional, Union
 
 from ..common.utils import to_semantic_version
@@ -28,10 +27,6 @@ from ..serializers import SerializerBase
 from ..session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
-
-_PAI_HF_IMAGE_TAG_PATTERN_INFERENCE = re.compile(
-    r"huggingface-inference:transformers-(\d.+)-(gpu|cpu)"
-)
 
 
 class HuggingFaceModel(ModelBase):
@@ -180,6 +175,8 @@ class HuggingFaceModel(ModelBase):
             model_data=self.model_data,
             session=session or get_default_session(),
         )
+        # Check image_uri and transformers_version
+        self.serving_image_uri()
 
     def _validate_args(self, image_uri: str, transformers_version: str) -> None:
         """Check if image_uri or transformers_version arguments are specified."""
@@ -189,7 +186,7 @@ class HuggingFaceModel(ModelBase):
                 "Specify either transformers_version or image_uri."
             )
 
-    def serving_image_uri(self, instance_type: str) -> str:
+    def serving_image_uri(self) -> str:
         """Return the Docker image to use for serving.
 
         The :meth:`pai.huggingface.model.HuggingFaceModel.deploy` method, that does the
@@ -212,10 +209,13 @@ class HuggingFaceModel(ModelBase):
         # Filter images by Transformers version
         if self.transformers_version == "latest":
             latest_version = self._get_latest_tf_version_for_inference()
-            name = f"huggingface-inference:transformers-{latest_version}-"
+            labels.append(ImageLabel.framework_version("Transformers", latest_version))
         else:
-            name = f"huggingface-inference:transformers-{self.transformers_version}-"
+            labels.append(
+                ImageLabel.framework_version("Transformers", self.transformers_version)
+            )
 
+        name = "huggingface-inference:"
         resp = self.session.image_api.list(
             name=name,
             labels=labels,
@@ -241,21 +241,25 @@ class HuggingFaceModel(ModelBase):
             ImageLabel.EAS_LABEL,
             ImageLabel.PROVIDER_PAI_LABEL,
             ImageLabel.DEVICE_TYPE_GPU,
+            ImageLabel.framework_version("Transformers", "*"),
         ]
-        name = "huggingface-inference:transformers-"
+        name = "huggingface-inference:"
         list_images = self.session.image_api.list(
             name=name,
             labels=labels,
+            verbose=True,
             workspace_id=0,
         ).items
 
         res = []
         for image in list_images:
-            tag_match = _PAI_HF_IMAGE_TAG_PATTERN_INFERENCE.match(image["Name"])
-            transformer_version, _ = tag_match.groups()
-            if transformer_version not in res:
-                res.append(transformer_version)
-
+            for label in image["Labels"]:
+                if (
+                    label["Key"] == "system.framework.Transformers"
+                    and label["Value"] not in res
+                ):
+                    res.append(label["Value"])
+        res.sort(key=lambda x: to_semantic_version(x))
         return res
 
     def _get_latest_tf_version_for_inference(self) -> str:
@@ -327,7 +331,7 @@ class HuggingFaceModel(ModelBase):
             :class:`pai.predictor.Predictor` : A PAI ``Predictor`` instance used for
                 making prediction to the prediction service.
         """
-        image_uri = self.serving_image_uri(instance_type=instance_type)
+        image_uri = self.serving_image_uri()
         self.inference_spec = container_serving_spec(
             command=self.command,
             image_uri=image_uri,
