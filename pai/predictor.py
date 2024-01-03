@@ -98,6 +98,7 @@ class PredictorBase(ABC):
         headers: Optional[Dict[str, str]] = None,
         method: str = "POST",
         timeout: Optional[Union[float, Tuple[float, float]]] = None,
+        stream: Optional[bool] = False,
         **kwargs,
     ):
         pass
@@ -621,7 +622,7 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
                 " prediction service."
             )
 
-    def predict(self, data):
+    def predict(self, data: Any = None, stream: Optional[bool] = False):
         """Make a prediction with the online prediction service.
 
         The serializer object for the predictor is responsible for data transformation
@@ -645,13 +646,17 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
         self._post_init_serializer()
         data = self._handle_input(data)
         resp = self._send_request(
-            data,
+            data=data,
+            stream=stream,
         )
         if resp.status_code // 100 != 2:
             raise PredictionException(resp.status_code, resp.content)
-        return self._handle_output(
-            resp.content,
-        )
+        if stream:
+            return (self._handle_output(body) for body in resp)
+        else:
+            return self._handle_output(
+                resp.content,
+            )
 
     def raw_predict(
         self,
@@ -660,6 +665,7 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
         headers: Optional[Dict[str, str]] = None,
         method: str = "POST",
         timeout: Optional[Union[float, Tuple[float, float]]] = None,
+        stream: Optional[bool] = False,
         **kwargs,
     ) -> RawResponse:
         """Make a prediction with the online prediction service.
@@ -691,17 +697,27 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
             path=path,
             headers=headers,
             timeout=timeout,
+            stream=stream,
             **kwargs,
         )
         if resp.status_code // 100 != 2:
             raise PredictionException(resp.status_code, resp.content)
-
-        resp = RawResponse(
-            status_code=resp.status_code,
-            content=resp.content,
-            headers=dict(resp.headers),
-        )
-        return resp
+        if stream:
+            return (
+                RawResponse(
+                    status_code=resp.status_code,
+                    content=content,
+                    headers=dict(resp.headers),
+                )
+                for content in resp
+            )
+        else:
+            resp = RawResponse(
+                status_code=resp.status_code,
+                content=resp.content,
+                headers=dict(resp.headers),
+            )
+            return resp
 
 
 class WaitConfig(object):
