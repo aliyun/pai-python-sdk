@@ -186,4 +186,10 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             training_job_id=training_job_id,
             request=request,
         )
-        return self.make_paginated_result(resp)
+        # resp.logs may be None
+        logs = resp.logs or []
+        total_count = resp.total_count or 0
+        return PaginatedResult(
+            items=logs,
+            total_count=total_count,
+        )
