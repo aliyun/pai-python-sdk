@@ -94,3 +94,7 @@ class TestInferenceSpec(BaseUnitTestCase):
             infer_spec.mount(
                 "oss://pai-sdk-example/path/to/abc/", mount_path="/ml/code/"
             )
+
+        infer_spec.mount(
+            "oss://pai-sdk-example/path/to/abc/edfg", mount_path="/ml/code/", force=True
+        )

@@ -19,6 +19,7 @@ from ..libs.alibabacloud_paistudio20220112.models import (
     AlgorithmSpec,
     CreateTrainingJobRequest,
     CreateTrainingJobRequestComputeResource,
+    CreateTrainingJobRequestComputeResourceInstanceSpec,
     CreateTrainingJobRequestHyperParameters,
     CreateTrainingJobRequestInputChannels,
     CreateTrainingJobRequestLabels,
@@ -85,6 +86,8 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         instance_type,
         instance_count,
         job_name,
+        instance_spec: Optional[Dict[str, str]] = None,
+        resource_id: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
         input_channels: Optional[List[Dict[str, Any]]] = None,
         output_channels: Optional[List[Dict[str, Any]]] = None,
@@ -119,10 +122,22 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             CreateTrainingJobRequestOutputChannels().from_map(ch)
             for ch in output_channels
         ]
-        compute_resource = CreateTrainingJobRequestComputeResource(
-            ecs_count=instance_count,
-            ecs_spec=instance_type,
-        )
+        if instance_type:
+            compute_resource = CreateTrainingJobRequestComputeResource(
+                ecs_count=instance_count,
+                ecs_spec=instance_type,
+            )
+        elif instance_spec:
+            compute_resource = CreateTrainingJobRequestComputeResource(
+                resource_id=resource_id,
+                instance_count=instance_count,
+                instance_spec=CreateTrainingJobRequestComputeResourceInstanceSpec().from_map(
+                    instance_spec
+                ),
+            )
+        else:
+            raise ValueError("Please provide instance_type or instance_spec.")
+
         hyper_parameters = [
             CreateTrainingJobRequestHyperParameters(
                 name=name,

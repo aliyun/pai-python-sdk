@@ -325,19 +325,20 @@ class InferenceSpec(object):
             )
 
         if "storage" in self._cfg_dict:
-            configs = self._cfg_dict.get("storage", [])
+            storages = copy.deepcopy(self._cfg_dict.get("storage", []))
         else:
-            configs = []
+            storages = []
 
+        configs = []
         uris = set()
-        for conf in configs:
-            # check if target mount path is already used.
-            if conf.get("mount_path") == mount_path:
-                raise MountPathIsOccupiedException(
-                    f"The mount path '{mount_path}' has already been used."
-                )
-            mount_uri = conf.get("oss", {}).get("path")
-            uris.add(mount_uri)
+        for s in storages:
+            # overwrite the existing mount path
+            if s.get("mount_path") == mount_path:
+                continue
+            oss_uri = s.get("oss", {}).get("path")
+            if oss_uri:
+                uris.add(oss_uri)
+            configs.append(s)
 
         if is_oss_uri(source):
             oss_uri_obj = OssUriObj(source)
@@ -1758,6 +1759,7 @@ class RegisteredModel(ModelBase):
         base_job_name: Optional[str] = None,
         output_path: Optional[str] = None,
         max_run_time: Optional[int] = None,
+        **kwargs,
     ):
         """Generate an AlgorithmEstimator.
 
@@ -1828,10 +1830,15 @@ class RegisteredModel(ModelBase):
             max_run_time = ts.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
 
         train_compute_resource = ts.get("ComputeResource")
-        if train_compute_resource and (not instance_type or not instance_count):
-            # If instance_type or instance_count is not provided, use the default
+        instance_spec = kwargs.get("instance_spec")
+        if train_compute_resource:
             instance_type = instance_type or train_compute_resource.get("EcsSpec")
-            instance_count = instance_count or train_compute_resource.get("EcsCount")
+            instance_count = (
+                instance_count
+                or train_compute_resource.get("EcsCount")
+                or train_compute_resource.get("InstanceCount")
+            )
+            instance_spec = instance_spec or train_compute_resource.get("InstanceSpec")
 
         return AlgorithmEstimator(
             algorithm_name=algorithm_name,
@@ -1843,7 +1850,9 @@ class RegisteredModel(ModelBase):
             max_run_time=max_run_time,
             instance_type=instance_type,
             instance_count=instance_count,
+            instance_spec=instance_spec,
             output_path=output_path,
+            **kwargs,
         )
 
     def get_estimator_inputs(self) -> Dict[str, str]:
