@@ -245,3 +245,12 @@ class BaseIntegTestCase(unittest.TestCase):
             bucket_name=oss_bucket.bucket_name,
             key=key,
         )
+
+    @classmethod
+    def get_oss_uri(cls, oss_bucket, location, file_name=""):
+        key = location + file_name
+
+        return "oss://{bucket_name}/{key}".format(
+            bucket_name=oss_bucket.bucket_name,
+            key=key,
+        )
