@@ -15,7 +15,6 @@ LINT_REQUIREMENTS = os.path.join(
     "requirements/lint-requirements.txt",
 )
 
-
 DOC_REQUIREMENTS = os.path.join(
     _pkg_root,
     "requirements/doc-requirements.txt",
@@ -23,11 +22,11 @@ DOC_REQUIREMENTS = os.path.join(
 
 PASSING_ENVIRONMENTS = {
     "PAI_TEST_CONFIG": "test.ini",
+    "PYTHONWARNINGS": "ignore",
 }
 
-
 UNIT_TEST_PYTHON_VERSIONS = ["3.6", "3.7", "3.8"]
-INTEGRATION_TEST_PYTHON_VERSIONS = ["3.7"]
+INTEGRATION_TEST_PYTHON_VERSIONS = ["3.8"]
 TEST_VENV_BACKEND = os.environ.get("PAI_TEST_VENV_BACKEND", "conda")
 
 

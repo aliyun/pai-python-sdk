@@ -3,6 +3,7 @@
 access_key_id=
 access_key_secret=
 region_id=
+workspace_id=
 
 # 算法使用的MaxCompute项目
 [odps]
