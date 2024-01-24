@@ -104,3 +104,27 @@ class FileSystemInputScheme(object):
     CPFS = "cpfs"
     # BMCPFS file system type
     BMCPFS = "bmcpfs"
+
+
+class DefaultChannelName(object):
+    MODEL = "model"
+    CHECKPOINT = "checkpoints"
+    TENSORBOARD = "tensorboard"
+
+
+class StoragePathCategory(object):
+    """PAI builtin remote storage path."""
+
+    # For inference
+    InferenceSrc = "inference_src"
+
+    # For training job
+    TrainingSrc = "training_src"
+    TrainingJob = "training_job"
+    TrainData = "train_data"
+    ModelData = "model_data"
+
+    # For processing job
+    ProcessingJob = "processing_job"
+    ProcessingSrc = "processing_src"
+    InputData = "input_data"

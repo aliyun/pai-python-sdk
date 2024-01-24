@@ -219,6 +219,19 @@ def is_filesystem_uri(uri: str) -> bool:
     return any(uri.startswith(f"{schema}://") for schema in schemas)
 
 
+def is_dataset_id(item: str) -> bool:
+    """Return True if given input is a dataset ID.
+
+    Args:
+        item (str): user input dataset ID.
+
+    Examples:
+        >>> is_dataset_id('d-ybko3rap60c4gs9flc')
+        True
+    """
+    return item.startswith("d-")
+
+
 @lru_cache()
 def is_domain_connectable(domain: str, port: int = 80, timeout: int = 1) -> bool:
     """Check if the domain is connectable."""
