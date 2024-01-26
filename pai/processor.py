@@ -17,6 +17,7 @@ import posixpath
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
+from .common.configs import UserVpcConfig
 from .common.consts import DefaultChannelName, JobType, StoragePathCategory
 from .common.oss_utils import OssUriObj, is_oss_uri, upload
 from .common.utils import (
@@ -26,7 +27,7 @@ from .common.utils import (
     random_str,
     to_plain_text,
 )
-from .estimator import FileSystemInputBase, UserVpcConfig
+from .estimator import FileSystemInputBase
 from .estimator import _TrainingJob as _Job
 from .session import Session, get_default_session
 

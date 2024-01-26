@@ -300,6 +300,24 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         self.assertTrue(res[0]["label"] == "正向")
         self.assertTrue(res[1]["label"] == "负向")
 
+    @pytest.mark.timeout(60 * 10)
+    @skipUnless(
+        False, "No available model in prod environment, please run this case manually."
+    )
+    def test_model_evaluation(self):
+        m = RegisteredModel(
+            model_name="qwen-7b-chat",
+            model_version="0.2.5",
+            model_provider="pai",
+        )
+        self.assertIsNotNone(m.evaluation_spec)
+
+        inputs = m.get_evaluation_inputs()
+        processor = m.get_eval_processor(
+            instance_type="ecs.c6.large",
+        )
+        processor.run(inputs=inputs)
+
 
 class TestInferenceSpec(BaseIntegTestCase):
     def test_mount_local_source(self):

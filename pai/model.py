@@ -30,6 +30,7 @@ from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
 from .common import git_utils
+from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
@@ -1074,6 +1075,7 @@ class ModelBase(object):
         format_type: Optional[str] = None,
         framework_type: Optional[str] = None,
         training_spec: Optional[Dict[str, Any]] = None,
+        evaluation_spec: Optional[Dict[str, Any]] = None,
         approval_status: Optional[str] = None,
         metrics: Optional[Dict[str, Any]] = None,
         options: Optional[str] = None,
@@ -1110,6 +1112,8 @@ class ModelBase(object):
                 "Xflow", "XGBoost". Default to None.
             training_spec (dict, optional): The training spec of the model version.
                 Usually, it is got from the training job. Default to None.
+            evaluation_spec (dict, optional): The evaluation spec of the model version.
+                Usually, it is got from the processing job for evaluation. Default to None.
             approval_status (str, optional): The approval status of the model version.
                 The value can be "APPROVED", "PENDING". Default to None.
             metrics (dict, optional): The metrics of the model version.
@@ -1157,6 +1161,7 @@ class ModelBase(object):
         else:
             model_id = resp.items[0]["ModelId"]
 
+        # TODO support to registry model with evaluation spec
         version_name = self.session.model_api.create_version(
             model_id=model_id,
             uri=self.model_data,
@@ -1166,6 +1171,7 @@ class ModelBase(object):
             format_type=format_type,
             framework_type=framework_type,
             training_spec=training_spec,
+            evaluation_spec=evaluation_spec,
             inference_spec=self.inference_spec.to_dict()
             if self.inference_spec
             else None,
@@ -1392,6 +1398,7 @@ class RegisteredModel(ModelBase):
         self.uri = self._model_version_info.get("Uri")
         self.model_version = self._model_version_info.get("VersionName")
         self.training_spec = self._model_version_info.get("TrainingSpec")
+        self.evaluation_spec = self._model_version_info.get("EvaluationSpec")
         self.model_labels = {
             lb["Key"]: lb["Value"] for lb in self._model_info.get("Labels", [])
         }
@@ -1884,3 +1891,140 @@ class RegisteredModel(ModelBase):
                     }
                 )
         return input_channels
+
+    def get_eval_processor(
+        self,
+        base_job_name: Optional[str] = None,
+        output_path: Optional[str] = None,
+        parameters: Optional[Dict[str, Any]] = None,
+        max_run_time: Optional[int] = None,
+        instance_type: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        user_vpc_config: Optional[UserVpcConfig] = None,
+    ):
+        """Generate a Processor for model evaluation.
+
+        Generate a Processor object from RegisteredModel's evaluation_spec.
+
+        Args:
+            parameters (dict, optional): A dictionary that represents the
+                parameters used in the job. Default parameters will
+                be retrieved from the evaluation spec.
+            base_job_name (str, optional): The base name used to generate the
+                job name. If not provided, a default job name will be generated.
+            output_path (str, optional): An OSS URI to store the outputs of the
+                jobs. If not provided, an OSS URI will be generated using the default
+                OSS bucket in the session. When the `estimator.fit` method is called,
+                a specific OSS URI under the output_path for each channel is generated
+                and mounted to the container.
+            max_run_time (int, optional): The maximum time in seconds that the
+                job can run. The job will be terminated after the time is
+                reached (Default None).
+            instance_type (str, optional): The machine instance type used to run the
+                job. If not provider, the default instance type will be
+                retrieved from the evaluation spec. To view the supported machine
+                instance types, please refer to the document:
+                https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
+            instance_count (int, optional): The number of machines used to run the
+                job. If not provider, the default instance count will be
+                retrieved from the evaluation spec.
+            user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
+                configuration used to enable the job instance to connect to the
+                specified user VPC. If provided, an Elastic Network Interface (ENI) will
+                be created and attached to the job instance, allowing the
+                instance to access the resources within the specified VPC. Default to
+                None.
+        Returns:
+            :class:`pai.processor.Processor`: An Processor object.
+        """
+        from .processor import Processor
+
+        eval_spec = self._get_evaluation_spec()
+        if not eval_spec:
+            raise ValueError(
+                "The provided registered model does not contain evaluation spec."
+            )
+
+        if "AlgorithmSpec" not in eval_spec:
+            raise ValueError(
+                "The provided registered model's evaluation spec does not contain any"
+                " workload."
+            )
+        workload = eval_spec.get("AlgorithmSpec")
+
+        if not base_job_name:
+            base_job_name = f"{self.model_name}_eval" if self.model_name else None
+
+        parameters = parameters or dict()
+        for item in eval_spec.get("HyperParameters"):
+            name = item["Name"]
+            value = item["Value"]
+            if name not in parameters:
+                parameters[name] = value
+
+        if not max_run_time:
+            max_run_time = eval_spec.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
+
+        compute_resource = eval_spec.get("ComputeResource")
+        if compute_resource and (not instance_type or not instance_count):
+            # If instance_type or instance_count is not provided, use the default
+            instance_type = instance_type or compute_resource.get("EcsSpec")
+            instance_count = instance_count or compute_resource.get("EcsCount")
+
+        source_dir = None
+        code_dir = workload.get("CodeDir")
+        if code_dir and code_dir.get("LocationType") == "oss":
+            location = code_dir.get("LocationValue")
+            oss_path = OssUriObj.from_bucket_key_endpoint(
+                bucket_name=location.get("Bucket"),
+                object_key=location.get("Key"),
+                endpoint=location.get("Endpoint"),
+            )
+            source_dir = oss_path.uri
+
+        processor = Processor(
+            image_uri=workload.get("Image"),
+            command=" ".join(workload.get("Command")),
+            source_dir=source_dir,
+            parameters=parameters,
+            max_run_time=max_run_time,
+            base_job_name=base_job_name,
+            output_path=output_path,
+            instance_type=instance_type,
+            instance_count=instance_count,
+            user_vpc_config=user_vpc_config,
+            session=self.session,
+        )
+        processor.set_input_channel_definitions(workload["InputChannels"])
+        processor.set_output_channel_definitions(workload["OutputChannels"])
+
+        return processor
+
+    def get_evaluation_inputs(self) -> Dict[str, Any]:
+        """Get the Processor's default input channels
+
+         Get the Processor's default input channels from RegisteredModel's
+         evaluation_spec.
+
+        Returns:
+            dict[str, str]: A dict of input channels.
+        """
+        if not self.evaluation_spec:
+            raise ValueError(
+                "The provided registered model does not contain evaluation spec."
+            )
+
+        input_channels = {}
+        if "InputChannels" in self.evaluation_spec:
+            for i in self.evaluation_spec["InputChannels"]:
+                input_channels.update(
+                    {
+                        i["Name"]: i.get("InputUri") or i.get("DatasetId"),
+                    }
+                )
+
+        return input_channels
+
+    def _get_evaluation_spec(self):
+        """Get the evaluation_spec of the registered model."""
+        return self.evaluation_spec
