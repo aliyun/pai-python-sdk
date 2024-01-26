@@ -125,6 +125,7 @@ class ModelAPI(WorkspaceScopedResourceAPI):
         self,
         model_id: str,
         approval_status: str = None,
+        evaluation_spec: Dict[str, Any] = None,
         format_type: str = None,
         framework_type: str = None,
         inference_spec: Dict[str, Any] = None,
@@ -143,6 +144,7 @@ class ModelAPI(WorkspaceScopedResourceAPI):
 
         request = CreateModelVersionRequest(
             approval_status=approval_status,
+            evaluation_spec=evaluation_spec,
             format_type=format_type,
             framework_type=framework_type,
             inference_spec=inference_spec,
@@ -223,6 +225,7 @@ class ModelAPI(WorkspaceScopedResourceAPI):
         model_id: str,
         version: str,
         approval_status: str = None,
+        evaluation_spec: Dict[str, Any] = None,
         inference_spec: Dict[str, Any] = None,
         metrics: Dict[str, Any] = None,
         options: str = None,
@@ -233,6 +236,7 @@ class ModelAPI(WorkspaceScopedResourceAPI):
     ):
         request = UpdateModelVersionRequest(
             approval_status=approval_status,
+            evaluation_spec=evaluation_spec,
             inference_spec=inference_spec,
             metrics=metrics,
             options=options,

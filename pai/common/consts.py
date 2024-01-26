@@ -118,6 +118,9 @@ class StoragePathCategory(object):
     # For inference
     InferenceSrc = "inference_src"
 
+    # For evaluation
+    EvaluationSrc = "evaluation_src"
+
     # For training job
     TrainingSrc = "training_src"
     TrainingJob = "training_job"

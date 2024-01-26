@@ -34,6 +34,7 @@ from Tea.exceptions import TeaException
 from .api.base import PaginatedResult
 from .api.entity_base import EntityBaseMixin
 from .common import ProviderAlibabaPAI, git_utils
+from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
 from .common.docker_utils import ContainerRun, run_container
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
@@ -179,46 +180,6 @@ class CpfsFileSystemInput(FileSystemInputBase):
                 export_id=self.export_id,
             )
         )
-
-
-class UserVpcConfig(object):
-    """UserVpcConfig is used to give training job access to resources in your VPC."""
-
-    def __init__(
-        self,
-        vpc_id: str,
-        security_group_id: str,
-        switch_id: Optional[str] = None,
-        extended_cidrs: List[str] = None,
-    ):
-        """Initialize UserVpcConfig.
-
-        Args:
-            vpc_id (str): Specifies the ID of the VPC that training job instance
-                connects to.
-            security_group_id (str): The ID of the security group that training job
-                instances belong to.
-            switch_id (str, optional): The ID of the vSwitch to which the instance
-                belongs. Defaults to None.
-            extended_cidrs (List[str], optional): The CIDR blocks configured for the
-                ENI of the training job instance. If it is not specified, the CIDR block
-                will be configured as the same as the VPC network segmentation, which
-                means that the training job instance can access all resources in the
-                VPC. Defaults to None.
-        """
-
-        self.vpc_id = vpc_id
-        self.security_group_id = security_group_id
-        self.switch_id = switch_id
-        self.extended_cidrs = extended_cidrs
-
-    def to_dict(self):
-        return {
-            "VpcId": self.vpc_id,
-            "SecurityGroupId": self.security_group_id,
-            "SwitchId": self.switch_id,
-            "ExtendedCIDRs": self.extended_cidrs,
-        }
 
 
 class EstimatorBase(metaclass=ABCMeta):
