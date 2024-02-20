@@ -254,7 +254,7 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         self.assertTrue(outputs_data)
         self.assertTrue(len(outputs_data) == 1)
 
-        model_path = os.path.join(outputs_data["model"], "pytorch_model.bin")
+        model_path = os.path.join(outputs_data["model"], "model.safetensors")
         self.assertTrue(self.is_oss_object_exists(model_path))
 
     @pytest.mark.timeout(60 * 10)
