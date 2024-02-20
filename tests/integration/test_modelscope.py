@@ -30,7 +30,7 @@ class TestModelScopeEstimator(BaseIntegTestCase):
         est = ModelScopeEstimator(
             command="python -c 'import modelscope; print(modelscope.__version__)'",
             instance_type="ecs.c6.large",
-            modelscope_version="1.6.1",
+            modelscope_version="1.12.0",
             base_job_name="sdk-ms-train",
         )
         self.assertIsNotNone(est.training_image_uri())
