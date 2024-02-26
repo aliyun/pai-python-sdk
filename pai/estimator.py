@@ -239,6 +239,8 @@ class EstimatorBase(metaclass=ABCMeta):
         output_path: Optional[str] = None,
         checkpoints_path: Optional[str] = None,
         instance_type: Optional[str] = None,
+        instance_spec: Optional[Dict] = None,
+        resource_id: Optional[Dict] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         session: Optional[Session] = None,
@@ -311,6 +313,8 @@ class EstimatorBase(metaclass=ABCMeta):
         """
         self.hyperparameters = hyperparameters or dict()
         self.instance_type = instance_type
+        self.instance_spec = instance_spec
+        self.resource_id = resource_id
         self.instance_count = instance_count if instance_count else 1
         self.max_run_time = max_run_time
         self.base_job_name = base_job_name
@@ -319,8 +323,6 @@ class EstimatorBase(metaclass=ABCMeta):
         self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
         self._latest_training_job = None
-
-        self._check_instance_type()
 
     def set_hyperparameters(self, **kwargs):
         """Set hyperparameters for the training job.
@@ -334,16 +336,6 @@ class EstimatorBase(metaclass=ABCMeta):
     def latest_training_job(self):
         """Return the latest submitted training job."""
         return self._latest_training_job
-
-    def _check_instance_type(self):
-        """Check if the given instance_type is supported for training job."""
-        if not is_local_run_instance_type(
-            self.instance_type
-        ) and not self.session.is_supported_training_instance(self.instance_type):
-            raise ValueError(
-                f"Instance type='{self.instance_type}' is not supported."
-                " Please provide a supported instance type to create the job."
-            )
 
     def _gen_job_display_name(self, job_name=None):
         """Generate job display name."""
@@ -663,7 +655,9 @@ class Estimator(EstimatorBase):
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
+        resource_id: Optional[str] = None,
         session: Optional[Session] = None,
+        **kwargs,
     ):
         """Estimator constructor.
 
@@ -991,7 +985,9 @@ class Estimator(EstimatorBase):
 
         training_job_id = self.session.training_job_api.create(
             instance_count=self.instance_count,
+            instance_spec=self.instance_spec,
             instance_type=self.instance_type,
+            resource_id=self.resource_id,
             job_name=job_name,
             hyperparameters=self.hyperparameters,
             max_running_in_seconds=self.max_run_time,
@@ -1075,6 +1071,8 @@ class AlgorithmEstimator(EstimatorBase):
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         session: Optional[Session] = None,
+        instance_spec: Optional[Dict[str, Union[int, str]]] = None,
+        **kwargs,
     ):
         """Initialize an AlgorithmEstimator.
 
@@ -1150,17 +1148,19 @@ class AlgorithmEstimator(EstimatorBase):
             self.algorithm_provider = None
             self.algorithm_spec = algorithm_spec
 
+        if not instance_type and not instance_spec:
+            instance_type = self._get_default_training_instance_type()
         super(AlgorithmEstimator, self).__init__(
             hyperparameters=self._get_hyperparameters(hyperparameters),
             base_job_name=base_job_name,
             max_run_time=max_run_time,
             output_path=output_path,
-            instance_type=instance_type
-            if instance_type
-            else self._get_default_training_instance_type(),
+            instance_type=instance_type,
             instance_count=instance_count,
             session=session,
             user_vpc_config=user_vpc_config,
+            instance_spec=instance_spec,
+            **kwargs,
         )
 
     # TODO: check if the hyperparameters are valid
@@ -1221,14 +1221,6 @@ class AlgorithmEstimator(EstimatorBase):
                 " algorithm_provider) and algorithm_spec are provided. Use the tuple of"
                 " (algorithm_name, algorithm_version, algorithm_provider) by default."
                 " The provided algorithm_spec will be ignored."
-            )
-
-    def _check_instance_type(self):
-        """Check if the given instance_type is supported for training job."""
-        if not self.session.is_supported_training_instance(self.instance_type):
-            raise ValueError(
-                f"Instance type='{self.instance_type}' is not supported."
-                " Please provide a supported instance type to create the job."
             )
 
     def _get_algo_version(
@@ -1391,6 +1383,8 @@ class AlgorithmEstimator(EstimatorBase):
         training_job_id = self.session.training_job_api.create(
             instance_count=self.instance_count,
             instance_type=self.instance_type,
+            instance_spec=self.instance_spec,
+            resource_id=self.resource_id,
             job_name=job_name,
             hyperparameters=self.hyperparameters,
             max_running_in_seconds=self.max_run_time,
