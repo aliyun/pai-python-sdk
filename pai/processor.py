@@ -142,6 +142,8 @@ class Processor(object):
         source_dir: Optional[str] = None,
         job_type: str = JobType.PyTorchJob,
         parameters: Optional[Dict[str, Any]] = None,
+        environments: Optional[Dict[str, str]] = None,
+        requirements: Optional[List[str]] = None,
         max_run_time: Optional[int] = None,
         base_job_name: Optional[str] = None,
         output_path: Optional[str] = None,
@@ -199,6 +201,14 @@ class Processor(object):
                 parameters used in the job. The parameters will be
                 stored in the `/ml/input/config/hyperparameters.json` as a JSON
                 dictionary in the container.
+            environments: A dictionary that maps environment variable names to their values.
+                This optional field allows you to provide a set of environment variables that will be
+                applied to the context where the code is executed.
+            requirements (list, optional): An optional list of strings that specifies the Python
+                package dependencies with their versions. Each string in the list should be in the format
+                'package' or 'package==version'. This is similar to the contents of a requirements.txt file used
+                in Python projects. If requirements.txt is provided in user code directory, requirements
+                will override the conflict dependencies directly.
             max_run_time (int, optional): The maximum time in seconds that the
                 job can run. The job will be terminated after the time is
                 reached (Default None).
@@ -262,6 +272,8 @@ class Processor(object):
         self.source_dir = source_dir
         self.job_type = job_type or JobType.PyTorchJob
         self.parameters = parameters or dict()
+        self.environments = environments
+        self.requirements = requirements
         self.max_run_time = max_run_time
 
         self.base_job_name = base_job_name
@@ -363,6 +375,8 @@ class Processor(object):
             instance_type=self.instance_type,
             job_name=job_name,
             hyperparameters=self.parameters,
+            environments=self.environments,
+            requirements=self.requirements,
             max_running_in_seconds=self.max_run_time,
             input_channels=input_configs,
             output_channels=output_configs,
