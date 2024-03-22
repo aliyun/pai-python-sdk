@@ -7,11 +7,9 @@ from alibabacloud_tea_openapi.client import Client as OpenApiClient
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util.client import Client as UtilClient
 from alibabacloud_endpoint_util.client import Client as EndpointUtilClient
-# from alibabacloud_paistudio20220112 import models as pai_studio_20220112_models
+from pai.libs.alibabacloud_paistudio20220112 import models as pai_studio_20220112_models
 from alibabacloud_tea_util import models as util_models
 from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
-
-from pai.libs.alibabacloud_paistudio20220112 import models as pai_studio_20220112_models
 
 
 class Client(OpenApiClient):
@@ -19,7 +17,7 @@ class Client(OpenApiClient):
     *\
     """
     def __init__(
-        self, 
+        self,
         config: open_api_models.Config,
     ):
         super().__init__(config)
@@ -60,6 +58,186 @@ class Client(OpenApiClient):
         if not UtilClient.is_unset(endpoint_map) and not UtilClient.empty(endpoint_map.get(region_id)):
             return endpoint_map.get(region_id)
         return EndpointUtilClient.get_endpoint_rules(product_id, region_id, endpoint_rule, network, suffix)
+
+    def build_llmsnapshot_with_options(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.BuildLLMSnapshotRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.BuildLLMSnapshotResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.description):
+            body['Description'] = request.description
+        if not UtilClient.is_unset(request.display_name):
+            body['DisplayName'] = request.display_name
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.workload):
+            body['Workload'] = request.workload
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='BuildLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots/{OpenApiUtilClient.get_encode_param(snapshot_id)}/build',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.BuildLLMSnapshotResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def build_llmsnapshot_with_options_async(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.BuildLLMSnapshotRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.BuildLLMSnapshotResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.description):
+            body['Description'] = request.description
+        if not UtilClient.is_unset(request.display_name):
+            body['DisplayName'] = request.display_name
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.workload):
+            body['Workload'] = request.workload
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='BuildLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots/{OpenApiUtilClient.get_encode_param(snapshot_id)}/build',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.BuildLLMSnapshotResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def build_llmsnapshot(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.BuildLLMSnapshotRequest,
+    ) -> pai_studio_20220112_models.BuildLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.build_llmsnapshot_with_options(project_id, snapshot_id, request, headers, runtime)
+
+    async def build_llmsnapshot_async(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.BuildLLMSnapshotRequest,
+    ) -> pai_studio_20220112_models.BuildLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.build_llmsnapshot_with_options_async(project_id, snapshot_id, request, headers, runtime)
+
+    def check_instance_web_terminal_with_options(
+        self,
+        training_job_id: str,
+        instance_id: str,
+        request: pai_studio_20220112_models.CheckInstanceWebTerminalRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CheckInstanceWebTerminalResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.check_info):
+            body['CheckInfo'] = request.check_info
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CheckInstanceWebTerminal',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/webterminals/action/check',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CheckInstanceWebTerminalResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def check_instance_web_terminal_with_options_async(
+        self,
+        training_job_id: str,
+        instance_id: str,
+        request: pai_studio_20220112_models.CheckInstanceWebTerminalRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CheckInstanceWebTerminalResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.check_info):
+            body['CheckInfo'] = request.check_info
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CheckInstanceWebTerminal',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/webterminals/action/check',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CheckInstanceWebTerminalResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def check_instance_web_terminal(
+        self,
+        training_job_id: str,
+        instance_id: str,
+        request: pai_studio_20220112_models.CheckInstanceWebTerminalRequest,
+    ) -> pai_studio_20220112_models.CheckInstanceWebTerminalResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.check_instance_web_terminal_with_options(training_job_id, instance_id, request, headers, runtime)
+
+    async def check_instance_web_terminal_async(
+        self,
+        training_job_id: str,
+        instance_id: str,
+        request: pai_studio_20220112_models.CheckInstanceWebTerminalRequest,
+    ) -> pai_studio_20220112_models.CheckInstanceWebTerminalResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.check_instance_web_terminal_with_options_async(training_job_id, instance_id, request, headers, runtime)
 
     def create_ai4ddefault_bucket_with_options(
         self,
@@ -571,6 +749,332 @@ class Client(OpenApiClient):
         headers = {}
         return await self.create_component_version_with_options_async(component_id, request, headers, runtime)
 
+    def create_instance_web_terminal_with_options(
+        self,
+        training_job_id: str,
+        instance_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateInstanceWebTerminalResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='CreateInstanceWebTerminal',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/webterminals',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateInstanceWebTerminalResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_instance_web_terminal_with_options_async(
+        self,
+        training_job_id: str,
+        instance_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateInstanceWebTerminalResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='CreateInstanceWebTerminal',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/webterminals',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateInstanceWebTerminalResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_instance_web_terminal(
+        self,
+        training_job_id: str,
+        instance_id: str,
+    ) -> pai_studio_20220112_models.CreateInstanceWebTerminalResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_instance_web_terminal_with_options(training_job_id, instance_id, headers, runtime)
+
+    async def create_instance_web_terminal_async(
+        self,
+        training_job_id: str,
+        instance_id: str,
+    ) -> pai_studio_20220112_models.CreateInstanceWebTerminalResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_instance_web_terminal_with_options_async(training_job_id, instance_id, headers, runtime)
+
+    def create_llmproject_with_options(
+        self,
+        request: pai_studio_20220112_models.CreateLLMProjectRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateLLMProjectResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.project_description):
+            body['ProjectDescription'] = request.project_description
+        if not UtilClient.is_unset(request.project_name):
+            body['ProjectName'] = request.project_name
+        if not UtilClient.is_unset(request.project_type):
+            body['ProjectType'] = request.project_type
+        if not UtilClient.is_unset(request.root_path):
+            body['RootPath'] = request.root_path
+        if not UtilClient.is_unset(request.runtime):
+            body['Runtime'] = request.runtime
+        if not UtilClient.is_unset(request.workspace_id):
+            body['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateLLMProjectResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_llmproject_with_options_async(
+        self,
+        request: pai_studio_20220112_models.CreateLLMProjectRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateLLMProjectResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.project_description):
+            body['ProjectDescription'] = request.project_description
+        if not UtilClient.is_unset(request.project_name):
+            body['ProjectName'] = request.project_name
+        if not UtilClient.is_unset(request.project_type):
+            body['ProjectType'] = request.project_type
+        if not UtilClient.is_unset(request.root_path):
+            body['RootPath'] = request.root_path
+        if not UtilClient.is_unset(request.runtime):
+            body['Runtime'] = request.runtime
+        if not UtilClient.is_unset(request.workspace_id):
+            body['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateLLMProjectResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_llmproject(
+        self,
+        request: pai_studio_20220112_models.CreateLLMProjectRequest,
+    ) -> pai_studio_20220112_models.CreateLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_llmproject_with_options(request, headers, runtime)
+
+    async def create_llmproject_async(
+        self,
+        request: pai_studio_20220112_models.CreateLLMProjectRequest,
+    ) -> pai_studio_20220112_models.CreateLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_llmproject_with_options_async(request, headers, runtime)
+
+    def create_llmservice_identity_role_with_options(
+        self,
+        request: pai_studio_20220112_models.CreateLLMServiceIdentityRoleRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateLLMServiceIdentityRoleResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.role_name):
+            body['RoleName'] = request.role_name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateLLMServiceIdentityRole',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/serviceidentityroles',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateLLMServiceIdentityRoleResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_llmservice_identity_role_with_options_async(
+        self,
+        request: pai_studio_20220112_models.CreateLLMServiceIdentityRoleRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateLLMServiceIdentityRoleResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.role_name):
+            body['RoleName'] = request.role_name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateLLMServiceIdentityRole',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/serviceidentityroles',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateLLMServiceIdentityRoleResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_llmservice_identity_role(
+        self,
+        request: pai_studio_20220112_models.CreateLLMServiceIdentityRoleRequest,
+    ) -> pai_studio_20220112_models.CreateLLMServiceIdentityRoleResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_llmservice_identity_role_with_options(request, headers, runtime)
+
+    async def create_llmservice_identity_role_async(
+        self,
+        request: pai_studio_20220112_models.CreateLLMServiceIdentityRoleRequest,
+    ) -> pai_studio_20220112_models.CreateLLMServiceIdentityRoleResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_llmservice_identity_role_with_options_async(request, headers, runtime)
+
+    def create_llmsnapshot_with_options(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.CreateLLMSnapshotRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateLLMSnapshotResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.storage):
+            body['Storage'] = request.storage
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateLLMSnapshotResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_llmsnapshot_with_options_async(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.CreateLLMSnapshotRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateLLMSnapshotResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.storage):
+            body['Storage'] = request.storage
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateLLMSnapshotResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_llmsnapshot(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.CreateLLMSnapshotRequest,
+    ) -> pai_studio_20220112_models.CreateLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_llmsnapshot_with_options(project_id, request, headers, runtime)
+
+    async def create_llmsnapshot_async(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.CreateLLMSnapshotRequest,
+    ) -> pai_studio_20220112_models.CreateLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_llmsnapshot_with_options_async(project_id, request, headers, runtime)
+
     def create_quota_with_options(
         self,
         request: pai_studio_20220112_models.CreateQuotaRequest,
@@ -589,6 +1093,10 @@ class Client(OpenApiClient):
             body['Min'] = request.min
         if not UtilClient.is_unset(request.parent_quota_id):
             body['ParentQuotaId'] = request.parent_quota_id
+        if not UtilClient.is_unset(request.queue_strategy):
+            body['QueueStrategy'] = request.queue_strategy
+        if not UtilClient.is_unset(request.quota_config):
+            body['QuotaConfig'] = request.quota_config
         if not UtilClient.is_unset(request.quota_name):
             body['QuotaName'] = request.quota_name
         if not UtilClient.is_unset(request.resource_group_ids):
@@ -633,6 +1141,10 @@ class Client(OpenApiClient):
             body['Min'] = request.min
         if not UtilClient.is_unset(request.parent_quota_id):
             body['ParentQuotaId'] = request.parent_quota_id
+        if not UtilClient.is_unset(request.queue_strategy):
+            body['QueueStrategy'] = request.queue_strategy
+        if not UtilClient.is_unset(request.quota_config):
+            body['QuotaConfig'] = request.quota_config
         if not UtilClient.is_unset(request.quota_name):
             body['QuotaName'] = request.quota_name
         if not UtilClient.is_unset(request.resource_group_ids):
@@ -691,6 +1203,8 @@ class Client(OpenApiClient):
             body['Name'] = request.name
         if not UtilClient.is_unset(request.resource_type):
             body['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag):
+            body['Tag'] = request.tag
         if not UtilClient.is_unset(request.user_vpc):
             body['UserVpc'] = request.user_vpc
         req = open_api_models.OpenApiRequest(
@@ -729,6 +1243,8 @@ class Client(OpenApiClient):
             body['Name'] = request.name
         if not UtilClient.is_unset(request.resource_type):
             body['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag):
+            body['Tag'] = request.tag
         if not UtilClient.is_unset(request.user_vpc):
             body['UserVpc'] = request.user_vpc
         req = open_api_models.OpenApiRequest(
@@ -766,6 +1282,110 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_resource_group_with_options_async(request, headers, runtime)
+
+    def create_resource_group_machine_group_with_options(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.CreateResourceGroupMachineGroupRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateResourceGroupMachineGroupResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.ecs_count):
+            body['EcsCount'] = request.ecs_count
+        if not UtilClient.is_unset(request.ecs_spec):
+            body['EcsSpec'] = request.ecs_spec
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
+        if not UtilClient.is_unset(request.payment_duration):
+            body['PaymentDuration'] = request.payment_duration
+        if not UtilClient.is_unset(request.payment_duration_unit):
+            body['PaymentDurationUnit'] = request.payment_duration_unit
+        if not UtilClient.is_unset(request.payment_type):
+            body['PaymentType'] = request.payment_type
+        if not UtilClient.is_unset(request.tag):
+            body['Tag'] = request.tag
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateResourceGroupMachineGroup',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/machinegroups',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateResourceGroupMachineGroupResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_resource_group_machine_group_with_options_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.CreateResourceGroupMachineGroupRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.CreateResourceGroupMachineGroupResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.ecs_count):
+            body['EcsCount'] = request.ecs_count
+        if not UtilClient.is_unset(request.ecs_spec):
+            body['EcsSpec'] = request.ecs_spec
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
+        if not UtilClient.is_unset(request.payment_duration):
+            body['PaymentDuration'] = request.payment_duration
+        if not UtilClient.is_unset(request.payment_duration_unit):
+            body['PaymentDurationUnit'] = request.payment_duration_unit
+        if not UtilClient.is_unset(request.payment_type):
+            body['PaymentType'] = request.payment_type
+        if not UtilClient.is_unset(request.tag):
+            body['Tag'] = request.tag
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateResourceGroupMachineGroup',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/machinegroups',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.CreateResourceGroupMachineGroupResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_resource_group_machine_group(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.CreateResourceGroupMachineGroupRequest,
+    ) -> pai_studio_20220112_models.CreateResourceGroupMachineGroupResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_resource_group_machine_group_with_options(resource_group_id, request, headers, runtime)
+
+    async def create_resource_group_machine_group_async(
+        self,
+        resource_group_id: str,
+        request: pai_studio_20220112_models.CreateResourceGroupMachineGroupRequest,
+    ) -> pai_studio_20220112_models.CreateResourceGroupMachineGroupResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_resource_group_machine_group_with_options_async(resource_group_id, request, headers, runtime)
 
     def create_service_identity_role_with_options(
         self,
@@ -863,6 +1483,10 @@ class Client(OpenApiClient):
             body['CodeDir'] = request.code_dir
         if not UtilClient.is_unset(request.compute_resource):
             body['ComputeResource'] = request.compute_resource
+        if not UtilClient.is_unset(request.environments):
+            body['Environments'] = request.environments
+        if not UtilClient.is_unset(request.experiment_config):
+            body['ExperimentConfig'] = request.experiment_config
         if not UtilClient.is_unset(request.hyper_parameters):
             body['HyperParameters'] = request.hyper_parameters
         if not UtilClient.is_unset(request.input_channels):
@@ -871,10 +1495,14 @@ class Client(OpenApiClient):
             body['Labels'] = request.labels
         if not UtilClient.is_unset(request.output_channels):
             body['OutputChannels'] = request.output_channels
+        if not UtilClient.is_unset(request.python_requirements):
+            body['PythonRequirements'] = request.python_requirements
         if not UtilClient.is_unset(request.role_arn):
             body['RoleArn'] = request.role_arn
         if not UtilClient.is_unset(request.scheduler):
             body['Scheduler'] = request.scheduler
+        if not UtilClient.is_unset(request.settings):
+            body['Settings'] = request.settings
         if not UtilClient.is_unset(request.training_job_description):
             body['TrainingJobDescription'] = request.training_job_description
         if not UtilClient.is_unset(request.training_job_name):
@@ -923,6 +1551,10 @@ class Client(OpenApiClient):
             body['CodeDir'] = request.code_dir
         if not UtilClient.is_unset(request.compute_resource):
             body['ComputeResource'] = request.compute_resource
+        if not UtilClient.is_unset(request.environments):
+            body['Environments'] = request.environments
+        if not UtilClient.is_unset(request.experiment_config):
+            body['ExperimentConfig'] = request.experiment_config
         if not UtilClient.is_unset(request.hyper_parameters):
             body['HyperParameters'] = request.hyper_parameters
         if not UtilClient.is_unset(request.input_channels):
@@ -931,10 +1563,14 @@ class Client(OpenApiClient):
             body['Labels'] = request.labels
         if not UtilClient.is_unset(request.output_channels):
             body['OutputChannels'] = request.output_channels
+        if not UtilClient.is_unset(request.python_requirements):
+            body['PythonRequirements'] = request.python_requirements
         if not UtilClient.is_unset(request.role_arn):
             body['RoleArn'] = request.role_arn
         if not UtilClient.is_unset(request.scheduler):
             body['Scheduler'] = request.scheduler
+        if not UtilClient.is_unset(request.settings):
+            body['Settings'] = request.settings
         if not UtilClient.is_unset(request.training_job_description):
             body['TrainingJobDescription'] = request.training_job_description
         if not UtilClient.is_unset(request.training_job_name):
@@ -1316,6 +1952,72 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_component_version_snapshot_with_options_async(snapshot_id, headers, runtime)
+
+    def delete_llmproject_with_options(
+        self,
+        project_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.DeleteLLMProjectResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.DeleteLLMProjectResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def delete_llmproject_with_options_async(
+        self,
+        project_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.DeleteLLMProjectResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.DeleteLLMProjectResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def delete_llmproject(
+        self,
+        project_id: str,
+    ) -> pai_studio_20220112_models.DeleteLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.delete_llmproject_with_options(project_id, headers, runtime)
+
+    async def delete_llmproject_async(
+        self,
+        project_id: str,
+    ) -> pai_studio_20220112_models.DeleteLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.delete_llmproject_with_options_async(project_id, headers, runtime)
 
     def delete_machine_group_with_options(
         self,
@@ -1810,6 +2512,102 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_training_job_labels_with_options_async(training_job_id, request, headers, runtime)
+
+    def deploy_llmsnapshot_with_options(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.DeployLLMSnapshotRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.DeployLLMSnapshotResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.description):
+            body['Description'] = request.description
+        if not UtilClient.is_unset(request.display_name):
+            body['DisplayName'] = request.display_name
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.workload):
+            body['Workload'] = request.workload
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='DeployLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots/{OpenApiUtilClient.get_encode_param(snapshot_id)}/deploy',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.DeployLLMSnapshotResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def deploy_llmsnapshot_with_options_async(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.DeployLLMSnapshotRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.DeployLLMSnapshotResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.description):
+            body['Description'] = request.description
+        if not UtilClient.is_unset(request.display_name):
+            body['DisplayName'] = request.display_name
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.workload):
+            body['Workload'] = request.workload
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='DeployLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots/{OpenApiUtilClient.get_encode_param(snapshot_id)}/deploy',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.DeployLLMSnapshotResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def deploy_llmsnapshot(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.DeployLLMSnapshotRequest,
+    ) -> pai_studio_20220112_models.DeployLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.deploy_llmsnapshot_with_options(project_id, snapshot_id, request, headers, runtime)
+
+    async def deploy_llmsnapshot_async(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        request: pai_studio_20220112_models.DeployLLMSnapshotRequest,
+    ) -> pai_studio_20220112_models.DeployLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.deploy_llmsnapshot_with_options_async(project_id, snapshot_id, request, headers, runtime)
 
     def get_ai4ddefault_bucket_with_options(
         self,
@@ -2553,6 +3351,208 @@ class Client(OpenApiClient):
         headers = {}
         return await self.get_jobs_statistics_by_resource_group_with_options_async(resource_group_id, request, headers, runtime)
 
+    def get_llmproject_with_options(
+        self,
+        project_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetLLMProjectResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetLLMProjectResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_llmproject_with_options_async(
+        self,
+        project_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetLLMProjectResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetLLMProjectResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_llmproject(
+        self,
+        project_id: str,
+    ) -> pai_studio_20220112_models.GetLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_llmproject_with_options(project_id, headers, runtime)
+
+    async def get_llmproject_async(
+        self,
+        project_id: str,
+    ) -> pai_studio_20220112_models.GetLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_llmproject_with_options_async(project_id, headers, runtime)
+
+    def get_llmservice_identity_role_with_options(
+        self,
+        role_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetLLMServiceIdentityRoleResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetLLMServiceIdentityRole',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/serviceidentityroles/{OpenApiUtilClient.get_encode_param(role_name)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetLLMServiceIdentityRoleResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_llmservice_identity_role_with_options_async(
+        self,
+        role_name: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetLLMServiceIdentityRoleResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetLLMServiceIdentityRole',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/serviceidentityroles/{OpenApiUtilClient.get_encode_param(role_name)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetLLMServiceIdentityRoleResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_llmservice_identity_role(
+        self,
+        role_name: str,
+    ) -> pai_studio_20220112_models.GetLLMServiceIdentityRoleResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_llmservice_identity_role_with_options(role_name, headers, runtime)
+
+    async def get_llmservice_identity_role_async(
+        self,
+        role_name: str,
+    ) -> pai_studio_20220112_models.GetLLMServiceIdentityRoleResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_llmservice_identity_role_with_options_async(role_name, headers, runtime)
+
+    def get_llmsnapshot_with_options(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetLLMSnapshotResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots/{OpenApiUtilClient.get_encode_param(snapshot_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetLLMSnapshotResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_llmsnapshot_with_options_async(
+        self,
+        project_id: str,
+        snapshot_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetLLMSnapshotResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetLLMSnapshot',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots/{OpenApiUtilClient.get_encode_param(snapshot_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetLLMSnapshotResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_llmsnapshot(
+        self,
+        project_id: str,
+        snapshot_id: str,
+    ) -> pai_studio_20220112_models.GetLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_llmsnapshot_with_options(project_id, snapshot_id, headers, runtime)
+
+    async def get_llmsnapshot_async(
+        self,
+        project_id: str,
+        snapshot_id: str,
+    ) -> pai_studio_20220112_models.GetLLMSnapshotResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_llmsnapshot_with_options_async(project_id, snapshot_id, headers, runtime)
+
     def get_machine_group_with_options(
         self,
         machine_group_id: str,
@@ -2880,6 +3880,110 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_operation_with_options_async(operation_id, headers, runtime)
+
+    def get_queue_infos_with_options(
+        self,
+        request: pai_studio_20220112_models.GetQueueInfosRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetQueueInfosResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.quota_ids):
+            query['QuotaIds'] = request.quota_ids
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.workload_ids):
+            query['WorkloadIds'] = request.workload_ids
+        if not UtilClient.is_unset(request.workload_type):
+            query['WorkloadType'] = request.workload_type
+        if not UtilClient.is_unset(request.workspace_ids):
+            query['WorkspaceIds'] = request.workspace_ids
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetQueueInfos',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/queueInfos',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetQueueInfosResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_queue_infos_with_options_async(
+        self,
+        request: pai_studio_20220112_models.GetQueueInfosRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetQueueInfosResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.quota_ids):
+            query['QuotaIds'] = request.quota_ids
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.workload_ids):
+            query['WorkloadIds'] = request.workload_ids
+        if not UtilClient.is_unset(request.workload_type):
+            query['WorkloadType'] = request.workload_type
+        if not UtilClient.is_unset(request.workspace_ids):
+            query['WorkspaceIds'] = request.workspace_ids
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetQueueInfos',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/queueInfos',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetQueueInfosResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_queue_infos(
+        self,
+        request: pai_studio_20220112_models.GetQueueInfosRequest,
+    ) -> pai_studio_20220112_models.GetQueueInfosResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_queue_infos_with_options(request, headers, runtime)
+
+    async def get_queue_infos_async(
+        self,
+        request: pai_studio_20220112_models.GetQueueInfosRequest,
+    ) -> pai_studio_20220112_models.GetQueueInfosResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_queue_infos_with_options_async(request, headers, runtime)
 
     def get_quota_with_options(
         self,
@@ -3262,10 +4366,22 @@ class Client(OpenApiClient):
         query = {}
         if not UtilClient.is_unset(request.node_id):
             query['NodeId'] = request.node_id
+        if not UtilClient.is_unset(request.node_status):
+            query['NodeStatus'] = request.node_status
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.order_status):
+            query['OrderStatus'] = request.order_status
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
             query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.resource_group_id):
+            query['ResourceGroupId'] = request.resource_group_id
+        if not UtilClient.is_unset(request.self_only):
+            query['SelfOnly'] = request.self_only
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
         if not UtilClient.is_unset(request.time_step):
             query['TimeStep'] = request.time_step
         if not UtilClient.is_unset(request.workspace_id):
@@ -3301,10 +4417,22 @@ class Client(OpenApiClient):
         query = {}
         if not UtilClient.is_unset(request.node_id):
             query['NodeId'] = request.node_id
+        if not UtilClient.is_unset(request.node_status):
+            query['NodeStatus'] = request.node_status
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.order_status):
+            query['OrderStatus'] = request.order_status
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
             query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.resource_group_id):
+            query['ResourceGroupId'] = request.resource_group_id
+        if not UtilClient.is_unset(request.self_only):
+            query['SelfOnly'] = request.self_only
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
         if not UtilClient.is_unset(request.time_step):
             query['TimeStep'] = request.time_step
         if not UtilClient.is_unset(request.workspace_id):
@@ -3346,6 +4474,126 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_quota_node_view_metrics_with_options_async(quota_id, request, headers, runtime)
+
+    def get_quota_queue_info_with_options(
+        self,
+        quota_id: str,
+        request: pai_studio_20220112_models.GetQuotaQueueInfoRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetQuotaQueueInfoResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.before_workload_id):
+            query['BeforeWorkloadId'] = request.before_workload_id
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.show_own):
+            query['ShowOwn'] = request.show_own
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.status):
+            query['Status'] = request.status
+        if not UtilClient.is_unset(request.sub_quota_ids):
+            query['SubQuotaIds'] = request.sub_quota_ids
+        if not UtilClient.is_unset(request.workload_ids):
+            query['WorkloadIds'] = request.workload_ids
+        if not UtilClient.is_unset(request.workload_type):
+            query['WorkloadType'] = request.workload_type
+        if not UtilClient.is_unset(request.workspace_ids):
+            query['WorkspaceIds'] = request.workspace_ids
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetQuotaQueueInfo',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/quotas/{OpenApiUtilClient.get_encode_param(quota_id)}/queueinfos',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetQuotaQueueInfoResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_quota_queue_info_with_options_async(
+        self,
+        quota_id: str,
+        request: pai_studio_20220112_models.GetQuotaQueueInfoRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetQuotaQueueInfoResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.before_workload_id):
+            query['BeforeWorkloadId'] = request.before_workload_id
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.show_own):
+            query['ShowOwn'] = request.show_own
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.status):
+            query['Status'] = request.status
+        if not UtilClient.is_unset(request.sub_quota_ids):
+            query['SubQuotaIds'] = request.sub_quota_ids
+        if not UtilClient.is_unset(request.workload_ids):
+            query['WorkloadIds'] = request.workload_ids
+        if not UtilClient.is_unset(request.workload_type):
+            query['WorkloadType'] = request.workload_type
+        if not UtilClient.is_unset(request.workspace_ids):
+            query['WorkspaceIds'] = request.workspace_ids
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetQuotaQueueInfo',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/quotas/{OpenApiUtilClient.get_encode_param(quota_id)}/queueinfos',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetQuotaQueueInfoResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_quota_queue_info(
+        self,
+        quota_id: str,
+        request: pai_studio_20220112_models.GetQuotaQueueInfoRequest,
+    ) -> pai_studio_20220112_models.GetQuotaQueueInfoResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_quota_queue_info_with_options(quota_id, request, headers, runtime)
+
+    async def get_quota_queue_info_async(
+        self,
+        quota_id: str,
+        request: pai_studio_20220112_models.GetQuotaQueueInfoRequest,
+    ) -> pai_studio_20220112_models.GetQuotaQueueInfoResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_quota_queue_info_with_options_async(quota_id, request, headers, runtime)
 
     def get_quota_range_user_view_metrics_with_options(
         self,
@@ -3670,14 +4918,20 @@ class Client(OpenApiClient):
     def get_resource_group_with_options(
         self,
         resource_group_id: str,
-        request: pai_studio_20220112_models.GetResourceGroupRequest,
+        tmp_req: pai_studio_20220112_models.GetResourceGroupRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_studio_20220112_models.GetResourceGroupResponse:
-        UtilClient.validate_model(request)
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.GetResourceGroupShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.tag):
+            request.tag_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag, 'Tag', 'json')
         query = {}
         if not UtilClient.is_unset(request.is_aiworkspace_data_enabled):
             query['IsAIWorkspaceDataEnabled'] = request.is_aiworkspace_data_enabled
+        if not UtilClient.is_unset(request.tag_shrink):
+            query['Tag'] = request.tag_shrink
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -3701,14 +4955,20 @@ class Client(OpenApiClient):
     async def get_resource_group_with_options_async(
         self,
         resource_group_id: str,
-        request: pai_studio_20220112_models.GetResourceGroupRequest,
+        tmp_req: pai_studio_20220112_models.GetResourceGroupRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_studio_20220112_models.GetResourceGroupResponse:
-        UtilClient.validate_model(request)
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.GetResourceGroupShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.tag):
+            request.tag_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag, 'Tag', 'json')
         query = {}
         if not UtilClient.is_unset(request.is_aiworkspace_data_enabled):
             query['IsAIWorkspaceDataEnabled'] = request.is_aiworkspace_data_enabled
+        if not UtilClient.is_unset(request.tag_shrink):
+            query['Tag'] = request.tag_shrink
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -3751,11 +5011,21 @@ class Client(OpenApiClient):
         self,
         machine_group_id: str,
         resource_group_id: str,
+        tmp_req: pai_studio_20220112_models.GetResourceGroupMachineGroupRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_studio_20220112_models.GetResourceGroupMachineGroupResponse:
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.GetResourceGroupMachineGroupShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.tag):
+            request.tag_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag, 'Tag', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.tag_shrink):
+            query['Tag'] = request.tag_shrink
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='GetResourceGroupMachineGroup',
@@ -3777,11 +5047,21 @@ class Client(OpenApiClient):
         self,
         machine_group_id: str,
         resource_group_id: str,
+        tmp_req: pai_studio_20220112_models.GetResourceGroupMachineGroupRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_studio_20220112_models.GetResourceGroupMachineGroupResponse:
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.GetResourceGroupMachineGroupShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.tag):
+            request.tag_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag, 'Tag', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.tag_shrink):
+            query['Tag'] = request.tag_shrink
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='GetResourceGroupMachineGroup',
@@ -3803,19 +5083,21 @@ class Client(OpenApiClient):
         self,
         machine_group_id: str,
         resource_group_id: str,
+        request: pai_studio_20220112_models.GetResourceGroupMachineGroupRequest,
     ) -> pai_studio_20220112_models.GetResourceGroupMachineGroupResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return self.get_resource_group_machine_group_with_options(machine_group_id, resource_group_id, headers, runtime)
+        return self.get_resource_group_machine_group_with_options(machine_group_id, resource_group_id, request, headers, runtime)
 
     async def get_resource_group_machine_group_async(
         self,
         machine_group_id: str,
         resource_group_id: str,
+        request: pai_studio_20220112_models.GetResourceGroupMachineGroupRequest,
     ) -> pai_studio_20220112_models.GetResourceGroupMachineGroupResponse:
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.get_resource_group_machine_group_with_options_async(machine_group_id, resource_group_id, headers, runtime)
+        return await self.get_resource_group_machine_group_with_options_async(machine_group_id, resource_group_id, request, headers, runtime)
 
     def get_resource_group_metrics_with_options(
         self,
@@ -4135,6 +5417,172 @@ class Client(OpenApiClient):
         headers = {}
         return await self.get_service_identity_role_with_options_async(role_name, headers, runtime)
 
+    def get_spot_price_history_with_options(
+        self,
+        instance_type: str,
+        request: pai_studio_20220112_models.GetSpotPriceHistoryRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetSpotPriceHistoryResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetSpotPriceHistory',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/spots/{OpenApiUtilClient.get_encode_param(instance_type)}/pricehistory',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetSpotPriceHistoryResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_spot_price_history_with_options_async(
+        self,
+        instance_type: str,
+        request: pai_studio_20220112_models.GetSpotPriceHistoryRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetSpotPriceHistoryResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetSpotPriceHistory',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/spots/{OpenApiUtilClient.get_encode_param(instance_type)}/pricehistory',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetSpotPriceHistoryResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_spot_price_history(
+        self,
+        instance_type: str,
+        request: pai_studio_20220112_models.GetSpotPriceHistoryRequest,
+    ) -> pai_studio_20220112_models.GetSpotPriceHistoryResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_spot_price_history_with_options(instance_type, request, headers, runtime)
+
+    async def get_spot_price_history_async(
+        self,
+        instance_type: str,
+        request: pai_studio_20220112_models.GetSpotPriceHistoryRequest,
+    ) -> pai_studio_20220112_models.GetSpotPriceHistoryResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_spot_price_history_with_options_async(instance_type, request, headers, runtime)
+
+    def get_spot_stock_preview_with_options(
+        self,
+        instance_type: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetSpotStockPreviewResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetSpotStockPreview',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/spots/{OpenApiUtilClient.get_encode_param(instance_type)}/stockpreview',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetSpotStockPreviewResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_spot_stock_preview_with_options_async(
+        self,
+        instance_type: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetSpotStockPreviewResponse:
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetSpotStockPreview',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/spots/{OpenApiUtilClient.get_encode_param(instance_type)}/stockpreview',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetSpotStockPreviewResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_spot_stock_preview(
+        self,
+        instance_type: str,
+    ) -> pai_studio_20220112_models.GetSpotStockPreviewResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_spot_stock_preview_with_options(instance_type, headers, runtime)
+
+    async def get_spot_stock_preview_async(
+        self,
+        instance_type: str,
+    ) -> pai_studio_20220112_models.GetSpotStockPreviewResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_spot_stock_preview_with_options_async(instance_type, headers, runtime)
+
     def get_token_with_options(
         self,
         request: pai_studio_20220112_models.GetTokenRequest,
@@ -4294,6 +5742,86 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_training_job_with_options_async(training_job_id, request, headers, runtime)
+
+    def get_training_job_error_info_with_options(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.GetTrainingJobErrorInfoRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetTrainingJobErrorInfoResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.token):
+            query['Token'] = request.token
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetTrainingJobErrorInfo',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/errorinfo',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetTrainingJobErrorInfoResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_training_job_error_info_with_options_async(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.GetTrainingJobErrorInfoRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.GetTrainingJobErrorInfoResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.token):
+            query['Token'] = request.token
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetTrainingJobErrorInfo',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/errorinfo',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.GetTrainingJobErrorInfoResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_training_job_error_info(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.GetTrainingJobErrorInfoRequest,
+    ) -> pai_studio_20220112_models.GetTrainingJobErrorInfoResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_training_job_error_info_with_options(training_job_id, request, headers, runtime)
+
+    async def get_training_job_error_info_async(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.GetTrainingJobErrorInfoRequest,
+    ) -> pai_studio_20220112_models.GetTrainingJobErrorInfoResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_training_job_error_info_with_options_async(training_job_id, request, headers, runtime)
 
     def get_training_job_latest_metrics_with_options(
         self,
@@ -4562,6 +6090,86 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_ai4dserivces_with_options_async(request, headers, runtime)
+
+    def list_ai4dservice_templates_with_options(
+        self,
+        request: pai_studio_20220112_models.ListAI4DServiceTemplatesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListAI4DServiceTemplatesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.service_type):
+            query['ServiceType'] = request.service_type
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListAI4DServiceTemplates',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/ai4d/servicetemplates',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListAI4DServiceTemplatesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_ai4dservice_templates_with_options_async(
+        self,
+        request: pai_studio_20220112_models.ListAI4DServiceTemplatesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListAI4DServiceTemplatesResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.service_type):
+            query['ServiceType'] = request.service_type
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListAI4DServiceTemplates',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/ai4d/servicetemplates',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListAI4DServiceTemplatesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_ai4dservice_templates(
+        self,
+        request: pai_studio_20220112_models.ListAI4DServiceTemplatesRequest,
+    ) -> pai_studio_20220112_models.ListAI4DServiceTemplatesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_ai4dservice_templates_with_options(request, headers, runtime)
+
+    async def list_ai4dservice_templates_async(
+        self,
+        request: pai_studio_20220112_models.ListAI4DServiceTemplatesRequest,
+    ) -> pai_studio_20220112_models.ListAI4DServiceTemplatesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_ai4dservice_templates_with_options_async(request, headers, runtime)
 
     def list_algorithm_versions_with_options(
         self,
@@ -5167,6 +6775,274 @@ class Client(OpenApiClient):
         headers = {}
         return await self.list_instance_jobs_with_options_async(request, headers, runtime)
 
+    def list_llmprojects_with_options(
+        self,
+        request: pai_studio_20220112_models.ListLLMProjectsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListLLMProjectsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.project_name):
+            query['ProjectName'] = request.project_name
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListLLMProjects',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListLLMProjectsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_llmprojects_with_options_async(
+        self,
+        request: pai_studio_20220112_models.ListLLMProjectsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListLLMProjectsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.project_name):
+            query['ProjectName'] = request.project_name
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListLLMProjects',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListLLMProjectsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_llmprojects(
+        self,
+        request: pai_studio_20220112_models.ListLLMProjectsRequest,
+    ) -> pai_studio_20220112_models.ListLLMProjectsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_llmprojects_with_options(request, headers, runtime)
+
+    async def list_llmprojects_async(
+        self,
+        request: pai_studio_20220112_models.ListLLMProjectsRequest,
+    ) -> pai_studio_20220112_models.ListLLMProjectsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_llmprojects_with_options_async(request, headers, runtime)
+
+    def list_llmsnapshots_with_options(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.ListLLMSnapshotsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListLLMSnapshotsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListLLMSnapshots',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListLLMSnapshotsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_llmsnapshots_with_options_async(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.ListLLMSnapshotsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListLLMSnapshotsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListLLMSnapshots',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}/snapshots',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListLLMSnapshotsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_llmsnapshots(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.ListLLMSnapshotsRequest,
+    ) -> pai_studio_20220112_models.ListLLMSnapshotsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_llmsnapshots_with_options(project_id, request, headers, runtime)
+
+    async def list_llmsnapshots_async(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.ListLLMSnapshotsRequest,
+    ) -> pai_studio_20220112_models.ListLLMSnapshotsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_llmsnapshots_with_options_async(project_id, request, headers, runtime)
+
+    def list_node_pods_with_options(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.ListNodePodsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListNodePodsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.resource_group_id):
+            query['ResourceGroupId'] = request.resource_group_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListNodePods',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/nodes/{OpenApiUtilClient.get_encode_param(node_id)}/Pods',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListNodePodsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_node_pods_with_options_async(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.ListNodePodsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListNodePodsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.resource_group_id):
+            query['ResourceGroupId'] = request.resource_group_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListNodePods',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/nodes/{OpenApiUtilClient.get_encode_param(node_id)}/Pods',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListNodePodsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_node_pods(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.ListNodePodsRequest,
+    ) -> pai_studio_20220112_models.ListNodePodsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_node_pods_with_options(node_id, request, headers, runtime)
+
+    async def list_node_pods_async(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.ListNodePodsRequest,
+    ) -> pai_studio_20220112_models.ListNodePodsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_node_pods_with_options_async(node_id, request, headers, runtime)
+
     def list_node_types_with_options(
         self,
         request: pai_studio_20220112_models.ListNodeTypesRequest,
@@ -5289,6 +7165,8 @@ class Client(OpenApiClient):
             query['ResourceGroupIds'] = request.resource_group_ids
         if not UtilClient.is_unset(request.sort_by):
             query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.verbose):
+            query['Verbose'] = request.verbose
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -5339,6 +7217,8 @@ class Client(OpenApiClient):
             query['ResourceGroupIds'] = request.resource_group_ids
         if not UtilClient.is_unset(request.sort_by):
             query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.verbose):
+            query['Verbose'] = request.verbose
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -5549,6 +7429,10 @@ class Client(OpenApiClient):
     ) -> pai_studio_20220112_models.ListQuotasResponse:
         UtilClient.validate_model(request)
         query = {}
+        if not UtilClient.is_unset(request.labels):
+            query['Labels'] = request.labels
+        if not UtilClient.is_unset(request.layout_mode):
+            query['LayoutMode'] = request.layout_mode
         if not UtilClient.is_unset(request.order):
             query['Order'] = request.order
         if not UtilClient.is_unset(request.page_number):
@@ -5597,6 +7481,10 @@ class Client(OpenApiClient):
     ) -> pai_studio_20220112_models.ListQuotasResponse:
         UtilClient.validate_model(request)
         query = {}
+        if not UtilClient.is_unset(request.labels):
+            query['Labels'] = request.labels
+        if not UtilClient.is_unset(request.layout_mode):
+            query['LayoutMode'] = request.layout_mode
         if not UtilClient.is_unset(request.order):
             query['Order'] = request.order
         if not UtilClient.is_unset(request.page_number):
@@ -5880,6 +7768,186 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_resource_groups_with_options_async(request, headers, runtime)
+
+    def list_spots_stock_preview_with_options(
+        self,
+        request: pai_studio_20220112_models.ListSpotsStockPreviewRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListSpotsStockPreviewResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.instance_types):
+            query['InstanceTypes'] = request.instance_types
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListSpotsStockPreview',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/spots/stockpreview',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListSpotsStockPreviewResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_spots_stock_preview_with_options_async(
+        self,
+        request: pai_studio_20220112_models.ListSpotsStockPreviewRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListSpotsStockPreviewResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.instance_types):
+            query['InstanceTypes'] = request.instance_types
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListSpotsStockPreview',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/spots/stockpreview',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListSpotsStockPreviewResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_spots_stock_preview(
+        self,
+        request: pai_studio_20220112_models.ListSpotsStockPreviewRequest,
+    ) -> pai_studio_20220112_models.ListSpotsStockPreviewResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_spots_stock_preview_with_options(request, headers, runtime)
+
+    async def list_spots_stock_preview_async(
+        self,
+        request: pai_studio_20220112_models.ListSpotsStockPreviewRequest,
+    ) -> pai_studio_20220112_models.ListSpotsStockPreviewResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_spots_stock_preview_with_options_async(request, headers, runtime)
+
+    def list_tag_resources_with_options(
+        self,
+        tmp_req: pai_studio_20220112_models.ListTagResourcesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListTagResourcesResponse:
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.ListTagResourcesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.resource_id):
+            request.resource_id_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.resource_id, 'ResourceId', 'json')
+        if not UtilClient.is_unset(tmp_req.tag):
+            request.tag_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag, 'Tag', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.next_token):
+            query['NextToken'] = request.next_token
+        if not UtilClient.is_unset(request.region_id):
+            query['RegionId'] = request.region_id
+        if not UtilClient.is_unset(request.resource_id_shrink):
+            query['ResourceId'] = request.resource_id_shrink
+        if not UtilClient.is_unset(request.resource_type):
+            query['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag_shrink):
+            query['Tag'] = request.tag_shrink
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTagResources',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/tags',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListTagResourcesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_tag_resources_with_options_async(
+        self,
+        tmp_req: pai_studio_20220112_models.ListTagResourcesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListTagResourcesResponse:
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.ListTagResourcesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.resource_id):
+            request.resource_id_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.resource_id, 'ResourceId', 'json')
+        if not UtilClient.is_unset(tmp_req.tag):
+            request.tag_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag, 'Tag', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.next_token):
+            query['NextToken'] = request.next_token
+        if not UtilClient.is_unset(request.region_id):
+            query['RegionId'] = request.region_id
+        if not UtilClient.is_unset(request.resource_id_shrink):
+            query['ResourceId'] = request.resource_id_shrink
+        if not UtilClient.is_unset(request.resource_type):
+            query['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag_shrink):
+            query['Tag'] = request.tag_shrink
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTagResources',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/tags',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListTagResourcesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_tag_resources(
+        self,
+        request: pai_studio_20220112_models.ListTagResourcesRequest,
+    ) -> pai_studio_20220112_models.ListTagResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_tag_resources_with_options(request, headers, runtime)
+
+    async def list_tag_resources_async(
+        self,
+        request: pai_studio_20220112_models.ListTagResourcesRequest,
+    ) -> pai_studio_20220112_models.ListTagResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_tag_resources_with_options_async(request, headers, runtime)
 
     def list_training_job_events_with_options(
         self,
@@ -6188,6 +8256,8 @@ class Client(OpenApiClient):
         query = {}
         if not UtilClient.is_unset(request.end_time):
             query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
@@ -6229,6 +8299,8 @@ class Client(OpenApiClient):
         query = {}
         if not UtilClient.is_unset(request.end_time):
             query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
         if not UtilClient.is_unset(request.page_number):
             query['PageNumber'] = request.page_number
         if not UtilClient.is_unset(request.page_size):
@@ -6381,6 +8453,86 @@ class Client(OpenApiClient):
         headers = {}
         return await self.list_training_job_metrics_with_options_async(training_job_id, request, headers, runtime)
 
+    def list_training_job_output_models_with_options(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobOutputModelsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListTrainingJobOutputModelsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.token):
+            query['Token'] = request.token
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTrainingJobOutputModels',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/outputmodels',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListTrainingJobOutputModelsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_training_job_output_models_with_options_async(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobOutputModelsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.ListTrainingJobOutputModelsResponse:
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.token):
+            query['Token'] = request.token
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTrainingJobOutputModels',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/outputmodels',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.ListTrainingJobOutputModelsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_training_job_output_models(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobOutputModelsRequest,
+    ) -> pai_studio_20220112_models.ListTrainingJobOutputModelsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_training_job_output_models_with_options(training_job_id, request, headers, runtime)
+
+    async def list_training_job_output_models_async(
+        self,
+        training_job_id: str,
+        request: pai_studio_20220112_models.ListTrainingJobOutputModelsRequest,
+    ) -> pai_studio_20220112_models.ListTrainingJobOutputModelsResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_training_job_output_models_with_options_async(training_job_id, request, headers, runtime)
+
     def list_training_jobs_with_options(
         self,
         tmp_req: pai_studio_20220112_models.ListTrainingJobsRequest,
@@ -6516,6 +8668,90 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_training_jobs_with_options_async(request, headers, runtime)
+
+    def operate_node_with_options(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.OperateNodeRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.OperateNodeResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.operation):
+            body['Operation'] = request.operation
+        if not UtilClient.is_unset(request.resource_group_id):
+            body['ResourceGroupId'] = request.resource_group_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='OperateNode',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/nodes/{OpenApiUtilClient.get_encode_param(node_id)}',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.OperateNodeResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def operate_node_with_options_async(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.OperateNodeRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.OperateNodeResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.operation):
+            body['Operation'] = request.operation
+        if not UtilClient.is_unset(request.resource_group_id):
+            body['ResourceGroupId'] = request.resource_group_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='OperateNode',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/nodes/{OpenApiUtilClient.get_encode_param(node_id)}',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.OperateNodeResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def operate_node(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.OperateNodeRequest,
+    ) -> pai_studio_20220112_models.OperateNodeResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.operate_node_with_options(node_id, request, headers, runtime)
+
+    async def operate_node_async(
+        self,
+        node_id: str,
+        request: pai_studio_20220112_models.OperateNodeRequest,
+    ) -> pai_studio_20220112_models.OperateNodeResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.operate_node_with_options_async(node_id, request, headers, runtime)
 
     def release_algorithm_with_options(
         self,
@@ -6777,72 +9013,6 @@ class Client(OpenApiClient):
         headers = {}
         return await self.scale_quota_with_options_async(quota_id, request, headers, runtime)
 
-    def stop_arrears_training_job_with_options(
-        self,
-        training_job_id: str,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
-        req = open_api_models.OpenApiRequest(
-            headers=headers
-        )
-        params = open_api_models.Params(
-            action='StopArrearsTrainingJob',
-            version='2022-01-12',
-            protocol='HTTPS',
-            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/arrearage/stop',
-            method='PUT',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            pai_studio_20220112_models.StopArrearsTrainingJobResponse(),
-            self.call_api(params, req, runtime)
-        )
-
-    async def stop_arrears_training_job_with_options_async(
-        self,
-        training_job_id: str,
-        headers: Dict[str, str],
-        runtime: util_models.RuntimeOptions,
-    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
-        req = open_api_models.OpenApiRequest(
-            headers=headers
-        )
-        params = open_api_models.Params(
-            action='StopArrearsTrainingJob',
-            version='2022-01-12',
-            protocol='HTTPS',
-            pathname=f'/api/v1/trainingjobs/{OpenApiUtilClient.get_encode_param(training_job_id)}/arrearage/stop',
-            method='PUT',
-            auth_type='AK',
-            style='ROA',
-            req_body_type='json',
-            body_type='json'
-        )
-        return TeaCore.from_map(
-            pai_studio_20220112_models.StopArrearsTrainingJobResponse(),
-            await self.call_api_async(params, req, runtime)
-        )
-
-    def stop_arrears_training_job(
-        self,
-        training_job_id: str,
-    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return self.stop_arrears_training_job_with_options(training_job_id, headers, runtime)
-
-    async def stop_arrears_training_job_async(
-        self,
-        training_job_id: str,
-    ) -> pai_studio_20220112_models.StopArrearsTrainingJobResponse:
-        runtime = util_models.RuntimeOptions()
-        headers = {}
-        return await self.stop_arrears_training_job_with_options_async(training_job_id, headers, runtime)
-
     def stop_training_job_with_options(
         self,
         training_job_id: str,
@@ -6908,6 +9078,198 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.stop_training_job_with_options_async(training_job_id, headers, runtime)
+
+    def tag_resources_with_options(
+        self,
+        request: pai_studio_20220112_models.TagResourcesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.TagResourcesResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.region_id):
+            body['RegionId'] = request.region_id
+        if not UtilClient.is_unset(request.resource_id):
+            body['ResourceId'] = request.resource_id
+        if not UtilClient.is_unset(request.resource_type):
+            body['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag):
+            body['Tag'] = request.tag
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='TagResources',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/tags',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.TagResourcesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def tag_resources_with_options_async(
+        self,
+        request: pai_studio_20220112_models.TagResourcesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.TagResourcesResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.region_id):
+            body['RegionId'] = request.region_id
+        if not UtilClient.is_unset(request.resource_id):
+            body['ResourceId'] = request.resource_id
+        if not UtilClient.is_unset(request.resource_type):
+            body['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag):
+            body['Tag'] = request.tag
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='TagResources',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/tags',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.TagResourcesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def tag_resources(
+        self,
+        request: pai_studio_20220112_models.TagResourcesRequest,
+    ) -> pai_studio_20220112_models.TagResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.tag_resources_with_options(request, headers, runtime)
+
+    async def tag_resources_async(
+        self,
+        request: pai_studio_20220112_models.TagResourcesRequest,
+    ) -> pai_studio_20220112_models.TagResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.tag_resources_with_options_async(request, headers, runtime)
+
+    def untag_resources_with_options(
+        self,
+        tmp_req: pai_studio_20220112_models.UntagResourcesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.UntagResourcesResponse:
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.UntagResourcesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.resource_id):
+            request.resource_id_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.resource_id, 'ResourceId', 'json')
+        if not UtilClient.is_unset(tmp_req.tag_key):
+            request.tag_key_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag_key, 'TagKey', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.all):
+            query['All'] = request.all
+        if not UtilClient.is_unset(request.region_id):
+            query['RegionId'] = request.region_id
+        if not UtilClient.is_unset(request.resource_id_shrink):
+            query['ResourceId'] = request.resource_id_shrink
+        if not UtilClient.is_unset(request.resource_type):
+            query['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag_key_shrink):
+            query['TagKey'] = request.tag_key_shrink
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='UntagResources',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/tags',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.UntagResourcesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def untag_resources_with_options_async(
+        self,
+        tmp_req: pai_studio_20220112_models.UntagResourcesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.UntagResourcesResponse:
+        UtilClient.validate_model(tmp_req)
+        request = pai_studio_20220112_models.UntagResourcesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.resource_id):
+            request.resource_id_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.resource_id, 'ResourceId', 'json')
+        if not UtilClient.is_unset(tmp_req.tag_key):
+            request.tag_key_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.tag_key, 'TagKey', 'json')
+        query = {}
+        if not UtilClient.is_unset(request.all):
+            query['All'] = request.all
+        if not UtilClient.is_unset(request.region_id):
+            query['RegionId'] = request.region_id
+        if not UtilClient.is_unset(request.resource_id_shrink):
+            query['ResourceId'] = request.resource_id_shrink
+        if not UtilClient.is_unset(request.resource_type):
+            query['ResourceType'] = request.resource_type
+        if not UtilClient.is_unset(request.tag_key_shrink):
+            query['TagKey'] = request.tag_key_shrink
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='UntagResources',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/tags',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.UntagResourcesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def untag_resources(
+        self,
+        request: pai_studio_20220112_models.UntagResourcesRequest,
+    ) -> pai_studio_20220112_models.UntagResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.untag_resources_with_options(request, headers, runtime)
+
+    async def untag_resources_async(
+        self,
+        request: pai_studio_20220112_models.UntagResourcesRequest,
+    ) -> pai_studio_20220112_models.UntagResourcesResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.untag_resources_with_options_async(request, headers, runtime)
 
     def update_algorithm_with_options(
         self,
@@ -7327,6 +9689,102 @@ class Client(OpenApiClient):
         headers = {}
         return await self.update_component_version_snapshot_with_options_async(snapshot_id, headers, runtime)
 
+    def update_llmproject_with_options(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.UpdateLLMProjectRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.UpdateLLMProjectResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.project_description):
+            body['ProjectDescription'] = request.project_description
+        if not UtilClient.is_unset(request.project_name):
+            body['ProjectName'] = request.project_name
+        if not UtilClient.is_unset(request.root_path):
+            body['RootPath'] = request.root_path
+        if not UtilClient.is_unset(request.runtime):
+            body['Runtime'] = request.runtime
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.UpdateLLMProjectResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_llmproject_with_options_async(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.UpdateLLMProjectRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.UpdateLLMProjectResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.project_description):
+            body['ProjectDescription'] = request.project_description
+        if not UtilClient.is_unset(request.project_name):
+            body['ProjectName'] = request.project_name
+        if not UtilClient.is_unset(request.root_path):
+            body['RootPath'] = request.root_path
+        if not UtilClient.is_unset(request.runtime):
+            body['Runtime'] = request.runtime
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateLLMProject',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/langstudio/projects/{OpenApiUtilClient.get_encode_param(project_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.UpdateLLMProjectResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_llmproject(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.UpdateLLMProjectRequest,
+    ) -> pai_studio_20220112_models.UpdateLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_llmproject_with_options(project_id, request, headers, runtime)
+
+    async def update_llmproject_async(
+        self,
+        project_id: str,
+        request: pai_studio_20220112_models.UpdateLLMProjectRequest,
+    ) -> pai_studio_20220112_models.UpdateLLMProjectResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_llmproject_with_options_async(project_id, request, headers, runtime)
+
     def update_quota_with_options(
         self,
         quota_id: str,
@@ -7340,6 +9798,8 @@ class Client(OpenApiClient):
             body['Description'] = request.description
         if not UtilClient.is_unset(request.labels):
             body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.queue_strategy):
+            body['QueueStrategy'] = request.queue_strategy
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
@@ -7373,6 +9833,8 @@ class Client(OpenApiClient):
             body['Description'] = request.description
         if not UtilClient.is_unset(request.labels):
             body['Labels'] = request.labels
+        if not UtilClient.is_unset(request.queue_strategy):
+            body['QueueStrategy'] = request.queue_strategy
         req = open_api_models.OpenApiRequest(
             headers=headers,
             body=OpenApiUtilClient.parse_to_map(body)
@@ -7500,6 +9962,10 @@ class Client(OpenApiClient):
     ) -> pai_studio_20220112_models.UpdateResourceGroupResponse:
         UtilClient.validate_model(request)
         body = {}
+        if not UtilClient.is_unset(request.description):
+            body['Description'] = request.description
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
         if not UtilClient.is_unset(request.unbind):
             body['Unbind'] = request.unbind
         if not UtilClient.is_unset(request.user_vpc):
@@ -7533,6 +9999,10 @@ class Client(OpenApiClient):
     ) -> pai_studio_20220112_models.UpdateResourceGroupResponse:
         UtilClient.validate_model(request)
         body = {}
+        if not UtilClient.is_unset(request.description):
+            body['Description'] = request.description
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
         if not UtilClient.is_unset(request.unbind):
             body['Unbind'] = request.unbind
         if not UtilClient.is_unset(request.user_vpc):
@@ -7574,6 +10044,90 @@ class Client(OpenApiClient):
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_resource_group_with_options_async(resource_group_id, request, headers, runtime)
+
+    def update_resource_group_machine_group_with_options(
+        self,
+        resource_group_id: str,
+        machine_group_id: str,
+        request: pai_studio_20220112_models.UpdateResourceGroupMachineGroupRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.UpdateResourceGroupMachineGroupResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateResourceGroupMachineGroup',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/machinegroups/{OpenApiUtilClient.get_encode_param(machine_group_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.UpdateResourceGroupMachineGroupResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_resource_group_machine_group_with_options_async(
+        self,
+        resource_group_id: str,
+        machine_group_id: str,
+        request: pai_studio_20220112_models.UpdateResourceGroupMachineGroupRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_studio_20220112_models.UpdateResourceGroupMachineGroupResponse:
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateResourceGroupMachineGroup',
+            version='2022-01-12',
+            protocol='HTTPS',
+            pathname=f'/api/v1/resources/{OpenApiUtilClient.get_encode_param(resource_group_id)}/machinegroups/{OpenApiUtilClient.get_encode_param(machine_group_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_studio_20220112_models.UpdateResourceGroupMachineGroupResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_resource_group_machine_group(
+        self,
+        resource_group_id: str,
+        machine_group_id: str,
+        request: pai_studio_20220112_models.UpdateResourceGroupMachineGroupRequest,
+    ) -> pai_studio_20220112_models.UpdateResourceGroupMachineGroupResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_resource_group_machine_group_with_options(resource_group_id, machine_group_id, request, headers, runtime)
+
+    async def update_resource_group_machine_group_async(
+        self,
+        resource_group_id: str,
+        machine_group_id: str,
+        request: pai_studio_20220112_models.UpdateResourceGroupMachineGroupRequest,
+    ) -> pai_studio_20220112_models.UpdateResourceGroupMachineGroupResponse:
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_resource_group_machine_group_with_options_async(resource_group_id, machine_group_id, request, headers, runtime)
 
     def update_training_job_labels_with_options(
         self,
