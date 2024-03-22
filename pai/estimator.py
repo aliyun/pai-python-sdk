@@ -200,6 +200,8 @@ class EstimatorBase(metaclass=ABCMeta):
         max_run_time: Optional[int] = None,
         output_path: Optional[str] = None,
         checkpoints_path: Optional[str] = None,
+        environments: Optional[Dict[str, str]] = None,
+        requirements: Optional[List[str]] = None,
         instance_type: Optional[str] = None,
         instance_spec: Optional[Dict] = None,
         resource_id: Optional[Dict] = None,
@@ -256,6 +258,14 @@ class EstimatorBase(metaclass=ABCMeta):
             checkpoints_path (str, optional): An OSS URI that stores the checkpoint of the
                 training job. If provided, the OSS URI will be mounted to the directory
                 `/ml/output/checkpoints/`.
+            environments: A dictionary that maps environment variable names to their values.
+                This optional field allows you to provide a set of environment variables that will be
+                applied to the context where the code is executed.
+            requirements (list, optional): An optional list of strings that specifies the Python
+                package dependencies with their versions. Each string in the list should be in the format
+                'package' or 'package==version'. This is similar to the contents of a requirements.txt file used
+                in Python projects. If requirements.txt is provided in user code directory, requirements
+                will override the conflict dependencies directly.
             instance_type (str, optional): The machine instance type used to run the
                 training job. To view the supported machine instance types, please refer
                 to the document:
@@ -274,6 +284,8 @@ class EstimatorBase(metaclass=ABCMeta):
 
         """
         self.hyperparameters = hyperparameters or dict()
+        self.environments = environments
+        self.requirements = requirements
         self.instance_type = instance_type
         self.instance_spec = instance_spec
         self.resource_id = resource_id
@@ -609,6 +621,8 @@ class Estimator(EstimatorBase):
         git_config: Optional[Dict[str, str]] = None,
         job_type: str = JobType.PyTorchJob,
         hyperparameters: Optional[Dict[str, Any]] = None,
+        environments: Optional[Dict[str, str]] = None,
+        requirements: Optional[List[str]] = None,
         base_job_name: Optional[str] = None,
         max_run_time: Optional[int] = None,
         checkpoints_path: Optional[str] = None,
@@ -674,6 +688,14 @@ class Estimator(EstimatorBase):
                 hyperparameters used in the training job. The hyperparameters will be
                 stored in the `/ml/input/config/hyperparameters.json` as a JSON
                 dictionary in the training container.
+            environments: A dictionary that maps environment variable names to their values.
+                This optional field allows you to provide a set of environment variables that will be
+                applied to the context where the code is executed.
+            requirements (list, optional): An optional list of strings that specifies the Python
+                package dependencies with their versions. Each string in the list should be in the format
+                'package' or 'package==version'. This is similar to the contents of a requirements.txt file used
+                in Python projects. If requirements.txt is provided in user code directory, requirements
+                will override the conflict dependencies directly.
             instance_type (str): The machine instance type used to run the training job.
                 To view the supported machine instance types, please refer to the
                 document:
@@ -764,6 +786,8 @@ class Estimator(EstimatorBase):
 
         super(Estimator, self).__init__(
             hyperparameters=hyperparameters,
+            environments=environments,
+            requirements=requirements,
             base_job_name=base_job_name,
             max_run_time=max_run_time,
             output_path=output_path,
@@ -952,6 +976,8 @@ class Estimator(EstimatorBase):
             resource_id=self.resource_id,
             job_name=job_name,
             hyperparameters=self.hyperparameters,
+            environments=self.environments,
+            requirements=self.requirements,
             max_running_in_seconds=self.max_run_time,
             input_channels=input_configs,
             output_channels=output_configs,
@@ -1026,6 +1052,8 @@ class AlgorithmEstimator(EstimatorBase):
         algorithm_provider: Optional[str] = None,
         algorithm_spec: Optional[Dict[str, Any]] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
+        environments: Optional[Dict[str, str]] = None,
+        requirements: Optional[List[str]] = None,
         base_job_name: Optional[str] = None,
         max_run_time: Optional[int] = None,
         output_path: Optional[str] = None,
@@ -1054,6 +1082,14 @@ class AlgorithmEstimator(EstimatorBase):
             hyperparameters (dict, optional): A dictionary that represents the
                 hyperparameters used in the training job. Default hyperparameters will
                 be retrieved from the algorithm definition.
+            environments: A dictionary that maps environment variable names to their values.
+                This optional field allows you to provide a set of environment variables that will be
+                applied to the context where the code is executed.
+            requirements (list, optional): An optional list of strings that specifies the Python
+                package dependencies with their versions. Each string in the list should be in the format
+                'package' or 'package==version'. This is similar to the contents of a requirements.txt file used
+                in Python projects. If requirements.txt is provided in user code directory, requirements
+                will override the conflict dependencies directly.
             base_job_name (str, optional): The base name used to generate the training
                 job name. If not provided, a default job name will be generated.
             max_run_time (int, optional): The maximum time in seconds that the training
@@ -1114,6 +1150,8 @@ class AlgorithmEstimator(EstimatorBase):
             instance_type = self._get_default_training_instance_type()
         super(AlgorithmEstimator, self).__init__(
             hyperparameters=self._get_hyperparameters(hyperparameters),
+            environments=environments,
+            requirements=requirements,
             base_job_name=base_job_name,
             max_run_time=max_run_time,
             output_path=output_path,
@@ -1352,6 +1390,8 @@ class AlgorithmEstimator(EstimatorBase):
             max_running_in_seconds=self.max_run_time,
             input_channels=input_configs,
             output_channels=output_configs,
+            environments=self.environments,
+            requirements=self.requirements,
             algorithm_name=self.algorithm_name,
             algorithm_version=self.algorithm_version,
             algorithm_provider=self.algorithm_provider,

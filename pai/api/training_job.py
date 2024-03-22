@@ -36,7 +36,6 @@ from ..libs.alibabacloud_paistudio20220112.models import (
 
 
 class TrainingJobAPI(WorkspaceScopedResourceAPI):
-
     BACKEND_SERVICE_NAME = ServiceName.PAI_STUDIO
 
     _list_method = "list_training_jobs_with_options"
@@ -91,6 +90,8 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         hyperparameters: Optional[Dict[str, Any]] = None,
         input_channels: Optional[List[Dict[str, Any]]] = None,
         output_channels: Optional[List[Dict[str, Any]]] = None,
+        environments: Dict[str, str] = None,
+        requirements: List[str] = None,
         labels: Optional[Dict[str, str]] = None,
         max_running_in_seconds: Optional[int] = None,
         description: Optional[str] = None,
@@ -165,6 +166,8 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             compute_resource=compute_resource,
             hyper_parameters=hyper_parameters,
             input_channels=input_channels,
+            environments=environments,
+            python_requirements=requirements,
             labels=labels,
             output_channels=output_channels,
             scheduler=scheduler,
