@@ -27,6 +27,7 @@ PAI Python SDK 文档
     user-guide/train
     user-guide/inference
     user-guide/pretrained-model
+    user-guide/processing-job
 
 
 .. toctree::

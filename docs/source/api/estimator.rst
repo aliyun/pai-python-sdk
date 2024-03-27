@@ -9,7 +9,7 @@ Estimator
    :members:
    :show-inheritance:
 
-.. autoclass:: pai.estimator.UserVpcConfig
+.. autoclass:: pai.common.configs.UserVpcConfig
    :members:
    :show-inheritance:
 
