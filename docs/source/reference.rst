@@ -5,6 +5,7 @@ API 文档
     :maxdepth: 1
 
     api/estimator
+    api/processor
     api/model
     api/image
     api/predictor
