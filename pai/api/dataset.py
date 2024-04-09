@@ -46,6 +46,8 @@ class DatasetAPI(WorkspaceScopedResourceAPI):
         name: str = None,
         page_size: int = 20,
         page_number: int = 1,
+        order: str = "DESC",
+        **kwargs,
     ) -> PaginatedResult:
         """Returns Dataset in paging.
 
@@ -54,6 +56,7 @@ class DatasetAPI(WorkspaceScopedResourceAPI):
             name: Name of the Dataset.
             page_number: Page number.
             page_size: Page size.
+            order: Return list order.
 
         Returns:
             int: A list of datasets match the conditions.
@@ -64,6 +67,8 @@ class DatasetAPI(WorkspaceScopedResourceAPI):
             name=name,
             page_size=page_size,
             page_number=page_number,
+            order=order,
+            **kwargs,
         )
 
         resp: ListDatasetsResponseBody = self._do_request(

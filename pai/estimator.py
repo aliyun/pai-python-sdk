@@ -44,6 +44,7 @@ from .common.utils import (
     is_odps_table_uri,
     make_list_resource_iterator,
     random_str,
+    retry,
     to_plain_text,
 )
 from .exception import UnexpectedStatusException
@@ -1778,9 +1779,8 @@ class _TrainingJob(EntityBaseMixin):
         else:
             job_log_printer = None
         try:
-            while self.status not in TrainingJobStatus.completed_status():
+            while not self.is_completed():
                 time.sleep(interval)
-                self.session.training_job_api.refresh_entity(self.training_job_id, self)
         finally:
             if job_log_printer:
                 job_log_printer.stop(wait=True)
@@ -1822,6 +1822,15 @@ class _TrainingJob(EntityBaseMixin):
         """Return True if the training job is succeeded"""
         self._reload()
         return self.status == TrainingJobStatus.Succeed
+
+    @retry(wait_secs=10)
+    def is_completed(self):
+        """Return True if the training job is completed, including failed status"""
+        if self.status in TrainingJobStatus.completed_status():
+            return True
+        self._reload()
+
+        return self.status in TrainingJobStatus.completed_status()
 
 
 class _TrainingJobLogPrinter(object):

@@ -14,6 +14,7 @@
 import logging
 import os
 import posixpath
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
@@ -21,6 +22,7 @@ from .common.configs import UserVpcConfig
 from .common.consts import DefaultChannelName, JobType, StoragePathCategory
 from .common.oss_utils import OssUriObj, is_oss_uri, upload
 from .common.utils import (
+    experimental,
     is_dataset_id,
     is_filesystem_uri,
     is_odps_table_uri,
@@ -131,6 +133,7 @@ def get_output_channel_config(
     return config
 
 
+@experimental
 class Processor(object):
     def __init__(
         self,
@@ -309,6 +312,7 @@ class Processor(object):
 
         job = self._fit(inputs=inputs, outputs=outputs, job_name=job_name)
         self._latest_job = job
+        self._jobs.append(job)
 
         if wait:
             self.wait(show_logs=show_logs)
@@ -363,28 +367,69 @@ class Processor(object):
             input_channels=input_configs,
             output_channels=output_configs,
             algorithm_spec=algo_spec,
-            user_vpc_config=self.user_vpc_config.to_dict()
-            if self.user_vpc_config
-            else None,
+            user_vpc_config=self.ut() if self.user_vpc_config else None,
         )
         job = _Job.get(job_id)
-        print(f"View the job detail by accessing the console URI: {job.console_uri}")
+        print(f"View the job {job_id} by accessing the console URI: {job.console_uri}")
         return job
 
-    def wait(self, show_logs: bool = True):
-        """Block until the latest job is completed.
+    def wait(self, interval: int = 2, show_logs: bool = True, all_jobs: bool = False):
+        """Block until the jobs is completed.
 
         Args:
+            interval(int): Interval to reload job status
             show_logs(bool): Specifies whether to fetch and print the logs produced by
                 the job.
+            all_jobs(bool): Wait latest job or wait all jobs in processor, show_logs disabled while
+                wait all jobs.
 
         Raises:
             RuntimeError: If no job is submitted.
 
         """
-        if not self._latest_job:
-            raise RuntimeError("Could not find a submitted job.")
-        self._latest_job.wait(show_logs=show_logs)
+        if all_jobs:
+            if not self._jobs:
+                raise RuntimeError("Could not find any submitted job.")
+
+            remains = set(self._jobs)
+            while remains:
+                for job in self._jobs:
+                    if job in remains and job.is_completed():
+                        remains.remove(job)
+
+                time.sleep(interval)
+
+            self._generate_jobs_report()
+        else:
+            if not self._latest_job:
+                raise RuntimeError("Could not find a submitted job.")
+
+            self._latest_job.wait(interval=interval, show_logs=show_logs)
+
+    def _generate_jobs_report(self):
+        """Generate current jobs report and output to stdout"""
+        print(f"Jobs status report, total jobs count: {len(self._jobs)}")
+
+        rows = []
+        headers = ["JobName", "JobID", "Status"]
+        for job in self._jobs:
+            rows.append([job.training_job_name, job.id, job.status])
+
+        column_widths = [
+            max(len(str(value)) for value in column) for column in zip(headers, *rows)
+        ]
+        header_row = " | ".join(
+            f"{header:<{column_widths[i]}}" for i, header in enumerate(headers)
+        )
+
+        print(header_row)
+        print("-" * len(header_row))
+        for row in rows:
+            print(
+                " | ".join(
+                    f"{str(value):<{column_widths[i]}}" for i, value in enumerate(row)
+                )
+            )
 
     def _get_job_base_output_path(self, job_name: str) -> str:
         """Generate the base output path for the job."""
