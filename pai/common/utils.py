@@ -14,13 +14,16 @@
 
 from __future__ import absolute_import
 
+import functools
 import random
 import re
 import socket
 import string
 import sys
+import time
+import warnings
 from functools import lru_cache
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from semantic_version import Version
 
@@ -252,3 +255,64 @@ def is_domain_connectable(domain: str, port: int = 80, timeout: int = 1) -> bool
     finally:
         # Close the socket
         sock.close()
+
+
+def experimental(callable_entity):
+    """Decorator to mark functions or classes as experimental"""
+
+    @functools.wraps(callable_entity)
+    def wrapper(*args, **kwargs):
+        message = f"{callable_entity.__name__} is experimental and may change or be removed in future releases."
+        warnings.warn(message, category=FutureWarning, stacklevel=2)
+        return callable_entity(*args, **kwargs)
+
+    return wrapper
+
+
+def retry(max_attempts=3, wait_secs=1, exceptions=(Exception,), report_retries=True):
+    """Decorator to make functions retry by config"""
+
+    def decorator_retry(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except exceptions as e:
+                    attempts += 1
+                    if attempts == max_attempts:
+                        raise  # Re-raise the last exception when all the attempts have failed
+                    if report_retries:
+                        warnings.warn(f"Retry {attempts}/{max_attempts} failed: {e}")
+                    time.sleep(wait_secs)
+
+        return wrapper
+
+    return decorator_retry
+
+
+def print_table(headers: List[str], rows: List[List[str]]):
+    """Give headers and rows, print as table to stdout."""
+
+    length = len(headers)
+    for row in rows:
+        if len(row) != length:
+            raise ValueError("Unable to print table, headers length mismatch with rows")
+
+    column_widths = [
+        max(len(str(value)) for value in column) for column in zip(headers, *rows)
+    ]
+    header_row = " | ".join(
+        f"{header:<{column_widths[i]}}" for i, header in enumerate(headers)
+    )
+
+    print(header_row)
+    print("-" * len(header_row))
+    for row in rows:
+        print(
+            " | ".join(
+                f"{str(value):<{column_widths[i]}}" for i, value in enumerate(row)
+            )
+        )
