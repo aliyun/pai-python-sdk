@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import functools
+import importlib.util
 import random
 import re
 import socket
@@ -316,3 +317,8 @@ def print_table(headers: List[str], rows: List[List[str]]):
                 f"{str(value):<{column_widths[i]}}" for i, value in enumerate(row)
             )
         )
+
+
+def is_package_available(package_name: str) -> bool:
+    """Check if the package is available in the current environment."""
+    return True if importlib.util.find_spec(package_name) is not None else False
