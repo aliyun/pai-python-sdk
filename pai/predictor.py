@@ -30,7 +30,7 @@ import requests
 
 from .common.consts import FrameworkTypes
 from .common.docker_utils import ContainerRun
-from .common.utils import http_user_agent
+from .common.utils import http_user_agent, is_package_available
 from .exception import PredictionException
 from .serializers import (
     JsonSerializer,
@@ -39,6 +39,10 @@ from .serializers import (
     TensorFlowSerializer,
 )
 from .session import Session, get_default_session
+
+if is_package_available("openai"):
+    from openai import OpenAI
+
 
 logger = logging.getLogger(__name__)
 
@@ -332,19 +336,25 @@ class _ServicePredictorMixin(object):
             interval (int): Interval between each attempt.
         """
 
-        def _is_gateway_not_ready(resp: requests.Response):
-            return resp.status_code == 503 and resp.content == b"no healthy upstream"
+        def _is_gateway_ready():
+            resp = self._send_request(method="HEAD")
+            return not (
+                # following status code and content indicate the gateway is not ready
+                resp.status_code == 503
+                and b"no healthy upstream" in resp.content
+            )
 
+        ready_count_threshold = 3
+        ready_count = 0
         err_count_threshold = 3
         err_count = 0
         while attempts > 0:
             attempts -= 1
             try:
-                # Send a probe request to the service.
-                resp = self._send_request(method="GET")
-                if not _is_gateway_not_ready(resp):
-                    logger.info("Gateway for the service is ready.")
-                    break
+                if _is_gateway_ready():
+                    ready_count += 1
+                    if ready_count >= ready_count_threshold:
+                        break
             except requests.exceptions.RequestException as e:
                 err_count += 1
                 if err_count >= err_count_threshold:
@@ -702,6 +712,28 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
             headers=dict(resp.headers),
         )
         return resp
+
+    def openai(self, **kwargs) -> "OpenAI":
+        """Initialize an OpenAI client from the predictor.
+
+        Only used for OpenAI API compatible services, such as Large Language Model
+        service from PAI QuickStart.
+
+        Args:
+            **kwargs: Additional keyword arguments for the OpenAI client.
+
+        Returns:
+            OpenAI: An OpenAI client object.
+        """
+
+        if not is_package_available("openai"):
+            raise ImportError(
+                "openai package is not installed, install it with `pip install openai`."
+            )
+        base_url = kwargs.pop("base_url", self.endpoint + "/v1/")
+        api_key = kwargs.pop("api_key", self.access_token)
+
+        return OpenAI(base_url=base_url, api_key=api_key, **kwargs)
 
 
 class WaitConfig(object):

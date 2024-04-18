@@ -509,6 +509,51 @@ class EstimatorBase(metaclass=ABCMeta):
             channel_name=DEFAULT_TENSORBOARD_CHANNEL_NAME,
         )
 
+    def tensorboard(self, wait=True):
+        """Launch a TensorBoard Application to view the output TensorBoard logs.
+
+        Args:
+            wait (bool): Specifies whether to block until the TensorBoard is running.
+
+        Returns:
+            :class:`pai.tensorboard.TensorBoard`: A TensorBoard instance.
+        """
+        from pai.tensorboard import TensorBoard
+
+        if not self.latest_training_job:
+            raise RuntimeError("Could not find a submitted training job.")
+
+        source_type = "TrainingJob"
+        if isinstance(self.latest_training_job, _LocalTrainingJob):
+            raise RuntimeError("Local training job does not support tensorboard.")
+        res = self.session.tensorboard_api.list(
+            source_type=source_type,
+            source_id=self.latest_training_job.training_job_id,
+        )
+
+        if res.items:
+            if len(res.items) > 1:
+                logger.warning(
+                    "Found multiple TensorBoard instances for the submitted training "
+                    "job, use the first one."
+                )
+            tb_id = res.items[0]["TensorboardId"]
+            tb = TensorBoard(tensorboard_id=tb_id, session=self.session)
+            tb.start(wait=wait)
+        else:
+            tb = TensorBoard.create(
+                uri=self.tensorboard_data(),
+                wait=wait,
+                display_name=self._latest_training_job.training_job_name,
+                source_id=self.latest_training_job.training_job_id,
+                source_type=source_type,
+                session=self.session,
+            )
+
+        # Open the TensorBoard in the default browser.
+        webbrowser.open(tb.app_uri)
+        return tb
+
     def create_model(self, inference_spec: Union[InferenceSpec, Dict]) -> Model:
         """Create a Model object using output model of the training job.
 
@@ -912,51 +957,6 @@ class Estimator(EstimatorBase):
 
         if wait:
             self.wait(show_logs=show_logs)
-
-    def tensorboard(self, wait=True):
-        """Launch a TensorBoard Application to view the output TensorBoard logs.
-
-        Args:
-            wait (bool): Specifies whether to block until the TensorBoard is running.
-
-        Returns:
-            :class:`pai.tensorboard.TensorBoard`: A TensorBoard instance.
-        """
-        from pai.tensorboard import TensorBoard
-
-        if not self.latest_training_job:
-            raise RuntimeError("Could not find a submitted training job.")
-
-        source_type = "TrainingJob"
-        if isinstance(self.latest_training_job, _LocalTrainingJob):
-            raise RuntimeError("Local training job does not support tensorboard.")
-        res = self.session.tensorboard_api.list(
-            source_type=source_type,
-            source_id=self.latest_training_job.training_job_id,
-        )
-
-        if res.items:
-            if len(res.items) > 1:
-                logger.warning(
-                    "Found multiple TensorBoard instances for the submitted training "
-                    "job, use the first one."
-                )
-            tb_id = res.items[0]["TensorboardId"]
-            tb = TensorBoard(tensorboard_id=tb_id, session=self.session)
-            tb.start(wait=wait)
-        else:
-            tb = TensorBoard.create(
-                uri=self.tensorboard_data(),
-                wait=wait,
-                display_name=self._latest_training_job.training_job_name,
-                source_id=self.latest_training_job.training_job_id,
-                source_type=source_type,
-                session=self.session,
-            )
-
-        # Open the TensorBoard in the default browser.
-        webbrowser.open(tb.app_uri)
-        return tb
 
     def _fit(self, job_name, inputs: Dict[str, Any] = None):
         input_configs = self._build_input_data_configs(inputs)
