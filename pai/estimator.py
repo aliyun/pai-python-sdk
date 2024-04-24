@@ -48,6 +48,7 @@ from .common.utils import (
     to_plain_text,
 )
 from .exception import UnexpectedStatusException
+from .experiment import ExperimentConfig, Experiment
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .schema.training_job_schema import TrainingJobSchema
@@ -207,6 +208,7 @@ class EstimatorBase(metaclass=ABCMeta):
         resource_id: Optional[Dict] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
+        experiment_config: Optional[ExperimentConfig] = None,
         session: Optional[Session] = None,
     ):
         """EstimatorBase constructor.
@@ -279,6 +281,11 @@ class EstimatorBase(metaclass=ABCMeta):
                 be created and attached to the training job instance, allowing the
                 instance to access the resources within the specified VPC. Default to
                 None.
+            experiment_config(:class:`pai.estimator.ExperimentConfig`, optional): The
+                experiment configuration used to construct the relationship between the
+                training job and the experiment. If provided, the training job will belong
+                to the specified experiment, in which case the training job will use
+                artifact_uri of experiment as default output path. Default to None.
             session (Session, optional): A PAI session instance used for communicating
                 with PAI service.
 
@@ -294,6 +301,7 @@ class EstimatorBase(metaclass=ABCMeta):
         self.base_job_name = base_job_name
         self.output_path = output_path
         self.user_vpc_config = user_vpc_config
+        self.experiment_config = experiment_config
         self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
         self._latest_training_job = None
@@ -421,6 +429,13 @@ class EstimatorBase(metaclass=ABCMeta):
             # if checkpoint path is provided, use it as the checkpoint channel output.
             if ch["Name"] == DEFAULT_CHECKPOINT_CHANNEL_NAME and self.checkpoints_path:
                 oss_uri = self.checkpoints_path
+            elif (
+                ch["Name"] == DEFAULT_TENSORBOARD_CHANNEL_NAME
+                and self.experiment_config
+            ):
+                continue
+            elif not self.output_path and self.experiment_config:
+                continue
             else:
                 oss_uri = as_oss_dir_uri(
                     posixpath.join(job_base_output_path, ch["Name"])
@@ -676,6 +691,7 @@ class Estimator(EstimatorBase):
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
+        experiment_config: Optional[ExperimentConfig] = None,
         resource_id: Optional[str] = None,
         session: Optional[Session] = None,
         **kwargs,
@@ -762,6 +778,11 @@ class Estimator(EstimatorBase):
                 be created and attached to the training job instance, allowing the
                 instance to access the resources within the specified VPC. Default to
                 None.
+            experiment_config(:class:`pai.estimator.ExperimentConfig`, optional): The
+                experiment configuration used to construct the relationship between the
+                training job and the experiment. If provided, the training job will belong
+                to the specified experiment, in which case the training job will use
+                artifact_uri of experiment as default output path. Default to None.
             output_path (str, optional): An OSS URI to store the outputs of the training
                 jobs. If not provided, an OSS URI will be generated using the default
                 OSS bucket in the session. When the `estimator.fit` method is called,
@@ -840,6 +861,7 @@ class Estimator(EstimatorBase):
             instance_type=instance_type,
             instance_count=instance_count,
             user_vpc_config=user_vpc_config,
+            experiment_config=experiment_config,
             session=session,
         )
 
@@ -984,6 +1006,9 @@ class Estimator(EstimatorBase):
             algorithm_spec=algo_spec,
             user_vpc_config=self.user_vpc_config.to_dict()
             if self.user_vpc_config
+            else None,
+            experiment_config=self.experiment_config.to_dict()
+            if self.experiment_config
             else None,
         )
         training_job = _TrainingJob.get(training_job_id)
@@ -1399,6 +1424,9 @@ class AlgorithmEstimator(EstimatorBase):
             user_vpc_config=self.user_vpc_config.to_dict()
             if self.user_vpc_config
             else None,
+            experiment_config=self.experiment_config.to_dict()
+            if self.experiment_config
+            else None,
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
@@ -1734,6 +1762,7 @@ class _TrainingJob(EntityBaseMixin):
         input_channels: List[Dict[str, str]] = None,
         labels: Dict[str, str] = None,
         max_running_time_in_seconds: int = None,
+        experiment_config: Dict[str, str] = None,
         description: str = None,
         session: Session = None,
         **kwargs,
@@ -1752,6 +1781,7 @@ class _TrainingJob(EntityBaseMixin):
         self.instance_type = instance_type
         self.instance_count = instance_count
         self.max_running_time_in_seconds = max_running_time_in_seconds
+        self.experiment_config = experiment_config
 
         # Load only fields
         self.create_time = kwargs.pop("create_time", None)

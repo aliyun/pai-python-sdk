@@ -14,6 +14,8 @@
 
 import os
 
+from pai.common.utils import random_str
+from pai.experiment import Experiment, ExperimentConfig
 from pai.image import retrieve
 from pai.processor import Processor
 from pai.session import get_default_session
@@ -57,3 +59,31 @@ class TestProcessor(BaseIntegTestCase):
         success_flag = os.path.join(self.processing_output_uri, "output.txt")
 
         self.assertIsNotNone(self.is_oss_object_exists(success_flag))
+
+    def test_train_with_experiment_config(self):
+        exp_name = f"sdk_estimator_test_{random_str(6)}"
+        self.experiment = Experiment.create(
+            artifact_uri="oss://{}/sdktest/test_experiment/sdk_estimator_test_experiment/".format(
+                self.default_session.oss_bucket.bucket_name
+            ),
+            name=exp_name,
+        )
+
+        image_uri = retrieve("pytorch", framework_version="1.12").image_uri
+        processor = Processor(
+            image_uri=image_uri,
+            source_dir=SCRIPT_DIR_PATH,
+            command="python main.py --output_path=/ml/output/flag",
+            instance_type="ecs.c6.large",
+            base_job_name="processing",
+            experiment_config=ExperimentConfig(self.experiment.experiment_id),
+        )
+
+        processor.run(
+            inputs={"test": self.breast_cancer_test_data_uri},
+            outputs={"flag": self.processing_output_uri},
+        )
+
+        self.assertIsNotNone(processor.latest_job)
+        self.assertIsNotNone(processor.latest_job.training_job_name)
+        self.assertIsNotNone(processor.latest_job.experiment_config)
