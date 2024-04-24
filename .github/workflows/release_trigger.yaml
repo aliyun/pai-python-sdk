@@ -1,0 +1,41 @@
+name: Release Trigger
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+    paths:
+      - 'pai/version.py'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'releases/v')
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Check version match
+        id: check_version
+        run: |
+          BRANCH_VERSION=${{ github.head_ref }}
+          BRANCH_VERSION=${BRANCH_VERSION#releases/v}
+          FILE_VERSION=$(python -c "from pai.version import VERSION; print(VERSION)")
+          if [[ "$BRANCH_VERSION" != "$FILE_VERSION" ]]; then
+            echo "Version in branch name ($BRANCH_VERSION) does not match version in file ($FILE_VERSION)"
+            exit 1
+          fi
+      - name: Get version and create tag
+        run: |
+          VERSION=$(python -c "from pai.version import VERSION; print(VERSION)")
+          git tag v$VERSION
+          git push origin v$VERSION
