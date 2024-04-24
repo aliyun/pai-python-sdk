@@ -48,7 +48,7 @@ from .common.utils import (
     to_plain_text,
 )
 from .exception import UnexpectedStatusException
-from .experiment import ExperimentConfig, Experiment
+from .experiment import Experiment, ExperimentConfig
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .schema.training_job_schema import TrainingJobSchema

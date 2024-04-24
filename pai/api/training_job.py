@@ -20,6 +20,7 @@ from ..libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequest,
     CreateTrainingJobRequestComputeResource,
     CreateTrainingJobRequestComputeResourceInstanceSpec,
+    CreateTrainingJobRequestExperimentConfig,
     CreateTrainingJobRequestHyperParameters,
     CreateTrainingJobRequestInputChannels,
     CreateTrainingJobRequestLabels,
@@ -32,7 +33,6 @@ from ..libs.alibabacloud_paistudio20220112.models import (
     ListTrainingJobLogsRequest,
     ListTrainingJobLogsResponseBody,
     ListTrainingJobsRequest,
-    CreateTrainingJobRequestExperimentConfig,
 )
 
 

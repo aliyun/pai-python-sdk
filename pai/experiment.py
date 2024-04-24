@@ -14,8 +14,7 @@
 
 import logging
 import webbrowser
-
-from typing import Optional, Iterator
+from typing import Iterator, Optional
 
 from .session import Session, get_default_session
 from .tensorboard import TensorBoard
