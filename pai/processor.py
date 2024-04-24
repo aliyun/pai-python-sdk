@@ -152,6 +152,7 @@ class Processor(object):
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
         """Processor constructor.
@@ -254,6 +255,9 @@ class Processor(object):
                 job and the experiment. If provided, the training job will belong to the
                 specified experiment, in which case the job will use artifact_uri of
                 experiment as default output path. Default to None.
+            labels (Dict[str, str], optional): A dictionary that maps label names to
+                their values. This optional field allows you to provide a set of labels
+                that will be applied to the training job.
             session (Session, optional): A PAI session instance used for communicating
                 with PAI service.
 
@@ -272,6 +276,7 @@ class Processor(object):
 
         self.instance_type = instance_type
         self.instance_count = instance_count or 1
+        self.labels = labels
         self.user_vpc_config = user_vpc_config
         self.experiment_config = experiment_config
         self.session = session or get_default_session()
@@ -378,6 +383,7 @@ class Processor(object):
             experiment_config=self.experiment_config.to_dict()
             if self.experiment_config
             else None,
+            labels=self.labels,
         )
         job = _Job.get(job_id)
         print(f"View the job {job_id} by accessing the console URI: {job.console_uri}")

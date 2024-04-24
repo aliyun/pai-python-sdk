@@ -209,6 +209,7 @@ class EstimatorBase(metaclass=ABCMeta):
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
         """EstimatorBase constructor.
@@ -281,11 +282,14 @@ class EstimatorBase(metaclass=ABCMeta):
                 be created and attached to the training job instance, allowing the
                 instance to access the resources within the specified VPC. Default to
                 None.
-            experiment_config(:class:`pai.estimator.ExperimentConfig`, optional): The
+            experiment_config (:class:`pai.estimator.ExperimentConfig`, optional): The
                 experiment configuration used to construct the relationship between the
                 training job and the experiment. If provided, the training job will belong
                 to the specified experiment, in which case the training job will use
                 artifact_uri of experiment as default output path. Default to None.
+            labels (Dict[str, str], optional): A dictionary that maps label names to
+                their values. This optional field allows you to provide a set of labels
+                that will be applied to the training job.
             session (Session, optional): A PAI session instance used for communicating
                 with PAI service.
 
@@ -304,6 +308,7 @@ class EstimatorBase(metaclass=ABCMeta):
         self.experiment_config = experiment_config
         self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
+        self.labels = labels
         self._latest_training_job = None
 
     def set_hyperparameters(self, **kwargs):
@@ -1010,6 +1015,7 @@ class Estimator(EstimatorBase):
             experiment_config=self.experiment_config.to_dict()
             if self.experiment_config
             else None,
+            labels=self.labels,
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
