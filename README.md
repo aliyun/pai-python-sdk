@@ -1,84 +1,95 @@
 # PAI Python SDK
 
+[English](./README_CN.md) \| 简体中文
 
-English \| [简体中文](./README_CN.md)
+PAI Python SDK是阿里云 [机器学习平台 PAI(Platform for Artificial Intelligence)](https://www.aliyun.com/product/bigdata/learn) 提供的Python SDK，提供了更易用的HighLevel API，支持机器学习工程师简单地使用Python在PAI完成模型训练和部署，串联机器学习的流程。
 
-The PAI Python SDK is provided by Alibaba Cloud\'s [Platform for Artificial Intelligence (PAI)](https://www.aliyun.com/product/bigdata/learn). It offers a user-friendly High-Level API, enabling machine learning engineers to easily train and deploy models on PAI using Python, streamlining the machine learning workflow.
+## 🔧 安装
 
-## Installation 🔧
-
-Install the PAI Python SDK using the following command, which supports Python versions \>= 3.6 (it is recommended to use Python \>= 3.8):
+使用以下命令安装PAI Python SDK（支持Python版本 \>= 3.6，建议使用Python版本 \>= 3.8）：
 
 ```shell
 python -m pip install alipai
 ```
 
-## 📖 Documentation
+## 📖 文档
 
-Find detailed documentation, including API references and user guides, in the [docs](./docs/) directory or visit [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
+请通过访问 [PAI Python SDK文档](https://alipai.readthedocs.io/) 或是查看 [docs](./docs) 目录下的文件获取SDK的详细文档，包括用户指南和API文档。
 
-## 🛠 Basic Usage
+## 🛠 使用示例
 
-- Submit a custom training job
+- 提交自定义训练任务
 
-The following example demonstrates how to submit a custom training job to PAI:
+以下代码演示了如何通过SDK提交一个自定义的训练作业:
 
 ```python
 from pai.estimator import Estimator
 from pai.image import retrieve
 
 est = Estimator(
-    # Retrieve the latest PyTorch image provided by PAI
+    # 获取PAI提供的最新PyTorch镜像
     image_uri=retrieve(
         framework_name="PyTorch", framework_version="latest"
     ).image_uri,
     command="echo hello",
-    # Optionally, specify the source_dir to upload your training code:
+    # 可选，指定source_dir上传你的训练代码：
     # source_dir="./train_src",
     instance_type="ecs.c6.large",
 )
-
-# Submit the training job
+# 提交训练任务
 est.fit()
-
 print(est.model_data())
+
 ```
 
-- Deploy Large Language Model
+- 部署大语言模型
 
-PAI provides numerous pretrained models that you can easily deploy using the PAI Python SDK:
+PAI提供了大量预训练模型，可以使用PAI Python SDK轻松部署：
 
 ```python
 from pai.model import RegisteredModel
 
-# Retrieve the QWen-7b model provided by PAI
-qwen_model = RegisteredModel("qwen-7b-chat-lora", model_provider="pai")
+# 获取PAI提供的QWen1.5-7b模型
+qwen_model = RegisteredModel("qwen1.5-7b-chat", model_provider="pai")
 
-# Deploy the model
+# 部署模型
 p = qwen_model.deploy(service_name="qwen_service")
 
-# Call the service
+# 调用服务
 p.predict(
     data={
-        "prompt": "How to install PyTorch?",
-        "system_prompt": "Act like you are programmer with 5+ years of experience.",
+        "prompt": "What is the purpose of life?",
+        "system_prompt": "You are helpful assistant.",
         "temperature": 0.8,
     }
 )
+
+# PAI提供的大语言模型支持OpenAI API，可以通过openai SDK调用
+openai_client = p.openai()
+res = openai_client.chat.completions.create(
+    model="default",
+    max_tokens=1024,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the purpose of life?"}
+    ]
+)
+print(res.choices[0].message.content)
+
 ```
 
-For more details, please refer to the [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
+更多功能介绍，请参阅 [PAI Python SDK文档](https://alipai.readthedocs.io/) 。
 
-## 🤝 Contributing
+## 🤝 贡献代码
 
-Contributions to the PAI Python SDK are welcome. Please read our contribution guidelines in the [CONTRIBUTING](./CONTRIBUTING.md) file.
+我们欢迎为PAI Python SDK贡献代码。请阅读 [CONTRIBUTING](./CONTRIBUTING.md) 文件了解如何为本项目贡献代码。
 
-## 📝 License
+## 📝 许可证
 
-PAI Python SDK is developed by Alibaba Cloud and licensed under the Apache License (Version 2.0).
+PAI Python SDK是由阿里云开发，并根据Apache许可证（版本2.0）授权使用。
 
-## 📬 Contact
+## 📬 联系方式
 
-For support or inquiries, please open an issue on the GitHub repository or contact us in the DingTalk group:
+如需支持或咨询，请在GitHub仓库中提交issue，或通过钉钉群联系我们：
 
 <img src="./assets/dingtalk-group.png" alt="DingTalkGroup" width="500"/>
