@@ -13,12 +13,16 @@
 #  limitations under the License.
 
 import os
+import re
+import time
 from unittest import skipUnless
 
 import pytest
 
 from pai.common.oss_utils import upload
+from pai.common.utils import random_str
 from pai.estimator import AlgorithmEstimator, Estimator
+from pai.experiment import ExperimentConfig, Experiment
 from pai.image import retrieve
 from pai.session import get_default_session
 from tests.integration import BaseIntegTestCase
@@ -222,11 +226,7 @@ class TestEstimatorLocalRun(BaseIntegTestCase):
 )
 class TestEstimatorLocalRunGPU(BaseIntegTestCase):
     def test(self):
-        image_uri = retrieve(
-            "pytorch",
-            "1.12",
-            accelerator_type="GPU",
-        ).image_uri
+        image_uri = retrieve("xgboost", framework_version="latest").image_uri
 
         est = Estimator(
             image_uri=image_uri,
@@ -235,3 +235,67 @@ class TestEstimatorLocalRunGPU(BaseIntegTestCase):
             instance_type="local_gpu",
         )
         est.fit()
+
+
+class TestTrainWithExperimentConfig(BaseIntegTestCase):
+    def setUp(self):
+        exp_name = f"sdk_estimator_test_{random_str(6)}"
+        self.experiment = Experiment.create(
+            artifact_uri="oss://{}/sdktest/test_experiment/sdk_estimator_test_experiment/".format(
+                self.default_session.oss_bucket.bucket_name
+            ),
+            name=exp_name,
+        )
+        self.image_uri = retrieve(
+            "pytorch",
+            "1.12",
+            accelerator_type="GPU",
+        ).image_uri
+        self.command = "python train.py"
+        self.source_dir = os.path.join(test_data_dir, "experiment_train")
+        self.instance_type = "ecs.c6.large"
+        tensorboard_data_escaped = re.escape(self.experiment.tensorboard_data())
+        self.tensorboard_path_regex_pattern = f"^{tensorboard_data_escaped}[a-z0-9]+/$"
+
+    def test_train_with_experiment_config(self):
+        est = Estimator(
+            image_uri=self.image_uri,
+            command=self.command,
+            source_dir=self.source_dir,
+            instance_type=self.instance_type,
+            experiment_config=ExperimentConfig(
+                experiment_id=self.experiment.experiment_id,
+            ),
+        )
+        est.fit()
+
+        tensorboard_path = est.tensorboard_data()
+        self.assertRegex(tensorboard_path, self.tensorboard_path_regex_pattern)
+        artifact_uri_escaped = re.escape(self.experiment.artifact_uri)
+        model_path_regex_pattern = f"^{artifact_uri_escaped}[a-z0-9]+/model/$"
+        self.assertRegex(est.model_data(), model_path_regex_pattern)
+
+    def test_train_with_output_and_experiment_config(self):
+        output_path = "oss://{}/sdktest/test_experiment/output_config_path/".format(
+            self.default_session.oss_bucket.bucket_name
+        )
+        est = Estimator(
+            image_uri=self.image_uri,
+            command=self.command,
+            source_dir=self.source_dir,
+            instance_type=self.instance_type,
+            output_path=output_path,
+            experiment_config=ExperimentConfig(
+                experiment_id=self.experiment.experiment_id,
+            ),
+        )
+        est.fit()
+
+        output_escaped = re.escape(output_path)
+        model_path_regex_pattern = f"^{output_escaped}[a-z0-9_]+/model/$"
+        self.assertRegex(est.model_data(), model_path_regex_pattern)
+        tensorboard_path = est.tensorboard_data()
+        self.assertRegex(tensorboard_path, self.tensorboard_path_regex_pattern)
+
+    def tearDown(self):
+        self.experiment.delete()

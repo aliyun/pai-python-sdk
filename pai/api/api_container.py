@@ -21,6 +21,7 @@ from .base import PAIRestResourceTypes, ServiceName, WorkspaceScopedResourceAPI
 from .client_factory import ClientFactory
 from .code_source import CodeSourceAPI
 from .dataset import DatasetAPI
+from .experiment import ExperimentAPI
 from .image import ImageAPI
 from .job import JobAPI
 from .model import ModelAPI
@@ -44,6 +45,7 @@ _RESOURCE_API_MAPPING = {
     PAIRestResourceTypes.Pipeline: PipelineAPI,
     PAIRestResourceTypes.PipelineRun: PipelineRunAPI,
     PAIRestResourceTypes.TensorBoard: TensorBoardAPI,
+    PAIRestResourceTypes.Experiment: ExperimentAPI,
 }
 
 
@@ -182,3 +184,7 @@ class ResourceAPIsContainerMixin(object):
     @property
     def pipeline_run_api(self) -> PipelineRunAPI:
         return self.get_api_by_resource(PAIRestResourceTypes.PipelineRun)
+
+    @property
+    def experiment_api(self) -> ExperimentAPI:
+        return self.get_api_by_resource(PAIRestResourceTypes.Experiment)

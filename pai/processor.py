@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from .common.configs import UserVpcConfig
-from .common.consts import DefaultChannelName, JobType, StoragePathCategory
+from .common.consts import JobType, StoragePathCategory
 from .common.oss_utils import OssUriObj, is_oss_uri, upload
 from .common.utils import (
     experimental,
@@ -31,6 +31,7 @@ from .common.utils import (
 )
 from .estimator import FileSystemInputBase
 from .estimator import _TrainingJob as _Job
+from .experiment import ExperimentConfig
 from .session import Session, get_default_session
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,7 @@ class Processor(object):
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
+        experiment_config: Optional[ExperimentConfig] = None,
         session: Optional[Session] = None,
     ):
         """Processor constructor.
@@ -180,21 +182,6 @@ class Processor(object):
 
                 if you need 'src' directory as the source code directory, you can assign
                 source_dir='./src/'.
-
-            code_dir (dict, optional): The "code_dir" object holds the configuration
-                details for the code location on OSS.If 'code_dir' is provided,
-                Processor will use it directly and ignore 'source_dir' as well as 'git_config'.
-
-                Example::
-
-                    {
-                        "LocationValue": {
-                            "Bucket": "pai-quickstart-predeploy-hangzhou",
-                            "Key": "/tmp/mock_llm_evaluation/",
-                            "Endpoint": "oss-cn-hangzhou.aliyuncs.com"
-                        },
-                        "LocationType": "oss"
-                    }
             job_type (str): The type of job, which can be TFJob, PyTorchJob, XGBoostJob,
                 etc. Default value is PyTorchJob.
             parameters (dict, optional): A dictionary that represents the
@@ -262,7 +249,11 @@ class Processor(object):
                 be created and attached to the job instance, allowing the
                 instance to access the resources within the specified VPC. Default to
                 None.
-
+            experiment_config(:class:`pai.estimator.ExperimentConfig`, optional): The
+                experiment configuration used to construct the relationship between the
+                job and the experiment. If provided, the training job will belong to the
+                specified experiment, in which case the job will use artifact_uri of
+                experiment as default output path. Default to None.
             session (Session, optional): A PAI session instance used for communicating
                 with PAI service.
 
@@ -282,6 +273,7 @@ class Processor(object):
         self.instance_type = instance_type
         self.instance_count = instance_count or 1
         self.user_vpc_config = user_vpc_config
+        self.experiment_config = experiment_config
         self.session = session or get_default_session()
 
         self._latest_job = None
@@ -357,7 +349,6 @@ class Processor(object):
     def _fit(
         self, job_name, inputs: Dict[str, Any] = None, outputs: Dict[str, Any] = None
     ):
-
         output_path = self._get_job_base_output_path(job_name)
         upload_path = Session.get_storage_path_by_category(
             StoragePathCategory.ProcessingSrc, to_plain_text(job_name)
@@ -381,7 +372,12 @@ class Processor(object):
             input_channels=input_configs,
             output_channels=output_configs,
             algorithm_spec=algo_spec,
-            user_vpc_config=self.ut() if self.user_vpc_config else None,
+            user_vpc_config=self.user_vpc_config.to_dict()
+            if self.user_vpc_config
+            else None,
+            experiment_config=self.experiment_config.to_dict()
+            if self.experiment_config
+            else None,
         )
         job = _Job.get(job_id)
         print(f"View the job {job_id} by accessing the console URI: {job.console_uri}")

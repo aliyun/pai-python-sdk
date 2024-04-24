@@ -86,6 +86,7 @@ class TrainingJobSchema(BaseAPIResourceSchema):
     scheduler = fields.Dict()
     compute_resource = fields.Dict()
     workspace_id = fields.Str()
+    experiment_config = fields.Dict()
 
     # load only fields
     latest_metrics = fields.List(fields.Dict)
