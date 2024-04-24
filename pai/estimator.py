@@ -681,7 +681,7 @@ class Estimator(EstimatorBase):
     def __init__(
         self,
         image_uri: str,
-        command: str,
+        command: Union[str, List[str]],
         source_dir: Optional[str] = None,
         git_config: Optional[Dict[str, str]] = None,
         job_type: str = JobType.PyTorchJob,
@@ -708,7 +708,7 @@ class Estimator(EstimatorBase):
                 provided by PAI or a user customized image. To view the images provided
                 by PAI, please refer to the document:
                 https://help.aliyun.com/document_detail/202834.htm.
-            command (str): The command used to run the training job.
+            command (Union[str, List[str]]): The command used to run the training job.
             source_dir (str, optional): The local source code directory used in the
                 training job. The directory will be packaged and uploaded to an OSS
                 bucket, then downloaded to the `/ml/usercode` directory in the training
@@ -937,11 +937,15 @@ class Estimator(EstimatorBase):
         code_input,
     ) -> Dict[str, Any]:
         """Build a temporary AlgorithmSpec used for submitting the TrainingJob."""
-        command = [
-            "/bin/sh",
-            "-c",
-            self.command,
-        ]
+        command = (
+            self.command
+            if isinstance(self.command, list)
+            else [
+                "/bin/sh",
+                "-c",
+                self.command,
+            ]
+        )
         algo_spec = {
             "Command": command,
             "Image": self.training_image_uri(),

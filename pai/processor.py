@@ -139,7 +139,7 @@ class Processor(object):
     def __init__(
         self,
         image_uri: str,
-        command: str,
+        command: Union[str, List[str]],
         source_dir: Optional[str] = None,
         job_type: str = JobType.PyTorchJob,
         parameters: Optional[Dict[str, Any]] = None,
@@ -162,7 +162,7 @@ class Processor(object):
                 provided by PAI or a user customized image. To view the images provided
                 by PAI, please refer to the document:
                 https://help.aliyun.com/document_detail/202834.htm.
-            command (str): The command used to run the job.
+            command (Union[str, List[str]): The command used to run the job.
             source_dir (str, optional): The local source code directory used in the
                 job. The directory will be packaged and uploaded to an OSS
                 bucket, then downloaded to the `/ml/usercode` directory in the
@@ -335,11 +335,16 @@ class Processor(object):
 
     def _build_algorithm_spec(self, code_input) -> Dict[str, Any]:
         """Build a temporary AlgorithmSpec used for submitting the Job."""
-        command = [
-            "/bin/sh",
-            "-c",
-            self.command,
-        ]
+        command = (
+            self.command
+            if isinstance(self.command, list)
+            else [
+                "/bin/sh",
+                "-c",
+                self.command,
+            ]
+        )
+
         algo_spec = {
             "Command": command,
             "Image": self.image_uri,
