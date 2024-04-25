@@ -266,6 +266,21 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         )
 
         est = m.get_estimator()
+
+        self.assertEqual(
+            est.labels.get("BaseModelUri"),
+            m.uri,
+        )
+
+        self.assertEqual(
+            est.labels.get("RootModelName"),
+            m.model_name,
+        )
+        self.assertEqual(
+            est.labels.get("RootModelID"),
+            m.model_id,
+        )
+
         inputs = m.get_estimator_inputs()
         est.hyperparameters["max_epochs"] = 5
         est.hyperparameters["warmup_epochs"] = 2
