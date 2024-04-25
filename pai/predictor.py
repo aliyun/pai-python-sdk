@@ -327,7 +327,7 @@ class _ServicePredictorMixin(object):
         self._wait_for_gateway_ready()
         self.refresh()
 
-    def _wait_for_gateway_ready(self, attempts: int = 30, interval: int = 2):
+    def _wait_for_gateway_ready(self, attempts: int = 60, interval: int = 2):
         """Hacky way to wait for the service gateway to be ready.
 
         Args:
@@ -337,24 +337,24 @@ class _ServicePredictorMixin(object):
         """
 
         def _is_gateway_ready():
-            resp = self._send_request(method="HEAD")
-            return not (
-                # following status code and content indicate the gateway is not ready
-                resp.status_code == 503
-                and b"no healthy upstream" in resp.content
+            resp = self._send_request(method="GET")
+            res = not (
+                # following status code and content indicates the gateway is not ready
+                (
+                    resp.status_code == 503
+                    and (b"no healthy upstream" in resp.content or not resp.content)
+                )
+                or (resp.status_code == 404 and not resp.content)
             )
+            return res
 
-        ready_count_threshold = 3
-        ready_count = 0
         err_count_threshold = 3
         err_count = 0
         while attempts > 0:
             attempts -= 1
             try:
                 if _is_gateway_ready():
-                    ready_count += 1
-                    if ready_count >= ready_count_threshold:
-                        break
+                    break
             except requests.exceptions.RequestException as e:
                 err_count += 1
                 if err_count >= err_count_threshold:
