@@ -832,6 +832,7 @@ class ModelBase(object):
                 options=options,
                 wait=wait,
                 serializer=serializer,
+                **kwargs,
             )
 
     def _generate_service_name(self):
@@ -849,6 +850,7 @@ class ModelBase(object):
         options: Dict[str, Any] = None,
         wait: bool = True,
         serializer: "SerializerBase" = None,
+        labels: Optional[Dict[str, str]] = None,
     ):
         """Create a prediction service."""
         if not service_name:
@@ -867,7 +869,7 @@ class ModelBase(object):
             resource_id=resource_id,
             options=options,
         )
-        service_name = self.session.service_api.create(config=config)
+        service_name = self.session.service_api.create(config=config, labels=labels)
         self._wait_service_visible(service_name)
         if service_type == ServiceType.Async:
             predictor = AsyncPredictor(
@@ -1738,6 +1740,7 @@ class RegisteredModel(ModelBase):
                 options=options,
                 wait=wait,
                 serializer=serializer,
+                **kwargs,
             )
 
     def _build_service_config(

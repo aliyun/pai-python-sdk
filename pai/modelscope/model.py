@@ -350,4 +350,5 @@ class ModelScopeModel(ModelBase):
             options=options,
             wait=wait,
             serializer=serializer,
+            **kwargs,
         )
