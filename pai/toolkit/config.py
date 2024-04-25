@@ -15,12 +15,21 @@
 import locale
 import logging
 import os.path
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import oss2
 from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_credentials.exceptions import CredentialException
 from alibabacloud_credentials.models import Config as CredentialConfig
+from alibabacloud_credentials.providers import (
+    EcsRamRoleCredentialProvider,
+    EnvironmentVariableCredentialsProvider,
+    OIDCRoleArnCredentialProvider,
+    ProfileCredentialsProvider,
+    RamRoleArnCredentialProvider,
+    RsaKeyPairCredentialProvider,
+)
 from alibabacloud_credentials.utils import auth_constant
 from oss2.models import SimplifiedBucketInfo
 from prompt_toolkit import prompt
@@ -81,6 +90,61 @@ def _get_default_credential_client() -> Optional[CredentialClient]:
         logger.debug("Not found credential from default credential provider chain.")
 
 
+class CredentialProviderType(Enum):
+    EnvironmentVariable = EnvironmentVariableCredentialsProvider
+    OIDCRoleArn = OIDCRoleArnCredentialProvider
+    EcsRamRole = EcsRamRoleCredentialProvider
+    RamRoleArn = RamRoleArnCredentialProvider
+    RsaKeyPair = RsaKeyPairCredentialProvider
+    Profile = ProfileCredentialsProvider
+
+    @classmethod
+    def get_current_provider(cls) -> Optional["CredentialProviderType"]:
+        from alibabacloud_credentials.providers import DefaultCredentialsProvider
+
+        d = {t.value: t for t in cls}
+        provider = DefaultCredentialsProvider()
+        for p in provider.user_configuration_providers:
+            if p.get_credentials():
+                return d.get(p.__class__)
+
+    def credential_hint(self) -> str:
+        provider_hints = {
+            CredentialProviderType.EnvironmentVariable: localized_text(
+                "The credential source is: Environment Variable",
+                "凭证来源: 环境变量(ALIBABACLOUD_ACCESS_KEY_ID, ALIBABACLOUD_ACCESS_KEY_SECRET)",
+            ),
+            CredentialProviderType.OIDCRoleArn: localized_text(
+                "The credential source is: OIDC Role Arn",
+                "凭证来源: OIDC Role Arn",
+            ),
+            CredentialProviderType.EcsRamRole: localized_text(
+                "The credential source is: ECS Ram Role",
+                "凭证来源: ECS Ram Role",
+            ),
+            CredentialProviderType.RamRoleArn: localized_text(
+                "The credential source is: Ram Role Arn",
+                "凭证来源: Ram Role Arn",
+            ),
+            CredentialProviderType.RsaKeyPair: localized_text(
+                "The credential source is: RSA Key Pair",
+                "凭证来源: RSA Key Pair",
+            ),
+            CredentialProviderType.Profile: localized_text(
+                "The credential source is: Profile",
+                "凭证来源: Profile(~/.alibabacloud/credentials.ini)",
+            ),
+        }
+
+        return provider_hints.get(
+            self,
+            localized_text(
+                "The credential source is: Unknown",
+                "凭证来源: 未知",
+            ),
+        )
+
+
 def prompt_for_credential():
     default_credential_client = _get_default_credential_client()
     if not default_credential_client:
@@ -123,10 +187,14 @@ def prompt_for_credential():
     else:
         print(
             localized_text(
-                "Use credential from default credential provider chain.",
-                "使用默认的凭证链获取密钥.",
+                "Use credential from default credential provider chain:",
+                "使用默认的凭证链获取访问密钥:",
             )
         )
+        credential_source_hint = (
+            CredentialProviderType.get_current_provider().credential_hint()
+        )
+        print(credential_source_hint)
         credential_client = default_credential_client
         credential_config = None
 
