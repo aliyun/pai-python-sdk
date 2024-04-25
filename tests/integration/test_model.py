@@ -90,7 +90,6 @@ class TestModelContainerDeploy(BaseIntegTestCase):
             serializer=NumpyBytesSerializer(),
         )
         self.predictors.append(predictor)
-        # hack: wait for service ready
         df = pd.read_csv(
             os.path.join(test_data_dir, "breast_cancer_data/test.csv"),
         )
