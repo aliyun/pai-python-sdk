@@ -58,14 +58,6 @@ class TestInferenceSpec(BaseUnitTestCase):
             d,
             {
                 "processor": "pmml",
-                "metadata": {
-                    "instance": 2,
-                    "rpc": {
-                        "keepalive": 10000,
-                        "batching": True,
-                    },
-                },
-                "name": "example",
                 "storage": [
                     {
                         "mount_path": "/ml/model/",
