@@ -13,18 +13,17 @@
 #  limitations under the License.
 from typing import List
 
-from .base import ServiceName, WorkspaceScopedResourceAPI, PaginatedResult
-
 from ..libs.alibabacloud_aiworkspace20210204.models import (
-    Experiment,
     CreateExperimentRequest,
     CreateExperimentResponseBody,
+    Experiment,
+    LabelInfo,
     ListExperimentRequest,
     ListExperimentResponseBody,
-    UpdateExperimentRequest,
     SetExperimentLabelsRequest,
-    LabelInfo,
+    UpdateExperimentRequest,
 )
+from .base import PaginatedResult, ServiceName, WorkspaceScopedResourceAPI
 
 
 class ExperimentAPI(WorkspaceScopedResourceAPI):

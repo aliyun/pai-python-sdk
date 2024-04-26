@@ -23,13 +23,14 @@ import shutil
 import tempfile
 import textwrap
 import time
+import typing
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
-from .common import git_utils
+from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
@@ -40,11 +41,14 @@ from .common.utils import (
     random_str,
     to_plain_text,
 )
-from .exception import DuplicatedMountException, MountPathIsOccupiedException
+from .exception import DuplicatedMountException
 from .image import ImageInfo
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
 from .session import Session, get_default_session
+
+if typing.TYPE_CHECKING:
+    from pai.estimator import AlgorithmEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -285,6 +289,7 @@ class InferenceSpec(object):
         source: str,
         mount_path: str,
         session: Session = None,
+        properties: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Mount a source storage to the running container.
 
@@ -364,6 +369,9 @@ class InferenceSpec(object):
                 "Source path is not a valid OSS URI or a existing local path."
             )
 
+        if properties:
+            storage_config.update({"properties": properties})
+
         # check if the source OSS Path is already mounted to the container.
         if oss_uri_obj.get_dir_uri() in uris:
             raise DuplicatedMountException(
@@ -374,6 +382,68 @@ class InferenceSpec(object):
         configs.append(storage_config)
         self.storage = configs
         return storage_config
+
+    def set_model_data(self, model_data: str, mount_path: Optional[str] = None):
+        """
+        Set the model data for the InferenceSpec instance.
+
+        Args:
+            model_data (str): The model data to be set. It must be an OSS URI.
+            mount_path (str, optional): The mount path in the container.
+
+        Raises:
+            DuplicatedMountException: If the model data is already mounted to the container.
+        """
+
+        def is_model_storage(storage: Dict[str, Any]):
+            return (
+                "properties" in storage
+                and storage["properties"].get("resource_type") == "model"
+            )
+
+        if not model_data:
+            return
+        if not self.is_container_serving():
+            # if model_data is an OSS URI with endpoint, truncate the endpoint.
+            oss_uri_obj = OssUriObj(model_data)
+            model_path_uri = "oss://{bucket_name}/{key}".format(
+                bucket_name=oss_uri_obj.bucket_name,
+                key=oss_uri_obj.object_key,
+            )
+            self.add_option("model_path", model_path_uri)
+        else:
+            indexes = [idx for idx, s in enumerate(self.storage) if is_model_storage(s)]
+            # replace the first model storage with the model_data.
+            if indexes:
+                if len(indexes) > 1:
+                    logger.warning(
+                        "Multiple model storage found in the InferenceSpec,"
+                        " use the first one."
+                    )
+                idx = indexes[0]
+                oss_uri_obj = OssUriObj(model_data)
+
+                storage_config = {
+                    "path": oss_uri_obj.get_dir_uri(),
+                }
+
+                if oss_uri_obj.endpoint:
+                    storage_config.update(
+                        {
+                            "endpoint": oss_uri_obj.endpoint,
+                        }
+                    )
+                self.storage[idx].oss = self._transform_value(storage_config)
+            else:
+                try:
+                    self.mount(
+                        model_data,
+                        mount_path=mount_path or DefaultServiceConfig.model_path,
+                        properties={"resource_type": "model", "resource_use": "base"},
+                    )
+                except DuplicatedMountException as e:
+                    # ignore duplicated mount
+                    logger.warning("Model is already mounted the container: %s", e)
 
 
 def container_serving_spec(
@@ -762,6 +832,7 @@ class ModelBase(object):
                 options=options,
                 wait=wait,
                 serializer=serializer,
+                **kwargs,
             )
 
     def _generate_service_name(self):
@@ -779,6 +850,7 @@ class ModelBase(object):
         options: Dict[str, Any] = None,
         wait: bool = True,
         serializer: "SerializerBase" = None,
+        labels: Optional[Dict[str, str]] = None,
     ):
         """Create a prediction service."""
         if not service_name:
@@ -797,7 +869,7 @@ class ModelBase(object):
             resource_id=resource_id,
             options=options,
         )
-        service_name = self.session.service_api.create(config=config)
+        service_name = self.session.service_api.create(config=config, labels=labels)
         self._wait_service_visible(service_name)
         if service_type == ServiceType.Async:
             predictor = AsyncPredictor(
@@ -866,26 +938,7 @@ class ModelBase(object):
         inference_spec = InferenceSpec(
             self._get_inference_spec().to_dict() if self.inference_spec else dict()
         )
-
-        if self.model_data:
-            if not inference_spec.is_container_serving():
-                # if model_data is an OSS URI with endpoint, truncate the endpoint.
-                oss_uri_obj = OssUriObj(self.model_data)
-                model_path_uri = "oss://{bucket_name}/{key}".format(
-                    bucket_name=oss_uri_obj.bucket_name,
-                    key=oss_uri_obj.object_key,
-                )
-                inference_spec.add_option("model_path", model_path_uri)
-            else:
-                try:
-                    inference_spec.mount(
-                        self.model_data,
-                        mount_path=DefaultServiceConfig.model_path,
-                    )
-                except DuplicatedMountException as e:
-                    # ignore duplicated mount
-                    logger.info("Model is already mounted the container: %s", e)
-
+        inference_spec.set_model_data(model_data=self.model_data)
         if service_type:
             inference_spec.add_option("metadata.type", service_type)
             if inference_spec.is_container_serving():
@@ -1391,6 +1444,7 @@ class RegisteredModel(ModelBase):
         self.model_name = self._model_info.get("ModelName")
         self.model_provider = self._model_info.get("Provider")
         self.task = self._model_info.get("Task")
+        self.domain = self._model_info.get("Domain")
         self.framework_type = self._model_version_info.get("FrameworkType")
         self.source_type = self._model_version_info.get("SourceType")
         self.source_id = self._model_version_info.get("SourceId")
@@ -1686,6 +1740,7 @@ class RegisteredModel(ModelBase):
                 options=options,
                 wait=wait,
                 serializer=serializer,
+                **kwargs,
             )
 
     def _build_service_config(
@@ -1767,7 +1822,7 @@ class RegisteredModel(ModelBase):
         output_path: Optional[str] = None,
         max_run_time: Optional[int] = None,
         **kwargs,
-    ):
+    ) -> "AlgorithmEstimator":
         """Generate an AlgorithmEstimator.
 
         Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
@@ -1847,6 +1902,20 @@ class RegisteredModel(ModelBase):
             )
             instance_spec = instance_spec or train_compute_resource.get("InstanceSpec")
 
+        labels = kwargs.pop("labels", dict())
+        if self.model_provider == ProviderAlibabaPAI:
+            default_labels = {
+                "BaseModelUri": self.uri,
+                "CreatedBy": "QuickStart",
+                "Domain": self.domain,
+                "RootModelID": self.model_id,
+                "RootModelName": self.model_name,
+                "RootModelVersion": self.model_version,
+                "Task": self.task,
+            }
+            default_labels.update(labels)
+            labels = default_labels
+
         return AlgorithmEstimator(
             algorithm_name=algorithm_name,
             algorithm_version=algorithm_version,
@@ -1859,6 +1928,7 @@ class RegisteredModel(ModelBase):
             instance_count=instance_count,
             instance_spec=instance_spec,
             output_path=output_path,
+            labels=labels,
             **kwargs,
         )
 
