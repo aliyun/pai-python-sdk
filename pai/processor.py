@@ -139,7 +139,7 @@ class Processor(object):
     def __init__(
         self,
         image_uri: str,
-        command: str,
+        command: Union[str, List[str]],
         source_dir: Optional[str] = None,
         job_type: str = JobType.PyTorchJob,
         parameters: Optional[Dict[str, Any]] = None,
@@ -152,6 +152,7 @@ class Processor(object):
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
         """Processor constructor.
@@ -161,7 +162,7 @@ class Processor(object):
                 provided by PAI or a user customized image. To view the images provided
                 by PAI, please refer to the document:
                 https://help.aliyun.com/document_detail/202834.htm.
-            command (str): The command used to run the job.
+            command (Union[str, List[str]): The command used to run the job.
             source_dir (str, optional): The local source code directory used in the
                 job. The directory will be packaged and uploaded to an OSS
                 bucket, then downloaded to the `/ml/usercode` directory in the
@@ -254,6 +255,9 @@ class Processor(object):
                 job and the experiment. If provided, the training job will belong to the
                 specified experiment, in which case the job will use artifact_uri of
                 experiment as default output path. Default to None.
+            labels (Dict[str, str], optional): A dictionary that maps label names to
+                their values. This optional field allows you to provide a set of labels
+                that will be applied to the training job.
             session (Session, optional): A PAI session instance used for communicating
                 with PAI service.
 
@@ -272,6 +276,7 @@ class Processor(object):
 
         self.instance_type = instance_type
         self.instance_count = instance_count or 1
+        self.labels = labels
         self.user_vpc_config = user_vpc_config
         self.experiment_config = experiment_config
         self.session = session or get_default_session()
@@ -330,11 +335,16 @@ class Processor(object):
 
     def _build_algorithm_spec(self, code_input) -> Dict[str, Any]:
         """Build a temporary AlgorithmSpec used for submitting the Job."""
-        command = [
-            "/bin/sh",
-            "-c",
-            self.command,
-        ]
+        command = (
+            self.command
+            if isinstance(self.command, list)
+            else [
+                "/bin/sh",
+                "-c",
+                self.command,
+            ]
+        )
+
         algo_spec = {
             "Command": command,
             "Image": self.image_uri,
@@ -378,6 +388,7 @@ class Processor(object):
             experiment_config=self.experiment_config.to_dict()
             if self.experiment_config
             else None,
+            labels=self.labels,
         )
         job = _Job.get(job_id)
         print(f"View the job {job_id} by accessing the console URI: {job.console_uri}")

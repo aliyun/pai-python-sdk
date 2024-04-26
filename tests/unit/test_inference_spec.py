@@ -12,13 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from pai.exception import DuplicatedMountException, MountPathIsOccupiedException
-from pai.model import InferenceSpec
+from pai.exception import DuplicatedMountException
+from pai.model import InferenceSpec, container_serving_spec
 from tests.unit import BaseUnitTestCase
 
 
 class TestInferenceSpec(BaseUnitTestCase):
-    def test_inference_spec(self):
+    def test_add_options(self):
         infer_spec = InferenceSpec(
             processor="pmml",
         )
@@ -37,6 +37,10 @@ class TestInferenceSpec(BaseUnitTestCase):
         infer_spec.add_option("metadata.rpc.batching", True)
         self.assertEqual(infer_spec.metadata.rpc.batching, True)
 
+    def test_mount_storage(self):
+        infer_spec = InferenceSpec(
+            processor="pmml",
+        )
         infer_spec.storage = [
             {
                 "mount_path": "/ml/model/",
@@ -54,14 +58,6 @@ class TestInferenceSpec(BaseUnitTestCase):
             d,
             {
                 "processor": "pmml",
-                "metadata": {
-                    "instance": 2,
-                    "rpc": {
-                        "keepalive": 10000,
-                        "batching": True,
-                    },
-                },
-                "name": "example",
                 "storage": [
                     {
                         "mount_path": "/ml/model/",
@@ -93,3 +89,24 @@ class TestInferenceSpec(BaseUnitTestCase):
         infer_spec.mount(
             "oss://pai-sdk-example/path/to/abc/edfg", mount_path="/ml/code/"
         )
+
+    def test_set_model(self):
+        infer_spec = container_serving_spec(
+            command="python3 /ml/code/model.py",
+            image_uri="python:3",
+        )
+        infer_spec.storage = [
+            {
+                "mount_path": "/ml/code/",
+                "oss": {
+                    "path": "oss://pai-sdk-example/path/to/code/",
+                },
+            },
+        ]
+        model_path_v1 = "oss://pai-sdk-example/path/to/model/v1/"
+        infer_spec.set_model_data(model_path_v1)
+        self.assertEqual(model_path_v1, infer_spec.storage[1].oss.path)
+
+        model_path_v2 = "oss://pai-sdk-example/path/to/model/v2/"
+        infer_spec.set_model_data(model_path_v2)
+        self.assertEqual(model_path_v2, infer_spec.storage[1].oss.path)

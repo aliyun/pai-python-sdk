@@ -14,8 +14,8 @@
 import time
 
 from pai.experiment import Experiment
-from tests.integration import BaseIntegTestCase
 from pai.tensorboard import TensorBoardStatus
+from tests.integration import BaseIntegTestCase
 
 tensorboard_path_suffix = "tensorboard/"
 
