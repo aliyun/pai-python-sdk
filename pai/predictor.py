@@ -181,9 +181,18 @@ class _ServicePredictorMixin(object):
         return self._service_api_object["Status"]
 
     @property
-    def access_token(self):
+    def access_token(self) -> str:
         """Access token of the service."""
         return self._service_api_object["AccessToken"]
+
+    @property
+    def labels(self) -> Dict[str, str]:
+        """Labels of the service."""
+        labels = {
+            item["LabelKey"]: item["LabelValue"]
+            for item in self._service_api_object.get("Labels", [])
+        }
+        return labels
 
     @property
     def console_uri(self):

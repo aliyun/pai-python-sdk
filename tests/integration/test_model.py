@@ -305,8 +305,14 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         )
 
         p = m.deploy()
-
         self.predictors.append(p)
+
+        self.assertEqual(p.labels.get("RootModelID"), m.model_id)
+        self.assertEqual(p.labels.get("RootModelName"), m.model_name)
+        self.assertEqual(p.labels.get("RootModelVersion"), m.model_version)
+        self.assertEqual(p.labels.get("BaseModelUri"), m.uri)
+        self.assertEqual(p.labels.get("Task"), m.task)
+        self.assertEqual(p.labels.get("Domain"), m.domain)
         self.assertTrue(p.service_name)
         res = p.predict(["开心", "死亡"])
         self.assertTrue(isinstance(res, list))
