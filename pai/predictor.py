@@ -181,9 +181,18 @@ class _ServicePredictorMixin(object):
         return self._service_api_object["Status"]
 
     @property
-    def access_token(self):
+    def access_token(self) -> str:
         """Access token of the service."""
         return self._service_api_object["AccessToken"]
+
+    @property
+    def labels(self) -> Dict[str, str]:
+        """Labels of the service."""
+        labels = {
+            item["LabelKey"]: item["LabelValue"]
+            for item in self._service_api_object.get("Labels", [])
+        }
+        return labels
 
     @property
     def console_uri(self):
@@ -298,17 +307,14 @@ class _ServicePredictorMixin(object):
         """Delete the service."""
         self.session.service_api.delete(name=self.service_name)
 
-    def wait_for_ready(self, force: bool = False):
+    def wait_for_ready(self):
         """Wait until the service enter running status.
-
-        Args:
-            force (bool): Whether to force wait for ready.
 
         Raises:
             RuntimeError: Raise if the service terminated unexpectedly.
 
         """
-        if self.service_status == ServiceStatus.Running and not force:
+        if self.service_status == ServiceStatus.Running:
             return
 
         logger.info(
@@ -327,6 +333,10 @@ class _ServicePredictorMixin(object):
         self._wait_for_gateway_ready()
         self.refresh()
 
+    def wait(self):
+        """Wait for the service to be ready."""
+        return self.wait_for_ready()
+
     def _wait_for_gateway_ready(self, attempts: int = 60, interval: int = 2):
         """Hacky way to wait for the service gateway to be ready.
 
@@ -337,6 +347,8 @@ class _ServicePredictorMixin(object):
         """
 
         def _is_gateway_ready():
+            # can't use HEAD method to check gateway status because the service will
+            # block the request until timeout.
             resp = self._send_request(method="GET")
             res = not (
                 # following status code and content indicates the gateway is not ready
@@ -730,7 +742,8 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
             raise ImportError(
                 "openai package is not installed, install it with `pip install openai`."
             )
-        base_url = kwargs.pop("base_url", self.endpoint + "/v1/")
+
+        base_url = kwargs.pop("base_url", posixpath.join(self.endpoint + "v1/"))
         api_key = kwargs.pop("api_key", self.access_token)
 
         return OpenAI(base_url=base_url, api_key=api_key, **kwargs)
@@ -1377,6 +1390,9 @@ class LocalPredictor(PredictorBase):
         # ensure the server is ready.
         self._wait_local_server_ready()
         time.sleep(5)
+
+    def wait(self):
+        return self.wait_for_ready()
 
     def _wait_local_server_ready(
         self,
