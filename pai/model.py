@@ -55,6 +55,9 @@ logger = logging.getLogger(__name__)
 # Reserved ports for internal use, do not use them for service
 _RESERVED_PORTS = [8080, 9090]
 
+# Default model upstream source
+MODEL_TASK_CREATED_BY_QUICKSTART = "QuickStart"
+
 
 class DefaultServiceConfig(object):
     """Default configuration used in creating prediction service."""
@@ -851,6 +854,7 @@ class ModelBase(object):
         wait: bool = True,
         serializer: "SerializerBase" = None,
         labels: Optional[Dict[str, str]] = None,
+        **kwargs,
     ):
         """Create a prediction service."""
         if not service_name:
@@ -1723,6 +1727,20 @@ class RegisteredModel(ModelBase):
         if not self.inference_spec:
             raise RuntimeError("No inference_spec for the registered model.")
 
+        labels = kwargs.pop("labels", dict())
+        if self.model_provider == ProviderAlibabaPAI:
+            default_labels = {
+                "Task": self.task,
+                "RootModelName": self.model_name,
+                "RootModelVersion": self.model_version,
+                "RootModelID": self.model_id,
+                "Domain": self.domain,
+                "CreatedBy": MODEL_TASK_CREATED_BY_QUICKSTART,
+                "BaseModelUri": self.uri,
+            }
+            default_labels.update(labels)
+            labels = default_labels
+
         if is_local_run_instance_type(instance_type):
             return self._deploy_local(
                 instance_type=instance_type,
@@ -1740,6 +1758,7 @@ class RegisteredModel(ModelBase):
                 options=options,
                 wait=wait,
                 serializer=serializer,
+                labels=labels,
                 **kwargs,
             )
 
@@ -1906,7 +1925,7 @@ class RegisteredModel(ModelBase):
         if self.model_provider == ProviderAlibabaPAI:
             default_labels = {
                 "BaseModelUri": self.uri,
-                "CreatedBy": "QuickStart",
+                "CreatedBy": MODEL_TASK_CREATED_BY_QUICKSTART,
                 "Domain": self.domain,
                 "RootModelID": self.model_id,
                 "RootModelName": self.model_name,

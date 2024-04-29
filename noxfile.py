@@ -38,7 +38,7 @@ def install_test_dependencies(session: Session):
     session.install("-r", TEST_REQUIREMENTS)
 
 
-@nox.session(venv_backend=TEST_VENV_BACKEND, python=INTEGRATION_TEST_PYTHON_VERSIONS)
+@nox.session(venv_backend=TEST_VENV_BACKEND)
 def integration(session: Session):
     """Run integration test."""
     install_test_dependencies(session=session)

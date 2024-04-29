@@ -867,6 +867,7 @@ class Estimator(EstimatorBase):
             instance_count=instance_count,
             user_vpc_config=user_vpc_config,
             experiment_config=experiment_config,
+            resource_id=resource_id,
             session=session,
         )
 
@@ -1437,6 +1438,7 @@ class AlgorithmEstimator(EstimatorBase):
             experiment_config=self.experiment_config.to_dict()
             if self.experiment_config
             else None,
+            labels=self.labels,
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
