@@ -1437,6 +1437,7 @@ class AlgorithmEstimator(EstimatorBase):
             experiment_config=self.experiment_config.to_dict()
             if self.experiment_config
             else None,
+            labels=self.labels,
         )
         training_job = _TrainingJob.get(training_job_id)
         print(
