@@ -347,8 +347,8 @@ class _ServicePredictorMixin(object):
         """
 
         def _is_gateway_ready():
-            # can't use HEAD method to check gateway status because the service willb
-            # block HEAD request until request timeout.
+            # can't use HEAD method to check gateway status because the service will
+            # block the request until timeout.
             resp = self._send_request(method="GET")
             res = not (
                 # following status code and content indicates the gateway is not ready
