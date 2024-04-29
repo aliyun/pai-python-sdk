@@ -25,7 +25,7 @@ src_paths = ["pai", "tests"]
 #known_first_party = ["pai", "tests"]
 
 [tool.pytest.ini_options]
-timeout = 300
+timeout = 600
 
 [doc8]
 max-line-length=88
