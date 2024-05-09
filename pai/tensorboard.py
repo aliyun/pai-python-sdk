@@ -52,7 +52,7 @@ class TensorBoard(object):
     def __init__(self, tensorboard_id: str, session: Optional[Session] = None):
         self.session = session or get_default_session()
         self.tensorboard_id = tensorboard_id
-        self._api_object = session.tensorboard_api.get(tensorboard_id)
+        self._api_object = self.session.tensorboard_api.get(tensorboard_id)
 
     def __repr__(self):
         return "TensorBoard(tensorboard_id={}, name={}, status={})".format(
