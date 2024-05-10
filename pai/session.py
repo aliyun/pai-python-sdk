@@ -108,12 +108,12 @@ def setup_default_session(
 
     # override the config from default session
     default_session = get_default_session()
-
-    region_id = region_id or default_session.region_id
-    workspace_id = workspace_id or default_session.workspace_id
-    oss_bucket_name = oss_bucket_name or default_session.oss_bucket_name
-    oss_endpoint = oss_endpoint or default_session.oss_endpoint
-    credential_config = credential_config or default_session.credential_config
+    if default_session:
+        region_id = region_id or default_session.region_id
+        workspace_id = workspace_id or default_session.workspace_id
+        oss_bucket_name = oss_bucket_name or default_session.oss_bucket_name
+        oss_endpoint = oss_endpoint or default_session.oss_endpoint
+        credential_config = credential_config or default_session.credential_config
 
     session = Session(
         region_id=region_id,
