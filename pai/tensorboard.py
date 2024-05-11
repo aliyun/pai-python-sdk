@@ -14,11 +14,12 @@
 
 import posixpath
 import time
-from typing import Optional
+from typing import Iterator, Optional
 
 import requests
 
 from .common.oss_utils import is_oss_uri
+from .common.utils import make_list_resource_iterator
 from .exception import UnexpectedStatusException
 from .session import Session, get_default_session
 
@@ -196,6 +197,13 @@ class TensorBoard(object):
             if resp.status_code // 100 != 5:
                 break
             time.sleep(5)
+
+    @classmethod
+    def list(self) -> Iterator["TensorBoard"]:
+        session = get_default_session()
+        tb_iterator = make_list_resource_iterator(self.session.tensorboard_api.list)
+        for tb in tb_iterator:
+            yield TensorBoard(tb["TensorboardId"], session=session)
 
     def delete(self):
         """Delete the TensorBoard Application."""
