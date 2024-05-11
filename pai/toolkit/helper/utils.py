@@ -25,7 +25,7 @@ from alibabacloud_sts20150401.models import (
     GetCallerIdentityResponseBody as CallerIdentity,
 )
 from alibabacloud_tea_openapi import models as open_api_models
-from oss2.models import SimplifiedBucketInfo
+from oss2.models import BucketInfo, SimplifiedBucketInfo
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings, merge_key_bindings
 from prompt_toolkit.key_binding.defaults import load_key_bindings
@@ -177,22 +177,16 @@ class UserProfile(object):
 
         return buckets
 
-    def get_bucket_info(self, bucket_name):
-        service = oss2.Service(
-            auth=oss2.ProviderAuth(
-                credentials_provider=CredentialProviderWrapper(
-                    config=self.credential_config,
-                ),
+    def get_bucket_info(self, bucket_name) -> BucketInfo:
+        auth = oss2.ProviderAuth(
+            credentials_provider=CredentialProviderWrapper(
+                config=self.credential_config,
             ),
-            endpoint=self.get_default_oss_endpoint(),
         )
-        res: oss2.models.ListBucketsResult = service.list_buckets(prefix=bucket_name)
-        bucket_info = next((b for b in res.buckets if b.name == bucket_name), None)
-        if not bucket_info:
-            raise ValueError(
-                f"Not found bucket with the specific name: bucket_name={bucket_name}"
-            )
-
+        bucket = oss2.Bucket(
+            auth, self.get_default_oss_endpoint(), bucket_name=bucket_name
+        )
+        bucket_info = bucket.get_bucket_info()
         return bucket_info
 
     def create_oss_bucket(self, bucket_name):
@@ -246,9 +240,11 @@ class UserProfile(object):
         uri_obj = OssUriObj(oss_storage_uri)
         return "oss://{}".format(uri_obj.bucket_name)
 
-    def set_default_oss_storage(self, workspace_id, bucket_info: SimplifiedBucketInfo):
+    def set_default_oss_storage(
+        self, workspace_id, bucket_name: str, intranet_endpoint: str
+    ):
         workspace_api = self.get_workspace_api()
-        oss_uri = "oss://{}.{}/".format(bucket_info.name, bucket_info.intranet_endpoint)
+        oss_uri = "oss://{}.{}/".format(bucket_name, intranet_endpoint)
         configs = {WorkspaceConfigKeys.DEFAULT_OSS_STORAGE_URI: oss_uri}
         workspace_api.update_configs(workspace_id, configs=configs)
 
