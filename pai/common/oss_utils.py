@@ -449,7 +449,7 @@ def download(
 class CredentialProviderWrapper(CredentialsProvider):
     """A wrapper class for the credential provider of OSS."""
 
-    def __init__(self, config: CredentialConfig):
+    def __init__(self, config: Union[CredentialConfig] = None):
         self.client = CredentialClient(config)
 
     def get_credentials(self) -> Credentials:
