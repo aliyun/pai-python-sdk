@@ -67,6 +67,7 @@ class ImageLabel(object):
     # Python Version
     # TODO: delete this label key
     PYTHON_VERSION = "system.pythonVersion"
+    PYTHON_VERSION_V2 = "system.language.Python"
 
     @staticmethod
     def framework_version(
@@ -86,11 +87,6 @@ class ImageLabel(object):
         Raises:
             ValueError: If the framework is not supported.
         """
-        if framework not in SUPPORTED_IMAGE_FRAMEWORKS:
-            raise ValueError(
-                f"Unsupported framework: {framework}. Current supported frameworks are:"
-                f" {SUPPORTED_IMAGE_FRAMEWORKS}"
-            )
         return f"system.framework.{framework}={version}"
 
     @staticmethod

@@ -46,8 +46,6 @@ class ImageInfo(object):
     Args:
         image_name (str): The name of the image.
         image_uri (str): The URI of the image.
-        framework_name (str): The name of the framework installed in the image.
-        framework_version (str, optional): The version of the framework (Default None).
         image_scope (str): The scope of the image, could be 'training', 'inference' or
             'develop'.
         accelerator_type (str, optional): The type of accelerator. Defaults to None.
@@ -55,35 +53,31 @@ class ImageInfo(object):
     """
 
     def __repr__(self):
-        return (
-            "{}(framework_name={}: framework_version={}: image_scope={}: "
-            "accelerator_type={}: py_version={})".format(
-                self.__class__.__name__,
-                self.framework_name,
-                self.framework_version,
-                self.image_scope,
-                self.accelerator_type,
-                self.python_version,
-            )
+        return "{}(image_name={}: image_scope={}: accelerator_type={}: py_version={})".format(
+            self.__class__.__name__,
+            self.image_name,
+            self.image_scope,
+            self.accelerator_type,
+            self.python_version,
         )
 
     def __init__(
         self,
         image_name: str,
         image_uri: str,
-        framework_name: str,
         image_scope: str,
-        framework_version: str = None,
         accelerator_type: Optional[str] = None,
         python_version: Optional[str] = None,
+        frameworks: Dict[str, str] = None,
+        languages: Dict[str, str] = None,
     ):
         self.image_name = image_name
         self.image_uri = image_uri
-        self.framework_name = framework_name
-        self.framework_version = framework_version
         self.accelerator_type = accelerator_type
         self.python_version = python_version
         self.image_scope = image_scope
+        self.frameworks = frameworks
+        self.languages = languages
 
 
 class ImageScope(object):
@@ -125,34 +119,14 @@ def _make_image_info(
 
     labels = {lb["Key"]: lb["Value"] for lb in image_obj["Labels"]}
     image_uri = image_obj["ImageUri"]
-    match = _PAI_IMAGE_URI_PATTERN.match(image_uri)
-    if not match:
-        # ignore if image uri is not recognized
-        logger.debug(
-            "Could not recognize the given image uri, ignore the image:"
-            f" image_uri={image_uri}"
-        )
-        return
-    host, namespace, repo_name, tag = match.groups()
-
-    tag_match = _PAI_IMAGE_TAG_PATTERN_TRAINING.match(
-        tag
-    ) or _PAI_IMAGE_TAG_PATTERN_INFERENCE.match(tag)
-    if not tag_match:
-        # ignore if image tag is not recognized
-        logger.debug(
-            f"Could not recognize the given image tag, ignore the image:"
-            f" image_uri={image_uri}."
-        )
-        fw_version, cpu_or_gpu, _, cuda_version, os_version = [None] * 5
-    else:
-        (
-            fw_version,
-            cpu_or_gpu,
-            _,
-            cuda_version,
-            os_version,
-        ) = tag_match.groups()
+    fw_prefix = "system.framework."
+    frameworks = {
+        k[len(fw_prefix) :]: v for k, v in labels.items() if k.startswith(fw_prefix)
+    }
+    lang_prefix = "system.language."
+    languages = {
+        k[len(lang_prefix) :]: v for k, v in labels.items() if k.startswith(lang_prefix)
+    }
 
     # use image label as ground truth to set the image property, python version, etc.
     labels = labels or dict()
@@ -160,28 +134,19 @@ def _make_image_info(
         cpu_or_gpu = "GPU"
     elif labels.get("system.chipType") == "CPU":
         cpu_or_gpu = "CPU"
-    py_version = labels.get(ImageLabel.PYTHON_VERSION)
-
-    # TODO: get the framework name from Image Label
-    # extract framework name from image repo
-    if repo_name.endswith("-inference"):
-        framework_name = repo_name[:-10]
-    elif repo_name.endswith("-training"):
-        framework_name = repo_name[:-9]
     else:
-        framework_name = repo_name
-
-    framework_name = _NORMALIZED_FRAMEWORK_NAMES.get(framework_name, framework_name)
+        cpu_or_gpu = None
+    py_version = labels.get(ImageLabel.PYTHON_VERSION_V2)
     image_name = image_obj["Name"]
 
     return ImageInfo(
         image_name=image_name,
         image_uri=image_uri,
-        framework_name=framework_name,
-        framework_version=fw_version,
         accelerator_type=cpu_or_gpu,
         python_version=py_version,
         image_scope=image_scope,
+        frameworks=frameworks,
+        languages=languages,
     )
 
 
@@ -250,17 +215,18 @@ def retrieve(
         RuntimeError: A RuntimeErrors is raised if the specific image is not found.
     """
     session = session or get_default_session()
-    framework_name = framework_name.lower()
-    supports_fw = [fw.lower() for fw in SUPPORTED_IMAGE_FRAMEWORKS]
-    if framework_name not in supports_fw:
-        raise ValueError(
-            f"The framework ({framework_name}) is not supported by the"
-            f" retrieve method: supported frameworks"
-            f" {', '.join(SUPPORTED_IMAGE_FRAMEWORKS)}",
-        )
+
+    if framework_name.lower() in _NORMALIZED_FRAMEWORK_NAMES:
+        framework_name = _NORMALIZED_FRAMEWORK_NAMES.get(framework_name.lower())
 
     # label filter used to list official images of specific scope.
-    labels = [ImageLabel.OFFICIAL_LABEL, ImageScope.to_image_label(image_scope)]
+    labels = [
+        ImageLabel.OFFICIAL_LABEL,
+        ImageScope.to_image_label(image_scope),
+        ImageLabel.framework_version(
+            framework_name, "*" if framework_version == "latest" else framework_version
+        ),
+    ]
 
     # if accelerator_type is not specified, use CPU image by default.
     if not accelerator_type or accelerator_type.lower() == "cpu":
@@ -273,7 +239,7 @@ def retrieve(
             f" CPU and GPU is supported."
         )
 
-    resp = _list_images(name=framework_name, labels=labels, session=session)
+    resp = list(_list_images(name=framework_name, labels=labels, session=session))
 
     # extract image properties, such as framework version, py_version, os_version, etc,
     # from image tag.
@@ -283,9 +249,10 @@ def retrieve(
             image_obj=image_item,
             image_scope=image_scope,
         )
-        if image_info.framework_name.lower() != framework_name.lower():
-            continue
-        candidates.append(image_info)
+        fws = {k.lower(): v for k, v in image_info.frameworks.items()}
+        if framework_name.lower() in fws:
+            fw_version = fws.get(framework_name.lower())
+            candidates.append((image_info, fw_version))
 
     if not candidates:
         raise RuntimeError(
@@ -295,20 +262,21 @@ def retrieve(
 
     if framework_version.lower() == "latest":
         # select the latest framework version.
+
         candidates = sorted(
             candidates,
-            key=lambda img: to_semantic_version(img.framework_version),
+            key=lambda item: to_semantic_version(item[1]),
             reverse=True,
         )
-        return candidates[0]
+        return candidates[0][0]
     else:
         # find the image with the specific framework version.
         img = next(
-            (img for img in candidates if img.framework_version == framework_version),
+            (img for img, ver in candidates if ver == framework_version),
             None,
         )
         if not img:
-            supported_versions = [img.framework_version for img in candidates]
+            supported_versions = [ver for img, ver in candidates]
             raise RuntimeError(
                 f"Not found the specific framework: framework_name={framework_name}, "
                 f"framework_version={framework_version}, supported versions for the"
@@ -343,12 +311,15 @@ def list_images(
     else:
         framework_name = framework_name.strip().lower()
 
+    if framework_name.lower() in _NORMALIZED_FRAMEWORK_NAMES:
+        framework_name = _NORMALIZED_FRAMEWORK_NAMES.get(framework_name.lower())
+
     labels = [
         ImageScope.to_image_label(image_scope),
         ImageLabel.OFFICIAL_LABEL,
+        ImageLabel.framework_version(framework_name, "*"),
     ]
     images = _list_images(labels=labels, session=session)
-
     images = [
         _make_image_info(
             item,
@@ -356,7 +327,4 @@ def list_images(
         )
         for item in images
     ]
-    if framework_name:
-        return [img for img in images if img.framework_name.lower() == framework_name]
-    else:
-        return images
+    return images

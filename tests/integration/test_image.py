@@ -19,19 +19,17 @@ from tests.integration import BaseIntegTestCase
 class TestImageUris(BaseIntegTestCase):
     def test_retrieve_training_image(self):
         tf_img = retrieve(
-            "tensorflow", framework_version="latest", accelerator_type="gpu"
+            "TensorFlow", framework_version="latest", accelerator_type="gpu"
         )
         self.assertEqual(tf_img.accelerator_type.lower(), "gpu")
-        self.assertEqual(tf_img.framework_name.lower(), "tensorflow")
         self.assertEqual(tf_img.image_scope, ImageScope.TRAINING)
 
         tf_image = retrieve(
-            "tensorflow",
+            "Tensorflow",
             framework_version="2.3",
             accelerator_type="gpu",
             image_scope=ImageScope.INFERENCE,
         )
-        self.assertEqual(tf_image.framework_version, "2.3")
         self.assertEqual(tf_image.image_scope, ImageScope.INFERENCE)
 
         self.assertIsNotNone(
@@ -45,7 +43,6 @@ class TestImageUris(BaseIntegTestCase):
             "pytorch", framework_version="latest", accelerator_type="gpu"
         )
 
-        self.assertEqual(torch_img.framework_name.lower(), "pytorch")
         self.assertEqual(torch_img.accelerator_type.lower(), "gpu")
 
         self.assertIsNotNone(
@@ -96,3 +93,12 @@ class TestImageUris(BaseIntegTestCase):
 
         inference_image_uris = list_images("pytorch", image_scope=ImageScope.INFERENCE)
         self.assertTrue(len(list(inference_image_uris)) > 0)
+
+    def test(self):
+        image_uri = retrieve(
+            "vLLM",
+            framework_version="latest",
+            image_scope=ImageScope.INFERENCE,
+            accelerator_type="GPU",
+        )
+        print(image_uri)
