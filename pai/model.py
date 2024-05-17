@@ -1834,6 +1834,7 @@ class RegisteredModel(ModelBase):
 
     def get_estimator(
         self,
+        training_method: Optional[str] = None,
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
@@ -1847,6 +1848,9 @@ class RegisteredModel(ModelBase):
         Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
 
         Args:
+            training_method (str, optional): Used to selected the training algorithm
+                that supported by the model. If not specified, the default training
+                algorithm will be retrieved from the model version.
             instance_type (str, optional): The machine instance type used to run the
                 training job. If not provider, the default instance type will be
                 retrieved from the algorithm definition. To view the supported machine
@@ -1878,6 +1882,35 @@ class RegisteredModel(ModelBase):
                 "The provided registered model does not contain training spec."
             )
         ts = self.training_spec
+        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
+            # Support choosing training methods.
+            supported_training_methods = list(ts.keys())
+            if training_method and training_method not in supported_training_methods:
+                raise ValueError(
+                    "The model does not support the given training method:"
+                    f" {training_method}. Supported training methods are:"
+                    f" {supported_training_methods}."
+                )
+            elif training_method:
+                ts = ts.get(training_method)
+            else:
+                training_method = supported_training_methods[0]
+                logger.warning(
+                    "The training method is not specified, using the default training"
+                    " method: %s. Supported training methods are: %s.",
+                    training_method,
+                    supported_training_methods,
+                )
+                ts = ts.get(training_method)
+        else:
+            # Does not support training methods.
+            # Use default training spec.
+            if training_method:
+                raise ValueError(
+                    "The model does not support choosing training method. Do not"
+                    " specify the training method."
+                )
+
         if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
             raise ValueError(
                 "The provided registered model's training spec does not contain any"
