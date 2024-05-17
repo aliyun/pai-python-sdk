@@ -14,7 +14,6 @@
 
 import distutils.dir_util
 import json
-import logging
 import os
 import posixpath
 import re
@@ -30,6 +29,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from Tea.exceptions import TeaException
+
+from pai.common.logging import get_logger
 
 from .api.base import PaginatedResult
 from .api.entity_base import EntityBaseMixin
@@ -55,7 +56,7 @@ from .schema.training_job_schema import TrainingJobSchema
 from .serializers import SerializerBase
 from .session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
 DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"

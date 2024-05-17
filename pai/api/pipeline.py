@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging
 from typing import Any, Dict
+
+from pai.common.logging import get_logger
 
 from ..libs.alibabacloud_paiflow20210202.models import (
     CreatePipelineRequest,
@@ -26,7 +27,7 @@ from ..libs.alibabacloud_paiflow20210202.models import (
 )
 from .base import PaginatedResult, ServiceName, WorkspaceScopedResourceAPI
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class PipelineAPI(WorkspaceScopedResourceAPI):

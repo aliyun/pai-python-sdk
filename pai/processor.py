@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import logging
 import os
 import posixpath
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
+
+from pai.common.logging import get_logger
 
 from .common.configs import UserVpcConfig
 from .common.consts import JobType, StoragePathCategory
@@ -34,7 +35,7 @@ from .estimator import _TrainingJob as _Job
 from .experiment import ExperimentConfig
 from .session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def build_code_input(

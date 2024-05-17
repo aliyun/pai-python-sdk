@@ -13,13 +13,14 @@
 #  limitations under the License.
 
 import io
-import logging
 import subprocess
 import time
 from random import randint
 from typing import Any, Dict, List, Optional, Union
 
-logger = logging.getLogger(__name__)
+from pai.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _run_command(command: List[str], input: Optional[str] = None):

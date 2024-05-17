@@ -16,12 +16,12 @@
 
 from __future__ import print_function
 
-import logging
 import uuid
 
 import six
 from deprecated import deprecated
 
+from pai.common.logging import get_logger
 from pai.common.yaml_utils import dump as yaml_dump
 from pai.pipeline.component._base import UnRegisteredComponent
 from pai.pipeline.types.variable import PipelineVariable
@@ -31,7 +31,7 @@ PAI_MANIFEST_SPEC_INPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_INPUTS"
 PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"
 PAI_INPUTS_PARAMETERS_ENV_KEY = "PAI_INPUTS_PARAMETERS"
 
-_logger = logging.getLogger(__name__)
+_logger = get_logger(__name__)
 
 
 @deprecated(

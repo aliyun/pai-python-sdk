@@ -15,7 +15,6 @@
 import copy
 import distutils.dir_util
 import json
-import logging
 import os.path
 import posixpath
 import shlex
@@ -29,6 +28,8 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
+
+from pai.common.logging import get_logger
 
 from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
@@ -50,7 +51,7 @@ from .session import Session, get_default_session
 if typing.TYPE_CHECKING:
     from pai.estimator import AlgorithmEstimator
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Reserved ports for internal use, do not use them for service
 _RESERVED_PORTS = [8080, 9090]
@@ -1118,7 +1119,7 @@ class ModelBase(object):
                 break
             except requests.ConnectionError:
                 # ConnectionError means server is not ready.
-                logging.debug("Waiting for the container to be ready...")
+                logger.debug("Waiting for the container to be ready...")
                 time.sleep(interval)
                 continue
 

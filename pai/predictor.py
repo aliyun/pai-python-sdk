@@ -16,7 +16,6 @@ import asyncio
 import base64
 import functools
 import json
-import logging
 import posixpath
 import time
 from abc import ABC, abstractmethod
@@ -30,6 +29,7 @@ import requests
 
 from .common.consts import FrameworkTypes
 from .common.docker_utils import ContainerRun
+from .common.logging import get_logger
 from .common.utils import http_user_agent, is_package_available
 from .exception import PredictionException
 from .serializers import (
@@ -44,7 +44,7 @@ if is_package_available("openai"):
     from openai import OpenAI
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 _PAI_SERVICE_CONSOLE_URI_PATTERN = (
     "https://pai.console.aliyun.com/?regionId={region_id}#"
@@ -350,6 +350,11 @@ class _ServicePredictorMixin(object):
             # can't use HEAD method to check gateway status because the service will
             # block the request until timeout.
             resp = self._send_request(method="GET")
+            logger.debug(
+                "Check gateway status result: status_code=%s content=%s",
+                resp.status_code,
+                resp.content,
+            )
             res = not (
                 # following status code and content indicates the gateway is not ready
                 (
@@ -1417,6 +1422,6 @@ class LocalPredictor(PredictorBase):
                 break
             except requests.ConnectionError:
                 # ConnectionError means server is not ready.
-                logging.debug("Waiting for the container to be ready...")
+                logger.debug("Waiting for the container to be ready...")
                 time.sleep(interval)
                 continue

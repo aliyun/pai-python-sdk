@@ -14,18 +14,18 @@
 
 from __future__ import absolute_import
 
-import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Callable, Optional
 
 from pai.api.base import PaginatedResult
+from pai.common.logging import get_logger
 from pai.exception import PAIException
 from pai.pipeline.artifact import ArchivedArtifact
 from pai.session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # TODO: review the status names of the PipelineRun.

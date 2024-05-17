@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging
 from typing import Any, Dict, List, Optional, Union
+
+from pai.common.logging import get_logger
 
 from ..common.utils import to_semantic_version
 from ..image import ImageLabel
@@ -26,7 +27,7 @@ from ..model import (
 from ..serializers import SerializerBase
 from ..session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class HuggingFaceModel(ModelBase):

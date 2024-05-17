@@ -14,7 +14,6 @@
 
 from __future__ import absolute_import
 
-import logging
 import os
 import subprocess
 import tempfile
@@ -24,7 +23,9 @@ from typing import Dict, Optional
 import six
 from six.moves import urllib
 
-logger = logging.getLogger(__name__)
+from pai.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def git_clone_repo(git_config: Dict[str, str], source_dir: Optional[str] = None):

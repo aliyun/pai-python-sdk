@@ -12,15 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging
 import re
 from typing import Any, Dict, List, Optional
+
+from pai.common.logging import get_logger
 
 from .api.image import SUPPORTED_IMAGE_FRAMEWORKS, ImageLabel
 from .common.utils import make_list_resource_iterator, to_semantic_version
 from .session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 _NORMALIZED_FRAMEWORK_NAMES = {

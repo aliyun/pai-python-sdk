@@ -14,11 +14,11 @@
 
 from __future__ import absolute_import
 
-import logging
-
 from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_sts20150401.client import Client as StsClient
 from alibabacloud_tea_openapi.models import Config
+
+from pai.common.logging import get_logger
 
 from ..common.utils import http_user_agent
 from ..libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
@@ -28,7 +28,7 @@ from ..libs.alibabacloud_paiflow20210202.client import Client as FlowClient
 from ..libs.alibabacloud_paistudio20220112.client import Client as PaiClient
 from .base import ServiceName
 
-_logger = logging.getLogger(__name__)
+_logger = get_logger(__name__)
 
 DEFAULT_SERVICE_ENDPOINT_PATTERN = "{}.{}.aliyuncs.com"
 

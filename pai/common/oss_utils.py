@@ -15,7 +15,6 @@
 from __future__ import absolute_import
 
 import glob
-import logging
 import os.path
 import pathlib
 import tarfile
@@ -29,7 +28,9 @@ from alibabacloud_credentials.models import Config as CredentialConfig
 from oss2.credentials import Credentials, CredentialsProvider
 from tqdm.autonotebook import tqdm
 
-logger = logging.getLogger(__name__)
+from pai.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class _ProgressCallbackTqdm(tqdm):
