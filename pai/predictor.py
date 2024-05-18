@@ -47,7 +47,7 @@ if is_package_available("openai"):
 logger = get_logger(__name__)
 
 _PAI_SERVICE_CONSOLE_URI_PATTERN = (
-    "https://pai.console.aliyun.com/?regionId={region_id}#"
+    "https://pai.console.aliyun.com/?regionId={region_id}&workspaceId={workspace_id}#"
     "/eas/serviceDetail/{service_name}/detail"
 )
 
@@ -198,6 +198,7 @@ class _ServicePredictorMixin(object):
     def console_uri(self):
         """Returns the console URI of the service."""
         return _PAI_SERVICE_CONSOLE_URI_PATTERN.format(
+            workspace_id=self.session.workspace_id,
             region_id=self.session.region_id,
             service_name=self.service_name,
         )
