@@ -22,6 +22,7 @@ from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_credentials.exceptions import CredentialException
 from alibabacloud_credentials.models import Config as CredentialConfig
 from alibabacloud_credentials.providers import (
+    CredentialsUriProvider,
     EcsRamRoleCredentialProvider,
     EnvironmentVariableCredentialsProvider,
     OIDCRoleArnCredentialProvider,
@@ -97,6 +98,7 @@ class CredentialProviderType(Enum):
     RamRoleArn = RamRoleArnCredentialProvider
     RsaKeyPair = RsaKeyPairCredentialProvider
     Profile = ProfileCredentialsProvider
+    CredentialUri = CredentialsUriProvider
 
     @classmethod
     def get_current_provider(cls) -> Optional["CredentialProviderType"]:
@@ -108,7 +110,8 @@ class CredentialProviderType(Enum):
             if p.get_credentials():
                 return d.get(p.__class__)
 
-    def credential_hint(self) -> str:
+    @classmethod
+    def credential_hint(cls, cred_type: Optional["CredentialProviderType"]) -> str:
         provider_hints = {
             CredentialProviderType.EnvironmentVariable: localized_text(
                 "The credential source is: Environment Variable",
@@ -134,10 +137,14 @@ class CredentialProviderType(Enum):
                 "The credential source is: Profile",
                 "凭证来源: Profile(~/.alibabacloud/credentials.ini)",
             ),
+            CredentialProviderType.CredentialUri: localized_text(
+                "The credential source is: CredentialUri (EnvironmentVairbale ALIBABA_CLOUD_CREDENTIALS_URI)",
+                "凭证来源: CredentialUri (环境变量 ALIBABA_CLOUD_CREDENTIALS_URI)",
+            ),
         }
 
         return provider_hints.get(
-            self,
+            cred_type,
             localized_text(
                 "The credential source is: Unknown",
                 "凭证来源: 未知",
@@ -185,14 +192,17 @@ def prompt_for_credential():
         )
         credential_client = CredentialClient(config=credential_config)
     else:
+        # Credential chain documentation:
+        # https://help.aliyun.com/zh/sdk/developer-reference/v2-manage-python-access-credentials
         print(
             localized_text(
                 "Use credential from default credential provider chain:",
                 "使用默认的凭证链获取访问密钥:",
             )
         )
-        credential_source_hint = (
-            CredentialProviderType.get_current_provider().credential_hint()
+
+        credential_source_hint = CredentialProviderType.credential_hint(
+            CredentialProviderType.get_current_provider()
         )
         print(credential_source_hint)
         credential_client = default_credential_client
@@ -243,6 +253,12 @@ def prompt_for_region():
     for key in REGION_ID_ENV_KEYS:
         region_id = os.environ.get(key)
         if region_id:
+            print(
+                localized_text(
+                    f"Config RegionId from environment variable({key}): {region_id} ",
+                    f"从环境变量({key})中获取RegionId: {region_id}",
+                )
+            )
             return region_id
 
     region_name_map = {r["regionId"]: r["regionName"] for r in REGION_INFOS}
@@ -416,7 +432,6 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
             )
             bucket_name = prompt_for_create_oss_bucket(user_profile, workspace_id)
         else:
-            buckets: List[SimplifiedBucketInfo] = user_profile.list_oss_buckets()
             index = radio_list_prompt(
                 localized_text(
                     "Please select the OSS Bucket you want to use:",
@@ -427,24 +442,48 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
             )
             bucket_name = buckets[index].name
 
-    bucket_info = user_profile.get_bucket_info(bucket_name)
+    try:
+        bucket_info = user_profile.get_bucket_info(bucket_name=bucket_name)
+    except oss2.exceptions.AccessDenied:
+        # try to get bucket info with ListBuckets API if the user has no permission to
+        # GetBucketInfo API.
+        buckets = user_profile.list_oss_buckets(prefix=bucket_name)
+        bucket_info = next((b for b in buckets if b.name == bucket_name), None)
+
+    if not bucket_info:
+        print_warning(
+            localized_text(
+                "Failed to get bucket info, use default endpoint.",
+                "获取 Bucket 信息失败，使用默认 Endpoint。",
+            )
+        )
+        region_id = user_profile.region_id
+        extranet_endpoint, intranet_endpoint = (
+            f"oss-{region_id}.aliyuncs.com",
+            f"oss-{region_id}-internal.aliyuncs.com",
+        )
+    else:
+        extranet_endpoint, intranet_endpoint = (
+            bucket_info.extranet_endpoint,
+            bucket_info.intranet_endpoint,
+        )
 
     # If Workspace has no default OSS storage URI and user has permission to edit,
     # prompt to set the default OSS storage URI.
     if not default_storage_uri and user_profile.has_permission_edit_config(
         workspace_id=workspace_id
     ):
-        prompt_for_set_default_oss_storage(user_profile, workspace_id, bucket_info)
+        prompt_for_set_default_oss_storage(
+            user_profile, workspace_id, bucket_name, intranet_endpoint=intranet_endpoint
+        )
 
     row_format = "{:<60}{}"
-    intra_endpoint_connectable = is_domain_connectable(
-        bucket_info.intranet_endpoint, timeout=1
-    )
+    intra_endpoint_connectable = is_domain_connectable(intranet_endpoint, timeout=1)
     candidates = [
         (
-            bucket_info.intranet_endpoint,
+            intranet_endpoint,
             row_format.format(
-                bucket_info.intranet_endpoint,
+                intranet_endpoint,
                 localized_text(
                     "Internal endpoint (Please use in PAI-DSW Notebook, ECS and other "
                     "intranet environment)",
@@ -453,9 +492,9 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
             ),
         ),
         (
-            bucket_info.extranet_endpoint,
+            extranet_endpoint,
             row_format.format(
-                bucket_info.extranet_endpoint,
+                extranet_endpoint,
                 localized_text(
                     "Public endpoint",
                     "外网Endpoint",
@@ -479,7 +518,10 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
 
 
 def prompt_for_set_default_oss_storage(
-    user_profile: UserProfile, workspace_id: str, bucket_info
+    user_profile: UserProfile,
+    workspace_id: str,
+    bucket_name: str,
+    intranet_endpoint: str,
 ):
     yes_no = confirm(
         localized_text(
@@ -488,7 +530,9 @@ def prompt_for_set_default_oss_storage(
         )
     )
     if yes_no:
-        user_profile.set_default_oss_storage(workspace_id, bucket_info)
+        user_profile.set_default_oss_storage(
+            workspace_id, bucket_name, intranet_endpoint=intranet_endpoint
+        )
 
 
 def prompt_for_create_oss_bucket(user_profile: UserProfile, workspace_id):
