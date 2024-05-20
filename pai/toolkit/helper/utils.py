@@ -153,7 +153,7 @@ class UserProfile(object):
     def get_default_oss_endpoint(self):
         return "https://oss-{}.aliyuncs.com".format(self.region_id)
 
-    def list_oss_buckets(self):
+    def list_oss_buckets(self, prefix: str = "") -> List[SimplifiedBucketInfo]:
         buckets: List[SimplifiedBucketInfo] = []
         service = oss2.Service(
             auth=oss2.ProviderAuth(
@@ -166,7 +166,9 @@ class UserProfile(object):
 
         marker = ""
         while True:
-            res: oss2.models.ListBucketsResult = service.list_buckets(marker=marker)
+            res: oss2.models.ListBucketsResult = service.list_buckets(
+                prefix=prefix, marker=marker
+            )
             buckets.extend(
                 [b for b in res.buckets if self.region_id in b.location] or []
             )

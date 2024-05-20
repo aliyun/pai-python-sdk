@@ -444,11 +444,13 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
 
     try:
         bucket_info = user_profile.get_bucket_info(bucket_name=bucket_name)
-        extranet_endpoint, intranet_endpoint = (
-            bucket_info.extranet_endpoint,
-            bucket_info.intranet_endpoint,
-        )
-    except (oss2.exceptions.NoSuchBucket, oss2.exceptions.AccessDenied):
+    except oss2.exceptions.AccessDenied:
+        # try to get bucket info with ListBuckets API if the user has no permission to
+        # GetBucketInfo API.
+        buckets = user_profile.list_oss_buckets(prefix=bucket_name)
+        bucket_info = next((b for b in buckets if b.name == bucket_name), None)
+
+    if not bucket_info:
         print_warning(
             localized_text(
                 "Failed to get bucket info, use default endpoint.",
@@ -460,6 +462,12 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
             f"oss-{region_id}.aliyuncs.com",
             f"oss-{region_id}-internal.aliyuncs.com",
         )
+    else:
+        extranet_endpoint, intranet_endpoint = (
+            bucket_info.extranet_endpoint,
+            bucket_info.intranet_endpoint,
+        )
+
     # If Workspace has no default OSS storage URI and user has permission to edit,
     # prompt to set the default OSS storage URI.
     if not default_storage_uri and user_profile.has_permission_edit_config(
@@ -470,7 +478,7 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
         )
 
     row_format = "{:<60}{}"
-    intraendpoint_connectable = is_domain_connectable(intranet_endpoint, timeout=1)
+    intra_endpoint_connectable = is_domain_connectable(intranet_endpoint, timeout=1)
     candidates = [
         (
             intranet_endpoint,
@@ -495,7 +503,7 @@ def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
         ),
     ]
 
-    if not intraendpoint_connectable:
+    if not intra_endpoint_connectable:
         candidates = candidates[::-1]
 
     endpoint = radio_list_prompt(
