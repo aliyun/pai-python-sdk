@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import locale
-import logging
 import os.path
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -35,6 +34,7 @@ from oss2.models import SimplifiedBucketInfo
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
+from ..common.logging import get_logger
 from ..common.oss_utils import OssUriObj
 from ..common.utils import (
     is_domain_connectable,
@@ -57,7 +57,7 @@ from .helper.utils import (
     validate_bucket_name,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".pai", "config.json")
 DEFAULT_CREDENTIAL_INI_PATH = os.path.join(

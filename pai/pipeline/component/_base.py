@@ -13,19 +13,19 @@
 #  limitations under the License.
 
 import itertools
-import logging
 import uuid
 from abc import ABCMeta, abstractmethod
 
 import six
 
-from pai.common.utils import random_str
-from pai.common.yaml_utils import dump as yaml_dump
-from pai.common.yaml_utils import dump_all as yaml_dump_all
-from pai.pipeline.types import IO_TYPE_INPUTS, IO_TYPE_OUTPUTS, InputsSpec, OutputsSpec
-from pai.session import get_default_session
+from ...common.logging import get_logger
+from ...common.utils import random_str
+from ...common.yaml_utils import dump as yaml_dump
+from ...common.yaml_utils import dump_all as yaml_dump_all
+from ...session import get_default_session
+from ..types import IO_TYPE_INPUTS, IO_TYPE_OUTPUTS, InputsSpec, OutputsSpec
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 DEFAULT_PIPELINE_API_VERSION = "core/v1"

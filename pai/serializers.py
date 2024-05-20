@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import json
-import logging
 import urllib.request
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -26,9 +25,10 @@ import six
 from eas_prediction import pytorch_predict_pb2 as pt_pb
 from eas_prediction import tf_request_pb2 as tf_pb
 
-from pai.session import Session, get_default_session
+from .common.logging import get_logger
+from .session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _is_pil_image(data) -> bool:

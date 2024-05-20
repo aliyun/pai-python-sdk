@@ -15,7 +15,6 @@
 from __future__ import absolute_import
 
 import json
-import logging
 import os.path
 import posixpath
 from datetime import datetime
@@ -27,10 +26,11 @@ from alibabacloud_credentials.utils import auth_constant
 
 from .api.api_container import ResourceAPIsContainerMixin
 from .common.consts import DEFAULT_CONFIG_PATH
+from .common.logging import get_logger
 from .common.oss_utils import CredentialProviderWrapper, OssUriObj
 from .common.utils import is_domain_connectable, make_list_resource_iterator
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Environment variable that indicates where the config path is located.
 # If it is not provided, "$HOME/.pai/config.json" is used as the default config path.

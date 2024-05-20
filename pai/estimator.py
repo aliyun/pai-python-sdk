@@ -14,7 +14,6 @@
 
 import distutils.dir_util
 import json
-import logging
 import os
 import posixpath
 import re
@@ -37,6 +36,7 @@ from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
 from .common.docker_utils import ContainerRun, run_container
+from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     is_filesystem_uri,
@@ -55,7 +55,7 @@ from .schema.training_job_schema import TrainingJobSchema
 from .serializers import SerializerBase
 from .session import Session, get_default_session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
 DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"

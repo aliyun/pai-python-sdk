@@ -12,15 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging
 from typing import Any, Dict, List, Optional
 
 from ..api.image import ImageLabel
+from ..common.logging import get_logger
 from ..common.utils import to_semantic_version
 from ..estimator import Estimator
 from ..session import Session
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class HuggingFaceEstimator(Estimator):

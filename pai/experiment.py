@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging
 import webbrowser
 from typing import Iterator, Optional
 
+from .common.logging import get_logger
 from .session import Session, get_default_session
 from .tensorboard import TensorBoard
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 _default_session = None
 

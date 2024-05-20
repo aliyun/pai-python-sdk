@@ -13,10 +13,10 @@
 #  limitations under the License.
 
 import json
-import logging
 import typing
 from typing import Any, Dict, Union
 
+from ..common.logging import get_logger
 from ..libs.alibabacloud_eas20210701.models import (
     CreateServiceRequest,
     CreateServiceResponseBody,
@@ -30,7 +30,7 @@ from ..libs.alibabacloud_eas20210701.models import (
 )
 from .base import PaginatedResult, ResourceAPI, ServiceName
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ServiceAPI(ResourceAPI):
