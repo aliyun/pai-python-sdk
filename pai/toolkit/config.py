@@ -34,8 +34,7 @@ from oss2.models import SimplifiedBucketInfo
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator
 
-from pai.common.logging import get_logger
-
+from ..common.logging import get_logger
 from ..common.oss_utils import OssUriObj
 from ..common.utils import (
     is_domain_connectable,

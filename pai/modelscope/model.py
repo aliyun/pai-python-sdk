@@ -14,9 +14,8 @@
 
 from typing import Any, Dict, List, Optional, Union
 
-from pai.common.logging import get_logger
-
 from ..api.image import ImageLabel
+from ..common.logging import get_logger
 from ..common.utils import to_semantic_version
 from ..model import (
     DefaultServiceConfig,

@@ -28,7 +28,7 @@ from alibabacloud_credentials.models import Config as CredentialConfig
 from oss2.credentials import Credentials, CredentialsProvider
 from tqdm.autonotebook import tqdm
 
-from pai.common.logging import get_logger
+from .logging import get_logger
 
 logger = get_logger(__name__)
 

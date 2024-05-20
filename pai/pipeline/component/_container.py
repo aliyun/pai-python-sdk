@@ -21,11 +21,11 @@ import uuid
 import six
 from deprecated import deprecated
 
-from pai.common.logging import get_logger
-from pai.common.yaml_utils import dump as yaml_dump
-from pai.pipeline.component._base import UnRegisteredComponent
-from pai.pipeline.types.variable import PipelineVariable
-from pai.session import get_default_session
+from ...common.logging import get_logger
+from ...common.yaml_utils import dump as yaml_dump
+from ...session import get_default_session
+from ..types.variable import PipelineVariable
+from ._base import UnRegisteredComponent
 
 PAI_MANIFEST_SPEC_INPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_INPUTS"
 PAI_MANIFEST_SPEC_OUTPUTS_ENV_KEY = "PAI_MANIFEST_SPEC_OUTPUTS"

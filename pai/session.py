@@ -24,10 +24,9 @@ import oss2
 from alibabacloud_credentials.models import Config as CredentialConfig
 from alibabacloud_credentials.utils import auth_constant
 
-from pai.common.logging import get_logger
-
 from .api.api_container import ResourceAPIsContainerMixin
 from .common.consts import DEFAULT_CONFIG_PATH
+from .common.logging import get_logger
 from .common.oss_utils import CredentialProviderWrapper, OssUriObj
 from .common.utils import is_domain_connectable, make_list_resource_iterator
 

@@ -18,7 +18,7 @@ import time
 from random import randint
 from typing import Any, Dict, List, Optional, Union
 
-from pai.common.logging import get_logger
+from .logging import get_logger
 
 logger = get_logger(__name__)
 

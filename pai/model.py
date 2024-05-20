@@ -29,12 +29,11 @@ import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
-from pai.common.logging import get_logger
-
 from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
+from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     generate_repr,

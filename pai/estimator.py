@@ -30,14 +30,13 @@ from typing import Any, Dict, List, Optional, Union
 
 from Tea.exceptions import TeaException
 
-from pai.common.logging import get_logger
-
 from .api.base import PaginatedResult
 from .api.entity_base import EntityBaseMixin
 from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
 from .common.docker_utils import ContainerRun, run_container
+from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     is_filesystem_uri,

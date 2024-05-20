@@ -15,8 +15,7 @@
 import webbrowser
 from typing import Iterator, Optional
 
-from pai.common.logging import get_logger
-
+from .common.logging import get_logger
 from .session import Session, get_default_session
 from .tensorboard import TensorBoard
 

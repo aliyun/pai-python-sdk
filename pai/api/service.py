@@ -16,8 +16,7 @@ import json
 import typing
 from typing import Any, Dict, Union
 
-from pai.common.logging import get_logger
-
+from ..common.logging import get_logger
 from ..libs.alibabacloud_eas20210701.models import (
     CreateServiceRequest,
     CreateServiceResponseBody,

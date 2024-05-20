@@ -14,9 +14,8 @@
 
 from typing import Any, Dict, List, Optional
 
-from pai.common.logging import get_logger
-
 from .common import ProviderAlibabaPAI
+from .common.logging import get_logger
 from .common.utils import make_list_resource_iterator
 from .session import Session, get_default_session
 

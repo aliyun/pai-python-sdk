@@ -14,9 +14,8 @@
 
 from typing import Any, Dict, List, Optional
 
-from pai.common.logging import get_logger
-
 from ..api.image import ImageLabel
+from ..common.logging import get_logger
 from ..common.utils import to_semantic_version
 from ..estimator import Estimator
 from ..session import Session

@@ -14,8 +14,7 @@
 
 from typing import Optional
 
-from pai.common.logging import get_logger
-
+from ..common.logging import get_logger
 from ..libs.alibabacloud_pai_dlc20201203.models import (
     CreateTensorboardRequest,
     CreateTensorboardResponseBody,

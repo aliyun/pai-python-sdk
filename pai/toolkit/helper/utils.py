@@ -33,11 +33,10 @@ from prompt_toolkit.layout import HSplit, Layout
 from prompt_toolkit.shortcuts import confirm as prompt_confirm
 from prompt_toolkit.widgets import Label, RadioList
 
-from pai.common.logging import get_logger
-
 from ...api.base import ServiceName
 from ...api.client_factory import ClientFactory
 from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
+from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import make_list_resource_iterator
 

@@ -25,8 +25,8 @@ import six
 from eas_prediction import pytorch_predict_pb2 as pt_pb
 from eas_prediction import tf_request_pb2 as tf_pb
 
-from pai.common.logging import get_logger
-from pai.session import Session, get_default_session
+from .common.logging import get_logger
+from .session import Session, get_default_session
 
 logger = get_logger(__name__)
 

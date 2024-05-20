@@ -18,8 +18,7 @@ from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_sts20150401.client import Client as StsClient
 from alibabacloud_tea_openapi.models import Config
 
-from pai.common.logging import get_logger
-
+from ..common.logging import get_logger
 from ..common.utils import http_user_agent
 from ..libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
 from ..libs.alibabacloud_eas20210701.client import Client as EasClient

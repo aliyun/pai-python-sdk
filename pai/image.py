@@ -15,9 +15,8 @@
 import re
 from typing import Any, Dict, List, Optional
 
-from pai.common.logging import get_logger
-
 from .api.image import SUPPORTED_IMAGE_FRAMEWORKS, ImageLabel
+from .common.logging import get_logger
 from .common.utils import make_list_resource_iterator, to_semantic_version
 from .session import Session, get_default_session
 

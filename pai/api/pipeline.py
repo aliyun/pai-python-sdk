@@ -14,8 +14,7 @@
 
 from typing import Any, Dict
 
-from pai.common.logging import get_logger
-
+from ..common.logging import get_logger
 from ..libs.alibabacloud_paiflow20210202.models import (
     CreatePipelineRequest,
     CreatePipelineResponseBody,

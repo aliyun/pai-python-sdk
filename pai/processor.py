@@ -17,10 +17,9 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pai.common.logging import get_logger
-
 from .common.configs import UserVpcConfig
 from .common.consts import JobType, StoragePathCategory
+from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, is_oss_uri, upload
 from .common.utils import (
     experimental,

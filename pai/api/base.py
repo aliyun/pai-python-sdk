@@ -21,7 +21,7 @@ from alibabacloud_tea_util.models import RuntimeOptions
 from six import with_metaclass
 from Tea.model import TeaModel
 
-from pai.common.logging import get_logger
+from ..common.logging import get_logger
 
 logger = get_logger(__name__)
 
