@@ -12,9 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import logging
 from typing import Optional
 
+from ..common.logging import get_logger
 from ..libs.alibabacloud_pai_dlc20201203.models import (
     CreateTensorboardRequest,
     CreateTensorboardResponseBody,
@@ -27,7 +27,7 @@ from ..libs.alibabacloud_pai_dlc20201203.models import (
 )
 from .base import PaginatedResult, ServiceName, WorkspaceScopedResourceAPI
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TensorBoardAPI(WorkspaceScopedResourceAPI):

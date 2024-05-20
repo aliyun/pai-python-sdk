@@ -15,7 +15,6 @@
 import copy
 import distutils.dir_util
 import json
-import logging
 import os.path
 import posixpath
 import shlex
@@ -34,6 +33,7 @@ from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
 from .common.docker_utils import ContainerRun, run_container
+from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     generate_repr,
@@ -50,7 +50,7 @@ from .session import Session, get_default_session
 if typing.TYPE_CHECKING:
     from pai.estimator import AlgorithmEstimator
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Reserved ports for internal use, do not use them for service
 _RESERVED_PORTS = [8080, 9090]
@@ -1118,7 +1118,7 @@ class ModelBase(object):
                 break
             except requests.ConnectionError:
                 # ConnectionError means server is not ready.
-                logging.debug("Waiting for the container to be ready...")
+                logger.debug("Waiting for the container to be ready...")
                 time.sleep(interval)
                 continue
 

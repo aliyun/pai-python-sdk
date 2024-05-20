@@ -14,22 +14,17 @@
 
 from __future__ import absolute_import
 
-import logging
 from collections import Counter, defaultdict
 
-from pai.common.yaml_utils import dump as yaml_dump
-from pai.common.yaml_utils import dump_all as yaml_dump_all
-from pai.pipeline.component._base import UnRegisteredComponent
-from pai.pipeline.types import (
-    InputsSpec,
-    OutputsSpec,
-    PipelineParameter,
-    PipelineVariable,
-)
-from pai.pipeline.types.artifact import PipelineArtifact, PipelineArtifactElement
-from pai.session import get_default_session
+from ..common.logging import get_logger
+from ..common.yaml_utils import dump as yaml_dump
+from ..common.yaml_utils import dump_all as yaml_dump_all
+from ..session import get_default_session
+from .component._base import UnRegisteredComponent
+from .types import InputsSpec, OutputsSpec, PipelineParameter, PipelineVariable
+from .types.artifact import PipelineArtifact, PipelineArtifactElement
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Pipeline(UnRegisteredComponent):

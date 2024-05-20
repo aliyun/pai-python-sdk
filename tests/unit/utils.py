@@ -18,6 +18,7 @@ import hashlib
 import os
 import re
 
+import mock
 import six
 import yaml
 
@@ -150,3 +151,8 @@ def file_checksum(file_name, hash_type="md5"):
         for chunk in iter(lambda: f.read(256 * 1024), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def mock_env(**kwargs):
+    """Decorator to set environment variables for a test function."""
+    return mock.patch.dict(os.environ, kwargs)

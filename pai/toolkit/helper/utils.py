@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import locale
-import logging
 import os
 import re
 from typing import List
@@ -37,10 +36,11 @@ from prompt_toolkit.widgets import Label, RadioList
 from ...api.base import ServiceName
 from ...api.client_factory import ClientFactory
 from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
+from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import make_list_resource_iterator
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 locale_code, _ = locale.getdefaultlocale()
 
