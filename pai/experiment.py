@@ -146,6 +146,26 @@ class Experiment(object):
             session=session,
         )
 
+    @classmethod
+    def get_by_name(
+        cls, name: str, session: Optional[Session] = None
+    ) -> Optional["Experiment"]:
+        """Get experiment by name.
+
+        Args:
+            name (str): The name of the experiment.
+            session (Session): The session to be used.
+
+        Returns:
+            Experiment: The experiment with the specified name.
+
+        """
+        exp = next(
+            (exp for exp in cls.list(name=name, session=session) if exp.name == name),
+            None,
+        )
+        return exp
+
     def update(
         self,
         name: str,
