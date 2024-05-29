@@ -23,21 +23,33 @@ import tempfile
 import textwrap
 import time
 import typing
+from functools import cached_property
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
+from ._training_job import (
+    AlgorithmSpecModel,
+    ChannelDefinition,
+    DatasetInput,
+    TrainingJobSpec,
+    UriInput,
+)
 from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
-from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
+from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
 from .common.docker_utils import ContainerRun, run_container
 from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     generate_repr,
+    is_dataset_id,
+    is_filesystem_uri,
     is_local_run_instance_type,
+    is_odps_table_uri,
+    name_from_base,
     random_str,
     to_plain_text,
 )
@@ -48,7 +60,7 @@ from .serializers import SerializerBase
 from .session import Session, get_default_session
 
 if typing.TYPE_CHECKING:
-    from pai.estimator import AlgorithmEstimator
+    from pai.estimator import AlgorithmEstimator, _TrainingJob
 
 logger = get_logger(__name__)
 
@@ -589,12 +601,14 @@ def container_serving_spec(
         "image": image_uri,
         "port": port,
         "script": command,
-        "env": [
-            {"name": key, "value": str(value)}
-            for key, value in environment_variables.items()
-        ]
-        if environment_variables
-        else [],
+        "env": (
+            [
+                {"name": key, "value": str(value)}
+                for key, value in environment_variables.items()
+            ]
+            if environment_variables
+            else []
+        ),
     }
 
     if health_check:
@@ -1229,9 +1243,9 @@ class ModelBase(object):
             framework_type=framework_type,
             training_spec=training_spec,
             evaluation_spec=evaluation_spec,
-            inference_spec=self.inference_spec.to_dict()
-            if self.inference_spec
-            else None,
+            inference_spec=(
+                self.inference_spec.to_dict() if self.inference_spec else None
+            ),
             approval_status=approval_status,
             metrics=metrics,
             options=options,
@@ -2147,6 +2161,439 @@ class RegisteredModel(ModelBase):
 
         return input_channels
 
+    @classmethod
+    def _is_multiple_spec(cls, spec: Dict[str, Any]) -> bool:
+        return not ("AlgorithmSpec" in spec or "AlgorithmName" in spec)
+
     def _get_evaluation_spec(self):
         """Get the evaluation_spec of the registered model."""
         return self.evaluation_spec
+
+    def training_recipe(
+        self, training_method: Optional[str] = None
+    ) -> "ModelTrainingRecipe":
+        """Get the training recipe of the registered model.
+
+        Args:
+            training_method (str, optional): The training method used to select the
+                specific training recipe.
+
+        Returns:
+            :class:`pai.model.ModelTrainingRecipe`: A ModelTrainingRecipe object.
+
+        """
+        if not self.training_spec:
+            raise ValueError("The model does not contain training spec.")
+
+        if type(self)._is_multiple_spec(self.training_spec):
+            if training_method:
+                if training_method not in self.training_spec:
+                    raise ValueError(
+                        f"The model does not support the given training method: {training_method}, "
+                        "supported training methods are: {list(self.training_spec.keys())}"
+                    )
+                else:
+                    spec = TrainingJobSpec.model_validate(
+                        self.training_spec[training_method]
+                    )
+            else:
+                method, raw_spec = next(iter(self.training_spec.items()), (None, None))
+                logger.warning(
+                    "The training method is not specified, using the default training method: %s",
+                    method,
+                )
+                spec = TrainingJobSpec.model_validate(raw_spec)
+        else:
+            spec = TrainingJobSpec.model_validate(self.training_spec)
+        return ModelTrainingRecipe(spec=spec, model=self)
+
+    def evaluation_recipe(self) -> "ModelEvaluationRecipe":
+        """Get the evaluation recipe of the registered model.
+
+        Returns:
+            :class:`pai.model.ModelEvaluationRecipe`: A ModelEvaluationRecipe object.
+
+        """
+        if type(self)._is_multiple_spec(self.evaluation_spec):
+            raw_spec = list(self.evaluation_spec.values())[0]
+            logger.info(
+                "The evaluation spec contains multiple specs, using the first one."
+            )
+        else:
+            raw_spec = self.evaluation_spec
+        evaluation_spec = TrainingJobSpec.model_validate(raw_spec)
+        return ModelEvaluationRecipe(spec=evaluation_spec, model=self)
+
+
+class _ModelRecipe(object):
+    MODEL_CHANNEL_NAME = "model"
+    RECIPE_TYPE = None
+
+    def __init__(
+        self,
+        spec: "TrainingJobSpec",
+        model: Optional["RegisteredModel"],
+        model_channel_name: Optional[str] = None,
+    ) -> None:
+        self.model = model
+        self.spec = spec
+        self.model_channel_name = model_channel_name or self.MODEL_CHANNEL_NAME
+        self._training_jobs = []
+
+    @cached_property
+    def _algorithm_spec(self):
+        if self.spec.AlgorithmSpec:
+            return self.spec.AlgorithmSpec
+        else:
+            session = get_default_session()
+            algo = session.algorithm_api.get_by_name(
+                algorithm_name=self.spec.AlgorithmName,
+                algorithm_provider=self.spec.AlgorithmProvider,
+            )
+            raw_algo_version_spec = session.algorithm_api.get_version(
+                algorithm_id=algo["AlgorithmId"],
+                algorithm_version=self.spec.AlgorithmVersion,
+            )
+            return AlgorithmSpecModel.model_validate(
+                raw_algo_version_spec["AlgorithmSpec"]
+            )
+
+    @property
+    def latest_job(self) -> "_TrainingJob":
+        return self._training_jobs[-1] if self._training_jobs else None
+
+    def _build_input_data_configs(
+        self,
+        inputs: Dict[str, Any] = None,
+    ) -> List[Dict[str, str]]:
+        """Build the input data config for the training job."""
+        res = []
+        ch_defs = self._algorithm_spec.InputChannels
+        inputs = inputs or dict()
+        # requires = {ch.Name for ch in ch_defs if ch.Required} - set(inputs.keys())
+        # if requires:
+        #     raise ValueError(
+        #         "Required input channels are not provided: {}".format(
+        #             ",".join(requires)
+        #         )
+        #     )
+        more = set(inputs.keys()) - {ch.Name for ch in ch_defs}
+        if more:
+            raise ValueError(
+                "Following input channels are not defined in the algorithm spec: {}".format(
+                    ",".join(more)
+                )
+            )
+
+        for name, item in inputs.items():
+            input_config = self._get_input_config(name, item)
+            res.append(input_config)
+
+        if inputs and self.model_channel_name not in inputs:
+            ch = next(
+                (
+                    ch
+                    for ch in self.spec.InputChannels
+                    if ch.Name == self.model_channel_name
+                ),
+                None,
+            )
+            if not ch:
+                logger.warning(
+                    "No model input channel is provided: model_channel_name: %s",
+                    self.model_channel_name,
+                )
+            else:
+                res.append(ch.model_dump(by_alias=True))
+        elif not inputs:
+            logger.warning(
+                "ModelRecipe: No input data is provided, using the default input data in the recipe."
+            )
+            for ch in self.spec.InputChannels:
+                res.append(ch.model_dump(by_alias=True))
+
+        return res
+
+    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
+        """Build the output data config for the training job."""
+        session = get_default_session()
+        bucket_name = session.oss_bucket.bucket_name
+        recipe = type(self).RECIPE_TYPE
+        storage_path = session.get_storage_path_by_category(
+            recipe, f"{to_plain_text(job_name)}_{random_str(6)}"
+        )
+        base_output_path = f"oss://{bucket_name}/{storage_path}"
+
+        def as_oss_dir_uri(uri: str):
+            return uri if uri.endswith("/") else uri + "/"
+
+        output_defs = self._algorithm_spec.OutputChannels
+
+        res = []
+        for ch in output_defs:
+            # if checkpoint path is provided, use it as the checkpoint channel output.
+            output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.Name))
+            res.append(
+                {
+                    "Name": ch.Name,
+                    "OutputUri": output_uri,
+                }
+            )
+        return res
+
+    def _get_input_config(self, name: str, item: str):
+        """Get input uri for training_job from given input."""
+        from pai.estimator import FileSystemInputBase
+
+        if not isinstance(item, (str, FileSystemInputBase)):
+            raise ValueError(f"Input data of type {type(item)} is not supported.")
+
+        if isinstance(item, FileSystemInputBase):
+            config = {"InputUri": item.to_input_uri()}
+        elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
+            config = {"InputUri": item}
+        elif os.path.exists(item):
+            store_path = Session.get_storage_path_by_category(
+                StoragePathCategory.InputData
+            )
+            config = {"InputUri": upload(item, store_path)}
+        elif is_dataset_id(item):
+            config = {"DatasetId": item}
+        else:
+            raise ValueError(
+                "Invalid input data, supported inputs are OSS, NAS, MaxCompute "
+                "table or local path."
+            )
+        config.update({"Name": name})
+
+        return config
+
+    def job_name(self, job_name: Optional[str] = None):
+        if job_name:
+            return job_name
+
+        recipe_type = type(self).RECIPE_TYPE
+        if not recipe_type:
+            raise ValueError("RECIPE_TYPE is not defined in the recipe class.")
+
+        sep = "-"
+        if self.model:
+            base_name = f"{self.model.model_name}{sep}{recipe_type}"
+        else:
+            base_name = recipe_type
+        return name_from_base(base_name, sep)
+
+    @property
+    def default_inputs(self):
+        return self.spec.InputChannels
+
+    @property
+    def input_definitions(self) -> List[ChannelDefinition]:
+        return self._algorithm_spec.InputChannels
+
+    @property
+    def output_definitions(self) -> List[ChannelDefinition]:
+        return self._algorithm_spec.OutputChannels
+
+
+class ModelTrainingRecipe(_ModelRecipe):
+
+    RECIPE_TYPE = "training"
+
+    def train(
+        self,
+        inputs: Optional[Dict[str, Any]] = None,
+        wait: bool = True,
+        job_name: Optional[str] = None,
+        hyperparameters: Optional[Dict[str, Any]] = None,
+        instance_type: Optional[str] = None,
+        instance_count: int = 1,
+        max_run_time: Optional[int] = None,
+        user_vpc_config: Optional[UserVpcConfig] = None,
+        resource_id: Optional[str] = None,
+        labels: Optional[Dict[str, str]] = None,
+    ):
+        """Start a training job with the given inputs."""
+        from pai.estimator import _TrainingJob
+
+        session = get_default_session()
+        job_name = self.job_name(job_name)
+        input_configs = self._build_input_data_configs(inputs=inputs)
+        output_configs = self._build_output_data_configs(job_name)
+        algo_spec = self._algorithm_spec.model_dump()
+
+        if instance_type or self.spec.ComputeResource.EcsSpec:
+            instance_type = instance_type or self.spec.ComputeResource.EcsSpec
+            instance_count = instance_count or self.spec.ComputeResource.EcsCount or 1
+
+        hyperparameters = hyperparameters or dict()
+        hyperparameters.update({hp.Name: hp.Value for hp in self.spec.HyperParameters})
+
+        training_job_id = session.training_job_api.create(
+            instance_count=instance_count,
+            # instance_spec=self.instance_spec,
+            instance_type=instance_type,
+            # resource_id=self.resource_id,
+            job_name=job_name,
+            hyperparameters=hyperparameters,
+            max_running_in_seconds=max_run_time,
+            input_channels=input_configs,
+            output_channels=output_configs,
+            algorithm_spec=algo_spec,
+            # experiment_config=
+            user_vpc_config=user_vpc_config.to_dict() if user_vpc_config else None,
+            labels=labels,
+        )
+        training_job = _TrainingJob.get(training_job_id)
+        self._training_jobs.append(training_job)
+
+        print(
+            f"View the job detail by accessing the console URI: {training_job.console_uri}"
+        )
+        if wait:
+            training_job.wait()
+
+    def retrieve_scripts(self, local_path: str) -> str:
+        """Retrieve the training scripts to the local file system.
+
+        Args:
+            local_path (str): The local path where the training scripts are saved.
+
+        Returns:
+            str: The local path where the training scripts are saved.
+
+        """
+        if not self.spec.AlgorithmSpec and not (
+            self.spec.AlgorithmName and self.spec.AlgorithmVersion
+        ):
+            raise RuntimeError(
+                "No algorithm information is provided in the training spec."
+            )
+
+        algorithm_spec = self._algorithm_spec
+        if not algorithm_spec.CodeDir:
+            raise RuntimeError("No source code is provided in the algorithm spec.")
+
+        oss_uri = "oss://{}/{}".format(
+            algorithm_spec.CodeDir.LocationValue.Bucket,
+            algorithm_spec.CodeDir.LocationValue.Key.lstrip("/"),
+        )
+
+        return download(oss_uri, local_path)
+
+    def model_data(self):
+        from pai.estimator import DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
+
+        if not self._training_jobs:
+            raise RuntimeError("No training job is available for deployment.")
+
+        if not self.latest_job.is_succeeded():
+            logger.warning(
+                "The latest training job is not succeeded, the deployment may not work."
+            )
+
+        return self.latest_job.output_path(
+            channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
+        )
+
+    def deploy(
+        self,
+        service_name: str,
+        inference_spec: Optional[InferenceSpec] = None,
+        instance_type: Optional[str] = None,
+        instance_count: int = 1,
+        resource_config: Optional[Union[ResourceConfig, Dict[str, int]]] = None,
+        resource_id: str = None,
+        options: Optional[Dict[str, Any]] = None,
+        serializer: SerializerBase = None,
+        wait=True,
+    ) -> Predictor:
+        inference_spec = inference_spec or self.model.inference_spec
+        if not inference_spec:
+            raise RuntimeError("No inference_spec is available for model deployment.")
+
+        m = Model(
+            model_data=self.model_data(),
+            inference_spec=inference_spec,
+        )
+        p = m.deploy(
+            service_name=service_name,
+            instance_type=instance_type,
+            instance_count=instance_count,
+            resource_config=resource_config,
+            resource_id=resource_id,
+            serializer=serializer,
+            options=options,
+            wait=wait,
+        )
+        return p
+
+
+class ModelEvaluationRecipe(_ModelRecipe):
+
+    RECIPE_TYPE = "evaluation"
+
+    DEFAULT_EVALUATION_RESULT_CHANNEL_NAME = "eval_result"
+
+    def __init__(
+        self, evaluation_channel_name=DEFAULT_EVALUATION_RESULT_CHANNEL_NAME, **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.evaluation_channel_name = evaluation_channel_name
+
+    def evaluate(
+        self,
+        inputs: Dict[str, Any] = None,
+        job_name: Optional[str] = None,
+        instance_type: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        parameters: Optional[Dict[str, str]] = None,
+        max_run_time: Optional[int] = None,
+        labels: Optional[Dict[str, str]] = None,
+        wait: bool = True,
+    ):
+        from pai.estimator import _TrainingJob
+
+        session = get_default_session()
+
+        job_name = self.job_name(job_name=job_name)
+        input_configs = self._build_input_data_configs(inputs=inputs)
+        output_configs = self._build_output_data_configs(job_name)
+        algo_spec = self._algorithm_spec.model_dump()
+
+        if (
+            instance_type is None
+            and instance_count is None
+            and (
+                self.spec.ComputeResource.EcsSpec and self.spec.ComputeResource.EcsCount
+            )
+        ):
+            instance_type = self.spec.ComputeResource.EcsSpec
+            instance_count = self.spec.ComputeResource.EcsCount
+
+        hyperparameters = parameters or dict()
+        hyperparameters.update({hp.Name: hp.Value for hp in self.spec.HyperParameters})
+
+        training_job_id = session.training_job_api.create(
+            instance_count=instance_count,
+            # instance_spec=self.instance_spec,
+            # resource_id=self.resource_id,
+            instance_type=instance_type,
+            job_name=job_name,
+            hyperparameters=hyperparameters,
+            max_running_in_seconds=max_run_time,
+            input_channels=input_configs,
+            output_channels=output_configs,
+            algorithm_spec=algo_spec,
+            # experiment_config=
+            # user_vpc_config=user_vpc_config.to_dict() if user_vpc_config else None,
+            labels=labels,
+        )
+        training_job = _TrainingJob.get(training_job_id)
+        self._training_jobs.append(training_job)
+
+        print(
+            f"View the job detail by accessing the console URI: {training_job.console_uri}"
+        )
+        if wait:
+            training_job.wait()

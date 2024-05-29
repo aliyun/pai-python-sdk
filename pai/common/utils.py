@@ -23,6 +23,7 @@ import string
 import sys
 import time
 import warnings
+from datetime import datetime
 from functools import lru_cache
 from typing import Callable, Dict, List, Optional, Union
 
@@ -322,3 +323,38 @@ def print_table(headers: List[str], rows: List[List[str]]):
 def is_package_available(package_name: str) -> bool:
     """Check if the package is available in the current environment."""
     return True if importlib.util.find_spec(package_name) is not None else False
+
+
+def timestamp(sep: str = "-", utc=False) -> str:
+    """Return a timestamp with millisecond precision.
+
+    Args:
+        sep: The separator between date and time.
+
+    Returns:
+        str: A timestamp with millisecond precision.
+
+    """
+    if utc:
+        res = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    else:
+        res = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:-3]
+    if sep != "-":
+        res = res.replace("-", sep)
+    return res
+
+
+def name_from_base(base_name: str, sep: str = "-") -> str:
+    """Return a name with base_name and timestamp.
+
+    Args:
+        base_name: The base name of the returned name.
+        sep: The separator between base_name and timestamp.
+
+    Returns:
+        str: A name with base_name and timestamp.
+
+    """
+    return "{base_name}{sep}{timestamp}".format(
+        base_name=base_name, sep=sep, timestamp=timestamp(sep=sep, utc=False)
+    )
