@@ -35,6 +35,7 @@ class ServiceName(object):
     PAIFLOW = "paiflow"
     # Other services provided by Alibaba Cloud.
     STS = "sts"
+    PAI_DSW = "pai-dsw"
 
 
 class PAIRestResourceTypes(object):
