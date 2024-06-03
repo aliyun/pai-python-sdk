@@ -15,7 +15,7 @@
 import locale
 import os
 import re
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import oss2
 from alibabacloud_credentials.client import Client as CredentialClient
@@ -39,6 +39,7 @@ from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
 from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import make_list_resource_iterator
+from ...libs.alibabacloud_pai_dsw20220101.client import Client as DswClient
 
 logger = get_logger(__name__)
 
@@ -46,6 +47,13 @@ locale_code, _ = locale.getdefaultlocale()
 
 OSS_NAME_PATTERN = re.compile(pattern="^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
 ZH_CN_LOCAL = "zh_CN"
+
+# RoleARN pattern for AssumedRole CallerIdentity
+ASSUMED_ROLE_ARN_PATTERN = re.compile(r"acs:ram::\d+:assumed-role/([^/]+)/.*")
+
+# DSW Notebook Default Role Name:
+PAI_DSW_DEFAULT_ROLE_NAME = "aliyunpaidswdefaultrole"
+
 
 DEFAULT_PRODUCT_RAM_ROLE_NAMES = [
     "AliyunODPSPAIDefaultRole",
@@ -124,6 +132,23 @@ class UserProfile(object):
             .get_caller_identity()
             .body
         )
+
+    def is_dsw_default_role(self) -> bool:
+        if self._caller_identify.identity_type != CallerIdentityType.AssumedRoleUser:
+            return False
+        m = ASSUMED_ROLE_ARN_PATTERN.match(self._caller_identify.arn)
+        return m and m.group(1).lower() == PAI_DSW_DEFAULT_ROLE_NAME
+
+    def get_acs_dsw_client(self) -> DswClient:
+        return ClientFactory.create_client(
+            service_name=ServiceName.PAI_DSW,
+            credential_client=self._get_credential_client(),
+            region_id=self.region_id,
+        )
+
+    def get_instance_info(self, instance_id: str) -> Dict[str, Any]:
+        dsw_client = self.get_acs_dsw_client()
+        return dsw_client.get_instance(instance_id).body.to_map()
 
     def get_credential(self):
         return self._credential_client.get_access_key_id()
@@ -250,8 +275,11 @@ class UserProfile(object):
         configs = {WorkspaceConfigKeys.DEFAULT_OSS_STORAGE_URI: oss_uri}
         workspace_api.update_configs(workspace_id, configs=configs)
 
-    def get_roles_in_workspace(self, workspace_id) -> List[str]:
+    def get_roles_in_workspace(
+        self, workspace_id, user_id: Optional[str] = None
+    ) -> List[str]:
         workspace_api = self.get_workspace_api()
+        user_id = user_id or self.user_id
         member_info = next(
             (
                 mem
@@ -259,7 +287,7 @@ class UserProfile(object):
                     workspace_api.list_members,
                     workspace_id=workspace_id,
                 )
-                if mem["UserId"] == self.user_id
+                if mem["UserId"] == user_id
             ),
             None,
         )
