@@ -12,26 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
-import pprint
 
 import pytest
 
-from pai._training_job import UriInput
 from pai.common.utils import random_str
 from pai.model import RegisteredModel
-from pai.session import get_default_session
 from tests.integration import BaseIntegTestCase
 from tests.test_data import test_data_dir
 
 
 @pytest.mark.timeout(60 * 30)
 class TestModelRecipe(BaseIntegTestCase):
-    def test_list_model(self):
-        for m in RegisteredModel.list(
-            model_name="qwen1.5-0.5b-chat", model_provider="pai"
-        ):
-            print(m)
-
     def test_training_e2e(self):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
@@ -56,9 +47,12 @@ class TestModelRecipe(BaseIntegTestCase):
     def test_custom_inputs_train(self):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
+        self.assertTrue(
+            bool(training_recipe.default_inputs),
+            "Default inputs is empty for ModelTrainingRecipe.",
+        )
 
         train_data = os.path.join(test_data_dir, "chinese_medical/train_sampled.json")
-        self.assertTrue(os.path.exists(train_data))
         training_recipe.train(
             inputs={
                 "train": train_data,
@@ -66,29 +60,7 @@ class TestModelRecipe(BaseIntegTestCase):
         )
         self.assertIsNotNone(training_recipe.model_data())
 
-    def test_retrieve_scripts(self):
-        model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
-        recipe = model.training_recipe()
-        pprint.pprint(recipe.spec.model_dump())
-
     def test_evaluation(self):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         eval_recipe = model.evaluation_recipe()
         eval_recipe.evaluate()
-
-    def test_input_dump(self):
-        uri_input = UriInput(Name="Hello", InputUri="abc")
-        print(uri_input.model_dump(by_alias=True))
-
-    def test_algorithm(self):
-        algorithm_name = "llm_deepspeed_peft"
-        algorithm_version = "v0.0.5"
-
-        session = get_default_session()
-        algo = session.algorithm_api.get_by_name(
-            algorithm_name=algorithm_name, algorithm_provider="pai"
-        )
-        raw_algo_version_spec = session.algorithm_api.get_version(
-            algorithm_id=algo["AlgorithmId"], algorithm_version=algorithm_version
-        )
-        pprint.pprint(raw_algo_version_spec)

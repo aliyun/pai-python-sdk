@@ -31,8 +31,8 @@ from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
 from ._training_job import (
-    AlgorithmSpecModel,
-    ChannelDefinition,
+    AlgorithmSpec,
+    Channel,
     DatasetInput,
     TrainingJobSpec,
     UriInput,
@@ -2241,22 +2241,20 @@ class _ModelRecipe(object):
         self._training_jobs = []
 
     @cached_property
-    def _algorithm_spec(self):
-        if self.spec.AlgorithmSpec:
-            return self.spec.AlgorithmSpec
+    def algorithm_spec(self) -> AlgorithmSpec:
+        if self.spec.algorithm_spec:
+            return self.spec.algorithm_spec
         else:
             session = get_default_session()
             algo = session.algorithm_api.get_by_name(
-                algorithm_name=self.spec.AlgorithmName,
-                algorithm_provider=self.spec.AlgorithmProvider,
+                algorithm_name=self.spec.algorithm_name,
+                algorithm_provider=self.spec.algorithm_provider,
             )
             raw_algo_version_spec = session.algorithm_api.get_version(
                 algorithm_id=algo["AlgorithmId"],
-                algorithm_version=self.spec.AlgorithmVersion,
+                algorithm_version=self.spec.algorithm_version,
             )
-            return AlgorithmSpecModel.model_validate(
-                raw_algo_version_spec["AlgorithmSpec"]
-            )
+            return AlgorithmSpec.model_validate(raw_algo_version_spec["AlgorithmSpec"])
 
     @property
     def latest_job(self) -> "_TrainingJob":
@@ -2268,7 +2266,7 @@ class _ModelRecipe(object):
     ) -> List[Dict[str, str]]:
         """Build the input data config for the training job."""
         res = []
-        ch_defs = self._algorithm_spec.InputChannels
+        ch_defs = self.algorithm_spec.input_channels
         inputs = inputs or dict()
         # requires = {ch.Name for ch in ch_defs if ch.Required} - set(inputs.keys())
         # if requires:
@@ -2277,7 +2275,7 @@ class _ModelRecipe(object):
         #             ",".join(requires)
         #         )
         #     )
-        more = set(inputs.keys()) - {ch.Name for ch in ch_defs}
+        more = set(inputs.keys()) - {ch.name for ch in ch_defs}
         if more:
             raise ValueError(
                 "Following input channels are not defined in the algorithm spec: {}".format(
@@ -2291,11 +2289,7 @@ class _ModelRecipe(object):
 
         if inputs and self.model_channel_name not in inputs:
             ch = next(
-                (
-                    ch
-                    for ch in self.spec.InputChannels
-                    if ch.Name == self.model_channel_name
-                ),
+                (ch for ch in self.spec.inputs if ch.name == self.model_channel_name),
                 None,
             )
             if not ch:
@@ -2304,13 +2298,13 @@ class _ModelRecipe(object):
                     self.model_channel_name,
                 )
             else:
-                res.append(ch.model_dump(by_alias=True))
+                res.append(ch.model_dump())
         elif not inputs:
             logger.warning(
                 "ModelRecipe: No input data is provided, using the default input data in the recipe."
             )
-            for ch in self.spec.InputChannels:
-                res.append(ch.model_dump(by_alias=True))
+            for ch in self.spec.inputs:
+                res.append(ch.model_dump())
 
         return res
 
@@ -2327,15 +2321,15 @@ class _ModelRecipe(object):
         def as_oss_dir_uri(uri: str):
             return uri if uri.endswith("/") else uri + "/"
 
-        output_defs = self._algorithm_spec.OutputChannels
+        output_defs = self.algorithm_spec.output_channels
 
         res = []
         for ch in output_defs:
             # if checkpoint path is provided, use it as the checkpoint channel output.
-            output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.Name))
+            output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.name))
             res.append(
                 {
-                    "Name": ch.Name,
+                    "Name": ch.name,
                     "OutputUri": output_uri,
                 }
             )
@@ -2385,15 +2379,23 @@ class _ModelRecipe(object):
 
     @property
     def default_inputs(self):
-        return self.spec.InputChannels
+        return self.spec.inputs
 
     @property
-    def input_definitions(self) -> List[ChannelDefinition]:
-        return self._algorithm_spec.InputChannels
+    def input_channels(self) -> List[Channel]:
+        return self.algorithm_spec.input_channels
 
     @property
-    def output_definitions(self) -> List[ChannelDefinition]:
-        return self._algorithm_spec.OutputChannels
+    def output_channels(self) -> List[Channel]:
+        return self.algorithm_spec.output_channels
+
+    @property
+    def image_uri(self) -> str:
+        return self.algorithm_spec.image
+
+    @property
+    def command(self) -> List[str]:
+        return self.algorithm_spec.command
 
 
 class ModelTrainingRecipe(_ModelRecipe):
@@ -2410,7 +2412,7 @@ class ModelTrainingRecipe(_ModelRecipe):
         instance_count: int = 1,
         max_run_time: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
-        resource_id: Optional[str] = None,
+        # resource_id: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
     ):
         """Start a training job with the given inputs."""
@@ -2420,14 +2422,14 @@ class ModelTrainingRecipe(_ModelRecipe):
         job_name = self.job_name(job_name)
         input_configs = self._build_input_data_configs(inputs=inputs)
         output_configs = self._build_output_data_configs(job_name)
-        algo_spec = self._algorithm_spec.model_dump()
+        algo_spec = self.algorithm_spec.model_dump()
 
-        if instance_type or self.spec.ComputeResource.EcsSpec:
-            instance_type = instance_type or self.spec.ComputeResource.EcsSpec
-            instance_count = instance_count or self.spec.ComputeResource.EcsCount or 1
+        if instance_type or self.spec.compute_resource.ecs_spec:
+            instance_type = instance_type or self.spec.compute_resource.ecs_spec
+            instance_count = instance_count or self.spec.compute_resource.ecs_count or 1
 
         hyperparameters = hyperparameters or dict()
-        hyperparameters.update({hp.Name: hp.Value for hp in self.spec.HyperParameters})
+        hyperparameters.update({hp.Name: hp.value for hp in self.spec.hyperparameters})
 
         training_job_id = session.training_job_api.create(
             instance_count=instance_count,
@@ -2463,23 +2465,22 @@ class ModelTrainingRecipe(_ModelRecipe):
             str: The local path where the training scripts are saved.
 
         """
-        if not self.spec.AlgorithmSpec and not (
-            self.spec.AlgorithmName and self.spec.AlgorithmVersion
+        if not self.spec.algorithm_spec and not (
+            self.spec.algorithm_name and self.spec.algorithm_version
         ):
             raise RuntimeError(
                 "No algorithm information is provided in the training spec."
             )
 
-        algorithm_spec = self._algorithm_spec
-        if not algorithm_spec.CodeDir:
+        algorithm_spec = self.algorithm_spec
+        if not algorithm_spec.code_dir:
             raise RuntimeError("No source code is provided in the algorithm spec.")
 
         oss_uri = "oss://{}/{}".format(
-            algorithm_spec.CodeDir.LocationValue.Bucket,
-            algorithm_spec.CodeDir.LocationValue.Key.lstrip("/"),
+            algorithm_spec.code_dir.location_value.bucket,
+            algorithm_spec.code_dir.location_value.key.lstrip("/"),
         )
-
-        return download(oss_uri, local_path)
+        return download(oss_uri, local_path, un_tar=True)
 
     def model_data(self):
         from pai.estimator import DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
@@ -2528,6 +2529,9 @@ class ModelTrainingRecipe(_ModelRecipe):
         )
         return p
 
+    def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
+        return self.algorithm_spec.hyperparameter_definitions
+
 
 class ModelEvaluationRecipe(_ModelRecipe):
 
@@ -2559,20 +2563,21 @@ class ModelEvaluationRecipe(_ModelRecipe):
         job_name = self.job_name(job_name=job_name)
         input_configs = self._build_input_data_configs(inputs=inputs)
         output_configs = self._build_output_data_configs(job_name)
-        algo_spec = self._algorithm_spec.model_dump()
+        algo_spec = self.algorithm_spec.model_dump()
 
         if (
             instance_type is None
             and instance_count is None
             and (
-                self.spec.ComputeResource.EcsSpec and self.spec.ComputeResource.EcsCount
+                self.spec.compute_resource.ecs_spec
+                and self.spec.compute_resource.ecs_count
             )
         ):
-            instance_type = self.spec.ComputeResource.EcsSpec
-            instance_count = self.spec.ComputeResource.EcsCount
+            instance_type = self.spec.compute_resource.ecs_spec
+            instance_count = self.spec.compute_resource.ecs_count
 
         hyperparameters = parameters or dict()
-        hyperparameters.update({hp.Name: hp.Value for hp in self.spec.HyperParameters})
+        hyperparameters.update({hp.Name: hp.value for hp in self.spec.hyperparameters})
 
         training_job_id = session.training_job_api.create(
             instance_count=instance_count,
