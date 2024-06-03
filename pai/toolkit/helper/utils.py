@@ -15,7 +15,7 @@
 import locale
 import os
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import oss2
 from alibabacloud_credentials.client import Client as CredentialClient
@@ -133,9 +133,9 @@ class UserProfile(object):
             .body
         )
 
-    def is_dsw_default_role(self):
+    def is_dsw_default_role(self) -> bool:
         if self._caller_identify.identity_type != CallerIdentityType.AssumedRoleUser:
-            return
+            return False
         m = ASSUMED_ROLE_ARN_PATTERN.match(self._caller_identify.arn)
         return m and m.group(1).lower() == PAI_DSW_DEFAULT_ROLE_NAME
 
@@ -275,8 +275,11 @@ class UserProfile(object):
         configs = {WorkspaceConfigKeys.DEFAULT_OSS_STORAGE_URI: oss_uri}
         workspace_api.update_configs(workspace_id, configs=configs)
 
-    def get_roles_in_workspace(self, workspace_id) -> List[str]:
+    def get_roles_in_workspace(
+        self, workspace_id, user_id: Optional[str] = None
+    ) -> List[str]:
         workspace_api = self.get_workspace_api()
+        user_id = user_id or self.user_id
         member_info = next(
             (
                 mem
@@ -284,7 +287,7 @@ class UserProfile(object):
                     workspace_api.list_members,
                     workspace_id=workspace_id,
                 )
-                if mem["UserId"] == self.user_id
+                if mem["UserId"] == user_id
             ),
             None,
         )

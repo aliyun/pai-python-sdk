@@ -650,7 +650,8 @@ def prompt_config_with_default_dsw_role(user_profile: UserProfile):
     instance_info = user_profile.get_instance_info(instance_id=instance_id)
     workspace_id = instance_info["WorkspaceId"]
     workspace_name = instance_info["WorkspaceName"]
-    roles = user_profile.get_roles_in_workspace(workspace_id)
+    user_id = instance_info["UserId"]
+    roles = user_profile.get_roles_in_workspace(workspace_id, user_id)
     role_info = ", ".join(roles)
     print_highlight(
         localized_text(
@@ -686,7 +687,7 @@ def prompt_config_with_default_dsw_role(user_profile: UserProfile):
         bucket_name, endpoint = None, None
     else:
         bucket_name = OssUriObj(default_storage_uri).bucket_name
-        endpoint = (f"oss-{user_profile.region_id}-internal.aliyuncs.com",)
+        endpoint = f"oss-{user_profile.region_id}-internal.aliyuncs.com"
     return workspace_id, bucket_name, endpoint
 
 
