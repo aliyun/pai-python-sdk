@@ -687,7 +687,7 @@ def prompt_config_with_default_dsw_role(user_profile: UserProfile):
     else:
         bucket_name = OssUriObj(default_storage_uri).bucket_name
         endpoint = (f"oss-{user_profile.region_id}-internal.aliyuncs.com",)
-    return bucket_name, endpoint
+    return workspace_id, bucket_name, endpoint
 
 
 def run():
