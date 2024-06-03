@@ -23,6 +23,7 @@ from ..common.utils import http_user_agent
 from ..libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
 from ..libs.alibabacloud_eas20210701.client import Client as EasClient
 from ..libs.alibabacloud_pai_dlc20201203.client import Client as DlcClient
+from ..libs.alibabacloud_pai_dsw20220101.client import Client as DswClient
 from ..libs.alibabacloud_paiflow20210202.client import Client as FlowClient
 from ..libs.alibabacloud_paistudio20220112.client import Client as PaiClient
 from .base import ServiceName
@@ -40,6 +41,7 @@ class ClientFactory(object):
         ServiceName.PAIFLOW: FlowClient,
         ServiceName.PAI_STUDIO: PaiClient,
         ServiceName.STS: StsClient,
+        ServiceName.PAI_DSW: DswClient,
     }
 
     @staticmethod
