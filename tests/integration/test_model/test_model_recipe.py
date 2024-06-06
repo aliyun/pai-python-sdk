@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
+import tempfile
 
 import pytest
 
@@ -26,7 +27,11 @@ class TestModelRecipe(BaseIntegTestCase):
     def test_training_e2e(self):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
-        training_recipe.retrieve_scripts("./scripts")
+
+        temp_dir = tempfile.mkdtemp()
+        training_recipe.retrieve_scripts(temp_dir)
+        self.assertTrue(os.listdir(temp_dir), "Script directory is empty.")
+
         training_recipe.train()
         self.assertIsNotNone(training_recipe.model_data())
 
@@ -37,8 +42,8 @@ class TestModelRecipe(BaseIntegTestCase):
         resp = openai.chat.completions.create(
             model="default",
             messages=[
-                {"role": "system", "content": "Hello, how are you?"},
-                {"role": "user", "content": "I am fine, thank you."},
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "What is the meaning of life?"},
             ],
             max_tokens=100,
         )

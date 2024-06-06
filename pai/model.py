@@ -30,13 +30,7 @@ import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
-from ._training_job import (
-    AlgorithmSpec,
-    Channel,
-    DatasetInput,
-    TrainingJobSpec,
-    UriInput,
-)
+from ._training_job import AlgorithmSpec, Channel, TrainingJobSpec
 from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
