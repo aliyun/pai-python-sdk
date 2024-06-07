@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+from typing import Optional
 
 from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_sts20150401.client import Client as StsClient
@@ -69,13 +69,14 @@ class ResourceAPIsContainerMixin(object):
         self._credential_client = CredentialClient(config=self._credential_config)
         return self._credential_client
 
-    def _get_acs_client(self, service_name):
+    def _get_acs_client(self, service_name, network: Optional[str] = None):
         if service_name in self.acs_client_container:
             return self.acs_client_container[service_name]
         acs_client = ClientFactory.create_client(
             service_name=service_name,
             credential_client=self._acs_credential_client(),
             region_id=self._region_id,
+            network=network,
         )
         self.acs_client_container[service_name] = acs_client
         return acs_client

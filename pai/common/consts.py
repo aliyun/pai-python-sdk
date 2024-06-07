@@ -19,6 +19,8 @@ DEFAULT_CONFIG_PATH = os.environ.get(
     "PAI_CONFIG_PATH", os.path.join(os.path.expanduser("~"), ".pai", "config.json")
 )
 
+DEFAULT_NETWORK_TYPE = os.environ.get("PAI_DEFAULT_NETWORK", None)
+
 
 class JobType(object):
     """PAI DLCJob/TrainingJob type."""

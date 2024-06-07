@@ -36,9 +36,10 @@ from prompt_toolkit.widgets import Label, RadioList
 from ...api.base import ServiceName
 from ...api.client_factory import ClientFactory
 from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
+from ...common.consts import DEFAULT_NETWORK_TYPE
 from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
-from ...common.utils import make_list_resource_iterator
+from ...common.utils import is_domain_connectable, make_list_resource_iterator
 from ...libs.alibabacloud_pai_dsw20220101.client import Client as DswClient
 
 logger = get_logger(__name__)
@@ -54,6 +55,8 @@ ASSUMED_ROLE_ARN_PATTERN = re.compile(r"acs:ram::\d+:assumed-role/([^/]+)/.*")
 # DSW Notebook Default Role Name:
 PAI_DSW_DEFAULT_ROLE_NAME = "aliyunpaidswdefaultrole"
 
+# Default PAI VPC Endpoint:
+PAI_VPC_ENDPOINT = "pai-vpc.aliyuncs.com"
 
 DEFAULT_PRODUCT_RAM_ROLE_NAMES = [
     "AliyunODPSPAIDefaultRole",
@@ -104,7 +107,15 @@ class UserProfile(object):
     ):
         self.region_id = region_id
         self.credential_config = credential_config
+        if DEFAULT_NETWORK_TYPE:
+            self._default_network = DEFAULT_NETWORK_TYPE
+        else:
+            self._default_network = "vpc" if type(self)._is_vpc_network() else None
         self._caller_identify = self._get_caller_identity()
+
+    @classmethod
+    def _is_vpc_network(cls):
+        return is_domain_connectable(PAI_VPC_ENDPOINT)
 
     def _get_credential_client(self):
         if self._credential_client:
@@ -127,6 +138,7 @@ class UserProfile(object):
                 config=open_api_models.Config(
                     credential=self._get_credential_client(),
                     region_id=self.region_id,
+                    network=self._default_network,
                 )
             )
             .get_caller_identity()
@@ -144,6 +156,7 @@ class UserProfile(object):
             service_name=ServiceName.PAI_DSW,
             credential_client=self._get_credential_client(),
             region_id=self.region_id,
+            network=self._default_network,
         )
 
     def get_instance_info(self, instance_id: str) -> Dict[str, Any]:
@@ -240,6 +253,7 @@ class UserProfile(object):
             service_name=ServiceName.PAI_WORKSPACE,
             credential_client=self._get_credential_client(),
             region_id=self.region_id,
+            network=self._default_network,
         )
 
         return WorkspaceAPI(
