@@ -36,7 +36,7 @@ from prompt_toolkit.widgets import Label, RadioList
 from ...api.base import ServiceName
 from ...api.client_factory import ClientFactory
 from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
-from ...common.consts import DEFAULT_NETWORK_TYPE
+from ...common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT
 from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import is_domain_connectable, make_list_resource_iterator
@@ -55,8 +55,6 @@ ASSUMED_ROLE_ARN_PATTERN = re.compile(r"acs:ram::\d+:assumed-role/([^/]+)/.*")
 # DSW Notebook Default Role Name:
 PAI_DSW_DEFAULT_ROLE_NAME = "aliyunpaidswdefaultrole"
 
-# Default PAI VPC Endpoint:
-PAI_VPC_ENDPOINT = "pai-vpc.aliyuncs.com"
 
 DEFAULT_PRODUCT_RAM_ROLE_NAMES = [
     "AliyunODPSPAIDefaultRole",
@@ -110,12 +108,10 @@ class UserProfile(object):
         if DEFAULT_NETWORK_TYPE:
             self._default_network = DEFAULT_NETWORK_TYPE
         else:
-            self._default_network = "vpc" if type(self)._is_vpc_network() else None
+            self._default_network = (
+                "vpc" if is_domain_connectable(PAI_VPC_ENDPOINT) else None
+            )
         self._caller_identify = self._get_caller_identity()
-
-    @classmethod
-    def _is_vpc_network(cls):
-        return is_domain_connectable(PAI_VPC_ENDPOINT)
 
     def _get_credential_client(self):
         if self._credential_client:

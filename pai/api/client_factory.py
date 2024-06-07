@@ -86,7 +86,7 @@ class ClientFactory(object):
             raise ValueError("Please provide region_id to get the endpoint.")
 
         if network:
-            subdomain = f"{service_name}-{network}"
+            subdomain = f"{service_name}-{network.lower()}"
         else:
             subdomain = service_name
         return DEFAULT_SERVICE_ENDPOINT_PATTERN.format(subdomain, region_id)

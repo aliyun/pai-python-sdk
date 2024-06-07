@@ -60,6 +60,7 @@ def setup_default_session(
     oss_bucket_name: Optional[str] = None,
     oss_endpoint: Optional[str] = None,
     workspace_id: Optional[Union[str, int]] = None,
+    network: Optional[str] = None,
     **kwargs,
 ) -> "Session":
     """Set up the default session used in the program.
@@ -81,6 +82,7 @@ def setup_default_session(
         oss_bucket_name (str, optional): The name of the OSS bucket used in the
             session.
         oss_endpoint (str, optional): The endpoint for the OSS bucket.
+        network (str, optional): The network type used to connect to PAI services.
         **kwargs:
 
     Returns:
@@ -114,6 +116,7 @@ def setup_default_session(
         oss_bucket_name = oss_bucket_name or default_session.oss_bucket_name
         oss_endpoint = oss_endpoint or default_session.oss_endpoint
         credential_config = credential_config or default_session.credential_config
+        network = network or default_session.network
 
     session = Session(
         region_id=region_id,
@@ -121,6 +124,7 @@ def setup_default_session(
         oss_bucket_name=oss_bucket_name,
         oss_endpoint=oss_endpoint,
         workspace_id=workspace_id,
+        network=network,
         **kwargs,
     )
 
@@ -208,7 +212,13 @@ class Session(ResourceAPIsContainerMixin):
         self._oss_endpoint = oss_endpoint
 
         header = kwargs.pop("header", None)
-        super(Session, self).__init__(header=header)
+        network = kwargs.pop("network", None)
+        runtime = kwargs.pop("runtime", None)
+        if kwargs:
+            logger.warning(
+                "Unused arguments found in session initialization: %s", kwargs
+            )
+        super(Session, self).__init__(header=header, network=network, runtime=runtime)
 
     @property
     def region_id(self) -> str:

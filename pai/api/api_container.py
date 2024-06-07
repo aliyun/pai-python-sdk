@@ -16,6 +16,8 @@ from typing import Optional
 from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_sts20150401.client import Client as StsClient
 
+from ..common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT
+from ..common.utils import is_domain_connectable
 from .algorithm import AlgorithmAPI
 from .base import PAIRestResourceTypes, ServiceName, WorkspaceScopedResourceAPI
 from .client_factory import ClientFactory
@@ -57,11 +59,17 @@ class ResourceAPIsContainerMixin(object):
     _region_id = None
     _workspace_id = None
 
-    def __init__(self, header=None, runtime=None):
+    def __init__(self, header=None, runtime=None, network: Optional[str] = None):
         self.header = header
         self.runtime = runtime
         self.api_container = dict()
         self.acs_client_container = dict()
+        if network:
+            self.network = network
+        elif DEFAULT_NETWORK_TYPE:
+            self.network = PAI_VPC_ENDPOINT
+        else:
+            self.network = "vpc" if is_domain_connectable(PAI_VPC_ENDPOINT) else None
 
     def _acs_credential_client(self):
         if self._credential_client:
@@ -69,14 +77,14 @@ class ResourceAPIsContainerMixin(object):
         self._credential_client = CredentialClient(config=self._credential_config)
         return self._credential_client
 
-    def _get_acs_client(self, service_name, network: Optional[str] = None):
+    def _get_acs_client(self, service_name):
         if service_name in self.acs_client_container:
             return self.acs_client_container[service_name]
         acs_client = ClientFactory.create_client(
             service_name=service_name,
             credential_client=self._acs_credential_client(),
             region_id=self._region_id,
-            network=network,
+            network=self.network,
         )
         self.acs_client_container[service_name] = acs_client
         return acs_client

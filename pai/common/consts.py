@@ -19,7 +19,11 @@ DEFAULT_CONFIG_PATH = os.environ.get(
     "PAI_CONFIG_PATH", os.path.join(os.path.expanduser("~"), ".pai", "config.json")
 )
 
+# Default network type used to connect to PAI services
 DEFAULT_NETWORK_TYPE = os.environ.get("PAI_DEFAULT_NETWORK", None)
+
+# PAI VPC endpoint
+PAI_VPC_ENDPOINT = "pai-vpc.aliyuncs.com"
 
 
 class JobType(object):
