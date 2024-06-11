@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
+from typing import Optional, Union
 
 from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_sts20150401.client import Client as StsClient
 
-from ..common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT
+from ..common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT, Network
 from ..common.utils import is_domain_connectable
 from .algorithm import AlgorithmAPI
 from .base import PAIRestResourceTypes, ServiceName, WorkspaceScopedResourceAPI
@@ -59,17 +59,32 @@ class ResourceAPIsContainerMixin(object):
     _region_id = None
     _workspace_id = None
 
-    def __init__(self, header=None, runtime=None, network: Optional[str] = None):
+    def __init__(
+        self, header=None, runtime=None, network: Optional[Union[str, Network]] = None
+    ):
+        """Initialize ResourceAPIsContainerMixin.
+
+        Args:
+            header: Header for API request.
+            runtime: Runtime for API request.
+            network: Network type used to connect to PAI services.
+        """
         self.header = header
         self.runtime = runtime
         self.api_container = dict()
         self.acs_client_container = dict()
         if network:
-            self.network = network
+            self.network = (
+                Network.from_string(network) if isinstance(network, str) else network
+            )
         elif DEFAULT_NETWORK_TYPE:
-            self.network = PAI_VPC_ENDPOINT
+            self.network = Network.from_string(DEFAULT_NETWORK_TYPE)
         else:
-            self.network = "vpc" if is_domain_connectable(PAI_VPC_ENDPOINT) else None
+            self.network = (
+                Network.VPC
+                if is_domain_connectable(PAI_VPC_ENDPOINT)
+                else Network.PUBLIC
+            )
 
     def _acs_credential_client(self):
         if self._credential_client:

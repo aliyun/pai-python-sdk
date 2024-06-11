@@ -36,7 +36,7 @@ from prompt_toolkit.widgets import Label, RadioList
 from ...api.base import ServiceName
 from ...api.client_factory import ClientFactory
 from ...api.workspace import WorkspaceAPI, WorkspaceConfigKeys
-from ...common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT
+from ...common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT, Network
 from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import is_domain_connectable, make_list_resource_iterator
@@ -105,11 +105,14 @@ class UserProfile(object):
     ):
         self.region_id = region_id
         self.credential_config = credential_config
+
         if DEFAULT_NETWORK_TYPE:
-            self._default_network = DEFAULT_NETWORK_TYPE
+            self.network = Network.from_string(DEFAULT_NETWORK_TYPE)
         else:
-            self._default_network = (
-                "vpc" if is_domain_connectable(PAI_VPC_ENDPOINT) else None
+            self.network = (
+                Network.VPC
+                if is_domain_connectable(PAI_VPC_ENDPOINT)
+                else Network.PUBLIC
             )
         self._caller_identify = self._get_caller_identity()
 
@@ -134,7 +137,9 @@ class UserProfile(object):
                 config=open_api_models.Config(
                     credential=self._get_credential_client(),
                     region_id=self.region_id,
-                    network=self._default_network,
+                    network=None
+                    if self.network == Network.PUBLIC
+                    else self.network.value.lower(),
                 )
             )
             .get_caller_identity()
@@ -152,7 +157,7 @@ class UserProfile(object):
             service_name=ServiceName.PAI_DSW,
             credential_client=self._get_credential_client(),
             region_id=self.region_id,
-            network=self._default_network,
+            network=self.network,
         )
 
     def get_instance_info(self, instance_id: str) -> Dict[str, Any]:
@@ -249,7 +254,7 @@ class UserProfile(object):
             service_name=ServiceName.PAI_WORKSPACE,
             credential_client=self._get_credential_client(),
             region_id=self.region_id,
-            network=self._default_network,
+            network=self.network,
         )
 
         return WorkspaceAPI(

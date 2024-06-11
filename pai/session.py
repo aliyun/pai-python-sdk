@@ -25,7 +25,7 @@ from alibabacloud_credentials.models import Config as CredentialConfig
 from alibabacloud_credentials.utils import auth_constant
 
 from .api.api_container import ResourceAPIsContainerMixin
-from .common.consts import DEFAULT_CONFIG_PATH
+from .common.consts import DEFAULT_CONFIG_PATH, Network
 from .common.logging import get_logger
 from .common.oss_utils import CredentialProviderWrapper, OssUriObj
 from .common.utils import is_domain_connectable, make_list_resource_iterator
@@ -60,7 +60,7 @@ def setup_default_session(
     oss_bucket_name: Optional[str] = None,
     oss_endpoint: Optional[str] = None,
     workspace_id: Optional[Union[str, int]] = None,
-    network: Optional[str] = None,
+    network: Optional[Union[str, Network]] = None,
     **kwargs,
 ) -> "Session":
     """Set up the default session used in the program.
@@ -82,7 +82,11 @@ def setup_default_session(
         oss_bucket_name (str, optional): The name of the OSS bucket used in the
             session.
         oss_endpoint (str, optional): The endpoint for the OSS bucket.
-        network (str, optional): The network type used to connect to PAI services.
+        network (Union[str, Network], optional): The network to use for the connection.
+            supported values are "VPC" and "PUBLIC". If provided, this value will be used as-is.
+            Otherwise, the code will first check for an environment variable PAI_NETWORK_TYPE.
+            If that is not set and the VPC endpoint is available, it will be used.
+            As a last resort, if all else fails, the PUBLIC endpoint will be used.
         **kwargs:
 
     Returns:
