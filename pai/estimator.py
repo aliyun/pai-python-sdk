@@ -204,6 +204,7 @@ class EstimatorBase(metaclass=ABCMeta):
         environments: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
         instance_type: Optional[str] = None,
+        use_spot_instance: bool = False,
         instance_spec: Optional[Dict] = None,
         resource_id: Optional[Dict] = None,
         instance_count: Optional[int] = None,
@@ -275,6 +276,8 @@ class EstimatorBase(metaclass=ABCMeta):
                 https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
                 If the instance_type is "local", the training job is executed locally
                 using docker.
+            use_spot_instance (bool): Specifies whether to use spot instance to run the
+                job. Only available for public resource group.
             instance_count (int): The number of machines used to run the training job.
             user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
                 configuration used to enable the training job instance to connect to the
@@ -299,6 +302,7 @@ class EstimatorBase(metaclass=ABCMeta):
         self.requirements = requirements
         self.instance_type = instance_type
         self.instance_spec = instance_spec
+        self.use_spot_instance = use_spot_instance
         self.resource_id = resource_id
         self.instance_count = instance_count if instance_count else 1
         self.max_run_time = max_run_time
@@ -1419,6 +1423,7 @@ class AlgorithmEstimator(EstimatorBase):
         training_job_id = self.session.training_job_api.create(
             instance_count=self.instance_count,
             instance_type=self.instance_type,
+            use_spot_instance=self.use_spot_instance,
             instance_spec=self.instance_spec,
             resource_id=self.resource_id,
             job_name=job_name,
