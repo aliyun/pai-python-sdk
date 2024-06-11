@@ -14,10 +14,13 @@
 
 from __future__ import absolute_import
 
+from typing import Optional
+
 from alibabacloud_credentials.client import Client as CredentialClient
 from alibabacloud_sts20150401.client import Client as StsClient
 from alibabacloud_tea_openapi.models import Config
 
+from ..common.consts import Network
 from ..common.logging import get_logger
 from ..common.utils import http_user_agent
 from ..libs.alibabacloud_aiworkspace20210204.client import Client as WorkspaceClient
@@ -54,16 +57,19 @@ class ClientFactory(object):
         service_name,
         region_id: str,
         credential_client: CredentialClient,
+        network: Optional[Network] = None,
         **kwargs,
     ):
         """Create an API client which is responsible to interacted with the Alibaba
         Cloud service."""
+
         config = Config(
             region_id=region_id,
             credential=credential_client,
             endpoint=cls.get_endpoint(
                 service_name=service_name,
                 region_id=region_id,
+                network=network,
             ),
             signature_algorithm="v2",
             user_agent=http_user_agent(),
@@ -73,9 +79,15 @@ class ClientFactory(object):
         return client
 
     @classmethod
-    def get_endpoint(cls, service_name: str, region_id: str) -> str:
+    def get_endpoint(
+        cls, service_name: str, region_id: str, network: Optional[Network] = None
+    ) -> str:
         """Get the endpoint for the service client."""
         if not region_id:
             raise ValueError("Please provide region_id to get the endpoint.")
 
-        return DEFAULT_SERVICE_ENDPOINT_PATTERN.format(service_name, region_id)
+        if network and network != Network.PUBLIC:
+            subdomain = f"{service_name}-{network.value.lower()}"
+        else:
+            subdomain = service_name
+        return DEFAULT_SERVICE_ENDPOINT_PATTERN.format(subdomain, region_id)
