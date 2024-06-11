@@ -25,7 +25,7 @@ from alibabacloud_credentials.models import Config as CredentialConfig
 from alibabacloud_credentials.utils import auth_constant
 
 from .api.api_container import ResourceAPIsContainerMixin
-from .common.consts import DEFAULT_CONFIG_PATH
+from .common.consts import DEFAULT_CONFIG_PATH, Network
 from .common.logging import get_logger
 from .common.oss_utils import CredentialProviderWrapper, OssUriObj
 from .common.utils import is_domain_connectable, make_list_resource_iterator
@@ -60,6 +60,7 @@ def setup_default_session(
     oss_bucket_name: Optional[str] = None,
     oss_endpoint: Optional[str] = None,
     workspace_id: Optional[Union[str, int]] = None,
+    network: Optional[Union[str, Network]] = None,
     **kwargs,
 ) -> "Session":
     """Set up the default session used in the program.
@@ -81,6 +82,11 @@ def setup_default_session(
         oss_bucket_name (str, optional): The name of the OSS bucket used in the
             session.
         oss_endpoint (str, optional): The endpoint for the OSS bucket.
+        network (Union[str, Network], optional): The network to use for the connection.
+            supported values are "VPC" and "PUBLIC". If provided, this value will be used as-is.
+            Otherwise, the code will first check for an environment variable PAI_NETWORK_TYPE.
+            If that is not set and the VPC endpoint is available, it will be used.
+            As a last resort, if all else fails, the PUBLIC endpoint will be used.
         **kwargs:
 
     Returns:
@@ -114,6 +120,7 @@ def setup_default_session(
         oss_bucket_name = oss_bucket_name or default_session.oss_bucket_name
         oss_endpoint = oss_endpoint or default_session.oss_endpoint
         credential_config = credential_config or default_session.credential_config
+        network = network or default_session.network
 
     session = Session(
         region_id=region_id,
@@ -121,6 +128,7 @@ def setup_default_session(
         oss_bucket_name=oss_bucket_name,
         oss_endpoint=oss_endpoint,
         workspace_id=workspace_id,
+        network=network,
         **kwargs,
     )
 
@@ -208,7 +216,13 @@ class Session(ResourceAPIsContainerMixin):
         self._oss_endpoint = oss_endpoint
 
         header = kwargs.pop("header", None)
-        super(Session, self).__init__(header=header)
+        network = kwargs.pop("network", None)
+        runtime = kwargs.pop("runtime", None)
+        if kwargs:
+            logger.warning(
+                "Unused arguments found in session initialization: %s", kwargs
+            )
+        super(Session, self).__init__(header=header, network=network, runtime=runtime)
 
     @property
     def region_id(self) -> str:
