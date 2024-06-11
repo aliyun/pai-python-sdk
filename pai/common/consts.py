@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import enum
 import os
 
 # Default path for pai config file
@@ -24,6 +24,21 @@ DEFAULT_NETWORK_TYPE = os.environ.get("PAI_DEFAULT_NETWORK", None)
 
 # PAI VPC endpoint
 PAI_VPC_ENDPOINT = "pai-vpc.aliyuncs.com"
+
+
+class Network(enum.Enum):
+    VPC = "VPC"
+    PUBLIC = "PUBLIC"
+
+    @classmethod
+    def from_string(cls, s: str) -> "Network":
+        try:
+            return cls[s.upper()]
+        except KeyError:
+            raise ValueError(
+                "Invalid network type: %s, supported types are: %s"
+                % (s, ", ".join(cls.__members__.keys()))
+            )
 
 
 class JobType(object):
