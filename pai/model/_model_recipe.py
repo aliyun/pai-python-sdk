@@ -516,6 +516,7 @@ class ModelTrainingRecipe(ModelRecipe):
         instance_type: Optional[str] = None,
         instance_spec: Optional[InstanceSpec] = None,
         resource_id: Optional[str] = None,
+        use_spot_instance: bool = False,
         user_vpc_config: Optional[UserVpcConfig] = None,
         labels: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
@@ -567,6 +568,8 @@ class ModelTrainingRecipe(ModelRecipe):
                 be provided when the instance spec is set. Default to None.
             resource_id (str, optional): The ID of the resource group used to run the
                 training job. Default to None.
+            use_spot_instance (bool): Specifies whether to use spot instance to run the
+                job. Only available for public resource group.
             user_vpc_config (:class:`pai.model.UserVpcConfig`, optional): The VPC
                 configuration used to enable the job instance to connect to the
                 specified user VPC. Default to None.

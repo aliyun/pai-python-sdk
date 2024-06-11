@@ -86,6 +86,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         instance_type,
         instance_count,
         job_name,
+        use_spot_instance: bool = False,
         instance_spec: Optional[Dict[str, str]] = None,
         resource_id: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
@@ -137,6 +138,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
                 instance_spec=CreateTrainingJobRequestComputeResourceInstanceSpec().from_map(
                     instance_spec
                 ),
+                use_spot_instance=use_spot_instance,
             )
         else:
             raise ValueError("Please provide instance_type or instance_spec.")

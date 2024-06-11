@@ -542,6 +542,7 @@ class _TrainingJobSubmitter(object):
         instance_spec: Optional[Dict] = None,
         instance_count: Optional[int] = None,
         resource_id: Optional[Dict] = None,
+        use_spot_instance: bool = False,
         environments: Optional[Dict] = None,
         requirements: Optional[List[str]] = None,
         labels: Optional[Dict[str, str]] = None,
@@ -551,6 +552,7 @@ class _TrainingJobSubmitter(object):
         self.base_job_name = base_job_name or type(self).__name__.lower()
         self.output_path = output_path
         self.user_vpc_config = user_vpc_config
+        self.use_spot_instance = use_spot_instance
         self.experiment_config = experiment_config
         self.max_run_time = max_run_time
         self.instance_type = instance_type
@@ -738,6 +740,7 @@ class _TrainingJobSubmitter(object):
                 if experiment_config and isinstance(experiment_config, ExperimentConfig)
                 else experiment_config
             ),
+            use_spot_instance=self.use_spot_instance,
             algorithm_version=algorithm_version,
             instance_type=instance_type,
             resource_id=resource_id,

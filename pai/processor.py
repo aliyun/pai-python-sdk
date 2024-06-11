@@ -47,6 +47,7 @@ class Processor(_TrainingJobSubmitter):
         base_job_name: Optional[str] = None,
         output_path: Optional[str] = None,
         instance_type: Optional[str] = None,
+        use_spot_instance: bool = False,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
@@ -141,6 +142,8 @@ class Processor(_TrainingJobSubmitter):
                 https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
                 If the instance_type is "local", the job is executed locally
                 using docker.
+            use_spot_instance (bool): Specifies whether to use spot instance to run the
+                job. Only available for public resource group.
             instance_count (int): The number of machines used to run the job.
             user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
                 configuration used to enable the job instance to connect to the
