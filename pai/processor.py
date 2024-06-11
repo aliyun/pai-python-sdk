@@ -30,8 +30,8 @@ from .common.utils import (
     to_plain_text,
 )
 from .estimator import FileSystemInputBase
-from .estimator import _TrainingJob as _Job
 from .experiment import ExperimentConfig
+from .job._training_job import _TrainingJob as _Job
 from .session import Session, get_default_session
 
 logger = get_logger(__name__)

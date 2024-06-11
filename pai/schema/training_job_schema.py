@@ -102,7 +102,7 @@ class TrainingJobSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from pai.estimator import _TrainingJob
+        from ..job._training_job import _TrainingJob
 
         data["instance_count"] = data.get("compute_resource", {}).get("EcsCount")
         data["instance_type"] = data.get("compute_resource", {}).get("EcsType")

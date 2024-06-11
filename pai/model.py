@@ -54,7 +54,9 @@ from .serializers import SerializerBase
 from .session import Session, get_default_session
 
 if typing.TYPE_CHECKING:
-    from pai.estimator import AlgorithmEstimator, _TrainingJob
+    from pai.estimator import AlgorithmEstimator
+
+    from .job._training_job import _TrainingJob
 
 logger = get_logger(__name__)
 
