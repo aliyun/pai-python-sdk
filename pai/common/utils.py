@@ -336,7 +336,7 @@ def timestamp(sep: str = "-", utc=False) -> str:
 
     """
     if utc:
-        res = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        res = datetime.utcnow().strftime("%Y%m%d-%H%M%S-%f")[:-3]
     else:
         res = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:-3]
     if sep != "-":

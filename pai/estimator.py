@@ -41,7 +41,7 @@ from .common.utils import (
     to_plain_text,
 )
 from .experiment import ExperimentConfig
-from .job._training_job import _TrainingJob
+from .job._training_job import TrainingJob, _TrainingJobSubmitter
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .serializers import SerializerBase
@@ -302,6 +302,7 @@ class EstimatorBase(metaclass=ABCMeta):
         self.session = session or get_default_session()
         self.labels = labels
         self._latest_training_job = None
+        super().__init__()
 
     def set_hyperparameters(self, **kwargs):
         """Set hyperparameters for the training job.
@@ -1014,7 +1015,7 @@ class Estimator(EstimatorBase):
             else None,
             labels=self.labels,
         )
-        training_job = _TrainingJob.get(training_job_id)
+        training_job = TrainingJob.get(training_job_id)
         print(
             f"View the job detail by accessing the console URI: {training_job.console_uri}"
         )
@@ -1432,7 +1433,7 @@ class AlgorithmEstimator(EstimatorBase):
             else None,
             labels=self.labels,
         )
-        training_job = _TrainingJob.get(training_job_id)
+        training_job = TrainingJob.get(training_job_id)
         print(
             f"View the job detail by accessing the console URI:"
             f" {training_job.console_uri}"

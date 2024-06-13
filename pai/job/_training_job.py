@@ -1,19 +1,36 @@
+import os
+import posixpath
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_pascal
 from Tea.exceptions import TeaException
 
-from pai.api.base import PaginatedResult
-from pai.api.entity_base import EntityBaseMixin
-from pai.common import ProviderAlibabaPAI
-from pai.common.utils import retry
-from pai.exception import UnexpectedStatusException
-from pai.schema.training_job_schema import TrainingJobSchema
-from pai.session import Session, get_default_session
+from ..api.base import PaginatedResult
+from ..api.entity_base import EntityBaseMixin
+from ..common import ProviderAlibabaPAI
+from ..common.consts import StoragePathCategory
+from ..common.logging import get_logger
+from ..common.oss_utils import is_oss_uri, upload
+from ..common.utils import (
+    is_dataset_id,
+    is_filesystem_uri,
+    is_odps_table_uri,
+    name_from_base,
+    random_str,
+    retry,
+    to_plain_text,
+)
+from ..exception import UnexpectedStatusException
+from ..schema.training_job_schema import TrainingJobSchema
+from ..session import Session, get_default_session
+
+logger = get_logger(__name__)
 
 
-class _TrainingJob(EntityBaseMixin):
+class TrainingJob(EntityBaseMixin):
     _schema_cls = TrainingJobSchema
 
     def __init__(
@@ -34,8 +51,7 @@ class _TrainingJob(EntityBaseMixin):
         session: Session = None,
         **kwargs,
     ):
-        super(_TrainingJob, self).__init__(session=session, **kwargs)
-        session = session or get_default_session()
+        super(TrainingJob, self).__init__(session=session, **kwargs)
         self.algorithm_name = algorithm_name
         self.algorithm_version = algorithm_version
         self.algorithm_provider = algorithm_provider
@@ -66,16 +82,12 @@ class _TrainingJob(EntityBaseMixin):
     def __str__(self):
         return self.__repr__()
 
-    @classmethod
-    def from_api_object(cls, obj_dict: Dict[str, Any], session: Session = None):
-        pass
-
     @property
     def id(self):
         return self.training_job_id
 
     @classmethod
-    def get(cls, training_job_id, session: Session = None) -> "_TrainingJob":
+    def get(cls, training_job_id, session: Session = None) -> "TrainingJob":
         session = session or get_default_session()
         res = session.training_job_api.get(training_job_id=training_job_id)
         return cls.from_api_object(res, session=session)
@@ -282,3 +294,246 @@ class TrainingJobStatus(object):
             cls.Failed,
             cls.CreateFailed,
         ]
+
+
+class BaseAPIModel(BaseModel):
+
+    model_config = ConfigDict(
+        alias_generator=to_pascal,
+        populate_by_name=True,
+    )
+
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        kwargs.update({"by_alias": True, "exclude_none": True})
+        return super().model_dump(**kwargs)
+
+
+class OssLocation(BaseAPIModel):
+    bucket: str
+    key: str
+    endpoint: Optional[str]
+
+
+class CodeDir(BaseAPIModel):
+    location_value: Union[OssLocation, Dict[str, Any]]
+    location_type: str
+
+
+class HyperParameter(BaseAPIModel):
+    value: str
+    Name: str
+
+
+class InstanceSpec(BaseAPIModel):
+    memory: str
+    cpu: str = Field(alias="CPU")
+    gpu: str = Field(alias="GPU")
+    shared_memory: Optional[str] = None
+
+
+class ComputeResource(BaseAPIModel):
+    ecs_count: int
+    ecs_spec: str
+    instance_count: int
+    instance_spec: Optional[InstanceSpec] = None
+
+
+class UriInput(BaseAPIModel):
+    name: str
+    uri: str = Field(alias="InputUri")
+
+
+class DatasetInput(BaseAPIModel):
+    name: str
+    dataset_id: str
+    dataset_name: Optional[str] = None
+
+
+class Channel(BaseAPIModel):
+    name: str
+    description: Optional[str] = None
+    required: Optional[bool] = None
+    supported_channel_types: Optional[List[str]] = None
+    properties: Optional[Dict[str, Any]] = None
+
+
+class AlgorithmSpec(BaseAPIModel):
+    command: List[str]
+    image: str
+    supported_channel_types: List[str] = Field(default_factory=list)
+    output_channels: List[Channel] = Field(default_factory=list)
+    input_channels: List[Channel] = Field(default_factory=list)
+    supports_distributed_training: bool = False
+    metric_definitions: List = Field(default_factory=list)
+    hyperparameter_definitions: List[Dict[str, Any]] = Field(
+        default_factory=list, alias="HyperParameter"
+    )
+    job_type: Literal["PyTorchJob"] = Field(default="PyTorchJob")
+    code_dir: Optional[CodeDir] = None
+
+
+class TrainingJobSpec(BaseAPIModel):
+    compute_resource: ComputeResource
+    hyperparameters: List[HyperParameter] = Field(
+        default_factory=list, alias="HyperParameters"
+    )
+    inputs: List[Union[UriInput, DatasetInput]] = Field(
+        default_factory=list, alias="InputChannels"
+    )
+    algorithm_spec: Optional[AlgorithmSpec] = None
+    algorithm_version: Optional[str] = None
+    algorithm_provider: Optional[str] = None
+    algorithm_name: Optional[str] = None
+
+
+class _TrainingJobSubmitter(object):
+    def __init__(self):
+        self.session = get_default_session()
+        self._training_jobs = []
+
+    def base_job_name(self):
+        return type(self).__name__.lower()
+
+    def job_name(self, job_name: Optional[str] = None):
+        if job_name:
+            return job_name
+        sep = "-"
+        base_name = self.base_job_name()
+        return name_from_base(base_name, sep)
+
+    def build_inputs(
+        self,
+        inputs: Dict[str, Any],
+        input_channels: List[Channel],
+        extra_inputs: List[Union[DatasetInput, UriInput]] = None,
+    ) -> List[Dict[str, str]]:
+        res = []
+        inputs = inputs or dict()
+        input_channels = input_channels or []
+        extra_inputs = extra_inputs or []
+
+        input_keys = set(list(inputs.keys()) + [item.name for item in extra_inputs])
+
+        requires = {ch.name for ch in input_channels if ch.required} - input_keys
+        if requires:
+            raise ValueError(
+                "Required input channels are not provided: {}".format(
+                    ",".join(requires)
+                )
+            )
+        more = input_keys - {ch.name for ch in input_channels}
+        if more:
+            logger.warning(
+                "Following input channels are not defined in the algorithm spec: %s",
+                ",".join(more),
+            )
+
+        for name, item in inputs.items():
+            input_config = self._get_input_config(name, item)
+            res.append(input_config)
+
+        for item in extra_inputs:
+            res.append(item.model_dump())
+
+        return res
+
+    @classmethod
+    def training_job_base_output(cls, job_name):
+        session = get_default_session()
+        bucket_name = session.oss_bucket.bucket_name
+        storage_path = session.get_storage_path_by_category(
+            StoragePathCategory.TrainingJob,
+            f"{to_plain_text(job_name)}_{random_str(6)}",
+        )
+        base_output_path = f"oss://{bucket_name}/{storage_path}"
+        return base_output_path
+
+    def build_outputs(
+        self, job_name: str, output_channels: List[Channel]
+    ) -> List[Dict[str, str]]:
+        base_output_path = self.training_job_base_output(job_name)
+
+        def as_oss_dir_uri(uri: str):
+            return uri if uri.endswith("/") else uri + "/"
+
+        res = []
+        for ch in output_channels:
+            # if checkpoint path is provided, use it as the checkpoint channel output.
+            output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.name))
+            res.append(
+                {
+                    "Name": ch.name,
+                    "OutputUri": output_uri,
+                }
+            )
+        return res
+
+    def _submit(
+        self,
+        job_name: str,
+        algorithm_spec: AlgorithmSpec,
+        instance_count: int = 1,
+        instance_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        inputs: Optional[List[Dict[str, Any]]] = None,
+        outputs: Optional[List[Dict[str, Any]]] = None,
+        hyperparameters: Optional[Dict[str, str]] = None,
+        max_run_time: Optional[int] = None,
+        user_vpc_config: Optional[Dict[str, str]] = None,
+        labels: Optional[Dict[str, str]] = None,
+        wait: bool = True,
+    ):
+        session = get_default_session()
+        training_job_id = session.training_job_api.create(
+            instance_count=instance_count,
+            # instance_spec=self.instance_spec,
+            instance_type=instance_type,
+            resource_id=resource_id,
+            job_name=job_name,
+            hyperparameters=hyperparameters,
+            max_running_in_seconds=max_run_time,
+            input_channels=inputs,
+            output_channels=outputs,
+            algorithm_spec=algorithm_spec.model_dump(),
+            # experiment_config=
+            user_vpc_config=user_vpc_config,
+            labels=labels,
+        )
+        training_job = TrainingJob.get(training_job_id)
+        self._training_jobs.append(training_job)
+        print(
+            f"View the job detail by accessing the console URI: {training_job.console_uri}"
+        )
+        if wait:
+            training_job.wait()
+
+    def _get_input_config(self, name: str, item: str):
+        """Get input uri for training_job from given input."""
+        from pai.estimator import FileSystemInputBase
+
+        if not isinstance(item, (str, FileSystemInputBase)):
+            raise ValueError(f"Input data of type {type(item)} is not supported.")
+
+        if isinstance(item, FileSystemInputBase):
+            config = {"InputUri": item.to_input_uri()}
+        elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
+            config = {"InputUri": item}
+        elif os.path.exists(item):
+            store_path = Session.get_storage_path_by_category(
+                StoragePathCategory.InputData
+            )
+            config = {"InputUri": upload(item, store_path)}
+        elif is_dataset_id(item):
+            config = {"DatasetId": item}
+        else:
+            raise ValueError(
+                "Invalid input data, supported inputs are OSS, NAS, MaxCompute "
+                "table or local path."
+            )
+        config.update({"Name": name})
+
+        return config
+
+    @property
+    def latest_job(self) -> "TrainingJob":
+        return self._training_jobs[-1] if self._training_jobs else None

@@ -30,7 +30,6 @@ import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
-from ._training_job import AlgorithmSpec, Channel, TrainingJobSpec
 from .common import ProviderAlibabaPAI, git_utils
 from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
@@ -39,24 +38,28 @@ from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     generate_repr,
-    is_dataset_id,
-    is_filesystem_uri,
     is_local_run_instance_type,
-    is_odps_table_uri,
     name_from_base,
     random_str,
     to_plain_text,
 )
 from .exception import DuplicatedMountException
 from .image import ImageInfo
+from .job._training_job import (
+    AlgorithmSpec,
+    Channel,
+    DatasetInput,
+    TrainingJob,
+    TrainingJobSpec,
+    UriInput,
+    _TrainingJobSubmitter,
+)
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
 from .session import Session, get_default_session
 
 if typing.TYPE_CHECKING:
     from pai.estimator import AlgorithmEstimator
-
-    from .job._training_job import _TrainingJob
 
 logger = get_logger(__name__)
 
@@ -2221,7 +2224,7 @@ class RegisteredModel(ModelBase):
         return ModelEvaluationRecipe(spec=evaluation_spec, model=self)
 
 
-class _ModelRecipe(object):
+class _ModelRecipe(_TrainingJobSubmitter):
     MODEL_CHANNEL_NAME = "model"
     RECIPE_TYPE = None
 
@@ -2234,7 +2237,7 @@ class _ModelRecipe(object):
         self.model = model
         self.spec = spec
         self.model_channel_name = model_channel_name or self.MODEL_CHANNEL_NAME
-        self._training_jobs = []
+        super().__init__()
 
     @cached_property
     def algorithm_spec(self) -> AlgorithmSpec:
@@ -2253,128 +2256,7 @@ class _ModelRecipe(object):
             return AlgorithmSpec.model_validate(raw_algo_version_spec["AlgorithmSpec"])
 
     @property
-    def latest_job(self) -> "_TrainingJob":
-        return self._training_jobs[-1] if self._training_jobs else None
-
-    def _build_input_data_configs(
-        self,
-        inputs: Dict[str, Any] = None,
-    ) -> List[Dict[str, str]]:
-        """Build the input data config for the training job."""
-        res = []
-        ch_defs = self.algorithm_spec.input_channels
-        inputs = inputs or dict()
-        # requires = {ch.Name for ch in ch_defs if ch.Required} - set(inputs.keys())
-        # if requires:
-        #     raise ValueError(
-        #         "Required input channels are not provided: {}".format(
-        #             ",".join(requires)
-        #         )
-        #     )
-        more = set(inputs.keys()) - {ch.name for ch in ch_defs}
-        if more:
-            raise ValueError(
-                "Following input channels are not defined in the algorithm spec: {}".format(
-                    ",".join(more)
-                )
-            )
-
-        for name, item in inputs.items():
-            input_config = self._get_input_config(name, item)
-            res.append(input_config)
-
-        if inputs and self.model_channel_name not in inputs:
-            ch = next(
-                (ch for ch in self.spec.inputs if ch.name == self.model_channel_name),
-                None,
-            )
-            if not ch:
-                logger.warning(
-                    "No model input channel is provided: model_channel_name: %s",
-                    self.model_channel_name,
-                )
-            else:
-                res.append(ch.model_dump())
-        elif not inputs:
-            logger.warning(
-                "ModelRecipe: No input data is provided, using the default input data in the recipe."
-            )
-            for ch in self.spec.inputs:
-                res.append(ch.model_dump())
-
-        return res
-
-    def _build_output_data_configs(self, job_name: str) -> List[Dict[str, str]]:
-        """Build the output data config for the training job."""
-        session = get_default_session()
-        bucket_name = session.oss_bucket.bucket_name
-        recipe = type(self).RECIPE_TYPE
-        storage_path = session.get_storage_path_by_category(
-            recipe, f"{to_plain_text(job_name)}_{random_str(6)}"
-        )
-        base_output_path = f"oss://{bucket_name}/{storage_path}"
-
-        def as_oss_dir_uri(uri: str):
-            return uri if uri.endswith("/") else uri + "/"
-
-        output_defs = self.algorithm_spec.output_channels
-
-        res = []
-        for ch in output_defs:
-            # if checkpoint path is provided, use it as the checkpoint channel output.
-            output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.name))
-            res.append(
-                {
-                    "Name": ch.name,
-                    "OutputUri": output_uri,
-                }
-            )
-        return res
-
-    def _get_input_config(self, name: str, item: str):
-        """Get input uri for training_job from given input."""
-        from pai.estimator import FileSystemInputBase
-
-        if not isinstance(item, (str, FileSystemInputBase)):
-            raise ValueError(f"Input data of type {type(item)} is not supported.")
-
-        if isinstance(item, FileSystemInputBase):
-            config = {"InputUri": item.to_input_uri()}
-        elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
-            config = {"InputUri": item}
-        elif os.path.exists(item):
-            store_path = Session.get_storage_path_by_category(
-                StoragePathCategory.InputData
-            )
-            config = {"InputUri": upload(item, store_path)}
-        elif is_dataset_id(item):
-            config = {"DatasetId": item}
-        else:
-            raise ValueError(
-                "Invalid input data, supported inputs are OSS, NAS, MaxCompute "
-                "table or local path."
-            )
-        config.update({"Name": name})
-
-        return config
-
-    def job_name(self, job_name: Optional[str] = None):
-        if job_name:
-            return job_name
-
-        recipe_type = type(self).RECIPE_TYPE
-        if not recipe_type:
-            raise ValueError("RECIPE_TYPE is not defined in the recipe class.")
-
-        sep = "-"
-        if self.model:
-            base_name = f"{self.model.model_name}{sep}{recipe_type}"
-        else:
-            base_name = recipe_type
-        return name_from_base(base_name, sep)
-
-    @property
-    def default_inputs(self):
+    def default_inputs(self) -> List[Union[UriInput, DatasetInput]]:
         return self.spec.inputs
 
     @property
@@ -2398,6 +2280,19 @@ class ModelTrainingRecipe(_ModelRecipe):
 
     RECIPE_TYPE = "training"
 
+    def _extra_inputs(self, inputs: Dict[str, Any]):
+        if not inputs:
+            extra_inputs = self.default_inputs
+        elif self.model_channel_name not in inputs:
+            extra_inputs = [
+                item
+                for item in self.default_inputs
+                if item.name == self.model_channel_name
+            ]
+        else:
+            extra_inputs = []
+        return extra_inputs
+
     def train(
         self,
         inputs: Optional[Dict[str, Any]] = None,
@@ -2408,17 +2303,22 @@ class ModelTrainingRecipe(_ModelRecipe):
         instance_count: int = 1,
         max_run_time: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
-        # resource_id: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
-    ):
+    ) -> TrainingJob:
         """Start a training job with the given inputs."""
-        from pai.estimator import _TrainingJob
 
-        session = get_default_session()
+        algorithm_spec = self.algorithm_spec
         job_name = self.job_name(job_name)
-        input_configs = self._build_input_data_configs(inputs=inputs)
-        output_configs = self._build_output_data_configs(job_name)
-        algo_spec = self.algorithm_spec.model_dump()
+
+        extra_inputs = self._extra_inputs(inputs)
+        inputs = self.build_inputs(
+            inputs=inputs,
+            input_channels=self.algorithm_spec.input_channels,
+            extra_inputs=extra_inputs,
+        )
+        outputs = self.build_outputs(
+            job_name=job_name, output_channels=self.algorithm_spec.output_channels
+        )
 
         if instance_type or self.spec.compute_resource.ecs_spec:
             instance_type = instance_type or self.spec.compute_resource.ecs_spec
@@ -2427,29 +2327,19 @@ class ModelTrainingRecipe(_ModelRecipe):
         hyperparameters = hyperparameters or dict()
         hyperparameters.update({hp.Name: hp.value for hp in self.spec.hyperparameters})
 
-        training_job_id = session.training_job_api.create(
-            instance_count=instance_count,
-            # instance_spec=self.instance_spec,
-            instance_type=instance_type,
-            # resource_id=self.resource_id,
+        return self._submit(
             job_name=job_name,
+            algorithm_spec=algorithm_spec,
+            instance_count=instance_count,
+            instance_type=instance_type,
+            inputs=inputs,
+            outputs=outputs,
             hyperparameters=hyperparameters,
-            max_running_in_seconds=max_run_time,
-            input_channels=input_configs,
-            output_channels=output_configs,
-            algorithm_spec=algo_spec,
-            # experiment_config=
-            user_vpc_config=user_vpc_config.to_dict() if user_vpc_config else None,
+            max_run_time=max_run_time,
+            user_vpc_config=user_vpc_config,
             labels=labels,
+            wait=wait,
         )
-        training_job = _TrainingJob.get(training_job_id)
-        self._training_jobs.append(training_job)
-
-        print(
-            f"View the job detail by accessing the console URI: {training_job.console_uri}"
-        )
-        if wait:
-            training_job.wait()
 
     def retrieve_scripts(self, local_path: str) -> str:
         """Retrieve the training scripts to the local file system.
@@ -2525,9 +2415,6 @@ class ModelTrainingRecipe(_ModelRecipe):
         )
         return p
 
-    def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
-        return self.algorithm_spec.hyperparameter_definitions
-
 
 class ModelEvaluationRecipe(_ModelRecipe):
 
@@ -2538,8 +2425,8 @@ class ModelEvaluationRecipe(_ModelRecipe):
     def __init__(
         self, evaluation_channel_name=DEFAULT_EVALUATION_RESULT_CHANNEL_NAME, **kwargs
     ):
-        super().__init__(**kwargs)
         self.evaluation_channel_name = evaluation_channel_name
+        super().__init__(**kwargs)
 
     def evaluate(
         self,
@@ -2552,14 +2439,13 @@ class ModelEvaluationRecipe(_ModelRecipe):
         labels: Optional[Dict[str, str]] = None,
         wait: bool = True,
     ):
-        from pai.estimator import _TrainingJob
-
-        session = get_default_session()
-
         job_name = self.job_name(job_name=job_name)
-        input_configs = self._build_input_data_configs(inputs=inputs)
-        output_configs = self._build_output_data_configs(job_name)
-        algo_spec = self.algorithm_spec.model_dump()
+        inputs = self.build_inputs(
+            inputs=inputs, input_channels=self.algorithm_spec.input_channels
+        )
+        outputs = self.build_outputs(
+            job_name, output_channels=self.algorithm_spec.output_channels
+        )
 
         if (
             instance_type is None
@@ -2574,27 +2460,16 @@ class ModelEvaluationRecipe(_ModelRecipe):
 
         hyperparameters = parameters or dict()
         hyperparameters.update({hp.Name: hp.value for hp in self.spec.hyperparameters})
-
-        training_job_id = session.training_job_api.create(
-            instance_count=instance_count,
-            # instance_spec=self.instance_spec,
-            # resource_id=self.resource_id,
-            instance_type=instance_type,
+        return self._submit(
             job_name=job_name,
+            algorithm_spec=self.algorithm_spec,
+            instance_count=instance_count,
+            instance_type=instance_type,
+            inputs=inputs,
+            outputs=outputs,
             hyperparameters=hyperparameters,
-            max_running_in_seconds=max_run_time,
-            input_channels=input_configs,
-            output_channels=output_configs,
-            algorithm_spec=algo_spec,
-            # experiment_config=
-            # user_vpc_config=user_vpc_config.to_dict() if user_vpc_config else None,
+            max_run_time=max_run_time,
+            # user_vpc_config=user_vpc_config,
             labels=labels,
+            wait=wait,
         )
-        training_job = _TrainingJob.get(training_job_id)
-        self._training_jobs.append(training_job)
-
-        print(
-            f"View the job detail by accessing the console URI: {training_job.console_uri}"
-        )
-        if wait:
-            training_job.wait()

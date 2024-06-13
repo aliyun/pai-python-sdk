@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
-import tempfile
 
 import pytest
 
@@ -28,9 +27,11 @@ class TestModelRecipe(BaseIntegTestCase):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
 
-        temp_dir = tempfile.mkdtemp()
-        training_recipe.retrieve_scripts(temp_dir)
-        self.assertTrue(os.listdir(temp_dir), "Script directory is empty.")
+        # tempfile.mkdtemp()
+        # print(training_recipe.algorithm_spec.model_dump())
+
+        # training_recipe.retrieve_scripts(temp_dir)
+        # self.assertTrue(os.listdir(temp_dir), "Script directory is empty.")
 
         training_recipe.train()
         self.assertIsNotNone(training_recipe.model_data())

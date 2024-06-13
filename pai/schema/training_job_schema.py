@@ -102,7 +102,7 @@ class TrainingJobSchema(BaseAPIResourceSchema):
 
     @post_load
     def _make(self, data, **kwargs):
-        from ..job._training_job import _TrainingJob
+        from ..job._training_job import TrainingJob
 
         data["instance_count"] = data.get("compute_resource", {}).get("EcsCount")
         data["instance_type"] = data.get("compute_resource", {}).get("EcsType")
@@ -110,4 +110,4 @@ class TrainingJobSchema(BaseAPIResourceSchema):
             "MaxRunningTimeInSeconds"
         )
 
-        return self.make_or_reload(_TrainingJob, data)
+        return self.make_or_reload(TrainingJob, data)
