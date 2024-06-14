@@ -130,7 +130,7 @@ class AlgorithmSpec(BaseAPIModel):
     output_channels: List[Channel] = Field(default_factory=list)
     input_channels: List[Channel] = Field(default_factory=list)
     supports_distributed_training: bool = False
-    metric_definitions: List = Field(default_factory=list)
+    metric_definitions: Optional[List] = None
     hyperparameter_definitions: List[Dict[str, Any]] = Field(
         default_factory=list, alias="HyperParameter"
     )
@@ -371,18 +371,16 @@ class _TrainingJobLogPrinter(object):
 class _TrainingJobSubmitter(object):
     """A class used to submit a training job to the PAI service."""
 
-    def __init__(self):
+    def __init__(self, base_job_name: str = None):
         self.session = get_default_session()
         self._training_jobs = []
-
-    def base_job_name(self):
-        return type(self).__name__.lower()
+        self.base_job_name = base_job_name or type(self).__name__.lower()
 
     def job_name(self, job_name: Optional[str] = None):
         if job_name:
             return job_name
         sep = "-"
-        base_name = self.base_job_name()
+        base_name = self.base_job_name
         return name_from_base(base_name, sep)
 
     def build_inputs(
@@ -455,7 +453,10 @@ class _TrainingJobSubmitter(object):
     def _submit(
         self,
         job_name: str,
-        algorithm_spec: AlgorithmSpec,
+        algorithm_spec: Optional[AlgorithmSpec] = None,
+        algorithm_name: Optional[str] = None,
+        algorithm_version: Optional[str] = None,
+        algorithm_provider: Optional[str] = None,
         instance_count: int = 1,
         instance_type: Optional[str] = None,
         instance_spec: Optional[InstanceSpec] = None,
@@ -464,7 +465,10 @@ class _TrainingJobSubmitter(object):
         outputs: Optional[List[Dict[str, Any]]] = None,
         hyperparameters: Optional[Dict[str, str]] = None,
         max_run_time: Optional[int] = None,
+        environments: Optional[Dict[str, str]] = None,
         user_vpc_config: Optional[Dict[str, str]] = None,
+        requirements: Optional[List[str]] = None,
+        experiment_config: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, str]] = None,
         wait: bool = True,
     ):
@@ -472,6 +476,10 @@ class _TrainingJobSubmitter(object):
         training_job_id = session.training_job_api.create(
             instance_count=instance_count,
             instance_spec=instance_spec.model_dump() if instance_spec else None,
+            algorithm_name=algorithm_name,
+            algorithm_provider=algorithm_provider,
+            experiment_config=experiment_config,
+            algorithm_version=algorithm_version,
             instance_type=instance_type,
             resource_id=resource_id,
             job_name=job_name,
@@ -480,9 +488,11 @@ class _TrainingJobSubmitter(object):
             input_channels=inputs,
             output_channels=outputs,
             algorithm_spec=algorithm_spec.model_dump(),
+            requirements=requirements,
             # experiment_config=
             user_vpc_config=user_vpc_config,
             labels=labels,
+            environments=environments,
         )
         training_job = TrainingJob.get(training_job_id)
         self._training_jobs.append(training_job)
