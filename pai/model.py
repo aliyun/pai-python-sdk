@@ -48,7 +48,8 @@ from .image import ImageInfo
 from .job._training_job import (
     AlgorithmSpec,
     Channel,
-    DatasetInput,
+    DatasetConfig,
+    InstanceSpec,
     TrainingJob,
     TrainingJobSpec,
     UriInput,
@@ -2226,7 +2227,6 @@ class RegisteredModel(ModelBase):
 
 class _ModelRecipe(_TrainingJobSubmitter):
     MODEL_CHANNEL_NAME = "model"
-    RECIPE_TYPE = None
 
     def __init__(
         self,
@@ -2256,7 +2256,7 @@ class _ModelRecipe(_TrainingJobSubmitter):
             return AlgorithmSpec.model_validate(raw_algo_version_spec["AlgorithmSpec"])
 
     @property
-    def default_inputs(self) -> List[Union[UriInput, DatasetInput]]:
+    def default_inputs(self) -> List[Union[UriInput, DatasetConfig]]:
         return self.spec.inputs
 
     @property
@@ -2275,12 +2275,7 @@ class _ModelRecipe(_TrainingJobSubmitter):
     def command(self) -> List[str]:
         return self.algorithm_spec.command
 
-
-class ModelTrainingRecipe(_ModelRecipe):
-
-    RECIPE_TYPE = "training"
-
-    def _extra_inputs(self, inputs: Dict[str, Any]):
+    def _recipe_default_inputs(self, inputs: Dict[str, Any]):
         if not inputs:
             extra_inputs = self.default_inputs
         elif self.model_channel_name not in inputs:
@@ -2293,6 +2288,30 @@ class ModelTrainingRecipe(_ModelRecipe):
             extra_inputs = []
         return extra_inputs
 
+    def _get_instance_config(
+        self,
+        instance_type: str,
+        instance_count: int,
+        instance_spec: InstanceSpec,
+        resource_id: str,
+    ):
+        if resource_id:
+            instance_spec = instance_spec or self.spec.compute_resource.instance_spec
+            if not instance_spec:
+                raise ValueError(
+                    "Running in dedicated resource group, please provide instance spec"
+                    " for the training job."
+                )
+            instance_count = instance_count or instance_spec.count or 1
+        else:
+            instance_type = instance_type or self.spec.compute_resource.ecs_spec
+            if not instance_type:
+                raise ValueError("No instance type is provided for the training job.")
+            instance_count = instance_count or self.spec.compute_resource.ecs_count or 1
+        return instance_type, instance_spec, instance_count
+
+
+class ModelTrainingRecipe(_ModelRecipe):
     def train(
         self,
         inputs: Optional[Dict[str, Any]] = None,
@@ -2301,16 +2320,18 @@ class ModelTrainingRecipe(_ModelRecipe):
         hyperparameters: Optional[Dict[str, Any]] = None,
         instance_type: Optional[str] = None,
         instance_count: int = 1,
+        instance_spec: Optional[InstanceSpec] = None,
         max_run_time: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         labels: Optional[Dict[str, str]] = None,
+        resource_id: Optional[str] = None,
     ) -> TrainingJob:
         """Start a training job with the given inputs."""
 
         algorithm_spec = self.algorithm_spec
         job_name = self.job_name(job_name)
 
-        extra_inputs = self._extra_inputs(inputs)
+        extra_inputs = self._recipe_default_inputs(inputs)
         inputs = self.build_inputs(
             inputs=inputs,
             input_channels=self.algorithm_spec.input_channels,
@@ -2320,21 +2341,24 @@ class ModelTrainingRecipe(_ModelRecipe):
             job_name=job_name, output_channels=self.algorithm_spec.output_channels
         )
 
-        if instance_type or self.spec.compute_resource.ecs_spec:
-            instance_type = instance_type or self.spec.compute_resource.ecs_spec
-            instance_count = instance_count or self.spec.compute_resource.ecs_count or 1
-
-        hyperparameters = hyperparameters or dict()
-        hyperparameters.update({hp.Name: hp.value for hp in self.spec.hyperparameters})
-
+        instance_type, instance_spec, instance_count = self._get_instance_config(
+            instance_type, instance_count, instance_spec, resource_id
+        )
+        hps = (
+            {k: str(v) for k, v in hyperparameters.items()}
+            if hyperparameters
+            else dict()
+        )
+        hps.update({hp.name: hp.value for hp in self.spec.hyperparameters})
         return self._submit(
             job_name=job_name,
             algorithm_spec=algorithm_spec,
             instance_count=instance_count,
             instance_type=instance_type,
+            instance_spec=instance_spec,
             inputs=inputs,
             outputs=outputs,
-            hyperparameters=hyperparameters,
+            hyperparameters=hps,
             max_run_time=max_run_time,
             user_vpc_config=user_vpc_config,
             labels=labels,
@@ -2417,46 +2441,32 @@ class ModelTrainingRecipe(_ModelRecipe):
 
 
 class ModelEvaluationRecipe(_ModelRecipe):
-
-    RECIPE_TYPE = "evaluation"
-
-    DEFAULT_EVALUATION_RESULT_CHANNEL_NAME = "eval_result"
-
-    def __init__(
-        self, evaluation_channel_name=DEFAULT_EVALUATION_RESULT_CHANNEL_NAME, **kwargs
-    ):
-        self.evaluation_channel_name = evaluation_channel_name
-        super().__init__(**kwargs)
-
     def evaluate(
         self,
         inputs: Dict[str, Any] = None,
         job_name: Optional[str] = None,
         instance_type: Optional[str] = None,
         instance_count: Optional[int] = None,
+        instance_spec: Optional[InstanceSpec] = None,
+        resource_id: Optional[str] = None,
         parameters: Optional[Dict[str, str]] = None,
         max_run_time: Optional[int] = None,
         labels: Optional[Dict[str, str]] = None,
         wait: bool = True,
     ):
         job_name = self.job_name(job_name=job_name)
+        extra_inputs = self._recipe_default_inputs(inputs)
         inputs = self.build_inputs(
-            inputs=inputs, input_channels=self.algorithm_spec.input_channels
+            inputs=inputs,
+            input_channels=self.algorithm_spec.input_channels,
+            extra_inputs=extra_inputs,
         )
         outputs = self.build_outputs(
             job_name, output_channels=self.algorithm_spec.output_channels
         )
-
-        if (
-            instance_type is None
-            and instance_count is None
-            and (
-                self.spec.compute_resource.ecs_spec
-                and self.spec.compute_resource.ecs_count
-            )
-        ):
-            instance_type = self.spec.compute_resource.ecs_spec
-            instance_count = self.spec.compute_resource.ecs_count
+        instance_type, instance_spec, instance_count = self._get_instance_config(
+            instance_type, instance_count, instance_spec, resource_id
+        )
 
         hyperparameters = parameters or dict()
         hyperparameters.update({hp.Name: hp.value for hp in self.spec.hyperparameters})
@@ -2469,7 +2479,6 @@ class ModelEvaluationRecipe(_ModelRecipe):
             outputs=outputs,
             hyperparameters=hyperparameters,
             max_run_time=max_run_time,
-            # user_vpc_config=user_vpc_config,
             labels=labels,
             wait=wait,
         )
