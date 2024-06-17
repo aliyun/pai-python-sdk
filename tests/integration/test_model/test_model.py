@@ -239,8 +239,8 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
     def test_tmp_algo_rm_train(self):
         """Test training registered model with temporary algorithm"""
         m = RegisteredModel(
-            model_name="easynlp_pai_bert_tiny_zh",
-            model_version="0.1.0",
+            model_name="qwen1.5-0.5b-chat",
+            # model_version="0.1.0",
             model_provider="pai",
         )
 

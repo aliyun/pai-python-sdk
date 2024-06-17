@@ -29,13 +29,15 @@ from .common.utils import (
     to_plain_text,
 )
 from .experiment import ExperimentConfig
-from .job._local_training_job import _LocalTrainingJob
-from .job._training_job import (
+from .job import (
     AlgorithmSpec,
     Channel,
     CodeDir,
+    HyperParameterDefinition,
+    LocalTrainingJob,
     OssLocation,
     TrainingJob,
+    UriOutput,
     _TrainingJobSubmitter,
 )
 from .model import InferenceSpec, Model, ResourceConfig
@@ -419,7 +421,7 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
             raise RuntimeError("Could not find a submitted training job.")
 
         source_type = "TrainingJob"
-        if isinstance(self.latest_job, _LocalTrainingJob):
+        if isinstance(self.latest_job, LocalTrainingJob):
             raise RuntimeError("Local training job does not support tensorboard.")
         res = self.session.tensorboard_api.list(
             source_type=source_type,
@@ -902,11 +904,11 @@ class Estimator(EstimatorBase):
         job_name,
         instance_type: str,
         inputs: Dict[str, Any] = None,
-    ) -> "_LocalTrainingJob":
+    ) -> "LocalTrainingJob":
         if self.instance_count > 1:
             raise RuntimeError("Local training job only supports single instance.")
 
-        training_job = _LocalTrainingJob(
+        training_job = LocalTrainingJob(
             estimator=self,
             inputs=inputs,
             job_name=job_name,
@@ -1076,32 +1078,27 @@ class AlgorithmEstimator(EstimatorBase):
         super(AlgorithmEstimator, self).set_hyperparameters(**kwargs)
 
     @property
-    def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
+    def hyperparameter_definitions(self) -> List[HyperParameterDefinition]:
         """Get the hyperparameter definitions from the algorithm spec."""
-        res = self._algo_spec.get("HyperParameters", [])
+        res = self._algo_spec.hyperparameter_definitions
         return res
 
     @property
-    def input_channel_definitions(self) -> List[Dict[str, Any]]:
+    def input_channel_definitions(self) -> List[Channel]:
         """Get the input channel definitions from the algorithm spec."""
-        res = self._algo_spec.get("InputChannels", [])
+        res = self._algo_spec.input_channels
         return res
 
     @property
-    def output_channel_definitions(self) -> List[Dict[str, Any]]:
+    def output_channel_definitions(self) -> List[Channel]:
         """Get the output channel definitions from the algorithm spec."""
-        res = self._algo_spec.get("OutputChannels", [])
+        res = self._algo_spec.output_channels
         return res
 
     @property
     def supported_instance_types(self) -> List[str]:
         """Get the supported instance types from the algorithm spec."""
-        res = (
-            self._algo_spec["SupportedInstanceTypes"]
-            if "SupportedInstanceTypes" in self._algo_spec
-            else []
-        )
-        return res
+        return self._algo_spec.supported_instance_types
 
     def _check_args(
         self,
@@ -1276,7 +1273,6 @@ class AlgorithmEstimator(EstimatorBase):
             UnExpectedStatusException: If the training job fails.
 
         """
-        inputs = inputs or dict()
         job_name = self.job_name(job_name=job_name)
         input_configs = self.build_inputs(
             inputs,
@@ -1309,4 +1305,36 @@ class AlgorithmEstimator(EstimatorBase):
                 self.experiment_config.to_dict() if self.experiment_config else None
             ),
             labels=self.labels,
+            wait=wait,
         )
+
+    def get_outputs_data(self) -> Dict[str, str]:
+        """Show all outputs data paths.
+
+        Returns:
+            dict[str, str]: A dictionary of all outputs data paths.
+        """
+        if not self.latest_job:
+            raise RuntimeError(
+                "Could not find a submitted training job. Please submit a training job"
+                " before calling this method."
+            )
+
+        uri_outputs = [
+            output
+            for output in self.latest_job.outputs
+            if isinstance(output, UriOutput)
+        ]
+        extra_outputs = [
+            output
+            for output in self.latest_job.outputs
+            if not isinstance(output, UriOutput)
+        ]
+
+        if extra_outputs:
+            logger.warning(
+                "Extra outputs are provided in the training job, but only URI outputs"
+                " are supported. The extra outputs will be ignored: %s",
+                extra_outputs,
+            )
+        return {ch.name: ch.output_uri for ch in uri_outputs}

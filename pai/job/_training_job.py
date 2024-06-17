@@ -1,3 +1,17 @@
+#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import os
 import posixpath
 import time
@@ -110,8 +124,8 @@ class UriOutput(BaseAPIModel):
 
 
 class DatasetConfig(BaseAPIModel):
-    name: str
     dataset_id: str
+    name: Optional[str] = None
     dataset_name: Optional[str] = None
 
 
@@ -123,6 +137,18 @@ class Channel(BaseAPIModel):
     properties: Optional[Dict[str, Any]] = None
 
 
+class HyperParameterDefinition(BaseAPIModel):
+    name: str
+    type: Optional[str] = None
+    default_value: Optional[str] = None
+    description: Optional[str] = None
+    required: bool = False
+
+
+class SchedulerConfig(BaseAPIModel):
+    max_running_time_in_seconds: Optional[int] = None
+
+
 class AlgorithmSpec(BaseAPIModel):
     command: List[str]
     image: str
@@ -130,8 +156,9 @@ class AlgorithmSpec(BaseAPIModel):
     output_channels: List[Channel] = Field(default_factory=list)
     input_channels: List[Channel] = Field(default_factory=list)
     supports_distributed_training: bool = False
+    supported_instance_types: Optional[List[str]] = None
     metric_definitions: Optional[List] = None
-    hyperparameter_definitions: List[Dict[str, Any]] = Field(
+    hyperparameter_definitions: List[HyperParameterDefinition] = Field(
         default_factory=list, alias="HyperParameter"
     )
     job_type: Literal["PyTorchJob"] = Field(default="PyTorchJob")
@@ -139,13 +166,15 @@ class AlgorithmSpec(BaseAPIModel):
 
 
 class TrainingJobSpec(BaseAPIModel):
-    compute_resource: ComputeResource
+    compute_resource: Optional[ComputeResource] = None
     hyperparameters: List[HyperParameter] = Field(
         default_factory=list, alias="HyperParameters"
     )
     inputs: List[Union[UriInput, DatasetConfig]] = Field(
         default_factory=list, alias="InputChannels"
     )
+    scheduler: Optional[SchedulerConfig] = None
+    supported_instance_types: Optional[List[str]] = None
     algorithm_spec: Optional[AlgorithmSpec] = None
     algorithm_version: Optional[str] = None
     algorithm_provider: Optional[str] = None
@@ -192,10 +221,10 @@ class TrainingJob(BaseAPIModel):
     @classmethod
     def list(
         cls,
-        status=None,
-        session: Session = None,
-        page_size=50,
-        page_number=1,
+        status: Optional[str] = None,
+        session: Optional[Session] = None,
+        page_size: int = 50,
+        page_number: int = 1,
     ):
         session = session or get_default_session()
         res = session.training_job_api.list(
@@ -387,14 +416,14 @@ class _TrainingJobSubmitter(object):
         self,
         inputs: Dict[str, Any],
         input_channels: List[Channel],
-        extra_inputs: List[Union[DatasetConfig, UriInput]] = None,
+        default_inputs: List[Union[DatasetConfig, UriInput]] = None,
     ) -> List[Dict[str, str]]:
         res = []
         inputs = inputs or dict()
         input_channels = input_channels or []
-        extra_inputs = extra_inputs or []
+        default_inputs = default_inputs or []
 
-        input_keys = set(list(inputs.keys()) + [item.name for item in extra_inputs])
+        input_keys = set(list(inputs.keys()) + [item.name for item in default_inputs])
 
         requires = {ch.name for ch in input_channels if ch.required} - input_keys
         if requires:
@@ -414,7 +443,7 @@ class _TrainingJobSubmitter(object):
             input_config = self._get_input_config(name, item)
             res.append(input_config.model_dump())
 
-        for item in extra_inputs:
+        for item in default_inputs:
             res.append(item.model_dump())
 
         return res
@@ -487,7 +516,7 @@ class _TrainingJobSubmitter(object):
             max_running_in_seconds=max_run_time,
             input_channels=inputs,
             output_channels=outputs,
-            algorithm_spec=algorithm_spec.model_dump(),
+            algorithm_spec=algorithm_spec.model_dump() if algorithm_spec else None,
             requirements=requirements,
             # experiment_config=
             user_vpc_config=user_vpc_config,
@@ -507,13 +536,18 @@ class _TrainingJobSubmitter(object):
         """Get input uri for training_job from given input."""
         from pai.estimator import FileSystemInputBase
 
-        if not isinstance(item, (str, FileSystemInputBase)):
+        if not isinstance(item, (str, FileSystemInputBase, DatasetConfig)):
             raise ValueError(f"Input data of type {type(item)} is not supported.")
 
         if isinstance(item, FileSystemInputBase):
             input_ = UriInput(
                 name=name,
                 input_uri=item.to_input_uri(),
+            )
+        elif isinstance(item, DatasetConfig):
+            input_ = DatasetConfig(
+                name=name,
+                dataset_id=item.dataset_id,
             )
         elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
             input_ = UriInput(

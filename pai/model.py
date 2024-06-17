@@ -39,7 +39,6 @@ from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
 from .common.utils import (
     generate_repr,
     is_local_run_instance_type,
-    name_from_base,
     random_str,
     to_plain_text,
 )
@@ -288,7 +287,9 @@ class InferenceSpec(object):
                 f"Input source code path should be a directory: {source_dir}."
             )
 
-        target_dir = session.get_storage_path_by_category(category="inference_src")
+        target_dir = session.get_storage_path_by_category(
+            category=StoragePathCategory.InferenceSrc
+        )
         # upload local script data to the OSS bucket.
         uploaded_source_code = upload(
             source_dir,
@@ -370,7 +371,9 @@ class InferenceSpec(object):
         elif os.path.exists(source):
             # if source is a local path, upload it to OSS bucket and use OSS URI
             # as storage source.
-            oss_path = session.get_storage_path_by_category("model_data")
+            oss_path = session.get_storage_path_by_category(
+                StoragePathCategory.ModelData
+            )
             oss_uri = upload(
                 source_path=source, oss_path=oss_path, bucket=session.oss_bucket
             )
@@ -771,7 +774,9 @@ class ModelBase(object):
         elif not os.path.exists(self.model_data):
             raise RuntimeError(f"Model data path does not exist: {self.model_data}")
 
-        dest_oss_path = self.session.get_storage_path_by_category(category="model_data")
+        dest_oss_path = self.session.get_storage_path_by_category(
+            category=StoragePathCategory.ModelData
+        )
         upload_model_data = upload(
             source_path=self.model_data,
             oss_path=dest_oss_path,
@@ -1846,6 +1851,36 @@ class RegisteredModel(ModelBase):
 
         return inference_spec.to_dict()
 
+    def _get_training_spec(self, training_method: Optional[str]) -> TrainingJobSpec:
+        if type(self)._is_multiple_spec(self.training_spec):
+            supported_training_methods = list(self.training_spec.keys())
+            if training_method and training_method not in supported_training_methods:
+                raise ValueError(
+                    "The model does not support the given training method:"
+                    f" {training_method}. Supported training methods are:"
+                    f" {supported_training_methods}."
+                )
+            elif training_method:
+                ts = self.training_spec.get(training_method)
+            else:
+                training_method = supported_training_methods[0]
+                logger.warning(
+                    "The training method is not specified, using the default training"
+                    " method: %s. Supported training methods are: %s.",
+                    training_method,
+                    supported_training_methods,
+                )
+                ts = self.training_spec.get(training_method)
+        else:
+            # Does not support training methods. # Use default training spec.
+            if training_method:
+                raise ValueError(
+                    "The model does not support choosing training method. Do not"
+                    " specify the training method."
+                )
+            ts = self.training_spec
+        return TrainingJobSpec.model_validate(ts)
+
     def get_estimator(
         self,
         training_method: Optional[str] = None,
@@ -1862,7 +1897,7 @@ class RegisteredModel(ModelBase):
         Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
 
         Args:
-            training_method (str, optional): Used to selected the training algorithm
+            training_method (str, optional): Used to select the training algorithm
                 that supported by the model. If not specified, the default training
                 algorithm will be retrieved from the model version.
             instance_type (str, optional): The machine instance type used to run the
@@ -1895,59 +1930,14 @@ class RegisteredModel(ModelBase):
             raise ValueError(
                 "The provided registered model does not contain training spec."
             )
-        ts = self.training_spec
-        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
-            # Support choosing training methods.
-            supported_training_methods = list(ts.keys())
-            if training_method and training_method not in supported_training_methods:
-                raise ValueError(
-                    "The model does not support the given training method:"
-                    f" {training_method}. Supported training methods are:"
-                    f" {supported_training_methods}."
-                )
-            elif training_method:
-                ts = ts.get(training_method)
-            else:
-                training_method = supported_training_methods[0]
-                logger.warning(
-                    "The training method is not specified, using the default training"
-                    " method: %s. Supported training methods are: %s.",
-                    training_method,
-                    supported_training_methods,
-                )
-                ts = ts.get(training_method)
-        else:
-            # Does not support training methods.
-            # Use default training spec.
-            if training_method:
-                raise ValueError(
-                    "The model does not support choosing training method. Do not"
-                    " specify the training method."
-                )
-
-        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
-            raise ValueError(
-                "The provided registered model's training spec does not contain any"
-                " algorithms."
-            )
-        if "AlgorithmSpec" in ts:
-            algorithm_spec = ts.get("AlgorithmSpec")
-            algorithm_name, algorithm_provider, algorithm_version = (None, None, None)
-        else:
-            algorithm_name, algorithm_provider, algorithm_version = (
-                ts.get("AlgorithmName"),
-                ts.get("AlgorithmProvider"),
-                ts.get("AlgorithmVersion"),
-            )
-            algorithm_spec = None
-
+        ts = self._get_training_spec(training_method=training_method)
         hyperparameters = hyperparameters or {}
         # TODO: validate the given hyperparameters via algorithm definition
-        for hp in ts.get("HyperParameters", []):
-            if hp["Name"] not in hyperparameters:
+        for hp in ts.hyperparameters:
+            if hp.name not in hyperparameters:
                 hyperparameters.update(
                     {
-                        hp["Name"]: hp["Value"],
+                        hp.name: hp.value,
                     }
                 )
 
@@ -1955,18 +1945,42 @@ class RegisteredModel(ModelBase):
             base_job_name = f"{self.model_name}_training" if self.model_name else None
 
         if not max_run_time:
-            max_run_time = ts.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
+            max_run_time = (
+                ts.scheduler.max_running_time_in_seconds if ts.scheduler else None
+            )
 
-        train_compute_resource = ts.get("ComputeResource")
+        resource_id = kwargs.get("resource_id")
         instance_spec = kwargs.get("instance_spec")
-        if train_compute_resource:
-            instance_type = instance_type or train_compute_resource.get("EcsSpec")
+        compute_resource = ts.compute_resource
+        if resource_id:
+            if instance_type:
+                logger.warning(
+                    "The instance type is ignored when resource_id is provided."
+                )
+            instance_spec = instance_type or compute_resource.instance_spec
+            if not instance_spec:
+                raise ValueError(
+                    "Instance spec is required when resource_id is provided."
+                )
+            instance_spec = InstanceSpec.model_validate(instance_spec)
             instance_count = (
                 instance_count
-                or train_compute_resource.get("EcsCount")
-                or train_compute_resource.get("InstanceCount")
+                or compute_resource.instance_count
+                or compute_resource.ecs_count
+                or 1
             )
-            instance_spec = instance_spec or train_compute_resource.get("InstanceSpec")
+        else:
+            if instance_spec:
+                logger.warning(
+                    "The instance spec is ignored when resource_id is not provided."
+                )
+            instance_type = instance_type or compute_resource.ecs_spec
+            instance_count = (
+                instance_count
+                or compute_resource.ecs_count
+                or compute_resource.instance_count
+                or 1
+            )
 
         labels = kwargs.pop("labels", dict())
         if self.model_provider == ProviderAlibabaPAI:
@@ -1983,10 +1997,10 @@ class RegisteredModel(ModelBase):
             labels = default_labels
 
         return AlgorithmEstimator(
-            algorithm_name=algorithm_name,
-            algorithm_version=algorithm_version,
-            algorithm_provider=algorithm_provider,
-            algorithm_spec=algorithm_spec,
+            algorithm_name=ts.algorithm_name,
+            algorithm_version=ts.algorithm_version,
+            algorithm_provider=ts.algorithm_provider,
+            algorithm_spec=ts.algorithm_spec,
             hyperparameters=hyperparameters,
             base_job_name=base_job_name,
             max_run_time=max_run_time,
@@ -1998,35 +2012,26 @@ class RegisteredModel(ModelBase):
             **kwargs,
         )
 
-    def get_estimator_inputs(self) -> Dict[str, str]:
+    def get_estimator_inputs(self, training_method=None) -> Dict[str, Any]:
         """Get the AlgorithmEstimator's default input channels
 
         Get the AlgorithmEstimator's default input channels from RegisteredModel's
         training_spec.
 
         Returns:
-            dict[str, str]: A dict of input channels.
+            Dict[str, str]: A dict of input channels.
         """
-        if not self.training_spec:
-            raise ValueError(
-                "The provided registered model does not contain training spec."
-            )
-        ts = self.training_spec
-        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
-            raise ValueError(
-                "The provided registered model's training spec does not contain any"
-                " algorithms."
-            )
+        default_inputs = (
+            self._get_training_spec(training_method=training_method).inputs or []
+        )
 
-        input_channels = {}
-        if "InputChannels" in ts:
-            for i in ts["InputChannels"]:
-                input_channels.update(
-                    {
-                        i["Name"]: i["InputUri"],
-                    }
-                )
-        return input_channels
+        ret = {}
+        for item in default_inputs:
+            if isinstance(item, UriInput):
+                ret[item.name] = item.input_uri
+            else:
+                ret[item.name] = item
+        return ret
 
     def get_eval_processor(
         self,
@@ -2288,7 +2293,7 @@ class _ModelRecipe(_TrainingJobSubmitter):
             extra_inputs = []
         return extra_inputs
 
-    def _get_instance_config(
+    def _get_compute_resource_config(
         self,
         instance_type: str,
         instance_count: int,
@@ -2296,17 +2301,28 @@ class _ModelRecipe(_TrainingJobSubmitter):
         resource_id: str,
     ):
         if resource_id:
+            if instance_type:
+                logger.warning(
+                    "The instance type is ignored when resource_id is provided."
+                )
             instance_spec = instance_spec or self.spec.compute_resource.instance_spec
             if not instance_spec:
                 raise ValueError(
                     "Running in dedicated resource group, please provide instance spec"
                     " for the training job."
                 )
-            instance_count = instance_count or instance_spec.count or 1
+            instance_count = (
+                instance_count or self.spec.compute_resource.instance_count or 1
+            )
         else:
+            if instance_spec:
+                logger.warning(
+                    "The instance spec is ignored when resource_id is not provided."
+                )
             instance_type = instance_type or self.spec.compute_resource.ecs_spec
+
             if not instance_type:
-                raise ValueError("No instance type is provided for the training job.")
+                raise ValueError("No instance type is specified for the training job")
             instance_count = instance_count or self.spec.compute_resource.ecs_count or 1
         return instance_type, instance_spec, instance_count
 
@@ -2330,18 +2346,26 @@ class ModelTrainingRecipe(_ModelRecipe):
 
         algorithm_spec = self.algorithm_spec
         job_name = self.job_name(job_name)
+        default_inputs = self._recipe_default_inputs(inputs)
 
-        extra_inputs = self._recipe_default_inputs(inputs)
+        if not inputs:
+            logger.info(
+                "No custom inputs are provided for the training job, using default inputs."
+            )
+
         inputs = self.build_inputs(
             inputs=inputs,
             input_channels=self.algorithm_spec.input_channels,
-            extra_inputs=extra_inputs,
+            default_inputs=default_inputs,
         )
         outputs = self.build_outputs(
             job_name=job_name, output_channels=self.algorithm_spec.output_channels
         )
-
-        instance_type, instance_spec, instance_count = self._get_instance_config(
+        (
+            instance_type,
+            instance_spec,
+            instance_count,
+        ) = self._get_compute_resource_config(
             instance_type, instance_count, instance_spec, resource_id
         )
         hps = (
@@ -2350,6 +2374,7 @@ class ModelTrainingRecipe(_ModelRecipe):
             else dict()
         )
         hps.update({hp.name: hp.value for hp in self.spec.hyperparameters})
+
         return self._submit(
             job_name=job_name,
             algorithm_spec=algorithm_spec,
@@ -2459,12 +2484,16 @@ class ModelEvaluationRecipe(_ModelRecipe):
         inputs = self.build_inputs(
             inputs=inputs,
             input_channels=self.algorithm_spec.input_channels,
-            extra_inputs=extra_inputs,
+            default_inputs=extra_inputs,
         )
         outputs = self.build_outputs(
             job_name, output_channels=self.algorithm_spec.output_channels
         )
-        instance_type, instance_spec, instance_count = self._get_instance_config(
+        (
+            instance_type,
+            instance_spec,
+            instance_count,
+        ) = self._get_compute_resource_config(
             instance_type, instance_count, instance_spec, resource_id
         )
 
