@@ -50,7 +50,7 @@ class TestPipelineBuild(BaseUnitTestCase):
             },
         )
 
-        with self.assertRaisesRegexp(ValueError, ".*conflict.*") as _:
+        with self.assertRaisesRegex(ValueError, ".*conflict.*") as _:
             step1 = op.as_step(name="step1")
             step2 = op.as_step(name="step2")
             _ = Pipeline(

@@ -284,6 +284,8 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         inputs = m.get_estimator_inputs()
         est.hyperparameters["max_epochs"] = 5
         est.hyperparameters["warmup_epochs"] = 2
+        est.hyperparameters["image_scale"] = "640,640"
+        est.hyperparameters["train_batch_size"] = 8
         est.fit(inputs=inputs)
 
         outputs_data = est.get_outputs_data()

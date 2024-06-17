@@ -815,7 +815,9 @@ class Estimator(EstimatorBase):
     ) -> AlgorithmSpec:
         """Build a temporary AlgorithmSpec used for submitting the TrainingJob."""
         algorithm_spec = AlgorithmSpec(
-            command=self.command if isinstance(self.command, list) else [self.command],
+            command=self.command
+            if isinstance(self.command, list)
+            else ["sh", "-c", self.command],
             image=self.training_image_uri(),
             job_type=self.job_type,
             metric_definitions=self.metric_definitions,
@@ -885,6 +887,7 @@ class Estimator(EstimatorBase):
             job_name=job_name,
             algorithm_spec=algo_spec,
             instance_spec=self.instance_spec,
+            instance_type=self.instance_type,
             instance_count=self.instance_count,
             resource_id=self.resource_id,
             hyperparameters=self.hyperparameters,

@@ -207,6 +207,8 @@ class TrainingJob(BaseAPIModel):
     workspace_id: Optional[str] = None
     training_job_url: Optional[str] = None
     status: Optional[str] = None
+    reason_code: Optional[str] = None
+    reason_message: Optional[str] = None
 
     @property
     def id(self):
