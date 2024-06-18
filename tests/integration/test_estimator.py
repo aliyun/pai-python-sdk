@@ -22,8 +22,9 @@ import pytest
 from pai.common.oss_utils import upload
 from pai.common.utils import random_str
 from pai.estimator import AlgorithmEstimator, Estimator
-from pai.experiment import Experiment, ExperimentConfig
+from pai.experiment import Experiment
 from pai.image import retrieve
+from pai.job._training_job import ExperimentConfig
 from pai.session import get_default_session
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context

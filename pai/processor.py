@@ -18,11 +18,11 @@ from typing import Any, Dict, List, Optional, Union
 from .common.consts import JobType, StoragePathCategory
 from .common.logging import get_logger
 from .common.utils import experimental, random_str, to_plain_text
-from .experiment import ExperimentConfig
 from .job._training_job import (
     AlgorithmSpec,
     Channel,
     CodeDir,
+    ExperimentConfig,
     TrainingJob,
     UserVpcConfig,
     _TrainingJobSubmitter,

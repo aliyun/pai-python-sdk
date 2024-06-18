@@ -21,7 +21,6 @@ from .common import git_utils
 from .common.consts import FileSystemInputScheme, JobType
 from .common.logging import get_logger
 from .common.utils import is_local_run_instance_type, make_list_resource_iterator
-from .experiment import ExperimentConfig
 from .job import (
     AlgorithmSpec,
     Channel,
@@ -31,7 +30,7 @@ from .job import (
     UriOutput,
     _TrainingJobSubmitter,
 )
-from .job._training_job import UserVpcConfig
+from .job._training_job import ExperimentConfig, UserVpcConfig
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .serializers import SerializerBase

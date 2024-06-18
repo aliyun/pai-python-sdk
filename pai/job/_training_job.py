@@ -112,6 +112,15 @@ class UserVpcConfig(BaseAPIModel):
     )
 
 
+class ExperimentConfig(BaseAPIModel):
+    """ExperimentConfig is used to configure the experiment to which the job belongs."""
+
+    experiment_id: str = Field(
+        ...,
+        description="Specifies the ID of the experiment that training job instance belongs to.",
+    )
+
+
 class OssLocation(BaseAPIModel):
     bucket: str
     key: str

@@ -17,12 +17,14 @@ from ._training_job import (
     AlgorithmSpec,
     Channel,
     CodeDir,
+    ExperimentConfig,
     HyperParameterDefinition,
     OssLocation,
     TrainingJob,
     TrainingJobSpec,
     TrainingJobStatus,
     UriOutput,
+    UserVpcConfig,
     _TrainingJobSubmitter,
 )
 
@@ -37,4 +39,6 @@ __all__ = [
     "CodeDir",
     "LocalTrainingJob",
     "UriOutput",
+    "UserVpcConfig",
+    "ExperimentConfig",
 ]
