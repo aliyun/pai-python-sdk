@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from .common import git_utils
-from .common.configs import UserVpcConfig
 from .common.consts import FileSystemInputScheme, JobType
 from .common.logging import get_logger
 from .common.utils import is_local_run_instance_type, make_list_resource_iterator
@@ -32,6 +31,7 @@ from .job import (
     UriOutput,
     _TrainingJobSubmitter,
 )
+from .job._training_job import UserVpcConfig
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .serializers import SerializerBase
@@ -787,6 +787,11 @@ class Estimator(EstimatorBase):
             show_logs (bool): Specifies whether to show the logs produced by the
                 training job (Default True).
             job_name (str, optional): The name of the training job.
+
+        Returns:
+            :class:`pai.job.TrainingJob` or :class:`pai.job.LocalTrainingJob`: A
+                submitted training job.
+
         Raises:
             UnExpectedStatusException: If the training job fails.
 
@@ -1213,7 +1218,7 @@ class AlgorithmEstimator(EstimatorBase):
         wait: bool = True,
         show_logs: bool = True,
         job_name: Optional[str] = None,
-    ):
+    ) -> TrainingJob:
         """Submit a training job with the given input data.
 
         Args:
@@ -1227,6 +1232,10 @@ class AlgorithmEstimator(EstimatorBase):
             show_logs (bool): Specifies whether to show the logs produced by the
                 training job (Default True).
             job_name (str, optional): The name of the training job.
+
+        Returns:
+            :class:`pai.training_job.TrainingJob`: The submitted training job.
+
         Raises:
             UnExpectedStatusException: If the training job fails.
 

@@ -31,7 +31,6 @@ from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
 from .common import ProviderAlibabaPAI, git_utils
-from .common.configs import UserVpcConfig
 from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
 from .common.docker_utils import ContainerRun, run_container
 from .common.logging import get_logger
@@ -52,6 +51,7 @@ from .job._training_job import (
     TrainingJob,
     TrainingJobSpec,
     UriInput,
+    UserVpcConfig,
     _TrainingJobSubmitter,
 )
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
@@ -2357,6 +2357,7 @@ class ModelTrainingRecipe(_ModelRecipe):
         outputs = self.build_outputs(
             job_name=job_name, output_channels=self.algorithm_spec.output_channels
         )
+
         (
             instance_type,
             instance_spec,

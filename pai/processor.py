@@ -15,12 +15,18 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from .common.configs import UserVpcConfig
 from .common.consts import JobType, StoragePathCategory
 from .common.logging import get_logger
-from .common.utils import experimental, print_table, random_str, to_plain_text
+from .common.utils import experimental, random_str, to_plain_text
 from .experiment import ExperimentConfig
-from .job._training_job import AlgorithmSpec, Channel, CodeDir, _TrainingJobSubmitter
+from .job._training_job import (
+    AlgorithmSpec,
+    Channel,
+    CodeDir,
+    TrainingJob,
+    UserVpcConfig,
+    _TrainingJobSubmitter,
+)
 from .session import Session, get_default_session
 
 logger = get_logger(__name__)
@@ -180,7 +186,7 @@ class Processor(_TrainingJobSubmitter):
         outputs: Dict[str, Any] = None,
         wait: bool = True,
         show_logs: bool = True,
-    ):
+    ) -> TrainingJob:
         """Submit a job with the given input and output channels.
 
         Args:
@@ -198,6 +204,10 @@ class Processor(_TrainingJobSubmitter):
                 either succeeded, failed, or stopped. (Default True).
             show_logs (bool): Specifies whether to show the logs produced by the
                 job (Default True).
+
+        Returns:
+            :class:`pai.job.TrainingJob`: A submitted training job.
+
         Raises:
             UnExpectedStatusException: If the job fails.
 

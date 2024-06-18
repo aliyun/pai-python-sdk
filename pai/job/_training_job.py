@@ -88,6 +88,30 @@ class TrainingJobStatus(object):
         ]
 
 
+class UserVpcConfig(BaseAPIModel):
+    """UserVpcConfig represents the VPC configuration for the training job instance."""
+
+    vpc_id: str = Field(
+        ...,
+        description="Specifies the ID of the VPC that training job instance connects to.",
+    )
+    security_group_id: str = Field(
+        ...,
+        description="The ID of the security group that training job instances belong to.",
+    )
+    switch_id: Optional[str] = Field(
+        None,
+        description="The ID of the vSwitch to which the instance belongs. Defaults to None.",
+    )
+    extended_cidrs: Optional[List[str]] = Field(
+        None,
+        description="The CIDR blocks configured for the ENI of the training job instance. "
+        "If it is not specified, the CIDR block will be configured as the same as the VPC "
+        "network segmentation, which means that the training job instance can access all "
+        "resources in the VPC. Defaults to None.",
+    )
+
+
 class OssLocation(BaseAPIModel):
     bucket: str
     key: str
