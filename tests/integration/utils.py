@@ -17,6 +17,7 @@ import datetime
 import io
 import os
 import shutil
+import subprocess
 import uuid
 from collections import namedtuple
 
@@ -85,7 +86,12 @@ class TestContext(object):
 
     @property
     def has_docker(self):
-        return shutil.which("docker") is not None
+        # Check if docker daemon is running
+        return (
+            shutil.which("docker") is not None
+            and subprocess.run(["docker", "stats"], stdout=subprocess.PIPE).returncode
+            == 0
+        )
 
     @property
     def has_gpu(self):
@@ -170,9 +176,11 @@ def make_resource_name(case_name, resource_type=None, sep="-", time_suffix=True)
                 "sdktest",
                 resource_type,
                 case_name,
-                datetime.datetime.now().isoformat(timespec="seconds")
-                if time_suffix
-                else random_str(10),
+                (
+                    datetime.datetime.now().isoformat(timespec="seconds")
+                    if time_suffix
+                    else random_str(10)
+                ),
             ],
         )
     )
