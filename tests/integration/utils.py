@@ -89,7 +89,9 @@ class TestContext(object):
         # Check if docker daemon is running
         return (
             shutil.which("docker") is not None
-            and subprocess.run(["docker", "stats"], stdout=subprocess.PIPE).returncode
+            and subprocess.run(
+                ["docker", "stats"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            ).returncode
             == 0
         )
 

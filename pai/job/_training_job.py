@@ -473,6 +473,7 @@ class _TrainingJobSubmitter(object):
     ) -> List[Dict[str, str]]:
         base_output_path = self.training_job_base_output(job_name)
         res = []
+        outputs = outputs or dict()
 
         for ch in output_channels:
             # if checkpoint path is provided, use it as the checkpoint channel output.
