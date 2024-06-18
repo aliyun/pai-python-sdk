@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import os
+import posixpath
 import re
 from unittest import skipUnless
 
@@ -95,6 +96,35 @@ class TestEstimator(BaseIntegTestCase):
         tb = est.tensorboard()
         self.assertIsNotNone(tb.app_uri)
         tb.delete()
+
+    def test_checkpoints(self):
+        sess = get_default_session()
+        torch_image_uri = retrieve("pytorch", framework_version="1.12").image_uri
+        filename = "output.txt"
+        command = (
+            f"echo helloworld > /ml/output/checkpoints/{filename} && echo 'helloworld'"
+        )
+        checkpoint_path = f"oss://{sess.oss_bucket.bucket_name}/sdk-test/test-checkpoints/{random_str(6)}/"
+
+        est = Estimator(
+            image_uri=torch_image_uri,
+            command=command,
+            instance_type="ecs.c6.large",
+            base_job_name="torch_run_",
+            checkpoints_path=checkpoint_path,
+        )
+
+        est.fit(
+            inputs={
+                "training": self.breast_cancer_train_data_uri,
+                "test": self.breast_cancer_test_data_uri,
+            },
+            wait=True,
+        )
+        self.assertEqual(checkpoint_path, est.checkpoints_data())
+        self.assertTrue(
+            self.is_oss_object_exists(posixpath.join(checkpoint_path, filename))
+        )
 
     def test_max_compute_input(self):
         image_uri = retrieve("xgboost", framework_version="latest").image_uri
