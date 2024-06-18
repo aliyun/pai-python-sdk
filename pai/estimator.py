@@ -291,7 +291,7 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
         self.labels = labels
-        super().__init__(base_job_name=base_job_name)
+        super().__init__(base_job_name=base_job_name, output_path=output_path)
 
     def set_hyperparameters(self, **kwargs):
         """Set hyperparameters for the training job.
@@ -330,21 +330,6 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
     ):
         """Submit a training job with the given input data."""
-
-    def wait(self, show_logs: bool = True):
-        """Block until the latest training job is completed.
-
-        Args:
-            show_logs(bool): Specifies whether to fetch and print the logs produced by
-                the training job.
-
-        Raises:
-            RuntimeError: If no training job is submitted.
-
-        """
-        if not self.latest_job:
-            raise RuntimeError("Could not find a submitted training job.")
-        self.latest_job.wait(show_logs=show_logs)
 
     def model_data(self) -> str:
         """Model data output path.
@@ -788,7 +773,7 @@ class Estimator(EstimatorBase):
         wait: bool = True,
         show_logs: bool = True,
         job_name: Optional[str] = None,
-    ):
+    ) -> Union[TrainingJob, LocalTrainingJob]:
         """Submit a training job with the given input data.
 
         Args:
@@ -810,16 +795,15 @@ class Estimator(EstimatorBase):
         self._prepare_for_training()
         job_name = self.job_name(job_name=job_name)
         if is_local_run_instance_type(self.instance_type):
-            self._local_run(
-                job_name=job_name, inputs=inputs, instance_type=self.instance_type
+            return self._local_run(
+                job_name=job_name,
+                inputs=inputs,
+                instance_type=self.instance_type,
+                wait=wait,
             )
-        else:
-            self._fit(inputs=inputs, job_name=job_name)
+        return self._fit(inputs=inputs, job_name=job_name, wait=wait)
 
-        if wait:
-            self.wait(show_logs=show_logs)
-
-    def _fit(self, job_name, inputs: Dict[str, Any] = None) -> TrainingJob:
+    def _fit(self, job_name, inputs: Dict[str, Any], wait: bool = True) -> TrainingJob:
         # prepare input code.
         code_input = self._build_code_input(job_name, source_dir=self.source_dir)
         algo_spec = self._build_algorithm_spec(
@@ -830,9 +814,16 @@ class Estimator(EstimatorBase):
             inputs=inputs,
             input_channels=algo_spec.input_channels,
         )
+
+        if self.checkpoints_path:
+            outputs = {DEFAULT_CHECKPOINT_CHANNEL_NAME: self.checkpoints_path}
+        else:
+            outputs = None
+
         outputs = self.build_outputs(
             job_name=job_name,
             output_channels=algo_spec.output_channels,
+            outputs=outputs,
         )
 
         return self._submit(
@@ -851,7 +842,7 @@ class Estimator(EstimatorBase):
             user_vpc_config=self.user_vpc_config if self.user_vpc_config else None,
             # experiment_config=self.experiment_config if self.experiment_config else None,
             labels=self.labels,
-            wait=False,
+            wait=wait,
         )
 
     def _local_run(
@@ -859,6 +850,7 @@ class Estimator(EstimatorBase):
         job_name,
         instance_type: str,
         inputs: Dict[str, Any] = None,
+        wait: bool = True,
     ) -> "LocalTrainingJob":
         if self.instance_count > 1:
             raise RuntimeError("Local training job only supports single instance.")
@@ -870,6 +862,8 @@ class Estimator(EstimatorBase):
             instance_type=instance_type,
         )
         training_job.run()
+        if wait:
+            training_job.wait()
         return training_job
 
 

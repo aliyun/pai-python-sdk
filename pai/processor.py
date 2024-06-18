@@ -12,14 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
-import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from .common.configs import UserVpcConfig
 from .common.consts import JobType, StoragePathCategory
 from .common.logging import get_logger
-from .common.utils import experimental, random_str, to_plain_text
+from .common.utils import experimental, print_table, random_str, to_plain_text
 from .experiment import ExperimentConfig
 from .job._training_job import AlgorithmSpec, Channel, CodeDir, _TrainingJobSubmitter
 from .session import Session, get_default_session
@@ -164,8 +163,6 @@ class Processor(_TrainingJobSubmitter):
         self.requirements = requirements
         self.max_run_time = max_run_time
 
-        self.output_path = output_path
-
         self.instance_type = instance_type
         self.instance_count = instance_count or 1
         self.labels = labels
@@ -175,7 +172,7 @@ class Processor(_TrainingJobSubmitter):
 
         self._input_channels = None
         self._output_channels = None
-        super().__init__(base_job_name=base_job_name)
+        super().__init__(base_job_name=base_job_name, output_path=output_path)
 
     def run(
         self,
@@ -209,7 +206,40 @@ class Processor(_TrainingJobSubmitter):
         outputs = outputs or dict()
         job_name = self._gen_job_display_name()
 
-        return self._fit(inputs=inputs, outputs=outputs, job_name=job_name, wait=wait)
+        code_dest = Session.get_storage_path_by_category(
+            StoragePathCategory.ProcessingSrc, to_plain_text(job_name)
+        )
+        code_dir = self._build_code_input(job_name, self.source_dir, code_dest)
+        algo_spec = self._build_algorithm_spec(
+            code_input=code_dir,
+        )
+        inputs = self.build_inputs(inputs, input_channels=algo_spec.input_channels)
+        outputs = self.build_outputs(
+            job_name=job_name,
+            output_channels=algo_spec.output_channels,
+            outputs=outputs,
+        )
+
+        return self._submit(
+            instance_count=self.instance_count,
+            instance_type=self.instance_type,
+            job_name=job_name,
+            hyperparameters=self.parameters,
+            environments=self.environments,
+            requirements=self.requirements,
+            max_run_time=self.max_run_time,
+            inputs=inputs,
+            outputs=outputs,
+            algorithm_spec=algo_spec,
+            user_vpc_config=(
+                self.user_vpc_config.to_dict() if self.user_vpc_config else None
+            ),
+            experiment_config=(
+                self.experiment_config.to_dict() if self.experiment_config else None
+            ),
+            labels=self.labels,
+            wait=wait,
+        )
 
     def _gen_job_display_name(self, job_name=None):
         """Generate job display name."""
@@ -239,107 +269,7 @@ class Processor(_TrainingJobSubmitter):
         )
         return algorithm_spec
 
-    def _fit(
-        self,
-        job_name,
-        inputs: Dict[str, Any] = None,
-        outputs: Dict[str, Any] = None,
-        wait: bool = True,
-    ):
-        code_dest = Session.get_storage_path_by_category(
-            StoragePathCategory.ProcessingSrc, to_plain_text(job_name)
-        )
-        code_dir = self._build_code_input(job_name, self.source_dir, code_dest)
-        algo_spec = self._build_algorithm_spec(
-            code_input=code_dir,
-        )
-        inputs = self.build_inputs(inputs, input_channels=algo_spec.input_channels)
-        outputs = self.build_outputs(
-            job_name=job_name,
-            output_channels=algo_spec.output_channels,
-            outputs=outputs,
-        )
-
-        self._submit(
-            instance_count=self.instance_count,
-            instance_type=self.instance_type,
-            job_name=job_name,
-            hyperparameters=self.parameters,
-            environments=self.environments,
-            requirements=self.requirements,
-            max_run_time=self.max_run_time,
-            inputs=inputs,
-            outputs=outputs,
-            algorithm_spec=algo_spec,
-            user_vpc_config=(
-                self.user_vpc_config.to_dict() if self.user_vpc_config else None
-            ),
-            experiment_config=(
-                self.experiment_config.to_dict() if self.experiment_config else None
-            ),
-            labels=self.labels,
-            wait=wait,
-        )
-
-    def wait(self, interval: int = 2, show_logs: bool = True, all_jobs: bool = False):
-        """Block until the jobs is completed.
-
-        Args:
-            interval(int): Interval to reload job status
-            show_logs(bool): Specifies whether to fetch and print the logs produced by
-                the job.
-            all_jobs(bool): Wait latest job or wait all jobs in processor, show_logs disabled while
-                wait all jobs.
-
-        Raises:
-            RuntimeError: If no job is submitted.
-
-        """
-        if all_jobs:
-            if not self._jobs:
-                raise RuntimeError("Could not find any submitted job.")
-
-            remains = set(self._jobs)
-            while remains:
-                for job in self._jobs:
-                    if job in remains and job.is_completed():
-                        remains.remove(job)
-
-                time.sleep(interval)
-
-            self._generate_jobs_report()
-        else:
-            if not self._latest_job:
-                raise RuntimeError("Could not find a submitted job.")
-
-            self._latest_job.wait(interval=interval, show_logs=show_logs)
-
-    def _generate_jobs_report(self):
-        """Generate current jobs report and output to stdout"""
-        print(f"Jobs status report, total jobs count: {len(self._jobs)}")
-
-        rows = []
-        headers = ["JobName", "JobID", "Status"]
-        for job in self._jobs:
-            rows.append([job.training_job_name, job.id, job.status])
-
-        column_widths = [
-            max(len(str(value)) for value in column) for column in zip(headers, *rows)
-        ]
-        header_row = " | ".join(
-            f"{header:<{column_widths[i]}}" for i, header in enumerate(headers)
-        )
-
-        print(header_row)
-        print("-" * len(header_row))
-        for row in rows:
-            print(
-                " | ".join(
-                    f"{str(value):<{column_widths[i]}}" for i, value in enumerate(row)
-                )
-            )
-
-    def _get_job_base_output_path(self, job_name: str) -> str:
+    def _training_job_base_output(self, job_name: str) -> str:
         """Generate the base output path for the job."""
 
         bucket_name = self.session.oss_bucket.bucket_name

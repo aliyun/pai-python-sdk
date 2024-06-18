@@ -31,6 +31,7 @@ from ..common.utils import (
     is_filesystem_uri,
     is_odps_table_uri,
     name_from_base,
+    print_table,
     random_str,
     retry,
     to_plain_text,
@@ -213,6 +214,15 @@ class TrainingJob(BaseAPIModel):
     status: Optional[str] = None
     reason_code: Optional[str] = None
     reason_message: Optional[str] = None
+
+    def __hash__(self):
+        return hash(self.training_job_id)
+
+    def __eq__(self, other: "TrainingJob"):
+        return (
+            isinstance(other, TrainingJob)
+            and self.training_job_id == other.training_job_id
+        )
 
     @property
     def id(self):
@@ -406,10 +416,54 @@ class _TrainingJobLogPrinter(object):
 class _TrainingJobSubmitter(object):
     """A class used to submit a training job to the PAI service."""
 
-    def __init__(self, base_job_name: str = None):
+    def __init__(
+        self, base_job_name: Optional[str] = None, output_path: Optional[str] = None
+    ):
         self.session = get_default_session()
         self._training_jobs = []
         self.base_job_name = base_job_name or type(self).__name__.lower()
+        self.output_path = output_path
+
+    def wait(self, interval: int = 5, show_logs: bool = True, all_jobs: bool = False):
+        """Block until the jobs is completed.
+
+        Args:
+            interval(int): Interval to reload job status
+            show_logs(bool): Specifies whether to fetch and print the logs produced by
+                the job.
+            all_jobs(bool): Wait latest job or wait all jobs in processor, show_logs disabled while
+                wait all jobs.
+
+        Raises:
+            RuntimeError: If no job is submitted.
+
+        """
+        if all_jobs:
+            if not self._training_jobs:
+                raise RuntimeError("Could not find any submitted job.")
+            remains = set(self._training_jobs)
+            while remains:
+                for job in self._training_jobs:
+                    if job in remains and job.is_completed():
+                        remains.remove(job)
+
+                time.sleep(interval)
+            self._generate_jobs_report()
+        else:
+            latest_job = self.latest_job
+            if not latest_job:
+                raise RuntimeError("Could not find a submitted job.")
+            latest_job.wait(interval=interval, show_logs=show_logs)
+            return latest_job
+
+    def _generate_jobs_report(self):
+        """Generate current jobs report and output to stdout"""
+        print(f"Jobs status report, total jobs count: {len(self._training_jobs)}")
+        rows = []
+        headers = ["JobName", "JobID", "Status"]
+        for job in self._training_jobs:
+            rows.append([job.training_job_name, job.id, job.status])
+        print_table(headers, rows)
 
     def job_name(self, job_name: Optional[str] = None):
         if job_name:
@@ -438,13 +492,6 @@ class _TrainingJobSubmitter(object):
                     ",".join(requires)
                 )
             )
-        # more = input_keys - {ch.name for ch in input_channels}
-        # if more:
-        #     logger.warning(
-        #         "Following input channels are not defined in the algorithm spec: %s",
-        #         ",".join(more),
-        #     )
-
         for name, item in inputs.items():
             input_config = self._get_input_config(name, item)
             res.append(input_config.model_dump())
@@ -454,8 +501,13 @@ class _TrainingJobSubmitter(object):
 
         return res
 
-    @classmethod
-    def training_job_base_output(cls, job_name):
+    def _training_job_base_output(self, job_name):
+        job_name = to_plain_text(job_name)
+        if self.output_path:
+            if not is_oss_uri(self.output_path):
+                raise ValueError("Output path should be an OSS path.")
+            return os.path.join(self.output_path, f"{job_name}_{random_str(6)}")
+
         session = get_default_session()
         bucket_name = session.oss_bucket.bucket_name
         storage_path = session.get_storage_path_by_category(
@@ -471,12 +523,11 @@ class _TrainingJobSubmitter(object):
         output_channels: List[Channel],
         outputs: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, str]]:
-        base_output_path = self.training_job_base_output(job_name)
+        base_output_path = self._training_job_base_output(job_name)
         res = []
         outputs = outputs or dict()
 
         for ch in output_channels:
-            # if checkpoint path is provided, use it as the checkpoint channel output.
             if ch.name in outputs:
                 output = self._get_output_config(name=ch.name, item=outputs[ch.name])
             else:
