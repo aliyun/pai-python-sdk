@@ -801,9 +801,17 @@ class Estimator(EstimatorBase):
                 instance_type=self.instance_type,
                 wait=wait,
             )
-        return self._fit(inputs=inputs, job_name=job_name, wait=wait)
+        return self._fit(
+            inputs=inputs, job_name=job_name, wait=wait, show_logs=show_logs
+        )
 
-    def _fit(self, job_name, inputs: Dict[str, Any], wait: bool = True) -> TrainingJob:
+    def _fit(
+        self,
+        job_name,
+        inputs: Dict[str, Any],
+        wait: bool = True,
+        show_logs: bool = True,
+    ) -> TrainingJob:
         # prepare input code.
         code_input = self._build_code_input(job_name, source_dir=self.source_dir)
         algo_spec = self._build_algorithm_spec(
@@ -843,6 +851,7 @@ class Estimator(EstimatorBase):
             # experiment_config=self.experiment_config if self.experiment_config else None,
             labels=self.labels,
             wait=wait,
+            show_logs=show_logs,
         )
 
     def _local_run(
@@ -1255,6 +1264,7 @@ class AlgorithmEstimator(EstimatorBase):
             ),
             labels=self.labels,
             wait=wait,
+            show_logs=show_logs,
         )
 
     def get_outputs_data(self) -> Dict[str, str]:

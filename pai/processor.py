@@ -179,7 +179,7 @@ class Processor(_TrainingJobSubmitter):
         inputs: Dict[str, Any] = None,
         outputs: Dict[str, Any] = None,
         wait: bool = True,
-        show_logs=True,
+        show_logs: bool = True,
     ):
         """Submit a job with the given input and output channels.
 
@@ -239,6 +239,7 @@ class Processor(_TrainingJobSubmitter):
             ),
             labels=self.labels,
             wait=wait,
+            show_logs=show_logs,
         )
 
     def _gen_job_display_name(self, job_name=None):

@@ -263,7 +263,7 @@ class TrainingJob(BaseAPIModel):
 
         return self.training_job_url
 
-    def wait(self, interval=2, show_logs: bool = True):
+    def wait(self, interval: int = 5, show_logs: bool = True):
         session = get_default_session()
         self._refresh_status()
 
@@ -567,6 +567,7 @@ class _TrainingJobSubmitter(object):
         experiment_config: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, str]] = None,
         wait: bool = True,
+        show_logs: bool = False,
     ):
         session = get_default_session()
         training_job_id = session.training_job_api.create(
@@ -596,7 +597,7 @@ class _TrainingJobSubmitter(object):
             f"View the job detail by accessing the console URI: {training_job.console_uri}"
         )
         if wait:
-            training_job.wait()
+            training_job.wait(show_logs=show_logs)
 
     @classmethod
     def _get_input_config(cls, name: str, item: str):
