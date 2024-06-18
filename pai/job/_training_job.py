@@ -25,7 +25,7 @@ from Tea.exceptions import TeaException
 from ..api.base import PaginatedResult
 from ..common.consts import StoragePathCategory
 from ..common.logging import get_logger
-from ..common.oss_utils import is_oss_uri, upload
+from ..common.oss_utils import OssUriObj, is_oss_uri, upload
 from ..common.utils import (
     is_dataset_id,
     is_filesystem_uri,
@@ -39,6 +39,10 @@ from ..exception import UnexpectedStatusException
 from ..session import Session, get_default_session
 
 logger = get_logger(__name__)
+
+
+def as_oss_dir_uri(uri: str):
+    return uri if uri.endswith("/") else uri + "/"
 
 
 class BaseAPIModel(BaseModel):
@@ -434,12 +438,12 @@ class _TrainingJobSubmitter(object):
                     ",".join(requires)
                 )
             )
-        more = input_keys - {ch.name for ch in input_channels}
-        if more:
-            logger.warning(
-                "Following input channels are not defined in the algorithm spec: %s",
-                ",".join(more),
-            )
+        # more = input_keys - {ch.name for ch in input_channels}
+        # if more:
+        #     logger.warning(
+        #         "Following input channels are not defined in the algorithm spec: %s",
+        #         ",".join(more),
+        #     )
 
         for name, item in inputs.items():
             input_config = self._get_input_config(name, item)
@@ -462,24 +466,33 @@ class _TrainingJobSubmitter(object):
         return base_output_path
 
     def build_outputs(
-        self, job_name: str, output_channels: List[Channel]
+        self,
+        job_name: str,
+        output_channels: List[Channel],
+        outputs: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, str]]:
         base_output_path = self.training_job_base_output(job_name)
-
-        def as_oss_dir_uri(uri: str):
-            return uri if uri.endswith("/") else uri + "/"
-
         res = []
+
         for ch in output_channels:
             # if checkpoint path is provided, use it as the checkpoint channel output.
-            output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.name))
-            res.append(
-                {
-                    "Name": ch.name,
-                    "OutputUri": output_uri,
-                }
+            if ch.name in outputs:
+                output = self._get_output_config(name=ch.name, item=outputs[ch.name])
+            else:
+                output_uri = as_oss_dir_uri(posixpath.join(base_output_path, ch.name))
+                output = UriOutput(name=ch.name, output_uri=output_uri)
+            res.append(output)
+
+        extra_outputs = set(outputs.keys()) - {ch.name for ch in output_channels}
+
+        for name in extra_outputs:
+            output = self._get_output_config(
+                name=name,
+                item=outputs[name],
             )
-        return res
+            res.append(output)
+
+        return [item.model_dump() for item in res]
 
     def _submit(
         self,
@@ -573,6 +586,66 @@ class _TrainingJobSubmitter(object):
             )
         return input_
 
+    @classmethod
+    def _get_output_config(
+        cls, name: str, item: str
+    ) -> Union[UriOutput, DatasetConfig]:
+        from pai.estimator import FileSystemInputBase
+
+        if not isinstance(item, (str, FileSystemInputBase, DatasetConfig)):
+            raise ValueError(f"Output data of type {type(item)} is not supported.")
+
+        if isinstance(item, FileSystemInputBase):
+            output = UriOutput(
+                name=name,
+                output_uri=item.to_input_uri(),
+            )
+        elif isinstance(item, DatasetConfig):
+            output = DatasetConfig(name=name, dataset_id=item.dataset_id)
+        elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
+            output = UriOutput(
+                name=name,
+                output_uri=as_oss_dir_uri(item),
+            )
+        else:
+            raise ValueError(
+                "Invalid output data, supported outputs are OSS, NAS, MaxCompute "
+            )
+
+        return output
+
     @property
     def latest_job(self) -> "TrainingJob":
         return self._training_jobs[-1] if self._training_jobs else None
+
+    def _build_code_input(
+        self, job_name: str, source_dir: Optional[str], code_dest: Optional[str] = None
+    ) -> Optional[CodeDir]:
+        """Upload source files to OSS and return the code input for training job."""
+        if not source_dir:
+            return
+        if is_oss_uri(source_dir):
+            code_uri = source_dir
+        elif not os.path.exists(source_dir):
+            raise ValueError(f"Source directory {source_dir} does not exist.")
+        else:
+            code_dest = code_dest or self.session.get_storage_path_by_category(
+                StoragePathCategory.TrainingSrc, to_plain_text(job_name)
+            )
+            code_uri = upload(
+                source_path=source_dir,
+                oss_path=code_dest,
+                bucket=self.session.oss_bucket,
+                is_tar=True,
+            )
+        oss_uri_obj = OssUriObj(uri=self.session.patch_oss_endpoint(code_uri))
+        code_dir = CodeDir(
+            location_type="oss",
+            location_value=OssLocation(
+                bucket=oss_uri_obj.bucket_name,
+                key=oss_uri_obj.object_key,
+                endpoint=oss_uri_obj.endpoint,
+            ),
+        )
+
+        return code_dir

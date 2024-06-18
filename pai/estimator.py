@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import os
 import webbrowser
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
@@ -20,22 +19,15 @@ from typing import Any, Dict, List, Optional, Union
 
 from .common import git_utils
 from .common.configs import UserVpcConfig
-from .common.consts import FileSystemInputScheme, JobType, StoragePathCategory
+from .common.consts import FileSystemInputScheme, JobType
 from .common.logging import get_logger
-from .common.oss_utils import OssUriObj, is_oss_uri, upload
-from .common.utils import (
-    is_local_run_instance_type,
-    make_list_resource_iterator,
-    to_plain_text,
-)
+from .common.utils import is_local_run_instance_type, make_list_resource_iterator
 from .experiment import ExperimentConfig
 from .job import (
     AlgorithmSpec,
     Channel,
-    CodeDir,
     HyperParameterDefinition,
     LocalTrainingJob,
-    OssLocation,
     TrainingJob,
     UriOutput,
     _TrainingJobSubmitter,
@@ -748,8 +740,6 @@ class Estimator(EstimatorBase):
             session=session,
         )
 
-        self.__uploaded_source_files = None
-
     def training_image_uri(self) -> str:
         """Return the Docker image to use for training.
 
@@ -770,54 +760,16 @@ class Estimator(EstimatorBase):
             )
             self.source_dir = updated_args["source_dir"]
 
-    def _upload_source_files(self, job_name: str) -> Optional[str]:
-        """Upload local source files to OSS."""
-        if not self.source_dir:
-            return
-
-        if is_oss_uri(self.source_dir):
-            return self.source_dir
-        elif not os.path.exists(self.source_dir):
-            raise ValueError(f"Source directory {self.source_dir} does not exist.")
-        # compress the source files to a Tar Gz file and upload to OSS bucket.
-        upload_data_path = self.session.get_storage_path_by_category(
-            StoragePathCategory.TrainingSrc, to_plain_text(job_name)
-        )
-        self.__uploaded_source_files = upload(
-            source_path=self.source_dir,
-            oss_path=upload_data_path,
-            bucket=self.session.oss_bucket,
-            is_tar=True,
-        )
-        return self.__uploaded_source_files
-
-    def _build_code_input(self, job_name: str) -> Optional[CodeDir]:
-        """Build a dict to represent AlgorithmSpecCodeDir used in the TrainingJob."""
-        upload_source_files = self._upload_source_files(job_name)
-        if not upload_source_files:
-            return
-        oss_uri_obj = OssUriObj(
-            uri=self.session.patch_oss_endpoint(upload_source_files)
-        )
-        code_dir = CodeDir(
-            location_type="oss",
-            location_value=OssLocation(
-                bucket=oss_uri_obj.bucket_name,
-                key=oss_uri_obj.object_key,
-                endpoint=oss_uri_obj.endpoint,
-            ),
-        )
-
-        return code_dir
-
     def _build_algorithm_spec(
         self, code_input, inputs: Dict[str, Any]
     ) -> AlgorithmSpec:
         """Build a temporary AlgorithmSpec used for submitting the TrainingJob."""
         algorithm_spec = AlgorithmSpec(
-            command=self.command
-            if isinstance(self.command, list)
-            else ["sh", "-c", self.command],
+            command=(
+                self.command
+                if isinstance(self.command, list)
+                else ["sh", "-c", self.command]
+            ),
             image=self.training_image_uri(),
             job_type=self.job_type,
             metric_definitions=self.metric_definitions,
@@ -869,7 +821,7 @@ class Estimator(EstimatorBase):
 
     def _fit(self, job_name, inputs: Dict[str, Any] = None) -> TrainingJob:
         # prepare input code.
-        code_input = self._build_code_input(job_name)
+        code_input = self._build_code_input(job_name, source_dir=self.source_dir)
         algo_spec = self._build_algorithm_spec(
             code_input=code_input,
             inputs=inputs,

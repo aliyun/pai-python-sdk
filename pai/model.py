@@ -2085,47 +2085,44 @@ class RegisteredModel(ModelBase):
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."
             )
-
-        if "AlgorithmSpec" not in eval_spec:
+        eval_spec = TrainingJobSpec.model_validate(eval_spec)
+        if not eval_spec.algorithm_spec:
             raise ValueError(
-                "The provided registered model's evaluation spec does not contain any"
-                " workload."
+                "Invalid evaluation spec, the evaluation spec does not contain any"
+                " configuration for the evaluation job."
             )
-        workload = eval_spec.get("AlgorithmSpec")
+        # workload = eval_spec.get("AlgorithmSpec")
 
         if not base_job_name:
             base_job_name = f"{self.model_name}_eval" if self.model_name else None
 
         parameters = parameters or dict()
-        for item in eval_spec.get("HyperParameters"):
-            name = item["Name"]
-            value = item["Value"]
-            if name not in parameters:
-                parameters[name] = value
 
+        for item in eval_spec.hyperparameters:
+            if item.name not in parameters:
+                parameters[item.name] = item.value
         if not max_run_time:
-            max_run_time = eval_spec.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
+            max_run_time = eval_spec.scheduler.max_running_time_in_seconds
 
-        compute_resource = eval_spec.get("ComputeResource")
+        compute_resource = eval_spec.compute_resource
         if compute_resource and (not instance_type or not instance_count):
             # If instance_type or instance_count is not provided, use the default
-            instance_type = instance_type or compute_resource.get("EcsSpec")
-            instance_count = instance_count or compute_resource.get("EcsCount")
+            instance_type = instance_type or compute_resource.ecs_spec
+            instance_count = instance_count or compute_resource.ecs_count
 
         source_dir = None
-        code_dir = workload.get("CodeDir")
-        if code_dir and code_dir.get("LocationType") == "oss":
-            location = code_dir.get("LocationValue")
-            oss_path = OssUriObj.from_bucket_key_endpoint(
-                bucket_name=location.get("Bucket"),
-                object_key=location.get("Key"),
-                endpoint=location.get("Endpoint"),
-            )
-            source_dir = oss_path.uri
+        code_dir = eval_spec.algorithm_spec.code_dir
 
+        if code_dir and code_dir.location_type == "oss":
+            oss_uri_obj = OssUriObj.from_bucket_key_endpoint(
+                bucket_name=code_dir.location_value.bucket,
+                object_key=code_dir.location_value.key,
+                endpoint=code_dir.location_value.endpoint,
+            )
+            source_dir = oss_uri_obj.uri
         processor = Processor(
-            image_uri=workload.get("Image"),
-            command=" ".join(workload.get("Command")),
+            image_uri=eval_spec.algorithm_spec.image,
+            command=eval_spec.algorithm_spec.command,
             source_dir=source_dir,
             parameters=parameters,
             max_run_time=max_run_time,
@@ -2136,8 +2133,8 @@ class RegisteredModel(ModelBase):
             user_vpc_config=user_vpc_config,
             session=self.session,
         )
-        processor.set_input_channel_definitions(workload["InputChannels"])
-        processor.set_output_channel_definitions(workload["OutputChannels"])
+        processor.set_input_channels(eval_spec.algorithm_spec.input_channels)
+        processor.set_output_channels(eval_spec.algorithm_spec.output_channels)
 
         return processor
 
@@ -2154,17 +2151,16 @@ class RegisteredModel(ModelBase):
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."
             )
+        eval_spec = TrainingJobSpec.model_validate(self.evaluation_spec)
+        inputs = eval_spec.inputs or []
+        res = {}
 
-        input_channels = {}
-        if "InputChannels" in self.evaluation_spec:
-            for i in self.evaluation_spec["InputChannels"]:
-                input_channels.update(
-                    {
-                        i["Name"]: i.get("InputUri") or i.get("DatasetId"),
-                    }
-                )
-
-        return input_channels
+        for item in inputs:
+            if isinstance(item, UriInput):
+                res[item.name] = item.input_uri
+            else:
+                res[item.name] = item
+        return res
 
     @classmethod
     def _is_multiple_spec(cls, spec: Dict[str, Any]) -> bool:
