@@ -128,12 +128,14 @@ def http_user_agent(user_agent: Optional[Union[Dict, str]] = None) -> str:
 def is_notebook() -> bool:
     """Return True if current environment is notebook."""
     try:
+        from IPython import get_ipython
+
         shell = get_ipython().__class__.__name__
         for parent_cls in shell.__mro__:
             if parent_cls.__name__ == "ZMQInteractiveShell":
                 return True
         return False
-    except NameError:
+    except (NameError, ImportError):
         return False
 
 
@@ -325,11 +327,12 @@ def is_package_available(package_name: str) -> bool:
     return True if importlib.util.find_spec(package_name) is not None else False
 
 
-def timestamp(sep: str = "-", utc=False) -> str:
+def timestamp(sep: str = "-", utc: bool = False) -> str:
     """Return a timestamp with millisecond precision.
 
     Args:
         sep: The separator between date and time.
+        utc: Whether to use UTC time.
 
     Returns:
         str: A timestamp with millisecond precision.
