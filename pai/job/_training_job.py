@@ -16,7 +16,7 @@ import os
 import posixpath
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_pascal
@@ -56,6 +56,9 @@ class BaseAPIModel(BaseModel):
     def model_dump(self, **kwargs) -> Dict[str, Any]:
         kwargs.update({"by_alias": True, "exclude_none": True})
         return super().model_dump(**kwargs)
+
+    def to_dict(self):
+        return self.model_dump()
 
 
 class TrainingJobStatus(object):
@@ -119,6 +122,9 @@ class ExperimentConfig(BaseAPIModel):
         ...,
         description="Specifies the ID of the experiment that training job instance belongs to.",
     )
+
+    def __init__(self, experiment_id):
+        super().__init__(experiment_id=experiment_id)
 
 
 class OssLocation(BaseAPIModel):
@@ -199,7 +205,7 @@ class AlgorithmSpec(BaseAPIModel):
     hyperparameter_definitions: List[HyperParameterDefinition] = Field(
         default_factory=list, alias="HyperParameter"
     )
-    job_type: Literal["PyTorchJob"] = Field(default="PyTorchJob")
+    job_type: str = Field(default="PyTorchJob")
     code_dir: Optional[CodeDir] = None
 
 

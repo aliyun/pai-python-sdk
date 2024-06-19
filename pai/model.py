@@ -23,7 +23,6 @@ import tempfile
 import textwrap
 import time
 import typing
-from functools import cached_property
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
@@ -2238,12 +2237,15 @@ class _ModelRecipe(_TrainingJobSubmitter):
         self.model = model
         self.spec = spec
         self.model_channel_name = model_channel_name or self.MODEL_CHANNEL_NAME
+        self._algorithm_spec = None
         super().__init__()
 
-    @cached_property
+    @property
     def algorithm_spec(self) -> AlgorithmSpec:
+        if self._algorithm_spec:
+            return self._algorithm_spec
         if self.spec.algorithm_spec:
-            return self.spec.algorithm_spec
+            self._algorithm_spec = self.spec.algorithm_spec
         else:
             session = get_default_session()
             algo = session.algorithm_api.get_by_name(
@@ -2254,7 +2256,10 @@ class _ModelRecipe(_TrainingJobSubmitter):
                 algorithm_id=algo["AlgorithmId"],
                 algorithm_version=self.spec.algorithm_version,
             )
-            return AlgorithmSpec.model_validate(raw_algo_version_spec["AlgorithmSpec"])
+            self._algorithm_spec = AlgorithmSpec.model_validate(
+                raw_algo_version_spec["AlgorithmSpec"]
+            )
+        return self._algorithm_spec
 
     @property
     def default_inputs(self) -> List[Union[UriInput, DatasetConfig]]:
