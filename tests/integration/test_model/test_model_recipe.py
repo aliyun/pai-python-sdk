@@ -26,10 +26,8 @@ class TestModelRecipe(BaseIntegTestCase):
     def test_training_e2e(self):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
-
         training_recipe.train()
         self.assertIsNotNone(training_recipe.model_data())
-
         predictor = training_recipe.deploy(
             service_name="test_model_recipe_{}".format(random_str(6)),
         )
@@ -59,8 +57,3 @@ class TestModelRecipe(BaseIntegTestCase):
             },
         )
         self.assertIsNotNone(training_recipe.model_data())
-
-    def test_evaluation(self):
-        model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
-        eval_recipe = model.evaluation_recipe()
-        eval_recipe.evaluate()

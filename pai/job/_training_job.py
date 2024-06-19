@@ -46,6 +46,11 @@ def as_oss_dir_uri(uri: str):
     return uri if uri.endswith("/") else uri + "/"
 
 
+DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
+DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
+DEFAULT_TENSORBOARD_CHANNEL_NAME = "tensorboard"
+
+
 class BaseAPIModel(BaseModel):
 
     model_config = ConfigDict(
@@ -209,7 +214,7 @@ class AlgorithmSpec(BaseAPIModel):
     code_dir: Optional[CodeDir] = None
 
 
-class TrainingJobSpec(BaseAPIModel):
+class ModelTrainingSpec(BaseAPIModel):
     compute_resource: Optional[ComputeResource] = None
     hyperparameters: List[HyperParameter] = Field(
         default_factory=list, alias="HyperParameters"
@@ -223,6 +228,11 @@ class TrainingJobSpec(BaseAPIModel):
     algorithm_version: Optional[str] = None
     algorithm_provider: Optional[str] = None
     algorithm_name: Optional[str] = None
+    environments: Optional[Dict[str, str]] = None
+    requirements: Optional[List[str]] = None
+
+
+ModelEvaluationSpec = ModelTrainingSpec
 
 
 class TrainingJob(BaseAPIModel):
@@ -234,6 +244,7 @@ class TrainingJob(BaseAPIModel):
     algorithm_version: Optional[str] = None
     algorithm_spec: Optional[AlgorithmSpec] = None
     compute_resource: Optional[ComputeResource] = None
+    scheduler: Optional[SchedulerConfig] = None
     experiment_config: Optional[Dict[str, Any]] = None
     inputs: List[Union[UriInput, DatasetConfig]] = Field(
         default=list, alias="InputChannels"
@@ -539,6 +550,29 @@ class _TrainingJobSubmitter(object):
             res.append(item.model_dump())
 
         return res
+
+    @staticmethod
+    def _default_training_output_channels() -> List[Channel]:
+        channels = [
+            Channel(
+                name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+                description="Training output models",
+                required=True,
+            ),
+            Channel(
+                name=DEFAULT_CHECKPOINT_CHANNEL_NAME,
+                description="Training checkpoints channel",
+                required=False,
+            ),
+            Channel(
+                name=DEFAULT_TENSORBOARD_CHANNEL_NAME,
+                properties={"ossAppendable": "true"},
+                description="TensorBoard logs channel",
+                required=False,
+            ),
+        ]
+
+        return channels
 
     def _training_job_base_output(self, job_name):
         job_name = to_plain_text(job_name)

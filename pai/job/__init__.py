@@ -19,9 +19,9 @@ from ._training_job import (
     CodeDir,
     ExperimentConfig,
     HyperParameterDefinition,
+    ModelTrainingSpec,
     OssLocation,
     TrainingJob,
-    TrainingJobSpec,
     TrainingJobStatus,
     UriOutput,
     UserVpcConfig,
@@ -30,7 +30,7 @@ from ._training_job import (
 
 __all__ = [
     "TrainingJob",
-    "TrainingJobSpec",
+    "ModelTrainingSpec",
     "TrainingJobStatus",
     "Channel",
     "HyperParameterDefinition",

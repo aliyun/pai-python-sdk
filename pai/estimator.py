@@ -30,17 +30,19 @@ from .job import (
     UriOutput,
     _TrainingJobSubmitter,
 )
-from .job._training_job import ExperimentConfig, UserVpcConfig
+from .job._training_job import (
+    DEFAULT_CHECKPOINT_CHANNEL_NAME,
+    DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+    DEFAULT_TENSORBOARD_CHANNEL_NAME,
+    ExperimentConfig,
+    UserVpcConfig,
+)
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
 from .serializers import SerializerBase
 from .session import Session, get_default_session
 
 logger = get_logger(__name__)
-
-DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
-DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
-DEFAULT_TENSORBOARD_CHANNEL_NAME = "tensorboard"
 
 
 class HyperParameterType(object):
@@ -307,18 +309,24 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
 
-    @classmethod
-    def _get_default_output_channel_defs(cls) -> List[Channel]:
+    @staticmethod
+    def _default_training_output_channels(cls) -> List[Channel]:
         channels = [
             Channel(
                 name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+                description="Training output models",
+                required=True,
             ),
             Channel(
                 name=DEFAULT_CHECKPOINT_CHANNEL_NAME,
+                description="Training checkpoints channel",
+                required=False,
             ),
             Channel(
                 name=DEFAULT_TENSORBOARD_CHANNEL_NAME,
                 properties={"ossAppendable": "true"},
+                description="TensorBoard logs channel",
+                required=False,
             ),
         ]
 
@@ -758,7 +766,7 @@ class Estimator(EstimatorBase):
             job_type=self.job_type,
             metric_definitions=self.metric_definitions,
             code_dir=code_input,
-            output_channels=self._get_default_output_channel_defs(),
+            output_channels=self._default_training_output_channels(),
             input_channels=[
                 Channel(name=channel_name, required=False)
                 for channel_name in inputs.keys()
