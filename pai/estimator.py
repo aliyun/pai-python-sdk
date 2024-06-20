@@ -309,29 +309,6 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
 
-    @staticmethod
-    def _default_training_output_channels(cls) -> List[Channel]:
-        channels = [
-            Channel(
-                name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-                description="Training output models",
-                required=True,
-            ),
-            Channel(
-                name=DEFAULT_CHECKPOINT_CHANNEL_NAME,
-                description="Training checkpoints channel",
-                required=False,
-            ),
-            Channel(
-                name=DEFAULT_TENSORBOARD_CHANNEL_NAME,
-                properties={"ossAppendable": "true"},
-                description="TensorBoard logs channel",
-                required=False,
-            ),
-        ]
-
-        return channels
-
     @abstractmethod
     def fit(
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True

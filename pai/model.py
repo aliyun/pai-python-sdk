@@ -2630,7 +2630,7 @@ class ModelTrainingRecipe(_ModelRecipe):
         if self.model_channel_name not in inputs:
             inputs[self.model_channel_name] = self.model_uri
 
-        if len(inputs.keys()) == 0 and self.model_channel_name in inputs:
+        if len(inputs.keys()) == 1 and self.model_channel_name in inputs:
             default_inputs = self.default_inputs
         else:
             default_inputs = None

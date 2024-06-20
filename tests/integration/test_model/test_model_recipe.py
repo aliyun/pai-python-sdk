@@ -28,6 +28,7 @@ class TestModelRecipe(BaseIntegTestCase):
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
         training_recipe.train()
         self.assertIsNotNone(training_recipe.model_data())
+
         predictor = training_recipe.deploy(
             service_name="test_model_recipe_{}".format(random_str(6)),
         )
@@ -57,3 +58,16 @@ class TestModelRecipe(BaseIntegTestCase):
             },
         )
         self.assertIsNotNone(training_recipe.model_data())
+        predictor = training_recipe.deploy(
+            service_name="test_model_recipe_{}".format(random_str(6)),
+        )
+        openai = predictor.openai()
+        resp = openai.chat.completions.create(
+            model="default",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "What is the meaning of life?"},
+            ],
+            max_tokens=100,
+        )
+        self.assertIsNotNone(resp.choices[0].message.content)
