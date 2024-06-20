@@ -12,54 +12,37 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import distutils.dir_util
-import json
-import os
-import posixpath
-import re
-import shlex
-import shutil
-import tempfile
-import textwrap
-import time
 import webbrowser
 from abc import ABCMeta, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from Tea.exceptions import TeaException
-
-from .api.base import PaginatedResult
-from .api.entity_base import EntityBaseMixin
-from .common import ProviderAlibabaPAI, git_utils
-from .common.configs import UserVpcConfig
-from .common.consts import INSTANCE_TYPE_LOCAL_GPU, FileSystemInputScheme, JobType
-from .common.docker_utils import ContainerRun, run_container
+from .common import git_utils
+from .common.consts import FileSystemInputScheme, JobType
 from .common.logging import get_logger
-from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import (
-    is_filesystem_uri,
-    is_local_run_instance_type,
-    is_odps_table_uri,
-    make_list_resource_iterator,
-    random_str,
-    retry,
-    to_plain_text,
+from .common.utils import is_local_run_instance_type, make_list_resource_iterator
+from .job import (
+    AlgorithmSpec,
+    Channel,
+    HyperParameterDefinition,
+    LocalTrainingJob,
+    TrainingJob,
+    UriOutput,
+    _TrainingJobSubmitter,
 )
-from .exception import UnexpectedStatusException
-from .experiment import Experiment, ExperimentConfig
+from .job._training_job import (
+    DEFAULT_CHECKPOINT_CHANNEL_NAME,
+    DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
+    DEFAULT_TENSORBOARD_CHANNEL_NAME,
+    ExperimentConfig,
+    UserVpcConfig,
+)
 from .model import InferenceSpec, Model, ResourceConfig
 from .predictor import Predictor
-from .schema.training_job_schema import TrainingJobSchema
 from .serializers import SerializerBase
 from .session import Session, get_default_session
 
 logger = get_logger(__name__)
-
-DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
-DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
-DEFAULT_TENSORBOARD_CHANNEL_NAME = "tensorboard"
 
 
 class HyperParameterType(object):
@@ -184,7 +167,7 @@ class CpfsFileSystemInput(FileSystemInputBase):
         )
 
 
-class EstimatorBase(metaclass=ABCMeta):
+class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
     """EstimatorBase is the base class for other Estimator classes, such as Estimator.
 
     The EstimatorBase class contains common attributes and methods for all estimators,
@@ -309,7 +292,7 @@ class EstimatorBase(metaclass=ABCMeta):
         self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
         self.labels = labels
-        self._latest_training_job = None
+        super().__init__(base_job_name=base_job_name, output_path=output_path)
 
     def set_hyperparameters(self, **kwargs):
         """Set hyperparameters for the training job.
@@ -319,11 +302,6 @@ class EstimatorBase(metaclass=ABCMeta):
         """
         self.hyperparameters.update(**kwargs)
 
-    @property
-    def latest_training_job(self):
-        """Return the latest submitted training job."""
-        return self._latest_training_job
-
     def _gen_job_display_name(self, job_name=None):
         """Generate job display name."""
         if job_name:
@@ -331,149 +309,11 @@ class EstimatorBase(metaclass=ABCMeta):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return "{}_{}".format(self.base_job_name or "training_job", ts)
 
-    def _get_input_uri(self, item: str):
-        """Get input uri for training_job from given input."""
-        if not isinstance(item, (str, FileSystemInputBase)):
-            raise ValueError(f"Input data of type {type(item)} is not supported.")
-
-        if isinstance(item, FileSystemInputBase):
-            input_uri = item.to_input_uri()
-        elif is_oss_uri(item) or is_filesystem_uri(item) or is_odps_table_uri(item):
-            input_uri = item
-        elif os.path.exists(item):
-            store_path = self.session.get_storage_path_by_category("train_data")
-            input_uri = upload(item, store_path)
-        else:
-            raise ValueError(
-                "Invalid input data, supported inputs are OSS, NAS, MaxCompute "
-                "table or local path."
-            )
-
-        return input_uri
-
-    def _build_input_data_configs(
-        self,
-        inputs: Dict[str, Any] = None,
-        input_channel_defs: Optional[List[Dict[str, str]]] = None,
-    ) -> List[Dict[str, str]]:
-        """Build the input data config for the training job."""
-        res = []
-
-        if input_channel_defs:
-            remains = set(inputs.keys())
-            for channel in input_channel_defs:
-                channel_name = channel["Name"]
-                channel_required = channel["Required"]
-                if channel_name in inputs:
-                    input_uri = self._get_input_uri(inputs[channel_name])
-                    res.append({"Name": channel_name, "InputUri": input_uri})
-                    remains.remove(channel_name)
-                elif channel_required:
-                    raise ValueError(
-                        f"Input channel {channel_name} is required but not provided."
-                        " Please check the input channels definition."
-                    )
-            if remains:
-                raise ValueError(
-                    f"Following input channels={list(remains)} are not defined in input"
-                    " channels definition. Please check the input channels definition."
-                )
-        else:
-            for name, item in inputs.items():
-                input_uri = self._get_input_uri(item)
-                res.append({"Name": name, "InputUri": input_uri})
-
-        return res
-
-    def _generate_job_base_output_path(self, job_name: str) -> str:
-        """Generate the base output path for the training job."""
-        bucket = self.session.oss_bucket
-        bucket_name = bucket.bucket_name
-        # replace non-alphanumeric character in training job name.
-        name = to_plain_text(job_name)
-
-        if self.output_path:
-            return os.path.join(self.output_path, f"{name}_{random_str(6)}")
-        else:
-            job_output_path = self.session.get_storage_path_by_category(
-                "training_job", f"{name}_{random_str(6)}"
-            )
-            return f"oss://{bucket_name}/{job_output_path}"
-
-    @classmethod
-    def _get_default_output_channel_defs(cls):
-        channel_defs = [
-            {
-                "Name": DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
-            },
-            {
-                "Name": DEFAULT_CHECKPOINT_CHANNEL_NAME,
-            },
-            {
-                "Name": DEFAULT_TENSORBOARD_CHANNEL_NAME,
-                "Properties": {
-                    "ossAppendable": "true",
-                },
-            },
-        ]
-        return channel_defs
-
-    def _build_output_data_configs(
-        self, job_name: str, output_channel_defs: List[Dict[str, str]]
-    ) -> List[Dict[str, str]]:
-        """Build the output data config for the training job."""
-        job_base_output_path = self._generate_job_base_output_path(job_name)
-
-        # OSS URI for output channel will be mounted to directory
-        # "/ml/output/{ChannelName}/" and the output OSS URI should be a "directory"
-        def as_oss_dir_uri(uri: str):
-            return uri if uri.endswith("/") else uri + "/"
-
-        res = []
-        for ch in output_channel_defs:
-            # if checkpoint path is provided, use it as the checkpoint channel output.
-            if ch["Name"] == DEFAULT_CHECKPOINT_CHANNEL_NAME and self.checkpoints_path:
-                oss_uri = self.checkpoints_path
-            elif (
-                ch["Name"] == DEFAULT_TENSORBOARD_CHANNEL_NAME
-                and self.experiment_config
-            ):
-                continue
-            elif not self.output_path and self.experiment_config:
-                continue
-            else:
-                oss_uri = as_oss_dir_uri(
-                    posixpath.join(job_base_output_path, ch["Name"])
-                )
-            res.append(
-                {
-                    "Name": ch["Name"],
-                    "OutputUri": oss_uri,
-                }
-            )
-
-        return res
-
     @abstractmethod
     def fit(
         self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
     ):
         """Submit a training job with the given input data."""
-
-    def wait(self, show_logs: bool = True):
-        """Block until the latest training job is completed.
-
-        Args:
-            show_logs(bool): Specifies whether to fetch and print the logs produced by
-                the training job.
-
-        Raises:
-            RuntimeError: If no training job is submitted.
-
-        """
-        if not self._latest_training_job:
-            raise RuntimeError("Could not find a submitted training job.")
-        self._latest_training_job.wait(show_logs=show_logs)
 
     def model_data(self) -> str:
         """Model data output path.
@@ -482,18 +322,18 @@ class EstimatorBase(metaclass=ABCMeta):
             str: A string in OSS URI format refers to the output model of the submitted
                 job.
         """
-        if not self._latest_training_job:
+        if not self.latest_job:
             raise RuntimeError(
                 "No TrainingJob for the estimator, output model data not found."
             )
 
-        if not self._latest_training_job.is_succeeded():
+        if not self.latest_job.is_succeeded():
             logger.warning(
                 "The TrainingJob is currently not in a succeeded status, which means"
                 " that the model data output may not be accessible."
             )
 
-        return self._latest_training_job.output_path(
+        return self.latest_job.output_path(
             channel_name=DEFAULT_OUTPUT_MODEL_CHANNEL_NAME
         )
 
@@ -504,14 +344,12 @@ class EstimatorBase(metaclass=ABCMeta):
             str: A string in OSS URI format refers to the checkpoints of submitted
                 training job.
         """
-        if not self._latest_training_job:
+        if not self.latest_job:
             raise RuntimeError(
                 "No TrainingJob for the Estimator, output checkpoints data path "
                 "not found."
             )
-        return self._latest_training_job.output_path(
-            channel_name=DEFAULT_CHECKPOINT_CHANNEL_NAME
-        )
+        return self.latest_job.output_path(channel_name=DEFAULT_CHECKPOINT_CHANNEL_NAME)
 
     def tensorboard_data(self) -> str:
         """Output TensorBoard logs path.
@@ -520,12 +358,12 @@ class EstimatorBase(metaclass=ABCMeta):
             str: A string in OSS URI format refers to the tensorboard log of submitted
                 training job.
         """
-        if not self._latest_training_job:
+        if not self.latest_job:
             raise RuntimeError(
                 "No TrainingJob for the Estimator, output TensorBoard logs data path"
                 " not found."
             )
-        return self._latest_training_job.output_path(
+        return self.latest_job.output_path(
             channel_name=DEFAULT_TENSORBOARD_CHANNEL_NAME,
         )
 
@@ -540,15 +378,15 @@ class EstimatorBase(metaclass=ABCMeta):
         """
         from pai.tensorboard import TensorBoard
 
-        if not self.latest_training_job:
+        if not self.latest_job:
             raise RuntimeError("Could not find a submitted training job.")
 
         source_type = "TrainingJob"
-        if isinstance(self.latest_training_job, _LocalTrainingJob):
+        if isinstance(self.latest_job, LocalTrainingJob):
             raise RuntimeError("Local training job does not support tensorboard.")
         res = self.session.tensorboard_api.list(
             source_type=source_type,
-            source_id=self.latest_training_job.training_job_id,
+            source_id=self.latest_job.training_job_id,
         )
 
         if res.items:
@@ -564,8 +402,8 @@ class EstimatorBase(metaclass=ABCMeta):
             tb = TensorBoard.create(
                 uri=self.tensorboard_data(),
                 wait=wait,
-                display_name=self._latest_training_job.training_job_name,
-                source_id=self.latest_training_job.training_job_id,
+                display_name=self.latest_job.training_job_name,
+                source_id=self.latest_job.training_job_id,
                 source_type=source_type,
                 session=self.session,
             )
@@ -871,8 +709,6 @@ class Estimator(EstimatorBase):
             session=session,
         )
 
-        self.__uploaded_source_files = None
-
     def training_image_uri(self) -> str:
         """Return the Docker image to use for training.
 
@@ -893,73 +729,35 @@ class Estimator(EstimatorBase):
             )
             self.source_dir = updated_args["source_dir"]
 
-    def _upload_source_files(self, job_name: str) -> Optional[str]:
-        """Upload local source files to OSS."""
-        if not self.source_dir:
-            return
-
-        if is_oss_uri(self.source_dir):
-            return self.source_dir
-        elif not os.path.exists(self.source_dir):
-            raise ValueError(f"Source directory {self.source_dir} does not exist.")
-        # compress the source files to a Tar Gz file and upload to OSS bucket.
-        upload_data_path = self.session.get_storage_path_by_category(
-            "training_src", to_plain_text(job_name)
-        )
-        self.__uploaded_source_files = upload(
-            source_path=self.source_dir,
-            oss_path=upload_data_path,
-            bucket=self.session.oss_bucket,
-            is_tar=True,
-        )
-        return self.__uploaded_source_files
-
-    def _build_code_input(self, job_name: str) -> Optional[Dict[str, Any]]:
-        """Build a dict to represent AlgorithmSpecCodeDir used in the TrainingJob."""
-        upload_source_files = self._upload_source_files(job_name)
-        if not upload_source_files:
-            return
-        oss_uri_obj = OssUriObj(
-            uri=self.session.patch_oss_endpoint(upload_source_files)
-        )
-
-        code_dir = {
-            "LocationType": "oss",
-            "LocationValue": {
-                "Bucket": oss_uri_obj.bucket_name,
-                "Key": oss_uri_obj.object_key,
-                "Endpoint": oss_uri_obj.endpoint,
-            },
-        }
-        return code_dir
-
     def _build_algorithm_spec(
-        self,
-        code_input,
-    ) -> Dict[str, Any]:
+        self, code_input, inputs: Dict[str, Any]
+    ) -> AlgorithmSpec:
         """Build a temporary AlgorithmSpec used for submitting the TrainingJob."""
-        command = (
-            self.command
-            if isinstance(self.command, list)
-            else [
-                "/bin/sh",
-                "-c",
-                self.command,
-            ]
+        algorithm_spec = AlgorithmSpec(
+            command=(
+                self.command
+                if isinstance(self.command, list)
+                else ["sh", "-c", self.command]
+            ),
+            image=self.training_image_uri(),
+            job_type=self.job_type,
+            metric_definitions=self.metric_definitions,
+            code_dir=code_input,
+            output_channels=self._default_training_output_channels(),
+            input_channels=[
+                Channel(name=channel_name, required=False)
+                for channel_name in inputs.keys()
+            ],
         )
-        algo_spec = {
-            "Command": command,
-            "Image": self.training_image_uri(),
-            "JobType": self.job_type,
-            "MetricDefinitions": self.metric_definitions,
-            "CodeDir": code_input,
-            "OutputChannels": self._get_default_output_channel_defs(),
-        }
-        return algo_spec
+        return algorithm_spec
 
     def fit(
-        self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
-    ):
+        self,
+        inputs: Dict[str, Any] = None,
+        wait: bool = True,
+        show_logs: bool = True,
+        job_name: Optional[str] = None,
+    ) -> Union[TrainingJob, LocalTrainingJob]:
         """Submit a training job with the given input data.
 
         Args:
@@ -972,78 +770,98 @@ class Estimator(EstimatorBase):
                 either succeeded, failed, or stopped. (Default True).
             show_logs (bool): Specifies whether to show the logs produced by the
                 training job (Default True).
+            job_name (str, optional): The name of the training job.
+
+        Returns:
+            :class:`pai.job.TrainingJob` or :class:`pai.job.LocalTrainingJob`: A
+                submitted training job.
+
         Raises:
             UnExpectedStatusException: If the training job fails.
 
         """
         inputs = inputs or dict()
         self._prepare_for_training()
-        job_name = self._gen_job_display_name()
+        job_name = self.job_name(job_name=job_name)
         if is_local_run_instance_type(self.instance_type):
-            training_job = self._local_run(
-                job_name=job_name, inputs=inputs, instance_type=self.instance_type
+            return self._local_run(
+                job_name=job_name,
+                inputs=inputs,
+                instance_type=self.instance_type,
+                wait=wait,
             )
-        else:
-            training_job = self._fit(inputs=inputs, job_name=job_name)
-        self._latest_training_job = training_job
-
-        if wait:
-            self.wait(show_logs=show_logs)
-
-    def _fit(self, job_name, inputs: Dict[str, Any] = None):
-        input_configs = self._build_input_data_configs(inputs)
-        output_configs = self._build_output_data_configs(
-            job_name, output_channel_defs=self._get_default_output_channel_defs()
+        return self._fit(
+            inputs=inputs, job_name=job_name, wait=wait, show_logs=show_logs
         )
+
+    def _fit(
+        self,
+        job_name,
+        inputs: Dict[str, Any],
+        wait: bool = True,
+        show_logs: bool = True,
+    ) -> TrainingJob:
         # prepare input code.
-        code_input = self._build_code_input(job_name)
+        code_input = self._build_code_input(job_name, source_dir=self.source_dir)
         algo_spec = self._build_algorithm_spec(
             code_input=code_input,
+            inputs=inputs,
+        )
+        inputs = self.build_inputs(
+            inputs=inputs,
+            input_channels=algo_spec.input_channels,
         )
 
-        training_job_id = self.session.training_job_api.create(
-            instance_count=self.instance_count,
+        if self.checkpoints_path:
+            outputs = {DEFAULT_CHECKPOINT_CHANNEL_NAME: self.checkpoints_path}
+        else:
+            outputs = None
+
+        outputs = self.build_outputs(
+            job_name=job_name,
+            output_channels=algo_spec.output_channels,
+            outputs=outputs,
+        )
+
+        return self._submit(
+            job_name=job_name,
+            algorithm_spec=algo_spec,
             instance_spec=self.instance_spec,
             instance_type=self.instance_type,
+            instance_count=self.instance_count,
             resource_id=self.resource_id,
-            job_name=job_name,
             hyperparameters=self.hyperparameters,
             environments=self.environments,
             requirements=self.requirements,
-            max_running_in_seconds=self.max_run_time,
-            input_channels=input_configs,
-            output_channels=output_configs,
-            algorithm_spec=algo_spec,
-            user_vpc_config=self.user_vpc_config.to_dict()
-            if self.user_vpc_config
-            else None,
-            experiment_config=self.experiment_config.to_dict()
-            if self.experiment_config
-            else None,
+            max_run_time=self.max_run_time,
+            inputs=inputs,
+            outputs=outputs,
+            user_vpc_config=self.user_vpc_config if self.user_vpc_config else None,
+            # experiment_config=self.experiment_config if self.experiment_config else None,
             labels=self.labels,
+            wait=wait,
+            show_logs=show_logs,
         )
-        training_job = _TrainingJob.get(training_job_id)
-        print(
-            f"View the job detail by accessing the console URI: {training_job.console_uri}"
-        )
-        return training_job
 
     def _local_run(
         self,
         job_name,
         instance_type: str,
         inputs: Dict[str, Any] = None,
-    ) -> "_LocalTrainingJob":
+        wait: bool = True,
+    ) -> "LocalTrainingJob":
         if self.instance_count > 1:
             raise RuntimeError("Local training job only supports single instance.")
 
-        training_job = _LocalTrainingJob(
+        training_job = LocalTrainingJob(
             estimator=self,
             inputs=inputs,
             job_name=job_name,
             instance_type=instance_type,
         )
         training_job.run()
+        if wait:
+            training_job.wait()
         return training_job
 
 
@@ -1086,7 +904,7 @@ class AlgorithmEstimator(EstimatorBase):
         algorithm_name: Optional[str] = None,
         algorithm_version: Optional[str] = None,
         algorithm_provider: Optional[str] = None,
-        algorithm_spec: Optional[Dict[str, Any]] = None,
+        algorithm_spec: Optional[AlgorithmSpec] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
         environments: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
@@ -1113,7 +931,7 @@ class AlgorithmEstimator(EstimatorBase):
                  a PAI official algorithm. If not provided, the default provider is
                  user's PAI account. If algorithm name is not provided, this argument
                   will be ignored.
-            algorithm_spec (Dict[str, Any], optional): A temporary algorithm spec.
+            algorithm_spec (AlgorithmSpec, optional): A temporary algorithm spec.
                 Required if algorithm_name is not provided.
             hyperparameters (dict, optional): A dictionary that represents the
                 hyperparameters used in the training job. Default hyperparameters will
@@ -1169,7 +987,9 @@ class AlgorithmEstimator(EstimatorBase):
                 algorithm_version=algorithm_version,
                 algorithm_provider=algorithm_provider,
             )
-            self._algo_spec = _algo_version["AlgorithmSpec"]
+            self._algo_spec = AlgorithmSpec.model_validate(
+                _algo_version["AlgorithmSpec"]
+            )
             self.algorithm_name = _algo_version["AlgorithmName"]
             self.algorithm_version = _algo_version["AlgorithmVersion"]
             self.algorithm_provider = _algo_version["AlgorithmProvider"]
@@ -1205,37 +1025,32 @@ class AlgorithmEstimator(EstimatorBase):
         super(AlgorithmEstimator, self).set_hyperparameters(**kwargs)
 
     @property
-    def hyperparameter_definitions(self) -> List[Dict[str, Any]]:
+    def hyperparameter_definitions(self) -> List[HyperParameterDefinition]:
         """Get the hyperparameter definitions from the algorithm spec."""
-        res = self._algo_spec.get("HyperParameters", [])
+        res = self._algo_spec.hyperparameter_definitions
         return res
 
     @property
-    def input_channel_definitions(self) -> List[Dict[str, Any]]:
+    def input_channel_definitions(self) -> List[Channel]:
         """Get the input channel definitions from the algorithm spec."""
-        res = self._algo_spec.get("InputChannels", [])
+        res = self._algo_spec.input_channels
         return res
 
     @property
-    def output_channel_definitions(self) -> List[Dict[str, Any]]:
+    def output_channel_definitions(self) -> List[Channel]:
         """Get the output channel definitions from the algorithm spec."""
-        res = self._algo_spec.get("OutputChannels", [])
+        res = self._algo_spec.output_channels
         return res
 
     @property
     def supported_instance_types(self) -> List[str]:
         """Get the supported instance types from the algorithm spec."""
-        res = (
-            self._algo_spec["SupportedInstanceTypes"]
-            if "SupportedInstanceTypes" in self._algo_spec
-            else []
-        )
-        return res
+        return self._algo_spec.supported_instance_types
 
     def _check_args(
         self,
         algorithm_name: str,
-        algorithm_spec: Dict[str, Any],
+        algorithm_spec: Optional[AlgorithmSpec],
     ):
         """Check the algorithm_name and algorithm_spec.
 
@@ -1245,7 +1060,7 @@ class AlgorithmEstimator(EstimatorBase):
 
         Args:
             algorithm_name (str): The name of the algorithm.
-            algorithm_spec (dict): The algorithm spec.
+            algorithm_spec (AlgorithmSpec): The algorithm spec.
         """
         if not algorithm_name and not algorithm_spec:
             raise ValueError(
@@ -1382,8 +1197,12 @@ class AlgorithmEstimator(EstimatorBase):
         return machine_spec["InstanceType"]
 
     def fit(
-        self, inputs: Dict[str, Any] = None, wait: bool = True, show_logs: bool = True
-    ):
+        self,
+        inputs: Dict[str, Any] = None,
+        wait: bool = True,
+        show_logs: bool = True,
+        job_name: Optional[str] = None,
+    ) -> TrainingJob:
         """Submit a training job with the given input data.
 
         Args:
@@ -1396,56 +1215,50 @@ class AlgorithmEstimator(EstimatorBase):
                 either succeeded, failed, or stopped. (Default True).
             show_logs (bool): Specifies whether to show the logs produced by the
                 training job (Default True).
+            job_name (str, optional): The name of the training job.
+
+        Returns:
+            :class:`pai.training_job.TrainingJob`: The submitted training job.
+
         Raises:
             UnExpectedStatusException: If the training job fails.
 
         """
-        inputs = inputs or dict()
-        job_name = self._gen_job_display_name()
-        training_job = self._fit(inputs=inputs, job_name=job_name)
-        self._latest_training_job = training_job
-
-        if wait:
-            self.wait(show_logs=show_logs)
-
-    def _fit(self, job_name, inputs: Dict[str, Any] = None):
-        input_configs = self._build_input_data_configs(
-            inputs, input_channel_defs=self.input_channel_definitions
+        job_name = self.job_name(job_name=job_name)
+        input_configs = self.build_inputs(
+            inputs,
+            input_channels=self._algo_spec.input_channels,
         )
-        output_configs = self._build_output_data_configs(
-            job_name, output_channel_defs=self.output_channel_definitions
+        output_configs = self.build_outputs(
+            job_name,
+            output_channels=self._algo_spec.output_channels,
         )
-
-        training_job_id = self.session.training_job_api.create(
+        return self._submit(
             instance_count=self.instance_count,
             instance_type=self.instance_type,
             instance_spec=self.instance_spec,
             resource_id=self.resource_id,
             job_name=job_name,
             hyperparameters=self.hyperparameters,
-            max_running_in_seconds=self.max_run_time,
-            input_channels=input_configs,
-            output_channels=output_configs,
+            max_run_time=self.max_run_time,
+            inputs=input_configs,
+            outputs=output_configs,
             environments=self.environments,
             requirements=self.requirements,
             algorithm_name=self.algorithm_name,
             algorithm_version=self.algorithm_version,
             algorithm_provider=self.algorithm_provider,
             algorithm_spec=self.algorithm_spec,
-            user_vpc_config=self.user_vpc_config.to_dict()
-            if self.user_vpc_config
-            else None,
-            experiment_config=self.experiment_config.to_dict()
-            if self.experiment_config
-            else None,
+            user_vpc_config=(
+                self.user_vpc_config.to_dict() if self.user_vpc_config else None
+            ),
+            experiment_config=(
+                self.experiment_config.to_dict() if self.experiment_config else None
+            ),
             labels=self.labels,
+            wait=wait,
+            show_logs=show_logs,
         )
-        training_job = _TrainingJob.get(training_job_id)
-        print(
-            f"View the job detail by accessing the console URI:"
-            f" {training_job.console_uri}"
-        )
-        return training_job
 
     def get_outputs_data(self) -> Dict[str, str]:
         """Show all outputs data paths.
@@ -1453,543 +1266,27 @@ class AlgorithmEstimator(EstimatorBase):
         Returns:
             dict[str, str]: A dictionary of all outputs data paths.
         """
-        if not self._latest_training_job:
+        if not self.latest_job:
             raise RuntimeError(
-                "No TrainingJob for the estimator, output checkpoints data not found."
+                "Could not find a submitted training job. Please submit a training job"
+                " before calling this method."
             )
 
-        return {
-            ch["Name"]: ch["OutputUri"]
-            for ch in self._latest_training_job.output_channels
-        }
-
-
-_TRAINING_LAUNCH_SCRIPT_TEMPLATE = textwrap.dedent(
-    """\
-#!/bin/sh
-
-env
-
-# change to working directory
-if [ -n "$PAI_WORKING_DIR" ]; then
-    echo "Change to Working Directory", $PAI_WORKING_DIR
-    mkdir -p $PAI_WORKING_DIR && cd $PAI_WORKING_DIR
-fi
-
-# install requirements
-if [ -e "requirements.txt" ]; then
-    echo "Installing dependencies from requirements.txt"
-    python -m pip install -r requirements.txt
-fi
-
-echo "User program launching"
-echo "-----------------------------------------------------------------"
-
-sh {0}
-"""
-)
-
-
-class _TrainingEnv(object):
-    ENV_PAI_HPS = "PAI_HPS"
-    ENV_PAI_HPS_PREFIX = "PAI_HPS_"
-    ENV_PAI_USER_ARGS = "PAI_USER_ARGS"
-    ENV_PAI_INPUT_PREFIX = "PAI_INPUT_"
-    ENV_PAI_OUTPUT_PREFIX = "PAI_OUTPUT_"
-    ENV_PAI_WORKING_DIR = "PAI_WORKING_DIR"
-
-
-class _TrainingJobConfig(object):
-    WORKING_DIR = "/ml/usercode/"
-    INPUT_CONFIG_DIR = "/ml/input/config/"
-    INPUT_DATA_DIR = "/ml/input/data/"
-    OUTPUT_DIR = "/ml/output/"
-
-
-_ENV_NOT_ALLOWED_CHARS = re.compile(r"[^a-zA-Z0-9_]")
-
-
-class _LocalTrainingJob(object):
-    """A class that represents a local training job running with docker container."""
-
-    def __init__(
-        self,
-        estimator: Estimator,
-        inputs: Dict[str, Any],
-        instance_type: str = None,
-        temp_dir: str = None,
-        job_name: str = None,
-    ):
-        self.estimator = estimator
-        self.inputs = inputs
-        self.tmp_dir = temp_dir or tempfile.mkdtemp()
-        self.job_name = job_name
-        self.instance_type = instance_type
-        logger.info("Local TrainingJob temporary directory: {}".format(self.tmp_dir))
-        self._container_run: ContainerRun = None
-
-    def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
-        if self._container_run:
-            container = self._container_run.container
-            container_name, container_id, status = (
-                container.name,
-                container.id,
-                container.status,
-            )
-        else:
-            container_name, container_id, status = None, None, None
-        return f"LocalTrainingJob(container_name={container_name}, container_id={container_id}, status={status})"
-
-    @property
-    def session(self) -> Session:
-        return self.estimator.session
-
-    def prepare_env(self) -> Dict[str, str]:
-        """Prepare environment variables for the training job."""
-
-        # Hyperparameters environment variables
-        def _normalize_name(name: str) -> str:
-            # replace all non-alphanumeric characters with underscore
-            return _ENV_NOT_ALLOWED_CHARS.sub("_", name).upper()
-
-        env = {}
-        user_args = []
-        for name, value in self.estimator.hyperparameters.items():
-            env[_TrainingEnv.ENV_PAI_HPS_PREFIX + _normalize_name(name)] = str(value)
-            user_args.extend(["--" + name, shlex.quote(str(value))])
-        env[_TrainingEnv.ENV_PAI_USER_ARGS] = " ".join(
-            [shlex.quote(v) for v in user_args]
-        )
-        env[_TrainingEnv.ENV_PAI_HPS] = json.dumps(
-            {name: str(value) for name, value in self.estimator.hyperparameters.items()}
-        )
-
-        # Environments for input channel
-        for name, value in self.inputs.items():
-            if (is_oss_uri(value) and value.endswith("/")) or os.path.isdir(value):
-                env[
-                    _TrainingEnv.ENV_PAI_INPUT_PREFIX + _normalize_name(name)
-                ] = posixpath.join(_TrainingJobConfig.INPUT_DATA_DIR, name)
-            else:
-                file_name = os.path.basename(value)
-                env[
-                    _TrainingEnv.ENV_PAI_INPUT_PREFIX + _normalize_name(name)
-                ] = posixpath.join(_TrainingJobConfig.INPUT_DATA_DIR, name, file_name)
-
-        # Environments for output channel.
-        # By default, TrainingJob invoked by Estimator will have two output channels:
-        # 'model' and 'checkpoints'
-        output_channel = ["model", "checkpoints"]
-        for name in output_channel:
-            env[
-                _TrainingEnv.ENV_PAI_OUTPUT_PREFIX + _normalize_name(name)
-            ] = posixpath.join(_TrainingJobConfig.OUTPUT_DIR, name)
-
-        env[_TrainingEnv.ENV_PAI_WORKING_DIR] = _TrainingJobConfig.WORKING_DIR
-        return env
-
-    def run(self):
-        """Run estimator job in local with docker."""
-        output_model_path = self.output_path()
-        os.makedirs(output_model_path, exist_ok=True)
-        volumes = {}
-
-        tmp_dir = tempfile.mkdtemp()
-        # 1. Prepare source code to directory /ml/usercode
-        user_code_dir = os.path.join(self.tmp_dir, "user_code")
-        if is_oss_uri(self.estimator.source_dir):
-            raise RuntimeError("OSS source code is not supported in local training.")
-        shutil.copytree(self.estimator.source_dir, user_code_dir)
-        volumes[user_code_dir] = {
-            "bind": _TrainingJobConfig.WORKING_DIR,
-            "mode": "rw",
-        }
-
-        # 2. Prepare input data for training job.
-        input_data = self.prepare_input_data()
-        for host_path, container_path in input_data.items():
-            volumes[host_path] = {
-                "bind": container_path,
-                "mode": "rw",
-            }
-
-        # 3. Prepare input config files, such as hyperparameters.json,
-        # training-job.json, etc.
-        input_config_path = os.path.join(tmp_dir, "config")
-        os.makedirs(input_config_path, exist_ok=True)
-        self.prepare_input_config(input_config_path=input_config_path)
-        volumes[input_config_path] = {
-            "bind": _TrainingJobConfig.INPUT_CONFIG_DIR,
-            "mode": "rw",
-        }
-
-        execution_dir = os.path.join(tmp_dir, "config", "execution")
-        os.makedirs(execution_dir, exist_ok=True)
-        command_path = os.path.join(execution_dir, "command.sh")
-        with open(command_path, "w") as f:
-            f.write(self.estimator.command)
-        launch_script_path = os.path.join(input_config_path, "launch.sh")
-        with open(launch_script_path, "w") as f:
-            f.write(
-                _TRAINING_LAUNCH_SCRIPT_TEMPLATE.format(
-                    posixpath.join(
-                        _TrainingJobConfig.INPUT_CONFIG_DIR, "execution/command.sh"
-                    )
-                )
-            )
-
-        # 4. Config output model channel
-        volumes[output_model_path] = {
-            "bind": posixpath.join(_TrainingJobConfig.OUTPUT_DIR, "model"),
-            "mode": "rw",
-        }
-
-        gpu_count = (
-            -1 if self.instance_type.strip() == INSTANCE_TYPE_LOCAL_GPU else None
-        )
-        self._container_run = run_container(
-            environment_variables=self.prepare_env(),
-            image_uri=self.estimator.image_uri,
-            entry_point=[
-                "/bin/sh",
-                posixpath.join(_TrainingJobConfig.INPUT_CONFIG_DIR, "launch.sh"),
-            ],
-            volumes=volumes,
-            working_dir=_TrainingJobConfig.WORKING_DIR,
-            gpu_count=gpu_count,
-        )
-
-    def prepare_input_config(self, input_config_path):
-        """Prepare input config for TrainingJob, such as hyperparameters.json,
-        trainingjob.json."""
-        with open(os.path.join(input_config_path, "hyperparameters.json"), "w") as f:
-            hps = self.estimator.hyperparameters or dict()
-            f.write(json.dumps({k: str(v) for k, v in hps.items()}))
-
-    def prepare_input_data(self) -> Dict[str, str]:
-        """Prepare input data config."""
-        input_data_configs = {}
-
-        for name, input_data in self.inputs.items():
-            local_channel_path = os.path.join(self.tmp_dir, f"input/data/{name}")
-            os.makedirs(local_channel_path, exist_ok=True)
-            input_data_configs[local_channel_path] = posixpath.join(
-                _TrainingJobConfig.INPUT_DATA_DIR, name
-            )
-            if is_oss_uri(input_data):
-                oss_uri_obj = OssUriObj(input_data)
-                oss_bucket = self.session.get_oss_bucket(oss_uri_obj.bucket_name)
-                os.makedirs(local_channel_path, exist_ok=True)
-                download(
-                    oss_uri_obj.object_key,
-                    local_path=local_channel_path,
-                    bucket=oss_bucket,
-                )
-                input_data_configs[local_channel_path] = posixpath.join(
-                    _TrainingJobConfig.INPUT_DATA_DIR, name
-                )
-            else:
-                # If the input data is local files, copy the input data to a
-                # temporary directory.
-                if not os.path.exists(input_data):
-                    raise ValueError(
-                        "Input data not exists: name={} input_data={}".format(
-                            name, input_data
-                        )
-                    )
-                elif os.path.isdir(input_data):
-                    distutils.dir_util.copy_tree(input_data, local_channel_path)
-                else:
-                    shutil.copy(
-                        input_data,
-                        os.path.join(local_channel_path, os.path.basename(input_data)),
-                    )
-
-        return input_data_configs
-
-    def wait(self, show_logs: bool = True):
-        self._container_run.watch(show_logs=show_logs)
-
-    def output_path(self, channel_name="model"):
-        return os.path.join(self.tmp_dir, "output", f"{channel_name}/")
-
-    def is_succeeded(self):
-        """Return True if the training job is succeeded, otherwise return False."""
-        return self._container_run.is_succeeded()
-
-
-class TrainingJobStatus(object):
-    CreateFailed = "CreateFailed"
-    InitializeFailed = "InitializeFailed"
-    Succeed = "Succeed"
-    Failed = "Failed"
-    Terminated = "Terminated"
-    Creating = "Creating"
-    Created = "Created"
-    Initializing = "Initializing"
-    Submitted = "Submitted"
-    Running = "Running"
-
-    @classmethod
-    def completed_status(cls):
-        return [
-            cls.InitializeFailed,
-            cls.Succeed,
-            cls.Failed,
-            cls.Terminated,
+        uri_outputs = [
+            output
+            for output in self.latest_job.outputs
+            if isinstance(output, UriOutput)
+        ]
+        extra_outputs = [
+            output
+            for output in self.latest_job.outputs
+            if not isinstance(output, UriOutput)
         ]
 
-    @classmethod
-    def failed_status(cls):
-        return [
-            cls.InitializeFailed,
-            cls.Failed,
-            cls.CreateFailed,
-        ]
-
-
-class TrainingJobChannel(object):
-    def __init__(self, dataset_id=None, input_uri=None, name=None):
-        self.dataset_id = dataset_id
-        self.input_uri = input_uri
-        self.name = name
-
-
-class _TrainingJob(EntityBaseMixin):
-    _schema_cls = TrainingJobSchema
-
-    def __init__(
-        self,
-        algorithm_name=None,
-        algorithm_version="1.0.0",
-        algorithm_provider=ProviderAlibabaPAI,
-        hyperparameters: Dict[str, Any] = None,
-        training_job_name: str = None,
-        instance_type: str = None,
-        instance_count: int = None,
-        output_channels: List[Dict[str, str]] = None,
-        input_channels: List[Dict[str, str]] = None,
-        labels: Dict[str, str] = None,
-        max_running_time_in_seconds: int = None,
-        experiment_config: Dict[str, str] = None,
-        description: str = None,
-        session: Session = None,
-        **kwargs,
-    ):
-        super(_TrainingJob, self).__init__(session=session, **kwargs)
-        session = session or get_default_session()
-        self.algorithm_name = algorithm_name
-        self.algorithm_version = algorithm_version
-        self.algorithm_provider = algorithm_provider
-        self.training_job_name = training_job_name
-        self.description = description
-        self.labels = labels
-        self.hyperparameters = hyperparameters
-        self.input_channels = input_channels
-        self.output_channels = output_channels
-        self.instance_type = instance_type
-        self.instance_count = instance_count
-        self.max_running_time_in_seconds = max_running_time_in_seconds
-        self.experiment_config = experiment_config
-
-        # Load only fields
-        self.create_time = kwargs.pop("create_time", None)
-        self.modified_time = kwargs.pop("modified_time", None)
-        self.reason_code = kwargs.pop("reason_code", None)
-        self.reason_message = kwargs.pop("reason_message", None)
-        self.status = kwargs.pop("status", None)
-        self.status_transitions = kwargs.pop("status_transitions", None)
-        self.training_job_id = kwargs.pop("training_job_id", None)
-        self.training_job_url = kwargs.pop("training_job_url", None)
-
-    def __repr__(self):
-        return "TrainingJob(id={})".format(self.training_job_id)
-
-    def __str__(self):
-        return self.__repr__()
-
-    @property
-    def id(self):
-        return self.training_job_id
-
-    @classmethod
-    def get(cls, training_job_id, session: Session = None) -> "_TrainingJob":
-        session = session or get_default_session()
-        res = session.training_job_api.get(training_job_id=training_job_id)
-        return cls.from_api_object(res, session=session)
-
-    @classmethod
-    def list(
-        cls,
-        status=None,
-        session: Session = None,
-        page_size=50,
-        page_number=1,
-    ):
-        session = session or get_default_session()
-        res = session.training_job_api.list(
-            status=status, page_size=page_size, page_number=page_number
-        )
-        return [cls.from_api_object(item, session=session) for item in res.items]
-
-    def output_path(self, channel_name="model"):
-        for output_channel in self.output_channels:
-            if output_channel["Name"] == channel_name:
-                return output_channel["OutputUri"]
-        raise RuntimeError(
-            f"Output channel is not specified: channel_name={channel_name}"
-        )
-
-    @property
-    def console_uri(self):
-        if not self.training_job_id:
-            raise ValueError("The TrainingJob is not submitted")
-
-        return self.training_job_url
-
-    def wait(self, interval=2, show_logs: bool = True):
-        self.session.training_job_api.refresh_entity(self.training_job_id, self)
-
-        if show_logs:
-            job_log_printer = _TrainingJobLogPrinter(
-                training_job_id=self.training_job_id, page_size=20, session=self.session
+        if extra_outputs:
+            logger.warning(
+                "Extra outputs are provided in the training job, but only URI outputs"
+                " are supported. The extra outputs will be ignored: %s",
+                extra_outputs,
             )
-            job_log_printer.start()
-        else:
-            job_log_printer = None
-        try:
-            while not self.is_completed():
-                time.sleep(interval)
-        finally:
-            if job_log_printer:
-                job_log_printer.stop(wait=True)
-
-        self._on_job_completed()
-
-    def _on_job_completed(self):
-        # Print an empty line to separate the training job logs and the following logs
-        print()
-        if self.status == TrainingJobStatus.Succeed:
-            print(
-                f"Training job ({self.training_job_id}) succeeded, you can check the"
-                f" logs/metrics/output in  the console:\n{self.console_uri}"
-            )
-        elif self.status == TrainingJobStatus.Terminated:
-            print(
-                f"Training job is ended with status {self.status}: "
-                f"reason_code={self.reason_code}, reason_message={self.reason_message}."
-                f"Check the training job in the console:\n{self.console_uri}"
-            )
-        elif self.status in TrainingJobStatus.failed_status():
-            print(
-                f"Training job ({self.training_job_id}) failed, please check the logs"
-                f" in the console: \n{self.console_uri}"
-            )
-
-            message = f"TrainingJob failed: name={self.training_job_name}, "
-            f"training_job_id={self.training_job_id}, "
-            f"reason_code={self.reason_code}, status={self.status}, "
-            f"reason_message={self.reason_message}"
-
-            raise UnexpectedStatusException(message=message, status=self.status)
-
-    def _reload(self):
-        """Reload the training job from the PAI Service,"""
-        self.session.training_job_api.refresh_entity(self.training_job_id, self)
-
-    def is_succeeded(self):
-        """Return True if the training job is succeeded"""
-        self._reload()
-        return self.status == TrainingJobStatus.Succeed
-
-    @retry(wait_secs=10)
-    def is_completed(self):
-        """Return True if the training job is completed, including failed status"""
-        if self.status in TrainingJobStatus.completed_status():
-            return True
-        self._reload()
-
-        return self.status in TrainingJobStatus.completed_status()
-
-
-class _TrainingJobLogPrinter(object):
-    """A class used to print logs for a training job"""
-
-    executor = ThreadPoolExecutor(5)
-
-    def __init__(
-        self, training_job_id: str, page_size=10, session: Optional[Session] = None
-    ):
-        self.training_job_id = training_job_id
-        self.session = session
-        self.page_size = page_size
-        self._future = None
-        self._stop = False
-
-    def _list_logs_api(self, page_number: int = 1):
-        try:
-            res = self.session.training_job_api.list_logs(
-                self.training_job_id,
-                page_number=page_number,
-                page_size=self.page_size,
-            )
-            return res
-        except TeaException as e:
-            # hack: Backend service may raise an exception when the training job
-            # instance is not found.
-            if e.code == "TRAINING_JOB_INSTANCE_NOT_FOUND":
-                return PaginatedResult(items=[], total_count=0)
-            else:
-                raise e
-
-    def _list_logs(self):
-        page_number, page_offset = 1, 0
-        # print training job logs.
-        while not self._stop:
-            res = self._list_logs_api(page_number=page_number)
-            # 1. move to next page
-            if len(res.items) == self.page_size:
-                # print new logs starting from page_offset
-                self._print_logs(logs=res.items[page_offset:])
-                page_number += 1
-                page_offset = 0
-            # 2. stay at the current page.
-            else:
-                if len(res.items) > page_offset:
-                    # print new logs starting from page_offset
-                    self._print_logs(logs=res.items[page_offset:])
-                    page_offset = len(res.items)
-                time.sleep(1)
-
-        # When _stop is True, wait and print remaining logs.
-        time.sleep(10)
-        while True:
-            res = self._list_logs_api(page_number=page_number)
-            # There maybe more logs in the next page
-            if len(res.items) == self.page_size:
-                self._print_logs(logs=res.items[page_offset:])
-                page_number += 1
-                page_offset = 0
-            # No more logs in the next page.
-            else:
-                if len(res.items) > page_offset:
-                    self._print_logs(logs=res.items[page_offset:])
-                break
-
-    def _print_logs(self, logs: List[str]):
-        for log in logs:
-            print(log)
-
-    def start(self):
-        if self._future:
-            raise ValueError("The training job log printer is already started")
-        self._stop = False
-        self._future = self.executor.submit(self._list_logs)
-
-    def stop(self, wait: bool = True):
-        self._stop = True
-        if self._future:
-            self._future.result()
+        return {ch.name: ch.output_uri for ch in uri_outputs}

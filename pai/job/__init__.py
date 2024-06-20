@@ -11,3 +11,34 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+from ._local_training_job import LocalTrainingJob
+from ._training_job import (
+    AlgorithmSpec,
+    Channel,
+    CodeDir,
+    ExperimentConfig,
+    HyperParameterDefinition,
+    ModelTrainingSpec,
+    OssLocation,
+    TrainingJob,
+    TrainingJobStatus,
+    UriOutput,
+    UserVpcConfig,
+    _TrainingJobSubmitter,
+)
+
+__all__ = [
+    "TrainingJob",
+    "ModelTrainingSpec",
+    "TrainingJobStatus",
+    "Channel",
+    "HyperParameterDefinition",
+    "OssLocation",
+    "AlgorithmSpec",
+    "CodeDir",
+    "LocalTrainingJob",
+    "UriOutput",
+    "UserVpcConfig",
+    "ExperimentConfig",
+]

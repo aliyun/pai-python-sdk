@@ -21,28 +21,6 @@ from .tensorboard import TensorBoard
 
 logger = get_logger(__name__)
 
-_default_session = None
-
-
-class ExperimentConfig(object):
-    """ExperimentConfig is used to configure the experiment to which the job belongs."""
-
-    def __init__(
-        self,
-        experiment_id: str,
-    ):
-        """Initialize ExperimentConfig.
-        Args:
-            experiment_id (str): Specifies the ID of the experiment that training job instance
-                belongs to.
-        """
-        self.experiment_id = experiment_id
-
-    def to_dict(self):
-        return {
-            "ExperimentId": self.experiment_id,
-        }
-
 
 class Experiment(object):
     """An experiment is a collection of runs. It can be used to compare the
@@ -145,6 +123,26 @@ class Experiment(object):
             artifact_uri=experiment["ArtifactUri"],
             session=session,
         )
+
+    @classmethod
+    def get_by_name(
+        cls, name: str, session: Optional[Session] = None
+    ) -> Optional["Experiment"]:
+        """Get experiment by name.
+
+        Args:
+            name (str): The name of the experiment.
+            session (Session): The session to be used.
+
+        Returns:
+            Experiment: The experiment with the specified name.
+
+        """
+        exp = next(
+            (exp for exp in cls.list(name=name, session=session) if exp.name == name),
+            None,
+        )
+        return exp
 
     def update(
         self,
