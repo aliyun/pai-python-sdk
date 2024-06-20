@@ -47,7 +47,7 @@ class TestModelRecipe(BaseIntegTestCase):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")
         training_recipe = model.training_recipe(training_method="QLoRA_LLM")
         self.assertTrue(
-            bool(training_recipe.default_inputs),
+            bool(training_recipe.default_training_inputs),
             "Default inputs is empty for ModelTrainingRecipe.",
         )
 
