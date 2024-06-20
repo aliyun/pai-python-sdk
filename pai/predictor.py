@@ -205,7 +205,7 @@ class _ServicePredictorMixin(object):
 
     def _get_default_serializer(self):
         """Get default serializer for the predictor by inspecting the service config."""
-        from pai.model import _BuiltinProcessor
+        from pai.model._model import _BuiltinProcessor
 
         service_config = json.loads(self._service_api_object["ServiceConfig"])
         processor_code = service_config.get("processor")
