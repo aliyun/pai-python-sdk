@@ -133,65 +133,110 @@ class ExperimentConfig(BaseAPIModel):
 
 
 class OssLocation(BaseAPIModel):
-    bucket: str
-    key: str
-    endpoint: Optional[str]
+    """OSS location."""
+
+    bucket: str = Field(..., description="OSS bucket name.")
+    key: str = Field(..., description="Object key in the OSS bucket.")
+    endpoint: Optional[str] = Field(None, description="OSS service endpoint URL.")
 
 
 class CodeDir(BaseAPIModel):
-    location_value: Union[OssLocation, Dict[str, Any]]
-    location_type: str
+    """Source code location"""
+
+    location_value: Union[OssLocation, Dict[str, Any]] = Field(
+        ..., description="Location of the code directory."
+    )
+    location_type: str = Field(
+        ..., description="Type of the code directory location, e.g., OSS."
+    )
 
 
+# HyperParameter
 class HyperParameter(BaseAPIModel):
-    value: str
-    name: str
+    """A hyperparameter for a training job."""
+
+    value: str = Field(..., description="Value of the hyperparameter.")
+    name: str = Field(..., description="Name of the hyperparameter.")
 
 
 class InstanceSpec(BaseAPIModel):
-    memory: str
-    cpu: str = Field(alias="CPU")
-    gpu: str = Field(alias="GPU")
-    shared_memory: Optional[str] = None
+    """Instance resource configuration"""
+
+    memory: str = Field(..., description="Memory allocation for the instance.")
+    cpu: str = Field(..., alias="CPU", description="CPU allocation for the instance.")
+    gpu: str = Field(..., alias="GPU", description="GPU allocation for the instance.")
+    shared_memory: Optional[str] = Field(
+        None, description="Shared memory allocation, if applicable."
+    )
 
 
 class ComputeResource(BaseAPIModel):
-    ecs_count: Optional[int] = None
-    ecs_spec: Optional[str] = None
-    instance_count: Optional[int] = None
-    instance_spec: Optional[InstanceSpec] = None
+    """Compute Resource Configuration."""
+
+    ecs_count: Optional[int] = Field(None, description="Number of ECS instances.")
+    ecs_spec: Optional[str] = Field(None, description="Specification of ECS instances.")
+    instance_count: Optional[int] = Field(None, description="Number of instances.")
+    instance_spec: Optional[InstanceSpec] = Field(
+        None, description="Specification for instances."
+    )
 
 
+# URI Input and Output
 class UriInput(BaseAPIModel):
-    name: str
-    input_uri: str
+    """URI Input for a training job."""
+
+    name: str = Field(..., description="Name of the input.")
+    input_uri: str = Field(..., description="URI of the input data.")
 
 
 class UriOutput(BaseAPIModel):
-    name: str
-    output_uri: str
+    """URI Output for a training job."""
+
+    name: str = Field(..., description="Name of the output.")
+    output_uri: str = Field(..., description="URI of the output data.")
 
 
 class DatasetConfig(BaseAPIModel):
-    dataset_id: str
-    name: Optional[str] = None
-    dataset_name: Optional[str] = None
+    """Dataset Configuration"""
+
+    dataset_id: str = Field(..., description="Unique ID of the dataset.")
+    name: Optional[str] = Field(None, description="Name of the dataset.")
+    dataset_name: Optional[str] = Field(
+        None, description="Alternative name of the dataset."
+    )
 
 
 class Channel(BaseAPIModel):
-    name: str
-    description: Optional[str] = None
-    required: Optional[bool] = None
-    supported_channel_types: Optional[List[str]] = None
-    properties: Optional[Dict[str, Any]] = None
+    """Channel Configuration."""
+
+    name: str = Field(..., description="Name of the channel.")
+    description: Optional[str] = Field(None, description="Description of the channel.")
+    required: Optional[bool] = Field(
+        None, description="Indicates if the channel is required."
+    )
+    supported_channel_types: Optional[List[str]] = Field(
+        None, description="Supported types for this channel."
+    )
+    properties: Optional[Dict[str, Any]] = Field(
+        None, description="Additional properties of the channel."
+    )
 
 
+# HyperParameter Definition
 class HyperParameterDefinition(BaseAPIModel):
-    name: str
-    type: Optional[str] = None
-    default_value: Optional[str] = None
-    description: Optional[str] = None
-    required: bool = False
+    """HyerParameter Definition."""
+
+    name: str = Field(..., description="Name of the hyperparameter.")
+    type: Optional[str] = Field(None, description="Type of the hyperparameter.")
+    default_value: Optional[str] = Field(
+        None, description="Default value of the hyperparameter."
+    )
+    description: Optional[str] = Field(
+        None, description="Description of the hyperparameter."
+    )
+    required: bool = Field(
+        False, description="Indicates if the hyperparameter is required."
+    )
 
 
 class SchedulerConfig(BaseAPIModel):
@@ -199,19 +244,31 @@ class SchedulerConfig(BaseAPIModel):
 
 
 class AlgorithmSpec(BaseAPIModel):
-    command: List[str]
-    image: str
+    """Algorithm Specification."""
+
+    command: List[str] = Field(..., description="Command to run the training job.")
+    image: str = Field(..., description="Docker image for the training job.")
     supported_channel_types: List[str] = Field(default_factory=list)
-    output_channels: List[Channel] = Field(default_factory=list)
-    input_channels: List[Channel] = Field(default_factory=list)
-    supports_distributed_training: bool = False
-    supported_instance_types: Optional[List[str]] = None
-    metric_definitions: Optional[List] = None
+    output_channels: List[Channel] = Field(
+        default_factory=list, description="Output channels."
+    )
+    input_channels: List[Channel] = Field(
+        default_factory=list, description="Input channels."
+    )
+    supports_distributed_training: Optional[bool] = Field(
+        True, description="Whether the algorithm supports distributed training."
+    )
+    supported_instance_types: Optional[List[str]] = Field(
+        None, description="Supported instance types."
+    )
+    metric_definitions: Optional[List] = Field(None, description="Metric definitions.")
     hyperparameter_definitions: List[HyperParameterDefinition] = Field(
-        default_factory=list, alias="HyperParameter"
+        default_factory=list,
+        alias="HyperParameter",
+        description="Hyperparameter definitions.",
     )
     job_type: str = Field(default="PyTorchJob")
-    code_dir: Optional[CodeDir] = None
+    code_dir: Optional[CodeDir] = Field(None, description="Source code location.")
 
 
 class ModelTrainingSpec(BaseAPIModel):
@@ -467,12 +524,34 @@ class _TrainingJobSubmitter(object):
     """A class used to submit a training job to the PAI service."""
 
     def __init__(
-        self, base_job_name: Optional[str] = None, output_path: Optional[str] = None
+        self,
+        base_job_name: Optional[str] = None,
+        output_path: Optional[str] = None,
+        experiment_config: Optional[ExperimentConfig] = None,
+        user_vpc_config: Optional[UserVpcConfig] = None,
+        max_run_time: Optional[int] = None,
+        instance_type: Optional[str] = None,
+        instance_spec: Optional[Dict] = None,
+        instance_count: Optional[int] = None,
+        resource_id: Optional[Dict] = None,
+        environments: Optional[Dict] = None,
+        requirements: Optional[List[str]] = None,
+        labels: Optional[Dict[str, str]] = None,
     ):
         self.session = get_default_session()
         self._training_jobs = []
         self.base_job_name = base_job_name or type(self).__name__.lower()
         self.output_path = output_path
+        self.user_vpc_config = user_vpc_config
+        self.experiment_config = experiment_config
+        self.max_run_time = max_run_time
+        self.instance_type = instance_type
+        self.instance_spec = instance_spec
+        self.instance_count = instance_count
+        self.resource_id = resource_id
+        self.environments = environments
+        self.requirements = requirements
+        self.labels = labels
 
     def wait(self, interval: int = 5, show_logs: bool = True, all_jobs: bool = False):
         """Block until the jobs is completed.

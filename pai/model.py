@@ -42,7 +42,7 @@ from .common.utils import (
 )
 from .exception import DuplicatedMountException
 from .image import ImageInfo
-from .job._training_job import InstanceSpec, ModelTrainingSpec, UriInput, UserVpcConfig
+from .job import InstanceSpec, ModelTrainingSpec, UriInput, UserVpcConfig
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
 from .session import Session, get_default_session

@@ -278,21 +278,22 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
 
         """
         self.hyperparameters = hyperparameters or dict()
-        self.environments = environments
-        self.requirements = requirements
-        self.instance_type = instance_type
-        self.instance_spec = instance_spec
-        self.resource_id = resource_id
-        self.instance_count = instance_count if instance_count else 1
-        self.max_run_time = max_run_time
-        self.base_job_name = base_job_name
-        self.output_path = output_path
-        self.user_vpc_config = user_vpc_config
-        self.experiment_config = experiment_config
         self.checkpoints_path = checkpoints_path
         self.session = session or get_default_session()
-        self.labels = labels
-        super().__init__(base_job_name=base_job_name, output_path=output_path)
+        super().__init__(
+            base_job_name=base_job_name,
+            output_path=output_path,
+            experiment_config=experiment_config,
+            instance_type=instance_type,
+            instance_count=instance_count,
+            resource_id=resource_id,
+            instance_spec=instance_spec,
+            user_vpc_config=user_vpc_config,
+            max_run_time=max_run_time,
+            environments=environments,
+            requirements=requirements,
+            labels=labels,
+        )
 
     def set_hyperparameters(self, **kwargs):
         """Set hyperparameters for the training job.
@@ -837,7 +838,9 @@ class Estimator(EstimatorBase):
             inputs=inputs,
             outputs=outputs,
             user_vpc_config=self.user_vpc_config if self.user_vpc_config else None,
-            # experiment_config=self.experiment_config if self.experiment_config else None,
+            experiment_config=(
+                self.experiment_config if self.experiment_config else None
+            ),
             labels=self.labels,
             wait=wait,
             show_logs=show_logs,

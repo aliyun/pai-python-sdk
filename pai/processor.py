@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Union
 from .common.consts import JobType, StoragePathCategory
 from .common.logging import get_logger
 from .common.utils import experimental, random_str, to_plain_text
-from .job._training_job import (
+from .job import (
     AlgorithmSpec,
     Channel,
     CodeDir,
@@ -165,20 +165,22 @@ class Processor(_TrainingJobSubmitter):
         self.source_dir = source_dir
         self.job_type = job_type or JobType.PyTorchJob
         self.parameters = parameters or dict()
-        self.environments = environments
-        self.requirements = requirements
-        self.max_run_time = max_run_time
-
-        self.instance_type = instance_type
-        self.instance_count = instance_count or 1
-        self.labels = labels
-        self.user_vpc_config = user_vpc_config
-        self.experiment_config = experiment_config
         self.session = session or get_default_session()
 
         self._input_channels = None
         self._output_channels = None
-        super().__init__(base_job_name=base_job_name, output_path=output_path)
+        super().__init__(
+            base_job_name=base_job_name,
+            output_path=output_path,
+            experiment_config=experiment_config,
+            instance_type=instance_type,
+            instance_count=instance_count or 1,
+            user_vpc_config=user_vpc_config,
+            max_run_time=max_run_time,
+            environments=environments,
+            requirements=requirements,
+            labels=labels,
+        )
 
     def run(
         self,
