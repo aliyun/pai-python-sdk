@@ -547,7 +547,7 @@ class _TrainingJobSubmitter(object):
         self.max_run_time = max_run_time
         self.instance_type = instance_type
         self.instance_spec = instance_spec
-        self.instance_count = instance_count
+        self.instance_count = instance_count or 1
         self.resource_id = resource_id
         self.environments = environments
         self.requirements = requirements
@@ -727,7 +727,11 @@ class _TrainingJobSubmitter(object):
             instance_spec=instance_spec.model_dump() if instance_spec else None,
             algorithm_name=algorithm_name,
             algorithm_provider=algorithm_provider,
-            experiment_config=experiment_config,
+            experiment_config=(
+                experiment_config.model_dump()
+                if experiment_config and isinstance(experiment_config, ExperimentConfig)
+                else experiment_config
+            ),
             algorithm_version=algorithm_version,
             instance_type=instance_type,
             resource_id=resource_id,
