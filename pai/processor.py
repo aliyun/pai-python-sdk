@@ -244,10 +244,10 @@ class Processor(_TrainingJobSubmitter):
             outputs=outputs,
             algorithm_spec=algo_spec,
             user_vpc_config=(
-                self.user_vpc_config.to_dict() if self.user_vpc_config else None
+                self.user_vpc_config.model_dump() if self.user_vpc_config else None
             ),
             experiment_config=(
-                self.experiment_config.to_dict() if self.experiment_config else None
+                self.experiment_config.model_dump() if self.experiment_config else None
             ),
             labels=self.labels,
             wait=wait,

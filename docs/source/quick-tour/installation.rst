@@ -5,7 +5,7 @@
 安装
 ------
 
-请通过以下命令安装PAI Python SDK（请使用Python>=3.6）。
+请通过以下命令安装PAI Python SDK（请使用Python>=3.8）。
 
 .. parsed-literal::
 

@@ -1,4 +1,4 @@
-#  Copyright 2023 Alibaba, Inc. or its affiliates.
+#  Copyright 2024 Alibaba, Inc. or its affiliates.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 import os
 import posixpath
 import time
+import typing
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Union
 
@@ -38,6 +39,9 @@ from ..common.utils import (
 )
 from ..exception import UnexpectedStatusException
 from ..session import Session, get_default_session
+
+if typing.TYPE_CHECKING:
+    from ..estimator import FileSystemInputBase
 
 logger = get_logger(__name__)
 
@@ -127,9 +131,6 @@ class ExperimentConfig(BaseAPIModel):
         ...,
         description="Specifies the ID of the experiment that training job instance belongs to.",
     )
-
-    def __init__(self, experiment_id):
-        super().__init__(experiment_id=experiment_id)
 
 
 class OssLocation(BaseAPIModel):
@@ -243,6 +244,14 @@ class SchedulerConfig(BaseAPIModel):
     max_running_time_in_seconds: Optional[int] = None
 
 
+class MetricDefinition(BaseAPIModel):
+    description: Optional[str] = Field(None, description="Description of the metric.")
+    name: str = Field(..., description="Name of the metric.")
+    regex: str = Field(
+        ..., description="Regular expression used for capturing the metric."
+    )
+
+
 class AlgorithmSpec(BaseAPIModel):
     """Algorithm Specification."""
 
@@ -261,7 +270,9 @@ class AlgorithmSpec(BaseAPIModel):
     supported_instance_types: Optional[List[str]] = Field(
         None, description="Supported instance types."
     )
-    metric_definitions: Optional[List] = Field(None, description="Metric definitions.")
+    metric_definitions: Optional[List[MetricDefinition]] = Field(
+        None, description="Metric definitions."
+    )
     hyperparameter_definitions: List[HyperParameterDefinition] = Field(
         default_factory=list,
         alias="HyperParameter",
@@ -742,7 +753,6 @@ class _TrainingJobSubmitter(object):
             output_channels=outputs,
             algorithm_spec=algorithm_spec.model_dump() if algorithm_spec else None,
             requirements=requirements,
-            # experiment_config=
             user_vpc_config=user_vpc_config,
             labels=labels,
             environments=environments,
@@ -756,7 +766,9 @@ class _TrainingJobSubmitter(object):
             training_job.wait(show_logs=show_logs)
 
     @classmethod
-    def _get_input_config(cls, name: str, item: str):
+    def _get_input_config(
+        cls, name: str, item: Union[str, "FileSystemInputBase", DatasetConfig]
+    ):
         """Get input uri for training_job from given input."""
         from pai.estimator import FileSystemInputBase
 

@@ -2145,10 +2145,7 @@ class RegisteredModel(ModelBase):
         res = {}
 
         for item in inputs:
-            if isinstance(item, UriInput):
-                res[item.name] = item.input_uri
-            else:
-                res[item.name] = item
+            res[item.name] = item.input_uri if isinstance(item, UriInput) else item
         return res
 
     @classmethod

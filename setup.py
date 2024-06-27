@@ -26,7 +26,7 @@ if os.path.exists("README.md"):
 
 setup(
     name="alipai",
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     version=version,
     setup_requires=["setuptools_scm"],
     description="Alibaba Cloud PAI Python SDK",
