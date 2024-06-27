@@ -23,6 +23,7 @@ import tempfile
 import textwrap
 import time
 import typing
+import warnings
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
@@ -1871,8 +1872,9 @@ class RegisteredModel(ModelBase):
             else:
                 method = supported_methods[0]
                 logger.warning(
-                    f"The method is not specified, using the default "
-                    f" method: {method}. Supported training methods are: {supported_methods}."
+                    f"Model recipe contains multiple specs and method is not specified. "
+                    f"Default method is used: '{method}'. Supported training methods are:"
+                    f" {supported_methods}."
                 )
                 spec = raw_spec.get(method)
         else:
@@ -1884,6 +1886,8 @@ class RegisteredModel(ModelBase):
         return ModelRecipeSpec.model_validate(spec)
 
     def get_training_spec(self, training_method: Optional[str]) -> ModelRecipeSpec:
+        from ._model_recipe import ModelRecipeType
+
         return self.get_recipe_spec(ModelRecipeType.TRAINING, training_method)
 
     def get_estimator(
@@ -1930,6 +1934,12 @@ class RegisteredModel(ModelBase):
             :class:`pai.estimator.AlgorithmEstimator`: An AlgorithmEstimator object.
         """
         from ..estimator import AlgorithmEstimator
+
+        warnings.warn(
+            "`.get_estimator` is deprecated and will be removed in a future version, you can now use "
+            "`.training_recipe` instead.",
+            category=FutureWarning,
+        )
 
         if not self.training_spec:
             raise ValueError(
@@ -2026,6 +2036,13 @@ class RegisteredModel(ModelBase):
         Returns:
             Dict[str, str]: A dict of input channels.
         """
+
+        warnings.warn(
+            "`.get_estimator_inputs` is deprecated and will be removed in a future version, you can now use "
+            "`.training_recipe().default_inputs` instead.",
+            category=FutureWarning,
+        )
+
         default_inputs = (
             self.get_training_spec(training_method=training_method).inputs or []
         )
@@ -2084,6 +2101,12 @@ class RegisteredModel(ModelBase):
             :class:`pai.processor.Processor`: An Processor object.
         """
         from ..processor import Processor
+
+        warnings.warn(
+            "`.get_eval_processor` is deprecated and will be removed in a future version, you can now use "
+            "`.model_recipe` instead.",
+            category=FutureWarning,
+        )
 
         eval_spec = self._get_evaluation_spec()
         if not eval_spec:
@@ -2152,6 +2175,12 @@ class RegisteredModel(ModelBase):
         Returns:
             dict[str, str]: A dict of input channels.
         """
+        warnings.warn(
+            "`.get_eval_inputs` is deprecated and will be removed in a future version, you can now use "
+            "`.model_recipe().default_inputs` instead.",
+            category=FutureWarning,
+        )
+
         if not self.evaluation_spec:
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."

@@ -77,7 +77,9 @@ class TestProcessor(BaseIntegTestCase):
             command="python main.py --output_path=/ml/output/flag",
             instance_type="ecs.c6.large",
             base_job_name="processing",
-            experiment_config=ExperimentConfig(self.experiment.experiment_id),
+            experiment_config=ExperimentConfig(
+                experiment_id=self.experiment.experiment_id
+            ),
         )
 
         processor.run(

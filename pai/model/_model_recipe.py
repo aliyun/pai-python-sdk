@@ -200,7 +200,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         )
         model_recipe_spec = (
             model.get_recipe_spec(recipe_type=recipe_type, method=method)
-            if method
+            if model
             else None
         )
         model_uri = model_uri or (model and model.uri)
@@ -257,22 +257,23 @@ class ModelRecipe(_TrainingJobSubmitter):
                 else:
                     default_inputs[item.name] = item
         algorithm_spec = cls._get_algorithm_spec(model_recipe_spec)
+        if algorithm_spec:
+            if (
+                not source_dir
+                and algorithm_spec.code_dir
+                and isinstance(algorithm_spec.code_dir, OssLocation)
+            ):
+                source_dir = f"oss://{0}.{1}/{2}".format(
+                    algorithm_spec.code_dir.bucket,
+                    algorithm_spec.code_dir.endpoint,
+                    algorithm_spec.code_dir.key.lstrip("/"),
+                )
+            image_uri = image_uri or algorithm_spec.image
+            command = command or algorithm_spec.command
+            job_type = job_type or algorithm_spec.job_type
+            input_channels = input_channels or algorithm_spec.input_channels
+            output_channels = output_channels or algorithm_spec.output_channels
 
-        if (
-            not source_dir
-            and algorithm_spec
-            and algorithm_spec.code_dir
-            and isinstance(algorithm_spec.code_dir, OssLocation)
-        ):
-            source_dir = f"oss://{0}.{1}/{2}".format(
-                algorithm_spec.code_dir.bucket,
-                algorithm_spec.code_dir.endpoint,
-                algorithm_spec.code_dir.key.lstrip("/"),
-            )
-
-        image_uri = image_uri or (algorithm_spec and algorithm_spec.image)
-        command = command or (algorithm_spec and algorithm_spec.command)
-        job_type = job_type or (algorithm_spec and algorithm_spec.job_type)
         instance_type, instance_spec, instance_count = cls._get_compute_resource_config(
             instance_type=instance_type,
             instance_spec=instance_spec,
@@ -280,7 +281,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             resource_id=resource_id,
             compute_resource=model_recipe_spec.compute_resource,
         )
-        hyperparameters = hyperparameters or dict()
+        hyperparameters = hyperparameters or {}
         hyperparameters = {
             **{
                 hp.name: hp.default_value
@@ -292,18 +293,8 @@ class ModelRecipe(_TrainingJobSubmitter):
             **{hp.name: hp.value for hp in model_recipe_spec.hyperparameters},
             **hyperparameters,
         }
-        input_channels = input_channels or (
-            algorithm_spec and algorithm_spec.input_channels
-        )
-        output_channels = (
-            output_channels
-            or (algorithm_spec and algorithm_spec.output_channels)
-            or cls._default_training_output_channels()
-        )
         requirements = requirements or model_recipe_spec.requirements
         environments = environments or model_recipe_spec.environments
-        job_type = job_type or (algorithm_spec and algorithm_spec.job_type)
-
         return RecipeInitKwargs(
             model_name=model_name,
             model_version=model_version,
@@ -435,6 +426,7 @@ class ModelRecipe(_TrainingJobSubmitter):
     def run(
         self,
         inputs: Optional[Dict[str, Union[str, DatasetConfig]]] = None,
+        outputs: Optional[Dict[str, Union[str, DatasetConfig]]] = None,
         wait: bool = True,
         job_name: Optional[str] = None,
         show_logs: bool = True,
@@ -481,6 +473,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         outputs = self.build_outputs(
             job_name=job_name,
             output_channels=algo_spec.output_channels,
+            outputs=outputs,
         )
         return self._submit(
             job_name=job_name,
@@ -617,6 +610,7 @@ class ModelTrainingRecipe(ModelRecipe):
     def train(
         self,
         inputs: Optional[Dict[str, Union[str, DatasetConfig]]] = None,
+        outputs: Optional[Dict[str, Union[str, DatasetConfig]]] = None,
         wait: bool = True,
         job_name: Optional[str] = None,
         show_logs: bool = True,
@@ -628,6 +622,9 @@ class ModelTrainingRecipe(ModelRecipe):
                 used in the training job. The keys are the channel name and the values are
                 the URIs of the input data. If not specified, the default inputs will be
                 used.
+            outputs (Dict[str, Union[str, DatasetConfig]], optional): A dictionary of outputs
+                used in the training job. The keys are the channel name and the values are
+                the URIs or Dataset of the output data.
             wait (bool): Whether to wait for the job to complete before returning. Default
                 to True.
             job_name (str, optional): The name of the training job. If not provided, a default
@@ -640,6 +637,7 @@ class ModelTrainingRecipe(ModelRecipe):
         """
         return self.run(
             inputs=inputs,
+            outputs=outputs,
             wait=wait,
             job_name=job_name,
             show_logs=show_logs,

@@ -763,7 +763,7 @@ class _TrainingJobSubmitter(object):
     @classmethod
     def _get_input_config(
         cls, name: str, item: Union[str, "FileSystemInputBase", DatasetConfig]
-    ):
+    ) -> Union[UriInput, DatasetConfig]:
         """Get input uri for training_job from given input."""
         from pai.estimator import FileSystemInputBase
 

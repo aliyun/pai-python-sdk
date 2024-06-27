@@ -240,7 +240,6 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         """Test training registered model with temporary algorithm"""
         m = RegisteredModel(
             model_name="qwen1.5-0.5b-chat",
-            # model_version="0.1.0",
             model_provider="pai",
         )
 
@@ -251,7 +250,7 @@ class TestRegisteredModelTrainDeploy(BaseIntegTestCase):
         outputs_data = est.get_outputs_data()
         self.assertTrue(isinstance(outputs_data, dict))
         self.assertTrue(outputs_data)
-        self.assertTrue(len(outputs_data) == 1)
+        self.assertTrue(len(outputs_data) == 2)
 
         model_path = os.path.join(outputs_data["model"], "model.safetensors")
         self.assertTrue(self.is_oss_object_exists(model_path))
