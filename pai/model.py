@@ -1848,7 +1848,7 @@ class RegisteredModel(ModelBase):
         Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
 
         Args:
-            training_method (str, optional): Used to selected the training algorithm
+            training_method (str, optional): Used to select the training algorithm
                 that supported by the model. If not specified, the default training
                 algorithm will be retrieved from the model version.
             instance_type (str, optional): The machine instance type used to run the
@@ -1984,11 +1984,20 @@ class RegisteredModel(ModelBase):
             **kwargs,
         )
 
-    def get_estimator_inputs(self) -> Dict[str, str]:
+    def get_estimator_inputs(
+        self,
+        training_method: Optional[str] = None,
+    ) -> Dict[str, str]:
         """Get the AlgorithmEstimator's default input channels
 
         Get the AlgorithmEstimator's default input channels from RegisteredModel's
-        training_spec.
+        training_spec with the given training method. If the training method is not
+        specified, the default training method will be used.
+
+        Args:
+            training_method (str, optional): Used to select the training algorithm
+                that supported by the model. If not specified, the default training
+                algorithm will be retrieved from the model version.
 
         Returns:
             dict[str, str]: A dict of input channels.
@@ -1999,6 +2008,35 @@ class RegisteredModel(ModelBase):
             )
         ts = self.training_spec
         if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
+            # Support choosing training methods.
+            supported_training_methods = list(ts.keys())
+            if training_method and training_method not in supported_training_methods:
+                raise ValueError(
+                    "The model does not support the given training method:"
+                    f" {training_method}. Supported training methods are:"
+                    f" {supported_training_methods}."
+                )
+            elif training_method:
+                ts = ts.get(training_method)
+            else:
+                training_method = supported_training_methods[0]
+                logger.warning(
+                    "The training method is not specified, using the default training"
+                    " method: %s. Supported training methods are: %s.",
+                    training_method,
+                    supported_training_methods,
+                )
+                ts = ts.get(training_method)
+        else:
+            # Does not support training methods.
+            # Use default training spec.
+            if training_method:
+                raise ValueError(
+                    "The model does not support choosing training method. Do not"
+                    " specify the training method."
+                )
+
+        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
             raise ValueError(
                 "The provided registered model's training spec does not contain any"
                 " algorithms."
@@ -2007,11 +2045,26 @@ class RegisteredModel(ModelBase):
         input_channels = {}
         if "InputChannels" in ts:
             for i in ts["InputChannels"]:
-                input_channels.update(
-                    {
-                        i["Name"]: i["InputUri"],
-                    }
-                )
+                # Support both 'DatasetId' and 'InputUri' in the input channel.
+                if "DatasetId" in i:
+                    resp = self.session.dataset_api.get(i["DatasetId"])
+                    input_channels.update(
+                        {
+                            i["Name"]: resp["Uri"],
+                        }
+                    )
+                elif "InputUri" in i:
+                    input_channels.update(
+                        {
+                            i["Name"]: i["InputUri"],
+                        }
+                    )
+                else:
+                    raise ValueError(
+                        "The provided registered model's training spec contains an"
+                        " invalid input channel, which does not contain 'InputUri' or"
+                        " 'DatasetName'."
+                    )
         return input_channels
 
     def get_eval_processor(
