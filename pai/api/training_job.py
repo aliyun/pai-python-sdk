@@ -141,6 +141,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         else:
             raise ValueError("Please provide instance_type or instance_spec.")
 
+        hyperparameters = hyperparameters or dict()
         hyper_parameters = [
             CreateTrainingJobRequestHyperParameters(
                 name=name,

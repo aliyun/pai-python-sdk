@@ -1,5 +1,6 @@
 import json
 import os
+from itertools import islice
 
 from odps import ODPS
 from odps.accounts import StsAccount
@@ -40,7 +41,7 @@ def read_table():
     o = ODPS(account=account, project=project_name, endpoint=endpoint)
 
     # 读取输入表数据
-    for record in o.read_table(table_name):
+    for record in islice(o.read_table(table_name), 20):
         print(record)
 
 

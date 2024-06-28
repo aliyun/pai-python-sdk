@@ -16,9 +16,7 @@ from __future__ import absolute_import
 
 import logging
 import os
-import time
 import unittest
-from functools import wraps
 
 import oss2
 from odps import ODPS
@@ -136,27 +134,6 @@ class BaseIntegTestCase(unittest.TestCase):
         if cls.default_session.is_inner:
             PublicMaxComputeTableDataSet.set_dataset_project("pai_inner_project")
         cls.odps_client = cls._init_maxc_client()
-        cls.patch_model_deploy()
-
-    @classmethod
-    def patch_model_deploy(cls):
-        """Hack for model deploy wait for service ready."""
-        from pai.model import ModelBase
-
-        def deco(f):
-            @wraps(f)
-            def _(*args, **kwargs):
-                wait = kwargs.get("wait")
-                res = f(*args, **kwargs)
-                # wait is True which means deploy method should wait until the
-                # prediction service is 'really' ready.
-                if wait:
-                    time.sleep(15)
-                return res
-
-            return _
-
-        ModelBase.deploy = deco(ModelBase.deploy)
 
     @classmethod
     def tearDownClass(cls):
