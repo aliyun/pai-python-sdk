@@ -30,8 +30,7 @@ from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
 from .common import ProviderAlibabaPAI, git_utils
-from .common.configs import UserVpcConfig
-from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat
+from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
 from .common.docker_utils import ContainerRun, run_container
 from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
@@ -43,6 +42,7 @@ from .common.utils import (
 )
 from .exception import DuplicatedMountException
 from .image import ImageInfo
+from .job import InstanceSpec, ModelTrainingSpec, UriInput, UserVpcConfig
 from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
 from .serializers import SerializerBase
 from .session import Session, get_default_session
@@ -276,7 +276,9 @@ class InferenceSpec(object):
                 f"Input source code path should be a directory: {source_dir}."
             )
 
-        target_dir = session.get_storage_path_by_category(category="inference_src")
+        target_dir = session.get_storage_path_by_category(
+            category=StoragePathCategory.InferenceSrc
+        )
         # upload local script data to the OSS bucket.
         uploaded_source_code = upload(
             source_dir,
@@ -358,7 +360,9 @@ class InferenceSpec(object):
         elif os.path.exists(source):
             # if source is a local path, upload it to OSS bucket and use OSS URI
             # as storage source.
-            oss_path = session.get_storage_path_by_category("model_data")
+            oss_path = session.get_storage_path_by_category(
+                StoragePathCategory.ModelData
+            )
             oss_uri = upload(
                 source_path=source, oss_path=oss_path, bucket=session.oss_bucket
             )
@@ -589,12 +593,14 @@ def container_serving_spec(
         "image": image_uri,
         "port": port,
         "script": command,
-        "env": [
-            {"name": key, "value": str(value)}
-            for key, value in environment_variables.items()
-        ]
-        if environment_variables
-        else [],
+        "env": (
+            [
+                {"name": key, "value": str(value)}
+                for key, value in environment_variables.items()
+            ]
+            if environment_variables
+            else []
+        ),
     }
 
     if health_check:
@@ -757,7 +763,9 @@ class ModelBase(object):
         elif not os.path.exists(self.model_data):
             raise RuntimeError(f"Model data path does not exist: {self.model_data}")
 
-        dest_oss_path = self.session.get_storage_path_by_category(category="model_data")
+        dest_oss_path = self.session.get_storage_path_by_category(
+            category=StoragePathCategory.ModelData
+        )
         upload_model_data = upload(
             source_path=self.model_data,
             oss_path=dest_oss_path,
@@ -1229,9 +1237,9 @@ class ModelBase(object):
             framework_type=framework_type,
             training_spec=training_spec,
             evaluation_spec=evaluation_spec,
-            inference_spec=self.inference_spec.to_dict()
-            if self.inference_spec
-            else None,
+            inference_spec=(
+                self.inference_spec.to_dict() if self.inference_spec else None
+            ),
             approval_status=approval_status,
             metrics=metrics,
             options=options,
@@ -1832,6 +1840,36 @@ class RegisteredModel(ModelBase):
 
         return inference_spec.to_dict()
 
+    def get_training_spec(self, training_method: Optional[str]) -> ModelTrainingSpec:
+        if type(self)._is_multiple_spec(self.training_spec):
+            supported_training_methods = list(self.training_spec.keys())
+            if training_method and training_method not in supported_training_methods:
+                raise ValueError(
+                    "The model does not support the given training method:"
+                    f" {training_method}. Supported training methods are:"
+                    f" {supported_training_methods}."
+                )
+            elif training_method:
+                ts = self.training_spec.get(training_method)
+            else:
+                training_method = supported_training_methods[0]
+                logger.warning(
+                    "The training method is not specified, using the default training"
+                    " method: %s. Supported training methods are: %s.",
+                    training_method,
+                    supported_training_methods,
+                )
+                ts = self.training_spec.get(training_method)
+        else:
+            # Does not support training methods. # Use default training spec.
+            if training_method:
+                raise ValueError(
+                    "The model does not support choosing training method. Do not"
+                    " specify the training method."
+                )
+            ts = self.training_spec
+        return ModelTrainingSpec.model_validate(ts)
+
     def get_estimator(
         self,
         training_method: Optional[str] = None,
@@ -1848,7 +1886,7 @@ class RegisteredModel(ModelBase):
         Generate an AlgorithmEstimator object from RegisteredModel's training_spec.
 
         Args:
-            training_method (str, optional): Used to selected the training algorithm
+            training_method (str, optional): Used to select the training algorithm
                 that supported by the model. If not specified, the default training
                 algorithm will be retrieved from the model version.
             instance_type (str, optional): The machine instance type used to run the
@@ -1881,59 +1919,14 @@ class RegisteredModel(ModelBase):
             raise ValueError(
                 "The provided registered model does not contain training spec."
             )
-        ts = self.training_spec
-        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
-            # Support choosing training methods.
-            supported_training_methods = list(ts.keys())
-            if training_method and training_method not in supported_training_methods:
-                raise ValueError(
-                    "The model does not support the given training method:"
-                    f" {training_method}. Supported training methods are:"
-                    f" {supported_training_methods}."
-                )
-            elif training_method:
-                ts = ts.get(training_method)
-            else:
-                training_method = supported_training_methods[0]
-                logger.warning(
-                    "The training method is not specified, using the default training"
-                    " method: %s. Supported training methods are: %s.",
-                    training_method,
-                    supported_training_methods,
-                )
-                ts = ts.get(training_method)
-        else:
-            # Does not support training methods.
-            # Use default training spec.
-            if training_method:
-                raise ValueError(
-                    "The model does not support choosing training method. Do not"
-                    " specify the training method."
-                )
-
-        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
-            raise ValueError(
-                "The provided registered model's training spec does not contain any"
-                " algorithms."
-            )
-        if "AlgorithmSpec" in ts:
-            algorithm_spec = ts.get("AlgorithmSpec")
-            algorithm_name, algorithm_provider, algorithm_version = (None, None, None)
-        else:
-            algorithm_name, algorithm_provider, algorithm_version = (
-                ts.get("AlgorithmName"),
-                ts.get("AlgorithmProvider"),
-                ts.get("AlgorithmVersion"),
-            )
-            algorithm_spec = None
-
+        ts = self.get_training_spec(training_method=training_method)
         hyperparameters = hyperparameters or {}
         # TODO: validate the given hyperparameters via algorithm definition
-        for hp in ts.get("HyperParameters", []):
-            if hp["Name"] not in hyperparameters:
+        for hp in ts.hyperparameters:
+            if hp.name not in hyperparameters:
                 hyperparameters.update(
                     {
-                        hp["Name"]: hp["Value"],
+                        hp.name: hp.value,
                     }
                 )
 
@@ -1941,18 +1934,42 @@ class RegisteredModel(ModelBase):
             base_job_name = f"{self.model_name}_training" if self.model_name else None
 
         if not max_run_time:
-            max_run_time = ts.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
+            max_run_time = (
+                ts.scheduler.max_running_time_in_seconds if ts.scheduler else None
+            )
 
-        train_compute_resource = ts.get("ComputeResource")
+        resource_id = kwargs.get("resource_id")
         instance_spec = kwargs.get("instance_spec")
-        if train_compute_resource:
-            instance_type = instance_type or train_compute_resource.get("EcsSpec")
+        compute_resource = ts.compute_resource
+        if resource_id:
+            if instance_type:
+                logger.warning(
+                    "The instance type is ignored when resource_id is provided."
+                )
+            instance_spec = instance_type or compute_resource.instance_spec
+            if not instance_spec:
+                raise ValueError(
+                    "Instance spec is required when resource_id is provided."
+                )
+            instance_spec = InstanceSpec.model_validate(instance_spec)
             instance_count = (
                 instance_count
-                or train_compute_resource.get("EcsCount")
-                or train_compute_resource.get("InstanceCount")
+                or compute_resource.instance_count
+                or compute_resource.ecs_count
+                or 1
             )
-            instance_spec = instance_spec or train_compute_resource.get("InstanceSpec")
+        else:
+            if instance_spec:
+                logger.warning(
+                    "The instance spec is ignored when resource_id is not provided."
+                )
+            instance_type = instance_type or compute_resource.ecs_spec
+            instance_count = (
+                instance_count
+                or compute_resource.ecs_count
+                or compute_resource.instance_count
+                or 1
+            )
 
         labels = kwargs.pop("labels", dict())
         if self.model_provider == ProviderAlibabaPAI:
@@ -1969,10 +1986,10 @@ class RegisteredModel(ModelBase):
             labels = default_labels
 
         return AlgorithmEstimator(
-            algorithm_name=algorithm_name,
-            algorithm_version=algorithm_version,
-            algorithm_provider=algorithm_provider,
-            algorithm_spec=algorithm_spec,
+            algorithm_name=ts.algorithm_name,
+            algorithm_version=ts.algorithm_version,
+            algorithm_provider=ts.algorithm_provider,
+            algorithm_spec=ts.algorithm_spec,
             hyperparameters=hyperparameters,
             base_job_name=base_job_name,
             max_run_time=max_run_time,
@@ -1984,35 +2001,26 @@ class RegisteredModel(ModelBase):
             **kwargs,
         )
 
-    def get_estimator_inputs(self) -> Dict[str, str]:
+    def get_estimator_inputs(self, training_method=None) -> Dict[str, Any]:
         """Get the AlgorithmEstimator's default input channels
 
         Get the AlgorithmEstimator's default input channels from RegisteredModel's
         training_spec.
 
         Returns:
-            dict[str, str]: A dict of input channels.
+            Dict[str, str]: A dict of input channels.
         """
-        if not self.training_spec:
-            raise ValueError(
-                "The provided registered model does not contain training spec."
-            )
-        ts = self.training_spec
-        if "AlgorithmSpec" not in ts and "AlgorithmName" not in ts:
-            raise ValueError(
-                "The provided registered model's training spec does not contain any"
-                " algorithms."
-            )
+        default_inputs = (
+            self.get_training_spec(training_method=training_method).inputs or []
+        )
 
-        input_channels = {}
-        if "InputChannels" in ts:
-            for i in ts["InputChannels"]:
-                input_channels.update(
-                    {
-                        i["Name"]: i["InputUri"],
-                    }
-                )
-        return input_channels
+        ret = {}
+        for item in default_inputs:
+            if isinstance(item, UriInput):
+                ret[item.name] = item.input_uri
+            else:
+                ret[item.name] = item
+        return ret
 
     def get_eval_processor(
         self,
@@ -2066,47 +2074,44 @@ class RegisteredModel(ModelBase):
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."
             )
-
-        if "AlgorithmSpec" not in eval_spec:
+        eval_spec = ModelTrainingSpec.model_validate(eval_spec)
+        if not eval_spec.algorithm_spec:
             raise ValueError(
-                "The provided registered model's evaluation spec does not contain any"
-                " workload."
+                "Invalid evaluation spec, the evaluation spec does not contain any"
+                " configuration for the evaluation job."
             )
-        workload = eval_spec.get("AlgorithmSpec")
+        # workload = eval_spec.get("AlgorithmSpec")
 
         if not base_job_name:
             base_job_name = f"{self.model_name}_eval" if self.model_name else None
 
         parameters = parameters or dict()
-        for item in eval_spec.get("HyperParameters"):
-            name = item["Name"]
-            value = item["Value"]
-            if name not in parameters:
-                parameters[name] = value
 
+        for item in eval_spec.hyperparameters:
+            if item.name not in parameters:
+                parameters[item.name] = item.value
         if not max_run_time:
-            max_run_time = eval_spec.get("Scheduler", {}).get("MaxRunningTimeInSeconds")
+            max_run_time = eval_spec.scheduler.max_running_time_in_seconds
 
-        compute_resource = eval_spec.get("ComputeResource")
+        compute_resource = eval_spec.compute_resource
         if compute_resource and (not instance_type or not instance_count):
             # If instance_type or instance_count is not provided, use the default
-            instance_type = instance_type or compute_resource.get("EcsSpec")
-            instance_count = instance_count or compute_resource.get("EcsCount")
+            instance_type = instance_type or compute_resource.ecs_spec
+            instance_count = instance_count or compute_resource.ecs_count
 
         source_dir = None
-        code_dir = workload.get("CodeDir")
-        if code_dir and code_dir.get("LocationType") == "oss":
-            location = code_dir.get("LocationValue")
-            oss_path = OssUriObj.from_bucket_key_endpoint(
-                bucket_name=location.get("Bucket"),
-                object_key=location.get("Key"),
-                endpoint=location.get("Endpoint"),
-            )
-            source_dir = oss_path.uri
+        code_dir = eval_spec.algorithm_spec.code_dir
 
+        if code_dir and code_dir.location_type == "oss":
+            oss_uri_obj = OssUriObj.from_bucket_key_endpoint(
+                bucket_name=code_dir.location_value.bucket,
+                object_key=code_dir.location_value.key,
+                endpoint=code_dir.location_value.endpoint,
+            )
+            source_dir = oss_uri_obj.uri
         processor = Processor(
-            image_uri=workload.get("Image"),
-            command=" ".join(workload.get("Command")),
+            image_uri=eval_spec.algorithm_spec.image,
+            command=eval_spec.algorithm_spec.command,
             source_dir=source_dir,
             parameters=parameters,
             max_run_time=max_run_time,
@@ -2117,8 +2122,8 @@ class RegisteredModel(ModelBase):
             user_vpc_config=user_vpc_config,
             session=self.session,
         )
-        processor.set_input_channel_definitions(workload["InputChannels"])
-        processor.set_output_channel_definitions(workload["OutputChannels"])
+        processor.set_input_channels(eval_spec.algorithm_spec.input_channels)
+        processor.set_output_channels(eval_spec.algorithm_spec.output_channels)
 
         return processor
 
@@ -2135,17 +2140,17 @@ class RegisteredModel(ModelBase):
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."
             )
+        eval_spec = ModelTrainingSpec.model_validate(self.evaluation_spec)
+        inputs = eval_spec.inputs or []
+        res = {}
 
-        input_channels = {}
-        if "InputChannels" in self.evaluation_spec:
-            for i in self.evaluation_spec["InputChannels"]:
-                input_channels.update(
-                    {
-                        i["Name"]: i.get("InputUri") or i.get("DatasetId"),
-                    }
-                )
+        for item in inputs:
+            res[item.name] = item.input_uri if isinstance(item, UriInput) else item
+        return res
 
-        return input_channels
+    @classmethod
+    def _is_multiple_spec(cls, spec: Dict[str, Any]) -> bool:
+        return not ("AlgorithmSpec" in spec or "AlgorithmName" in spec)
 
     def _get_evaluation_spec(self):
         """Get the evaluation_spec of the registered model."""

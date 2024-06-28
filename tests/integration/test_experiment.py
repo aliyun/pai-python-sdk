@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import time
 
+from pai.common.utils import random_str
 from pai.experiment import Experiment
 from pai.tensorboard import TensorBoardStatus
 from tests.integration import BaseIntegTestCase
@@ -29,7 +29,7 @@ class TestExperiment(BaseIntegTestCase):
 
     def test_create(self):
         # Init test data
-        exp_name = "test_experiment_" + str(int(time.time()))
+        exp_name = "test_experiment_" + random_str(10)
         # Test create
         self.experiment = Experiment.create(
             artifact_uri=self.artifact_uri,
@@ -40,7 +40,7 @@ class TestExperiment(BaseIntegTestCase):
         self.assertEqual(self.experiment.tensorboard_data(), expected_tb_path)
 
     def test_update(self):
-        exp_name = "test_experiment_" + str(int(time.time()))
+        exp_name = "test_experiment_" + random_str(10)
         self.experiment = Experiment.create(
             artifact_uri=self.artifact_uri,
             name=exp_name,
@@ -51,7 +51,7 @@ class TestExperiment(BaseIntegTestCase):
         self.assertEqual(self.experiment.name, exp_name)
 
     def test_list(self):
-        exp_name = "test_experiment_" + str(int(time.time()))
+        exp_name = "test_experiment_" + random_str(10)
         self.experiment = Experiment.create(
             artifact_uri=self.artifact_uri,
             name=exp_name,
@@ -63,7 +63,7 @@ class TestExperiment(BaseIntegTestCase):
         self.assertEqual(experiment_names[0], exp_name)
 
     def test_get(self):
-        exp_name = "test_experiment_" + str(int(time.time()))
+        exp_name = "test_experiment_" + random_str(10)
         self.experiment = Experiment.create(
             artifact_uri=self.artifact_uri,
             name=exp_name,
@@ -75,7 +75,7 @@ class TestExperiment(BaseIntegTestCase):
         self.assertEqual(self.experiment.tensorboard_data(), exp1.tensorboard_data())
 
     def test_tensorboard(self):
-        exp_name = "test_experiment_" + str(int(time.time()))
+        exp_name = "test_experiment_" + random_str(10)
         self.experiment = Experiment.create(
             artifact_uri=self.artifact_uri,
             name=exp_name,
@@ -84,8 +84,8 @@ class TestExperiment(BaseIntegTestCase):
         tb = self.experiment.tensorboard()
         self.assertIsNotNone(tb.app_uri)
         self.assertEqual(tb.status, TensorBoardStatus.Running)
-        tb.stop()
+        tb.delete()
 
     def tearDown(self):
-        if self.experiment:
+        if hasattr(self, "experiment") and self.experiment:
             self.experiment.delete()

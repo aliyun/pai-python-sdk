@@ -135,7 +135,7 @@ class TestPipelineRun(BaseIntegTestCase):
             },
         )
 
-        with self.assertRaisesRegexp(ValueError, "name conflict") as _:
+        with self.assertRaisesRegex(ValueError, "name conflict") as _:
             _ = Pipeline(steps=[split_step_1, split_step_2])
 
     def test_auto_step_name(self):
@@ -207,7 +207,7 @@ class TestPipelineRun(BaseIntegTestCase):
         )
         data_source_step.after(type_transform_step)
 
-        with self.assertRaisesRegexp(ValueError, "Cycle dependency detected") as _:
+        with self.assertRaisesRegex(ValueError, "Cycle dependency detected") as _:
             _ = Pipeline(
                 steps=[type_transform_step, data_source_step],
             )

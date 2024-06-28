@@ -15,8 +15,9 @@
 import os
 
 from pai.common.utils import random_str
-from pai.experiment import Experiment, ExperimentConfig
+from pai.experiment import Experiment
 from pai.image import retrieve
+from pai.job import ExperimentConfig
 from pai.processor import Processor
 from pai.session import get_default_session
 from tests.integration import BaseIntegTestCase

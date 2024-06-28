@@ -25,7 +25,7 @@ PASSING_ENVIRONMENTS = {
     "PYTHONWARNINGS": "ignore",
 }
 
-UNIT_TEST_PYTHON_VERSIONS = ["3.6", "3.7", "3.8"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10"]
 INTEGRATION_TEST_PYTHON_VERSIONS = ["3.8"]
 TEST_VENV_BACKEND = os.environ.get("PAI_TEST_VENV_BACKEND", "conda")
 
@@ -54,9 +54,9 @@ def integration(session: Session):
         pos_args = session.posargs + ["-n", str(os.cpu_count() * 2)]
     else:
         pos_args = session.posargs
-
     session.run(
         "pytest",
+        "-vv",
         "--cov-config=.coveragerc",
         "--cov-append",
         "--cov-report=html",
@@ -77,8 +77,10 @@ def integration(session: Session):
 def unit(session: Session):
     """Run unit test."""
     install_test_dependencies(session=session)
+    # run test cases
     session.run(
         "pytest",
+        "-vv",
         "--cov-config=.coveragerc",
         "--cov-append",
         "--cov-report=html",
@@ -159,6 +161,7 @@ def notebook(session: Session):
 
     session.run(
         "pytest",
+        "-vv",
         "--timeout",
         "3000",
         "--nbmake",

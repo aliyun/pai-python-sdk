@@ -7,7 +7,7 @@ The PAI Python SDK is provided by Alibaba Cloud\'s [Platform for Artificial Inte
 
 ## Installation 🔧
 
-Install the PAI Python SDK using the following command, which supports Python versions \>= 3.6 (it is recommended to use Python \>= 3.8):
+Install the PAI Python SDK using the following command, which supports Python versions \>= 3.8 :
 
 ```shell
 python -m pip install alipai
