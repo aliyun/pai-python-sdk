@@ -282,7 +282,7 @@ class AlgorithmSpec(BaseAPIModel):
     code_dir: Optional[CodeDir] = Field(None, description="Source code location.")
 
 
-class ModelTrainingSpec(BaseAPIModel):
+class ModelRecipeSpec(BaseAPIModel):
     compute_resource: Optional[ComputeResource] = None
     hyperparameters: List[HyperParameter] = Field(
         default_factory=list, alias="HyperParameters"
@@ -298,9 +298,6 @@ class ModelTrainingSpec(BaseAPIModel):
     algorithm_name: Optional[str] = None
     environments: Optional[Dict[str, str]] = None
     requirements: Optional[List[str]] = None
-
-
-ModelEvaluationSpec = ModelTrainingSpec
 
 
 class TrainingJob(BaseAPIModel):
@@ -616,16 +613,17 @@ class _TrainingJobSubmitter(object):
         self,
         inputs: Dict[str, Any],
         input_channels: List[Channel],
-        default_inputs: List[Union[DatasetConfig, UriInput]] = None,
+        default_inputs: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, str]]:
         res = []
         inputs = inputs or dict()
         input_channels = input_channels or []
-        default_inputs = default_inputs or []
+        default_inputs = default_inputs or {}
 
-        input_keys = set(list(inputs.keys()) + [item.name for item in default_inputs])
-
-        requires = {ch.name for ch in input_channels if ch.required} - input_keys
+        inputs = {**default_inputs, **inputs}
+        requires = {ch.name for ch in input_channels if ch.required} - set(
+            inputs.keys()
+        )
         if requires:
             raise ValueError(
                 "Required input channels are not provided: {}".format(
@@ -635,9 +633,6 @@ class _TrainingJobSubmitter(object):
         for name, item in inputs.items():
             input_config = self._get_input_config(name, item)
             res.append(input_config.model_dump())
-
-        for item in default_inputs:
-            res.append(item.model_dump())
 
         return res
 
@@ -768,7 +763,7 @@ class _TrainingJobSubmitter(object):
     @classmethod
     def _get_input_config(
         cls, name: str, item: Union[str, "FileSystemInputBase", DatasetConfig]
-    ):
+    ) -> Union[UriInput, DatasetConfig]:
         """Get input uri for training_job from given input."""
         from pai.estimator import FileSystemInputBase
 
@@ -790,20 +785,18 @@ class _TrainingJobSubmitter(object):
                 name=name,
                 input_uri=item,
             )
-        elif os.path.exists(item):
-            store_path = Session.get_storage_path_by_category(
-                StoragePathCategory.InputData
-            )
-            input_ = UriInput(name=name, input_uri=upload(item, store_path))
-        elif is_dataset_id(item):
-            input_ = DatasetConfig(
-                dataset_id=item,
-                name=name,
-            )
+        elif isinstance(item, str):
+            if os.path.exists(item):
+                store_path = Session.get_storage_path_by_category(
+                    StoragePathCategory.InputData
+                )
+                input_ = UriInput(name=name, input_uri=upload(item, store_path))
+            else:
+                raise ValueError("Invalid input data path, file not found: {item}.")
         else:
             raise ValueError(
-                "Invalid input data, supported inputs are OSS, NAS, MaxCompute "
-                "table or local path."
+                f"Invalid input data, supported inputs are OSS, NAS, MaxCompute "
+                f"table or local path: {type(item)}."
             )
         return input_
 

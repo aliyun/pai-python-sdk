@@ -23,32 +23,34 @@ import tempfile
 import textwrap
 import time
 import typing
+import warnings
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
 from addict import Dict as AttrDict
 from oss2 import ObjectIterator
 
-from .common import ProviderAlibabaPAI, git_utils
-from .common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
-from .common.docker_utils import ContainerRun, run_container
-from .common.logging import get_logger
-from .common.oss_utils import OssUriObj, download, is_oss_uri, upload
-from .common.utils import (
+from ..common import ProviderAlibabaPAI, git_utils
+from ..common.consts import INSTANCE_TYPE_LOCAL_GPU, ModelFormat, StoragePathCategory
+from ..common.docker_utils import ContainerRun, run_container
+from ..common.logging import get_logger
+from ..common.oss_utils import OssUriObj, download, is_oss_uri, upload
+from ..common.utils import (
     generate_repr,
     is_local_run_instance_type,
     random_str,
     to_plain_text,
 )
-from .exception import DuplicatedMountException
-from .image import ImageInfo
-from .job import InstanceSpec, ModelTrainingSpec, UriInput, UserVpcConfig
-from .predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
-from .serializers import SerializerBase
-from .session import Session, get_default_session
+from ..exception import DuplicatedMountException
+from ..image import ImageInfo
+from ..job._training_job import InstanceSpec, ModelRecipeSpec, UriInput, UserVpcConfig
+from ..predictor import AsyncPredictor, LocalPredictor, Predictor, ServiceType
+from ..serializers import SerializerBase
+from ..session import Session, get_default_session
 
 if typing.TYPE_CHECKING:
-    from pai.estimator import AlgorithmEstimator
+    from ..estimator import AlgorithmEstimator
+    from ._model_recipe import ModelRecipe, ModelRecipeType, ModelTrainingRecipe
 
 logger = get_logger(__name__)
 
@@ -1465,6 +1467,7 @@ class RegisteredModel(ModelBase):
         self.model_version = self._model_version_info.get("VersionName")
         self.training_spec = self._model_version_info.get("TrainingSpec")
         self.evaluation_spec = self._model_version_info.get("EvaluationSpec")
+        self.compression_spec = self._model_version_info.get("CompressionSpec")
         self.model_labels = {
             lb["Key"]: lb["Value"] for lb in self._model_info.get("Labels", [])
         }
@@ -1840,35 +1843,52 @@ class RegisteredModel(ModelBase):
 
         return inference_spec.to_dict()
 
-    def get_training_spec(self, training_method: Optional[str]) -> ModelTrainingSpec:
-        if type(self)._is_multiple_spec(self.training_spec):
-            supported_training_methods = list(self.training_spec.keys())
-            if training_method and training_method not in supported_training_methods:
-                raise ValueError(
-                    "The model does not support the given training method:"
-                    f" {training_method}. Supported training methods are:"
-                    f" {supported_training_methods}."
-                )
-            elif training_method:
-                ts = self.training_spec.get(training_method)
-            else:
-                training_method = supported_training_methods[0]
-                logger.warning(
-                    "The training method is not specified, using the default training"
-                    " method: %s. Supported training methods are: %s.",
-                    training_method,
-                    supported_training_methods,
-                )
-                ts = self.training_spec.get(training_method)
+    def get_recipe_spec(
+        self, recipe_type: "ModelRecipeType", method: Optional[str] = None
+    ) -> ModelRecipeSpec:
+        from ._model_recipe import ModelRecipeType
+
+        if recipe_type == ModelRecipeType.TRAINING:
+            raw_spec = self.training_spec
+        elif recipe_type == ModelRecipeType.EVALUATION:
+            raw_spec = self.evaluation_spec
+        elif recipe_type == ModelRecipeType.COMPRESSION:
+            raw_spec = self.compression_spec
         else:
-            # Does not support training methods. # Use default training spec.
-            if training_method:
+            raise ValueError(
+                f"Invalid recipe_type: {recipe_type}. Supported recipe types are:"
+                f" {ModelRecipeType.supported_types()}"
+            )
+
+        if type(self)._is_multiple_spec(raw_spec):
+            supported_methods = list(raw_spec.keys())
+            if method and method not in supported_methods:
                 raise ValueError(
-                    "The model does not support choosing training method. Do not"
-                    " specify the training method."
+                    "The model recipe does not support the given method:"
+                    f" {method}. Supported methods are: {supported_methods}."
                 )
-            ts = self.training_spec
-        return ModelTrainingSpec.model_validate(ts)
+            elif method:
+                spec = raw_spec.get(method)
+            else:
+                method = supported_methods[0]
+                logger.warning(
+                    f"Model recipe contains multiple specs and method is not specified. "
+                    f"Default method is used: '{method}'. Supported training methods are:"
+                    f" {supported_methods}."
+                )
+                spec = raw_spec.get(method)
+        else:
+            if method:
+                raise ValueError(
+                    "The model recipe contains only one spec, do not specify the method."
+                )
+            spec = raw_spec
+        return ModelRecipeSpec.model_validate(spec)
+
+    def get_training_spec(self, training_method: Optional[str]) -> ModelRecipeSpec:
+        from ._model_recipe import ModelRecipeType
+
+        return self.get_recipe_spec(ModelRecipeType.TRAINING, training_method)
 
     def get_estimator(
         self,
@@ -1913,7 +1933,13 @@ class RegisteredModel(ModelBase):
         Returns:
             :class:`pai.estimator.AlgorithmEstimator`: An AlgorithmEstimator object.
         """
-        from .estimator import AlgorithmEstimator
+        from ..estimator import AlgorithmEstimator
+
+        warnings.warn(
+            "`.get_estimator` is deprecated and will be removed in a future version, you can now use "
+            "`.training_recipe` instead.",
+            category=FutureWarning,
+        )
 
         if not self.training_spec:
             raise ValueError(
@@ -2010,6 +2036,13 @@ class RegisteredModel(ModelBase):
         Returns:
             Dict[str, str]: A dict of input channels.
         """
+
+        warnings.warn(
+            "`.get_estimator_inputs` is deprecated and will be removed in a future version, you can now use "
+            "`.training_recipe().default_inputs` instead.",
+            category=FutureWarning,
+        )
+
         default_inputs = (
             self.get_training_spec(training_method=training_method).inputs or []
         )
@@ -2067,14 +2100,20 @@ class RegisteredModel(ModelBase):
         Returns:
             :class:`pai.processor.Processor`: An Processor object.
         """
-        from .processor import Processor
+        from ..processor import Processor
+
+        warnings.warn(
+            "`.get_eval_processor` is deprecated and will be removed in a future version, you can now use "
+            "`.model_recipe` instead.",
+            category=FutureWarning,
+        )
 
         eval_spec = self._get_evaluation_spec()
         if not eval_spec:
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."
             )
-        eval_spec = ModelTrainingSpec.model_validate(eval_spec)
+        eval_spec = ModelRecipeSpec.model_validate(eval_spec)
         if not eval_spec.algorithm_spec:
             raise ValueError(
                 "Invalid evaluation spec, the evaluation spec does not contain any"
@@ -2136,11 +2175,17 @@ class RegisteredModel(ModelBase):
         Returns:
             dict[str, str]: A dict of input channels.
         """
+        warnings.warn(
+            "`.get_eval_inputs` is deprecated and will be removed in a future version, you can now use "
+            "`.model_recipe().default_inputs` instead.",
+            category=FutureWarning,
+        )
+
         if not self.evaluation_spec:
             raise ValueError(
                 "The provided registered model does not contain evaluation spec."
             )
-        eval_spec = ModelTrainingSpec.model_validate(self.evaluation_spec)
+        eval_spec = ModelRecipeSpec.model_validate(self.evaluation_spec)
         inputs = eval_spec.inputs or []
         res = {}
 
@@ -2155,3 +2200,45 @@ class RegisteredModel(ModelBase):
     def _get_evaluation_spec(self):
         """Get the evaluation_spec of the registered model."""
         return self.evaluation_spec
+
+    def training_recipe(self, method: Optional[str] = None) -> "ModelTrainingRecipe":
+        """Get the training recipe of the registered model.
+
+        Args:
+            method (str, optional): The training method used to select the
+                specific training recipe.
+
+        Returns:
+            :class:`pai.model.ModelTrainingRecipe`: A ModelTrainingRecipe object.
+
+        """
+        from ._model_recipe import ModelTrainingRecipe
+
+        return ModelTrainingRecipe(
+            model_name=self.model_name,
+            model_version=self.model_version,
+            model_provider=self.model_provider,
+            method=method,
+        )
+
+    def model_recipe(
+        self, recipe_type: "ModelRecipeType", method: Optional[str] = None
+    ) -> "ModelRecipe":
+        """Initialize a ModelRecipe object from the recipe spec of the registered model.
+
+        Args:
+            recipe_type (ModelRecipeType): The recipe type used to select the specific model recipe.
+                supported recipe types are: "training", "evaluation", "compression".
+            method (str, optional): The method used to select the specific model recipe.
+
+        Returns:
+            :class:`pai.model.ModelRecipe`: A ModelRecipe object.
+
+        """
+        return ModelRecipe(
+            model_name=self.model_name,
+            model_version=self.model_version,
+            model_provider=self.model_provider,
+            recipe_type=recipe_type,
+            method=method,
+        )

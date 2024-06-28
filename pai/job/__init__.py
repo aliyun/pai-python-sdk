@@ -20,7 +20,7 @@ from ._training_job import (
     ExperimentConfig,
     HyperParameterDefinition,
     InstanceSpec,
-    ModelTrainingSpec,
+    ModelRecipeSpec,
     OssLocation,
     TrainingJob,
     TrainingJobStatus,
@@ -32,7 +32,7 @@ from ._training_job import (
 
 __all__ = [
     "TrainingJob",
-    "ModelTrainingSpec",
+    "ModelRecipeSpec",
     "TrainingJobStatus",
     "Channel",
     "HyperParameterDefinition",
