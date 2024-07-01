@@ -731,13 +731,16 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
         )
         return resp
 
-    def openai(self, **kwargs) -> "OpenAI":
+    def openai(self, url_suffix: str = "v1", **kwargs) -> "OpenAI":
         """Initialize an OpenAI client from the predictor.
 
         Only used for OpenAI API compatible services, such as Large Language Model
         service from PAI QuickStart.
 
         Args:
+            url_suffix (str, optional): URL suffix that will be appended to the
+                EAS service endpoint to form the base URL for the OpenAI client.
+                (Default "v1").
             **kwargs: Additional keyword arguments for the OpenAI client.
 
         Returns:
@@ -749,7 +752,11 @@ class Predictor(PredictorBase, _ServicePredictorMixin):
                 "openai package is not installed, install it with `pip install openai`."
             )
 
-        base_url = kwargs.pop("base_url", posixpath.join(self.endpoint + "v1/"))
+        if url_suffix.startswith("/"):
+            default_base_url = posixpath.join(self.endpoint, url_suffix[1:])
+        else:
+            default_base_url = posixpath.join(self.endpoint, url_suffix)
+        base_url = kwargs.pop("base_url", default_base_url)
         api_key = kwargs.pop("api_key", self.access_token)
 
         return OpenAI(base_url=base_url, api_key=api_key, **kwargs)
