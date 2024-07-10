@@ -6125,6 +6125,7 @@ class CreateTrainingJobRequest(TeaModel):
         training_job_name: str = None,
         user_vpc: CreateTrainingJobRequestUserVpc = None,
         workspace_id: str = None,
+        resource_type: str = None,
     ):
         self.algorithm_name = algorithm_name
         self.algorithm_provider = algorithm_provider
@@ -6148,6 +6149,7 @@ class CreateTrainingJobRequest(TeaModel):
         self.user_vpc = user_vpc
         # This parameter is required.
         self.workspace_id = workspace_id
+        self.resource_type = resource_type
 
     def validate(self):
         if self.algorithm_spec:
@@ -6235,6 +6237,8 @@ class CreateTrainingJobRequest(TeaModel):
             result['UserVpc'] = self.user_vpc.to_map()
         if self.workspace_id is not None:
             result['WorkspaceId'] = self.workspace_id
+        if self.resource_type is not None:
+            result['ResourceType'] = self.resource_type
         return result
 
     def from_map(self, m: dict = None):
@@ -6298,6 +6302,8 @@ class CreateTrainingJobRequest(TeaModel):
             self.user_vpc = temp_model.from_map(m['UserVpc'])
         if m.get('WorkspaceId') is not None:
             self.workspace_id = m.get('WorkspaceId')
+        if m.get('ResourceType') is not None:
+            self.resource_type = m.get('ResourceType')
         return self
 
 
