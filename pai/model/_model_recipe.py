@@ -29,6 +29,8 @@ from ..job._training_job import (
     InstanceSpec,
     ModelRecipeSpec,
     OssLocation,
+    ResourceType,
+    SpotSpec,
     TrainingJob,
     UriInput,
     UserVpcConfig,
@@ -99,6 +101,8 @@ class ModelRecipe(_TrainingJobSubmitter):
         instance_type: Optional[str] = None,
         instance_spec: Optional[InstanceSpec] = None,
         resource_id: Optional[str] = None,
+        resource_type: Optional[Union[str, ResourceType]] = None,
+        spot_spec: Optional[SpotSpec] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         labels: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
@@ -149,10 +153,12 @@ class ModelRecipe(_TrainingJobSubmitter):
         self.default_inputs = init_kwargs.default_inputs
 
         super().__init__(
+            resource_type=resource_type,
             base_job_name=base_job_name,
             experiment_config=experiment_config,
             resource_id=resource_id,
             user_vpc_config=user_vpc_config,
+            spot_spec=spot_spec,
             instance_type=init_kwargs.instance_type,
             instance_count=init_kwargs.instance_count,
             instance_spec=init_kwargs.instance_spec,
@@ -514,9 +520,10 @@ class ModelTrainingRecipe(ModelRecipe):
         command: Union[str, List[str]] = None,
         instance_count: Optional[int] = None,
         instance_type: Optional[str] = None,
+        spot_spec: Optional[SpotSpec] = None,
         instance_spec: Optional[InstanceSpec] = None,
         resource_id: Optional[str] = None,
-        use_spot_instance: bool = False,
+        resource_type: Optional[Union[str, ResourceType]] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         labels: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
@@ -568,8 +575,11 @@ class ModelTrainingRecipe(ModelRecipe):
                 be provided when the instance spec is set. Default to None.
             resource_id (str, optional): The ID of the resource group used to run the
                 training job. Default to None.
-            use_spot_instance (bool): Specifies whether to use spot instance to run the
-                job. Only available for public resource group.
+            spot_spec (:class:`pai.model.SpotSpec`, optional): The spot instance config
+                used to run the training job. If provided, spot instance will be used.
+            resource_type (str, optional): The resource type used to run the training job.
+                By default, general computing resource is used. If the resource_type is
+                'Lingjun', Lingjun computing resource is used.
             user_vpc_config (:class:`pai.model.UserVpcConfig`, optional): The VPC
                 configuration used to enable the job instance to connect to the
                 specified user VPC. Default to None.
@@ -597,7 +607,9 @@ class ModelTrainingRecipe(ModelRecipe):
             instance_count=instance_count,
             instance_type=instance_type,
             instance_spec=instance_spec,
+            resource_type=resource_type,
             resource_id=resource_id,
+            spot_spec=spot_spec,
             user_vpc_config=user_vpc_config,
             labels=labels,
             requirements=requirements,

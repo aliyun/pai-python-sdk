@@ -17,6 +17,7 @@ import posixpath
 import time
 import typing
 from concurrent.futures import ThreadPoolExecutor
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -53,6 +54,19 @@ def as_oss_dir_uri(uri: str):
 DEFAULT_OUTPUT_MODEL_CHANNEL_NAME = "model"
 DEFAULT_CHECKPOINT_CHANNEL_NAME = "checkpoints"
 DEFAULT_TENSORBOARD_CHANNEL_NAME = "tensorboard"
+
+
+class SpotStrategy(str, Enum):
+    SpotWithPriceLimit = "SpotWithPriceLimit"
+    SpotAsPriceGo = "SpotAsPriceGo"
+
+    def __repr__(self):
+        return self.value
+
+
+class ResourceType(str, Enum):
+    Lingjun = "Lingjun"
+    General = "General"
 
 
 class BaseAPIModel(BaseModel):
@@ -300,6 +314,19 @@ class ModelRecipeSpec(BaseAPIModel):
     requirements: Optional[List[str]] = None
 
 
+class SpotSpec(BaseAPIModel):
+    spot_strategy: SpotStrategy = Field(
+        ...,
+        description="Spot instance strategy, support 'SpotWithPriceLimit', 'SpotAsPriceGo'",
+    )
+    spot_discount_limit: Optional[float] = Field(
+        None,
+        description="Spot instance discount limit, maximum 2 decimal places, "
+        "required when spot_strategy is 'SpotWithPriceLimit'."
+        "For example, 0.5 means 50% off the original price.",
+    )
+
+
 class TrainingJob(BaseAPIModel):
     """TrainingJob represents a training job in the PAI service."""
 
@@ -542,7 +569,8 @@ class _TrainingJobSubmitter(object):
         instance_spec: Optional[Dict] = None,
         instance_count: Optional[int] = None,
         resource_id: Optional[Dict] = None,
-        use_spot_instance: bool = False,
+        resource_type: Optional[Union[str, ResourceType]] = None,
+        spot_spec: Optional[SpotSpec] = None,
         environments: Optional[Dict] = None,
         requirements: Optional[List[str]] = None,
         labels: Optional[Dict[str, str]] = None,
@@ -552,13 +580,14 @@ class _TrainingJobSubmitter(object):
         self.base_job_name = base_job_name or type(self).__name__.lower()
         self.output_path = output_path
         self.user_vpc_config = user_vpc_config
-        self.use_spot_instance = use_spot_instance
+        self.spot_spec = spot_spec
         self.experiment_config = experiment_config
         self.max_run_time = max_run_time
         self.instance_type = instance_type
         self.instance_spec = instance_spec
         self.instance_count = instance_count or 1
         self.resource_id = resource_id
+        self.resource_type = ResourceType(resource_type) if resource_type else None
         self.environments = environments
         self.requirements = requirements
         self.labels = labels
@@ -706,6 +735,7 @@ class _TrainingJobSubmitter(object):
 
         return [item.model_dump() for item in res]
 
+    # TODO: get arguments, such as VPCConfig, instance_type etc, from self instance.
     def _submit(
         self,
         job_name: str,
@@ -730,6 +760,20 @@ class _TrainingJobSubmitter(object):
         show_logs: bool = False,
     ):
         session = get_default_session()
+
+        if not self.resource_type or self.resource_type == ResourceType.General:
+            resource_type = None
+        else:
+            resource_type = self.resource_type.value
+
+        if self.spot_spec:
+            spot_spec = {
+                "SpotStrategy": self.spot_spec.spot_strategy.value,
+            }
+            if self.spot_spec.spot_discount_limit:
+                spot_spec["SpotDiscountLimit"] = self.spot_spec.spot_discount_limit
+        else:
+            spot_spec = None
         training_job_id = session.training_job_api.create(
             instance_count=instance_count,
             instance_spec=instance_spec.model_dump() if instance_spec else None,
@@ -740,10 +784,11 @@ class _TrainingJobSubmitter(object):
                 if experiment_config and isinstance(experiment_config, ExperimentConfig)
                 else experiment_config
             ),
-            use_spot_instance=self.use_spot_instance,
+            spot_spec=spot_spec,
             algorithm_version=algorithm_version,
             instance_type=instance_type,
             resource_id=resource_id,
+            resource_type=resource_type,
             job_name=job_name,
             hyperparameters=hyperparameters,
             max_running_in_seconds=max_run_time,

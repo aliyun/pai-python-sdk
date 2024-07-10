@@ -23,6 +23,7 @@ from .job import (
     Channel,
     CodeDir,
     ExperimentConfig,
+    SpotSpec,
     TrainingJob,
     UserVpcConfig,
     _TrainingJobSubmitter,
@@ -47,7 +48,8 @@ class Processor(_TrainingJobSubmitter):
         base_job_name: Optional[str] = None,
         output_path: Optional[str] = None,
         instance_type: Optional[str] = None,
-        use_spot_instance: bool = False,
+        spot_spec: Optional[SpotSpec] = None,
+        resource_type: Optional[str] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
@@ -142,9 +144,10 @@ class Processor(_TrainingJobSubmitter):
                 https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
                 If the instance_type is "local", the job is executed locally
                 using docker.
-            use_spot_instance (bool): Specifies whether to use spot instance to run the
-                job. Only available for public resource group.
             instance_count (int): The number of machines used to run the job.
+            resource_type (str, optional): The resource type used to run the training job.
+                By default, general computing resource is used. If the resource_type is
+                'Lingjun', Lingjun computing resource is used.
             user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
                 configuration used to enable the job instance to connect to the
                 specified user VPC. If provided, an Elastic Network Interface (ENI) will
@@ -173,6 +176,8 @@ class Processor(_TrainingJobSubmitter):
         self._input_channels = None
         self._output_channels = None
         super().__init__(
+            resource_type=resource_type,
+            spot_spec=spot_spec,
             base_job_name=base_job_name,
             output_path=output_path,
             experiment_config=experiment_config,

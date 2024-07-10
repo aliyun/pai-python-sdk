@@ -20,6 +20,7 @@ from ..libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequest,
     CreateTrainingJobRequestComputeResource,
     CreateTrainingJobRequestComputeResourceInstanceSpec,
+    CreateTrainingJobRequestComputeResourceSpotSpec,
     CreateTrainingJobRequestExperimentConfig,
     CreateTrainingJobRequestHyperParameters,
     CreateTrainingJobRequestInputChannels,
@@ -86,9 +87,10 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         instance_type,
         instance_count,
         job_name,
-        use_spot_instance: bool = False,
+        spot_spec: Optional[Dict[str, Any]] = None,
         instance_spec: Optional[Dict[str, str]] = None,
         resource_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
         input_channels: Optional[List[Dict[str, Any]]] = None,
         output_channels: Optional[List[Dict[str, Any]]] = None,
@@ -127,9 +129,16 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             for ch in output_channels
         ]
         if instance_type:
+            spot_spec = (
+                CreateTrainingJobRequestComputeResourceSpotSpec().from_map(spot_spec)
+                if spot_spec
+                else None
+            )
             compute_resource = CreateTrainingJobRequestComputeResource(
                 ecs_count=instance_count,
                 ecs_spec=instance_type,
+                use_spot_instance=bool(spot_spec),
+                spot_spec=spot_spec,
             )
         elif instance_spec:
             compute_resource = CreateTrainingJobRequestComputeResource(
@@ -138,7 +147,6 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
                 instance_spec=CreateTrainingJobRequestComputeResourceInstanceSpec().from_map(
                     instance_spec
                 ),
-                use_spot_instance=use_spot_instance,
             )
         else:
             raise ValueError("Please provide instance_type or instance_spec.")

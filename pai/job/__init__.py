@@ -22,6 +22,7 @@ from ._training_job import (
     InstanceSpec,
     ModelRecipeSpec,
     OssLocation,
+    SpotSpec,
     TrainingJob,
     TrainingJobStatus,
     UriInput,
@@ -45,4 +46,5 @@ __all__ = [
     "ExperimentConfig",
     "InstanceSpec",
     "UriInput",
+    "SpotSpec",
 ]
