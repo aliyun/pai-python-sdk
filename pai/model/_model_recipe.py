@@ -435,8 +435,10 @@ class ModelRecipe(_TrainingJobSubmitter):
             image=self.image_uri,
             job_type=self.job_type,
             code_dir=code_input,
-            output_channels=self._default_training_output_channels(),
-            input_channels=[
+            output_channels=self.output_channels
+            or self._default_training_output_channels(),
+            input_channels=self.input_channels
+            or [
                 Channel(name=channel_name, required=False)
                 for channel_name in inputs.keys()
             ],
