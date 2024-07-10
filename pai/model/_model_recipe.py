@@ -146,6 +146,8 @@ class ModelRecipe(_TrainingJobSubmitter):
         self.image_uri = init_kwargs.image_uri
         self.command = init_kwargs.command
         self.source_dir = init_kwargs.source_dir
+        self.input_channels = init_kwargs.input_channels
+        self.output_channels = init_kwargs.output_channels
         self.default_inputs = init_kwargs.default_inputs
 
         super().__init__(
@@ -395,8 +397,10 @@ class ModelRecipe(_TrainingJobSubmitter):
             image=self.image_uri,
             job_type=self.job_type,
             code_dir=code_input,
-            output_channels=self._default_training_output_channels(),
-            input_channels=[
+            output_channels=self.output_channels
+            or self._default_training_output_channels(),
+            input_channels=self.input_channels
+            or [
                 Channel(name=channel_name, required=False)
                 for channel_name in inputs.keys()
             ],
