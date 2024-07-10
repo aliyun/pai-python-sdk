@@ -159,6 +159,8 @@ class ModelRecipe(_TrainingJobSubmitter):
         self.default_inputs = init_kwargs.default_inputs
         self.customization = init_kwargs.customization
         self.supported_instance_types = init_kwargs.supported_instance_types
+        self.input_channels = init_kwargs.input_channels
+        self.output_channels = init_kwargs.output_channels
 
         super().__init__(
             resource_type=resource_type,

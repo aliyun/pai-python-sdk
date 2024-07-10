@@ -35,6 +35,7 @@ from .job._training_job import (
     DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
     DEFAULT_TENSORBOARD_CHANNEL_NAME,
     ExperimentConfig,
+    ResourceType,
     SpotSpec,
     UserVpcConfig,
 )
@@ -191,7 +192,7 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         spot_spec: Optional[SpotSpec] = None,
         instance_spec: Optional[Dict] = None,
         resource_id: Optional[Dict] = None,
-        resource_type: Optional[str] = None,
+        resource_type: Optional[Union[str, ResourceType]] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,

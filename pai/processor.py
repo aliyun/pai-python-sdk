@@ -29,6 +29,7 @@ from .job import (
     UserVpcConfig,
     _TrainingJobSubmitter,
 )
+from .job._training_job import ResourceType
 from .session import Session, get_default_session
 
 logger = get_logger(__name__)
@@ -50,7 +51,7 @@ class Processor(_TrainingJobSubmitter):
         output_path: Optional[str] = None,
         instance_type: Optional[str] = None,
         spot_spec: Optional[SpotSpec] = None,
-        resource_type: Optional[str] = None,
+        resource_type: Optional[Union[str, ResourceType]] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
