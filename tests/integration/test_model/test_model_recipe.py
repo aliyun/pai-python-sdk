@@ -68,7 +68,7 @@ class TestModelRecipe(BaseIntegTestCase):
     @skipIf(t_context.support_spot_instance, "Skip spot instance test")
     def test_spot_instance(self):
         training_recipe = ModelTrainingRecipe(
-            model_name="qwen1.5-7b-chat",
+            model_name="qwen2-7b-instruct",
             model_provider="pai",
             method="Standard",
             resource_type=ResourceType.Lingjun,

@@ -289,11 +289,14 @@ class AlgorithmSpec(BaseAPIModel):
     )
     hyperparameter_definitions: List[HyperParameterDefinition] = Field(
         default_factory=list,
-        alias="HyperParameter",
+        alias="HyperParameters",
         description="Hyperparameter definitions.",
     )
     job_type: str = Field(default="PyTorchJob")
     code_dir: Optional[CodeDir] = Field(None, description="Source code location.")
+    customization: Optional[Dict[str, Any]] = Field(
+        None, description="Whether the algorithm supports customize code."
+    )
 
 
 class ModelRecipeSpec(BaseAPIModel):
@@ -574,6 +577,7 @@ class _TrainingJobSubmitter(object):
         environments: Optional[Dict] = None,
         requirements: Optional[List[str]] = None,
         labels: Optional[Dict[str, str]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ):
         self.session = get_default_session()
         self._training_jobs = []
@@ -590,6 +594,7 @@ class _TrainingJobSubmitter(object):
         self.resource_type = ResourceType(resource_type) if resource_type else None
         self.environments = environments
         self.requirements = requirements
+        self.settings = settings
         self.labels = labels
 
     def wait(self, interval: int = 5, show_logs: bool = True, all_jobs: bool = False):
@@ -799,6 +804,7 @@ class _TrainingJobSubmitter(object):
             user_vpc_config=user_vpc_config,
             labels=labels,
             environments=environments,
+            settings=self.settings,
         )
         training_job = TrainingJob.get(training_job_id)
         self._training_jobs.append(training_job)

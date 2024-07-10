@@ -195,6 +195,7 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        settings: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
@@ -279,6 +280,8 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
                 training job and the experiment. If provided, the training job will belong
                 to the specified experiment, in which case the training job will use
                 artifact_uri of experiment as default output path. Default to None.
+            settings (dict, optional): A dictionary that represents the additional settings
+                for job, such as AIMaster configurations.
             labels (Dict[str, str], optional): A dictionary that maps label names to
                 their values. This optional field allows you to provide a set of labels
                 that will be applied to the training job.
@@ -303,6 +306,7 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
             max_run_time=max_run_time,
             environments=environments,
             requirements=requirements,
+            settings=settings,
             labels=labels,
         )
 

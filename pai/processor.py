@@ -25,6 +25,7 @@ from .job import (
     ExperimentConfig,
     SpotSpec,
     TrainingJob,
+    UriOutput,
     UserVpcConfig,
     _TrainingJobSubmitter,
 )
@@ -53,6 +54,7 @@ class Processor(_TrainingJobSubmitter):
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        settings: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
@@ -158,6 +160,8 @@ class Processor(_TrainingJobSubmitter):
                 experiment configuration used to construct the relationship between the
                 job and the experiment. If provided, the training job will belong to the
                 specified experiment, in which case the job will use artifact_uri of
+            settings (dict, optional): A dictionary that represents the additional settings
+                for job, such as AIMaster configurations.
                 experiment as default output path. Default to None.
             labels (Dict[str, str], optional): A dictionary that maps label names to
                 their values. This optional field allows you to provide a set of labels
@@ -188,6 +192,7 @@ class Processor(_TrainingJobSubmitter):
             environments=environments,
             requirements=requirements,
             labels=labels,
+            settings=settings,
         )
 
     def run(
@@ -315,8 +320,8 @@ class Processor(_TrainingJobSubmitter):
             raise RuntimeError("Current no Job for the processor.")
 
         return {
-            ch["Name"]: ch["OutputUri"] or ch["DatasetId"]
-            for ch in self.latest_job.output_channels
+            ch.name: ch.output_uri if isinstance(ch, UriOutput) else ch.dataset_id
+            for ch in self.latest_job.outputs
         }
 
     def set_input_channels(self, channels: List[Channel]):

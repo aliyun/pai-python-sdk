@@ -53,6 +53,7 @@ class RecipeInitKwargs(object):
     model_channel_name: Optional[str]
     model_uri: Optional[str]
     hyperparameters: Optional[Dict[str, Any]]
+    # hyperparameter_definitions: Optional[List[HyperParameterDefinition]]
     job_type: Optional[str]
     image_uri: Optional[str]
     source_dir: Optional[str]
@@ -68,6 +69,8 @@ class RecipeInitKwargs(object):
     input_channels: Optional[List[Channel]]
     output_channels: Optional[List[Channel]]
     default_inputs: Optional[Union[UriInput, DatasetConfig]]
+    customization: Optional[Dict[str, Any]]
+    supported_instance_types: Optional[List[str]]
 
 
 class ModelRecipeType(enum.Enum):
@@ -113,6 +116,8 @@ class ModelRecipe(_TrainingJobSubmitter):
         max_run_time: Optional[int] = None,
         default_inputs: Optional[Dict[str, Any]] = None,
         base_job_name: Optional[str] = None,
+        supported_instance_type: Optional[List[str]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ):
         init_kwargs = self._init_kwargs(
             model_name=model_name,
@@ -138,6 +143,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             output_channels=output_channels,
             default_inputs=default_inputs,
             max_run_time=max_run_time,
+            supported_instance_types=supported_instance_type,
         )
         self.model_name = init_kwargs.model_name
         self.model_version = init_kwargs.model_version
@@ -151,6 +157,8 @@ class ModelRecipe(_TrainingJobSubmitter):
         self.command = init_kwargs.command
         self.source_dir = init_kwargs.source_dir
         self.default_inputs = init_kwargs.default_inputs
+        self.customization = init_kwargs.customization
+        self.supported_instance_types = init_kwargs.supported_instance_types
 
         super().__init__(
             resource_type=resource_type,
@@ -166,6 +174,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             environments=init_kwargs.environments,
             requirements=init_kwargs.requirements,
             labels=init_kwargs.labels,
+            settings=settings,
         )
 
     @classmethod
@@ -194,6 +203,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         input_channels: List[Channel] = None,
         output_channels: List[Channel] = None,
         default_inputs: Optional[Union[UriInput, DatasetConfig]] = None,
+        supported_instance_types: Optional[List[str]] = None,
     ) -> RecipeInitKwargs:
         model = (
             RegisteredModel(
@@ -210,6 +220,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             else None
         )
         model_uri = model_uri or (model and model.uri)
+        customization = None
         if not model_recipe_spec:
             return RecipeInitKwargs(
                 model_name=model_name,
@@ -234,6 +245,8 @@ class ModelRecipe(_TrainingJobSubmitter):
                 output_channels=output_channels,
                 max_run_time=max_run_time,
                 default_inputs=default_inputs,
+                customization=customization,
+                supported_instance_types=supported_instance_types,
             )
         if not model_uri:
             input_ = next(
@@ -263,22 +276,31 @@ class ModelRecipe(_TrainingJobSubmitter):
                 else:
                     default_inputs[item.name] = item
         algorithm_spec = cls._get_algorithm_spec(model_recipe_spec)
+        supported_instance_types = (
+            supported_instance_types or model_recipe_spec.supported_instance_types
+        )
         if algorithm_spec:
             if (
                 not source_dir
                 and algorithm_spec.code_dir
-                and isinstance(algorithm_spec.code_dir, OssLocation)
+                and isinstance(algorithm_spec.code_dir.location_value, OssLocation)
             ):
-                source_dir = f"oss://{0}.{1}/{2}".format(
-                    algorithm_spec.code_dir.bucket,
-                    algorithm_spec.code_dir.endpoint,
-                    algorithm_spec.code_dir.key.lstrip("/"),
-                )
+                oss_location = algorithm_spec.code_dir.location_value
+                if oss_location.endpoint:
+                    source_dir = f"oss://{oss_location.bucket}.{oss_location.endpoint}/{oss_location.key.lstrip('/')}"
+                else:
+                    source_dir = (
+                        f"oss://{oss_location.bucket}/{oss_location.key.lstrip('/')}"
+                    )
             image_uri = image_uri or algorithm_spec.image
             command = command or algorithm_spec.command
             job_type = job_type or algorithm_spec.job_type
             input_channels = input_channels or algorithm_spec.input_channels
             output_channels = output_channels or algorithm_spec.output_channels
+            customization = algorithm_spec.customization
+            supported_instance_types = (
+                supported_instance_types or algorithm_spec.supported_channel_types
+            )
 
         instance_type, instance_spec, instance_count = cls._get_compute_resource_config(
             instance_type=instance_type,
@@ -286,6 +308,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             instance_count=instance_count,
             resource_id=resource_id,
             compute_resource=model_recipe_spec.compute_resource,
+            supported_instance_types=supported_instance_types,
         )
         hyperparameters = hyperparameters or {}
         hyperparameters = {
@@ -301,6 +324,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         }
         requirements = requirements or model_recipe_spec.requirements
         environments = environments or model_recipe_spec.environments
+
         return RecipeInitKwargs(
             model_name=model_name,
             model_version=model_version,
@@ -324,6 +348,8 @@ class ModelRecipe(_TrainingJobSubmitter):
             output_channels=output_channels,
             resource_id=resource_id,
             default_inputs=default_inputs,
+            customization=customization,
+            supported_instance_types=supported_instance_types,
         )
 
     @staticmethod
@@ -333,6 +359,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         instance_spec: InstanceSpec,
         resource_id: str,
         compute_resource: ComputeResource,
+        supported_instance_types: List[str],
     ) -> Tuple[str, InstanceSpec, int]:
         if resource_id:
             if instance_type:
@@ -361,7 +388,12 @@ class ModelRecipe(_TrainingJobSubmitter):
                 compute_resource and compute_resource.ecs_spec
             )
             if not instance_type:
-                raise ValueError("No instance type is specified for the training job")
+                if not supported_instance_types:
+                    raise ValueError(
+                        "No instance type is specified for the training job"
+                    )
+                else:
+                    instance_type = supported_instance_types[0]
             instance_count = (
                 instance_count or (compute_resource and compute_resource.ecs_count) or 1
             )
@@ -406,6 +438,7 @@ class ModelRecipe(_TrainingJobSubmitter):
                 Channel(name=channel_name, required=False)
                 for channel_name in inputs.keys()
             ],
+            customization=self.customization,
         )
         return algorithm_spec
 
@@ -534,6 +567,7 @@ class ModelTrainingRecipe(ModelRecipe):
         max_run_time: Optional[int] = None,
         default_training_inputs: Optional[Dict[str, Any]] = None,
         base_job_name: Optional[str] = None,
+        **kwargs,
     ):
         """Initialize a ModelTrainingRecipe object.
 
@@ -620,6 +654,7 @@ class ModelTrainingRecipe(ModelRecipe):
             max_run_time=max_run_time,
             default_inputs=default_training_inputs,
             base_job_name=base_job_name,
+            **kwargs,
         )
 
     def train(

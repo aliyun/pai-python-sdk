@@ -27,6 +27,7 @@ from ..libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequestLabels,
     CreateTrainingJobRequestOutputChannels,
     CreateTrainingJobRequestScheduler,
+    CreateTrainingJobRequestSettings,
     CreateTrainingJobRequestUserVpc,
     CreateTrainingJobResponseBody,
     GetTrainingJobRequest,
@@ -105,6 +106,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         algorithm_spec: Optional[Dict[str, Any]] = None,
         user_vpc_config: Optional[Dict[str, Any]] = None,
         experiment_config: Optional[Dict[str, Any]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create a TrainingJob."""
         if algorithm_spec and (
@@ -179,6 +181,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             compute_resource=compute_resource,
             hyper_parameters=hyper_parameters,
             input_channels=input_channels,
+            resource_type=resource_type,
             environments=environments,
             python_requirements=requirements,
             labels=labels,
@@ -190,6 +193,11 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             user_vpc=CreateTrainingJobRequestUserVpc().from_map(user_vpc_config),
             experiment_config=CreateTrainingJobRequestExperimentConfig().from_map(
                 experiment_config
+            ),
+            settings=(
+                CreateTrainingJobRequestSettings().from_map(settings)
+                if settings
+                else None
             ),
         )
 
