@@ -15,7 +15,7 @@
 import os
 import posixpath
 import re
-from unittest import skipUnless
+from unittest import skipIf, skipUnless
 
 import pytest
 
@@ -24,7 +24,7 @@ from pai.common.utils import random_str
 from pai.estimator import AlgorithmEstimator, Estimator
 from pai.experiment import Experiment
 from pai.image import retrieve
-from pai.job._training_job import ExperimentConfig
+from pai.job._training_job import ExperimentConfig, ResourceType, SpotSpec
 from pai.session import get_default_session
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context
@@ -72,10 +72,23 @@ class TestEstimator(BaseIntegTestCase):
                 "test": self.breast_cancer_test_data_uri,
             },
         )
-
         model_path = os.path.join(os.path.join(est.model_data(), "model.json"))
-
         self.assertTrue(self.is_oss_object_exists(model_path))
+
+    @skipIf(t_context.support_spot_instance, "Skip spot instance test")
+    def test_use_spot_instance(self):
+        xgb_image_uri = retrieve("xgboost", framework_version="latest").image_uri
+        est = Estimator(
+            command="echo helloworld",
+            instance_type="ml.gu7ef.8xlarge-gu100",
+            image_uri=xgb_image_uri,
+            spot_spec=SpotSpec(
+                spot_strategy="SpotWithPriceLimit",
+                spot_discount_limit=0.5,
+            ),
+            resource_type=ResourceType.Lingjun,
+        )
+        est.fit()
 
     def test_torch_run(self):
         torch_image_uri = retrieve("pytorch", framework_version="1.12").image_uri

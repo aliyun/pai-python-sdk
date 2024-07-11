@@ -103,6 +103,10 @@ class TestContext(object):
     def is_inner(self):
         return self.pai_service_config.region_id == "center"
 
+    @property
+    def support_spot_instance(self):
+        return self.pai_service_config.region_id == "cn-wulanchabu"
+
     @classmethod
     def _load_test_config(cls):
         test_config = os.environ.get("PAI_TEST_CONFIG", "test.ini")

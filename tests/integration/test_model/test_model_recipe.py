@@ -12,12 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
+from unittest import skipIf
 
 import pytest
 
 from pai.common.utils import camel_to_snake, random_str
-from pai.model import RegisteredModel
+from pai.job import SpotSpec
+from pai.job._training_job import ResourceType
+from pai.model import ModelTrainingRecipe, RegisteredModel
 from tests.integration import BaseIntegTestCase
+from tests.integration.utils import t_context
 from tests.test_data import test_data_dir
 
 
@@ -60,6 +64,26 @@ class TestModelRecipe(BaseIntegTestCase):
             max_tokens=100,
         )
         self.assertIsNotNone(resp.choices[0].message.content)
+
+    @skipIf(t_context.support_spot_instance, "Skip spot instance test")
+    def test_spot_instance(self):
+        training_recipe = ModelTrainingRecipe(
+            model_name="qwen2-7b-instruct",
+            model_provider="pai",
+            method="Standard",
+            resource_type=ResourceType.Lingjun,
+            spot_spec=SpotSpec(
+                spot_strategy="SpotWithPriceLimit",
+                spot_discount_limit=0.5,
+            ),
+            instance_type="ml.gu7ef.8xlarge-gu100",
+        )
+        train_data = os.path.join(test_data_dir, "chinese_medical/train_sampled.json")
+        training_recipe.train(
+            inputs={
+                "train": train_data,
+            },
+        )
 
     def test_custom_inputs_train(self):
         model = RegisteredModel(model_name="qwen1.5-0.5b-chat", model_provider="pai")

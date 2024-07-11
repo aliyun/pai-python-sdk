@@ -35,6 +35,8 @@ from .job._training_job import (
     DEFAULT_OUTPUT_MODEL_CHANNEL_NAME,
     DEFAULT_TENSORBOARD_CHANNEL_NAME,
     ExperimentConfig,
+    ResourceType,
+    SpotSpec,
     UserVpcConfig,
 )
 from .model import InferenceSpec, Model, ResourceConfig
@@ -187,11 +189,14 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
         environments: Optional[Dict[str, str]] = None,
         requirements: Optional[List[str]] = None,
         instance_type: Optional[str] = None,
+        spot_spec: Optional[SpotSpec] = None,
         instance_spec: Optional[Dict] = None,
         resource_id: Optional[Dict] = None,
+        resource_type: Optional[Union[str, ResourceType]] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        settings: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
@@ -252,12 +257,18 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
                 'package' or 'package==version'. This is similar to the contents of a requirements.txt file used
                 in Python projects. If requirements.txt is provided in user code directory, requirements
                 will override the conflict dependencies directly.
+            resource_type (str, optional): The resource type used to run the training job.
+                By default, general computing resource is used. If the resource_type is
+                'Lingjun', Lingjun computing resource is used.
             instance_type (str, optional): The machine instance type used to run the
                 training job. To view the supported machine instance types, please refer
                 to the document:
                 https://help.aliyun.com/document_detail/171758.htm#section-55y-4tq-84y.
                 If the instance_type is "local", the training job is executed locally
                 using docker.
+            spot_spec (:class:`pai.job.SpotSpec`, optional): The specification of the spot
+                instance used to run the training job. If provided, the training job will
+                use the spot instance to run the training job.
             instance_count (int): The number of machines used to run the training job.
             user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
                 configuration used to enable the training job instance to connect to the
@@ -270,6 +281,8 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
                 training job and the experiment. If provided, the training job will belong
                 to the specified experiment, in which case the training job will use
                 artifact_uri of experiment as default output path. Default to None.
+            settings (dict, optional): A dictionary that represents the additional settings
+                for job, such as AIMaster configurations.
             labels (Dict[str, str], optional): A dictionary that maps label names to
                 their values. This optional field allows you to provide a set of labels
                 that will be applied to the training job.
@@ -287,11 +300,14 @@ class EstimatorBase(_TrainingJobSubmitter, metaclass=ABCMeta):
             instance_type=instance_type,
             instance_count=instance_count,
             resource_id=resource_id,
+            resource_type=resource_type,
+            spot_spec=spot_spec,
             instance_spec=instance_spec,
             user_vpc_config=user_vpc_config,
             max_run_time=max_run_time,
             environments=environments,
             requirements=requirements,
+            settings=settings,
             labels=labels,
         )
 

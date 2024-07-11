@@ -23,10 +23,13 @@ from .job import (
     Channel,
     CodeDir,
     ExperimentConfig,
+    SpotSpec,
     TrainingJob,
+    UriOutput,
     UserVpcConfig,
     _TrainingJobSubmitter,
 )
+from .job._training_job import ResourceType
 from .session import Session, get_default_session
 
 logger = get_logger(__name__)
@@ -47,9 +50,12 @@ class Processor(_TrainingJobSubmitter):
         base_job_name: Optional[str] = None,
         output_path: Optional[str] = None,
         instance_type: Optional[str] = None,
+        spot_spec: Optional[SpotSpec] = None,
+        resource_type: Optional[Union[str, ResourceType]] = None,
         instance_count: Optional[int] = None,
         user_vpc_config: Optional[UserVpcConfig] = None,
         experiment_config: Optional[ExperimentConfig] = None,
+        settings: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, str]] = None,
         session: Optional[Session] = None,
     ):
@@ -142,6 +148,9 @@ class Processor(_TrainingJobSubmitter):
                 If the instance_type is "local", the job is executed locally
                 using docker.
             instance_count (int): The number of machines used to run the job.
+            resource_type (str, optional): The resource type used to run the training job.
+                By default, general computing resource is used. If the resource_type is
+                'Lingjun', Lingjun computing resource is used.
             user_vpc_config (:class:`pai.estimator.UserVpcConfig`, optional): The VPC
                 configuration used to enable the job instance to connect to the
                 specified user VPC. If provided, an Elastic Network Interface (ENI) will
@@ -152,6 +161,8 @@ class Processor(_TrainingJobSubmitter):
                 experiment configuration used to construct the relationship between the
                 job and the experiment. If provided, the training job will belong to the
                 specified experiment, in which case the job will use artifact_uri of
+            settings (dict, optional): A dictionary that represents the additional settings
+                for job, such as AIMaster configurations.
                 experiment as default output path. Default to None.
             labels (Dict[str, str], optional): A dictionary that maps label names to
                 their values. This optional field allows you to provide a set of labels
@@ -170,6 +181,8 @@ class Processor(_TrainingJobSubmitter):
         self._input_channels = None
         self._output_channels = None
         super().__init__(
+            resource_type=resource_type,
+            spot_spec=spot_spec,
             base_job_name=base_job_name,
             output_path=output_path,
             experiment_config=experiment_config,
@@ -180,6 +193,7 @@ class Processor(_TrainingJobSubmitter):
             environments=environments,
             requirements=requirements,
             labels=labels,
+            settings=settings,
         )
 
     def run(
@@ -307,8 +321,8 @@ class Processor(_TrainingJobSubmitter):
             raise RuntimeError("Current no Job for the processor.")
 
         return {
-            ch["Name"]: ch["OutputUri"] or ch["DatasetId"]
-            for ch in self.latest_job.output_channels
+            ch.name: ch.output_uri if isinstance(ch, UriOutput) else ch.dataset_id
+            for ch in self.latest_job.outputs
         }
 
     def set_input_channels(self, channels: List[Channel]):
