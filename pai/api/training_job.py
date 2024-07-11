@@ -20,12 +20,14 @@ from ..libs.alibabacloud_paistudio20220112.models import (
     CreateTrainingJobRequest,
     CreateTrainingJobRequestComputeResource,
     CreateTrainingJobRequestComputeResourceInstanceSpec,
+    CreateTrainingJobRequestComputeResourceSpotSpec,
     CreateTrainingJobRequestExperimentConfig,
     CreateTrainingJobRequestHyperParameters,
     CreateTrainingJobRequestInputChannels,
     CreateTrainingJobRequestLabels,
     CreateTrainingJobRequestOutputChannels,
     CreateTrainingJobRequestScheduler,
+    CreateTrainingJobRequestSettings,
     CreateTrainingJobRequestUserVpc,
     CreateTrainingJobResponseBody,
     GetTrainingJobRequest,
@@ -86,8 +88,10 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         instance_type,
         instance_count,
         job_name,
+        spot_spec: Optional[Dict[str, Any]] = None,
         instance_spec: Optional[Dict[str, str]] = None,
         resource_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
         hyperparameters: Optional[Dict[str, Any]] = None,
         input_channels: Optional[List[Dict[str, Any]]] = None,
         output_channels: Optional[List[Dict[str, Any]]] = None,
@@ -102,6 +106,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
         algorithm_spec: Optional[Dict[str, Any]] = None,
         user_vpc_config: Optional[Dict[str, Any]] = None,
         experiment_config: Optional[Dict[str, Any]] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create a TrainingJob."""
         if algorithm_spec and (
@@ -126,9 +131,16 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             for ch in output_channels
         ]
         if instance_type:
+            spot_spec = (
+                CreateTrainingJobRequestComputeResourceSpotSpec().from_map(spot_spec)
+                if spot_spec
+                else None
+            )
             compute_resource = CreateTrainingJobRequestComputeResource(
                 ecs_count=instance_count,
                 ecs_spec=instance_type,
+                use_spot_instance=bool(spot_spec),
+                spot_spec=spot_spec,
             )
         elif instance_spec:
             compute_resource = CreateTrainingJobRequestComputeResource(
@@ -169,6 +181,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             compute_resource=compute_resource,
             hyper_parameters=hyper_parameters,
             input_channels=input_channels,
+            resource_type=resource_type,
             environments=environments,
             python_requirements=requirements,
             labels=labels,
@@ -180,6 +193,11 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             user_vpc=CreateTrainingJobRequestUserVpc().from_map(user_vpc_config),
             experiment_config=CreateTrainingJobRequestExperimentConfig().from_map(
                 experiment_config
+            ),
+            settings=(
+                CreateTrainingJobRequestSettings().from_map(settings)
+                if settings
+                else None
             ),
         )
 
