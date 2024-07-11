@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
-from unittest import skipIf
+from unittest import skipUnless
 
 import pytest
 
@@ -65,7 +65,7 @@ class TestModelRecipe(BaseIntegTestCase):
         )
         self.assertIsNotNone(resp.choices[0].message.content)
 
-    @skipIf(t_context.support_spot_instance, "Skip spot instance test")
+    @skipUnless(t_context.support_spot_instance, "Skip spot instance test")
     def test_spot_instance(self):
         training_recipe = ModelTrainingRecipe(
             model_name="qwen2-7b-instruct",
