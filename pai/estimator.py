@@ -1164,9 +1164,9 @@ class AlgorithmEstimator(EstimatorBase):
         if hps_def:
             # Get default hyperparameters.
             for hp in hps_def:
-                hp_name = hp.get("Name")
-                hp_value = hp.get("DefaultValue", "")
-                hp_type = hp.get("Type", "String")
+                hp_name = hp.name
+                hp_value = hp.default_value
+                hp_type = hp.type or "String"
                 # For hyperparameters with type INT or FLOAT, if the default value is
                 # empty, skip it.
                 if (
