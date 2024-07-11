@@ -90,7 +90,9 @@ class TestContext(object):
         return (
             shutil.which("docker") is not None
             and subprocess.run(
-                ["docker", "stats"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                ["docker", "stats", "--no-stream"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             ).returncode
             == 0
         )
