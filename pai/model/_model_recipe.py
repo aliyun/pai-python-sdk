@@ -26,6 +26,7 @@ from ..job._training_job import (
     ComputeResource,
     DatasetConfig,
     ExperimentConfig,
+    HyperParameterDefinition,
     InstanceSpec,
     ModelRecipeSpec,
     OssLocation,
@@ -53,7 +54,7 @@ class RecipeInitKwargs(object):
     model_channel_name: Optional[str]
     model_uri: Optional[str]
     hyperparameters: Optional[Dict[str, Any]]
-    # hyperparameter_definitions: Optional[List[HyperParameterDefinition]]
+    hyperparameter_definitions: Optional[List[HyperParameterDefinition]]
     job_type: Optional[str]
     image_uri: Optional[str]
     source_dir: Optional[str]
@@ -161,6 +162,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         self.supported_instance_types = init_kwargs.supported_instance_types
         self.input_channels = init_kwargs.input_channels
         self.output_channels = init_kwargs.output_channels
+        self.hyperparameter_definitions = init_kwargs.hyperparameter_definitions
 
         super().__init__(
             resource_type=resource_type,
@@ -249,6 +251,7 @@ class ModelRecipe(_TrainingJobSubmitter):
                 default_inputs=default_inputs,
                 customization=customization,
                 supported_instance_types=supported_instance_types,
+                hyperparameter_definitions=None,
             )
         if not model_uri:
             input_ = next(
@@ -281,6 +284,7 @@ class ModelRecipe(_TrainingJobSubmitter):
         supported_instance_types = (
             supported_instance_types or model_recipe_spec.supported_instance_types
         )
+        hyperparameter_definitions = None
         if algorithm_spec:
             if (
                 not source_dir
@@ -303,6 +307,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             supported_instance_types = (
                 supported_instance_types or algorithm_spec.supported_channel_types
             )
+            hyperparameter_definitions = algorithm_spec.hyperparameter_definitions
 
         instance_type, instance_spec, instance_count = cls._get_compute_resource_config(
             instance_type=instance_type,
@@ -352,6 +357,7 @@ class ModelRecipe(_TrainingJobSubmitter):
             default_inputs=default_inputs,
             customization=customization,
             supported_instance_types=supported_instance_types,
+            hyperparameter_definitions=hyperparameter_definitions,
         )
 
     @staticmethod
