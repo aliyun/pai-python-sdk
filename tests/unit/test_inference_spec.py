@@ -18,6 +18,7 @@ from pai.model import (
     NfsStorageConfig,
     NodeStorageConfig,
     OssStorageConfig,
+    RawStorageConfig,
     SharedMemoryConfig,
     container_serving_spec,
 )
@@ -134,6 +135,15 @@ class TestInferenceSpec(BaseUnitTestCase):
                 ),
                 SharedMemoryConfig(size_limit=64),
                 NodeStorageConfig(mount_path="/ml/disk/"),
+                RawStorageConfig(
+                    config={
+                        "image": {
+                            "image": "MyImageUri",
+                            "path": "/path/to/mount/",
+                        },
+                        "mount_path": "/data_image",
+                    }
+                ),
             ],
         )
 
@@ -155,6 +165,12 @@ class TestInferenceSpec(BaseUnitTestCase):
                 "mount_path": "/dev/shm",
             },
             {"empty_dir": {}, "mount_path": "/ml/disk/"},
+            {
+                "image": {
+                    "image": "MyImageUri",
+                    "path": "/path/to/mount/",
+                },
+                "mount_path": "/data_image",
+            },
         ]
-
         self.assertListEqual(truth, infer_spec.storage)
