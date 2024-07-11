@@ -94,11 +94,12 @@ class TestModelRecipe(BaseIntegTestCase):
         )
 
         train_data = os.path.join(test_data_dir, "chinese_medical/train_sampled.json")
-        training_recipe.train(
+        training_job = training_recipe.train(
             inputs={
                 "train": train_data,
             },
         )
+        self.assertIsNotNone(training_job)
         self.assertIsNotNone(training_recipe.model_data())
         predictor = training_recipe.deploy(
             service_name=self._gen_service_name("test_custom"),

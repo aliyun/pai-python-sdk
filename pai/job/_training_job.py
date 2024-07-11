@@ -813,6 +813,7 @@ class _TrainingJobSubmitter(object):
         )
         if wait:
             training_job.wait(show_logs=show_logs)
+        return training_job
 
     @classmethod
     def _get_input_config(

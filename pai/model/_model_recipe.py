@@ -684,6 +684,7 @@ class ModelTrainingRecipe(ModelRecipe):
             job_name (str, optional): The name of the training job. If not provided, a default
                 job name will be generated.
             show_logs (bool): Whether to show the logs of the training job. Default to True.
+                Note that the logs will be shown only when the `wait` is set to True.
 
         Returns:
             :class:`pai.training.TrainingJob`: A submitted training job.
