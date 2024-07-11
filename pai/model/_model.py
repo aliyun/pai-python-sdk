@@ -83,6 +83,14 @@ class StorageConfigBase(metaclass=ABCMeta):
         pass
 
 
+class RawStorageConfig(StorageConfigBase):
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+
+    def to_dict(self):
+        return self.config
+
+
 class OssStorageConfig(StorageConfigBase):
     """Configuration for OSS Storage."""
 

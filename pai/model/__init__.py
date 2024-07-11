@@ -20,6 +20,7 @@ from ._model import (
     NfsStorageConfig,
     NodeStorageConfig,
     OssStorageConfig,
+    RawStorageConfig,
     RegisteredModel,
     ResourceConfig,
     SharedMemoryConfig,
@@ -43,4 +44,5 @@ __all__ = [
     "NodeStorageConfig",
     "SharedMemoryConfig",
     "OssStorageConfig",
+    "RawStorageConfig",
 ]
