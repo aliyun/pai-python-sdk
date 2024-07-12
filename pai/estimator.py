@@ -1164,9 +1164,9 @@ class AlgorithmEstimator(EstimatorBase):
         if hps_def:
             # Get default hyperparameters.
             for hp in hps_def:
-                hp_name = hp.get("Name")
-                hp_value = hp.get("DefaultValue", "")
-                hp_type = hp.get("Type", "String")
+                hp_name = hp.name
+                hp_value = hp.default_value
+                hp_type = hp.type or "String"
                 # For hyperparameters with type INT or FLOAT, if the default value is
                 # empty, skip it.
                 if (
@@ -1232,8 +1232,8 @@ class AlgorithmEstimator(EstimatorBase):
                 `/ml/input/data/{channel_name}` directory in the training container.
             wait (bool): Specifies whether to block until the training job is completed,
                 either succeeded, failed, or stopped. (Default True).
-            show_logs (bool): Specifies whether to show the logs produced by the
-                training job (Default True).
+            show_logs (bool): Whether to show the logs of the training job. Default to True.
+                Note that the logs will be shown only when the `wait` is set to True.
             job_name (str, optional): The name of the training job.
 
         Returns:

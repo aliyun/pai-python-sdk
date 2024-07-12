@@ -218,8 +218,8 @@ class Processor(_TrainingJobSubmitter):
                 `/ml/outputs/data/{channel_name}` directory in the job container.
             wait (bool): Specifies whether to block until the training job is completed,
                 either succeeded, failed, or stopped. (Default True).
-            show_logs (bool): Specifies whether to show the logs produced by the
-                job (Default True).
+            show_logs (bool): Whether to show the logs of the job. Default to True.
+                Note that the logs will be shown only when the `wait` is set to True.
 
         Returns:
             :class:`pai.job.TrainingJob`: A submitted training job.

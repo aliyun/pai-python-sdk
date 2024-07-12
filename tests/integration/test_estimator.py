@@ -15,7 +15,7 @@
 import os
 import posixpath
 import re
-from unittest import skipIf, skipUnless
+from unittest import skipUnless
 
 import pytest
 
@@ -75,7 +75,7 @@ class TestEstimator(BaseIntegTestCase):
         model_path = os.path.join(os.path.join(est.model_data(), "model.json"))
         self.assertTrue(self.is_oss_object_exists(model_path))
 
-    @skipIf(t_context.support_spot_instance, "Skip spot instance test")
+    @skipUnless(t_context.support_spot_instance, "Skip spot instance test")
     def test_use_spot_instance(self):
         xgb_image_uri = retrieve("xgboost", framework_version="latest").image_uri
         est = Estimator(

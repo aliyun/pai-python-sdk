@@ -21,6 +21,7 @@ from ..model._model import (
     DefaultServiceConfig,
     ModelBase,
     ResourceConfig,
+    StorageConfigBase,
     container_serving_spec,
 )
 from ..serializers import SerializerBase
@@ -76,6 +77,7 @@ class ModelScopeModel(ModelBase):
         requirements: Optional[List[str]] = None,
         requirements_path: Optional[str] = None,
         health_check: Optional[Dict[str, Any]] = None,
+        storage_configs: Optional[List[StorageConfigBase]] = None,
         session: Optional[Session] = None,
     ):
         """Initialize a ModelScope Model.
@@ -144,6 +146,9 @@ class ModelScopeModel(ModelBase):
             health_check (Dict[str, Any], optional): The health check configuration. If it
                 not set, A TCP readiness probe will be used to check the health of the
                 Model server.
+            storage_configs (List[StorageConfigBase], optional): A list of storage configs
+                used to mount the storage to the container. The storage can be OSS, NFS,
+                SharedMemory, or NodeStorage, etc.
             session (:class:`pai.session.Session`, optional): A pai session object
                 manages interactions with PAI REST API.
 
@@ -168,6 +173,7 @@ class ModelScopeModel(ModelBase):
         self.requirements = requirements
         self.requirements_path = requirements_path
         self.health_check = health_check
+        self.storage_configs = storage_configs
         super(ModelScopeModel, self).__init__(
             model_data=self.model_data,
             session=session,
@@ -340,6 +346,7 @@ class ModelScopeModel(ModelBase):
             requirements_path=self.requirements_path,
             health_check=self.health_check,
             session=self.session,
+            storage_configs=self.storage_configs,
         )
         return super(ModelScopeModel, self).deploy(
             service_name=service_name,
