@@ -17,8 +17,14 @@ from ._model import (
     InferenceSpec,
     Model,
     ModelFormat,
+    NfsStorageConfig,
+    NodeStorageConfig,
+    OssStorageConfig,
+    RawStorageConfig,
     RegisteredModel,
     ResourceConfig,
+    SharedMemoryConfig,
+    StorageConfigBase,
     container_serving_spec,
 )
 from ._model_recipe import ModelRecipe, ModelRecipeType, ModelTrainingRecipe
@@ -33,4 +39,10 @@ __all__ = [
     "ModelTrainingRecipe",
     "ModelRecipe",
     "ModelRecipeType",
+    "StorageConfigBase",
+    "NfsStorageConfig",
+    "NodeStorageConfig",
+    "SharedMemoryConfig",
+    "OssStorageConfig",
+    "RawStorageConfig",
 ]

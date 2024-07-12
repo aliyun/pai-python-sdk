@@ -29,8 +29,10 @@ from pai.image import retrieve
 from pai.model import (
     InferenceSpec,
     Model,
+    NodeStorageConfig,
     RegisteredModel,
     ResourceConfig,
+    SharedMemoryConfig,
     container_serving_spec,
 )
 from tests.integration import BaseIntegTestCase
@@ -79,11 +81,17 @@ class TestModelContainerDeploy(BaseIntegTestCase):
             command="python serving.py",
             image_uri=image_uri,
             port=5000,
+            storage_configs=[
+                SharedMemoryConfig(size_limit=1),
+                NodeStorageConfig(mount_path="/ml/disk/"),
+            ],
         )
+        self.assertEqual(len(inference_spec.storage), 3)
         model = Model(
             inference_spec=inference_spec,
             model_data=os.path.join(test_data_dir, "xgb_model/model.json"),
         )
+
         predictor = model.deploy(
             service_name=make_eas_service_name("container_serving"),
             instance_type="ecs.c6.xlarge",

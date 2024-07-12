@@ -24,6 +24,7 @@ import textwrap
 import time
 import typing
 import warnings
+from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
@@ -72,6 +73,120 @@ class DefaultServiceConfig(object):
 
     # Default user code path in container
     code_path = "/ml/usercode/"
+
+
+class StorageConfigBase(metaclass=ABCMeta):
+    """Base Storage Configuration."""
+
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+
+class RawStorageConfig(StorageConfigBase):
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+
+    def to_dict(self):
+        return self.config
+
+
+class OssStorageConfig(StorageConfigBase):
+    """Configuration for OSS Storage."""
+
+    def __init__(
+        self, mount_path: str, oss_path: str, oss_endpoint: Optional[str] = None
+    ) -> None:
+        """
+        Args:
+            mount_path (str): The target path where the OSS storage will be mounted.
+            oss_path (str): The source OSS path, must start with `oss://`. e.g. `oss://bucket-name/path/to/data`.
+            oss_endpoint (Optional[str]): The endpoint address of the OSS bucket, if not provided,
+                the internal endpoint for the bucket will be used.
+        """
+        self.mount_path = mount_path
+        self.oss_path = oss_path
+        self.oss_endpoint = oss_endpoint
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = {
+            "mount_path": self.mount_path,
+            "oss": {"path": self.oss_path},
+        }
+
+        if self.oss_endpoint:
+            d["oss"]["endpoint"] = self.oss_endpoint
+        return d
+
+
+class NfsStorageConfig(StorageConfigBase):
+    """Configuration for NFS Storage."""
+
+    def __init__(
+        self,
+        mount_path: str,
+        nfs_server: str,
+        nfs_path: str = "/",
+        read_only: bool = False,
+    ) -> None:
+        """
+        Args:
+            mount_path (str): The target path where the NFS storage will be mounted.
+            nfs_server (str): The NFS server address. e.g. `xxx.cn-shanghai.nas.aliyuncs.com'
+            nfs_path (str): The source path in the NFS storage, default to '/'.
+            read_only (bool): Indicates if the NFS storage should be mounted as read-only, default to False.
+        """
+        self.mount_path = mount_path
+        self.nfs_path = nfs_path
+        self.read_only = read_only
+        self.nfs_server = nfs_server
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "mount_path": self.mount_path,
+            "nfs": {
+                "path": self.nfs_path,
+                "readOnly": self.read_only,
+                "server": self.nfs_server,
+            },
+        }
+
+
+class NodeStorageConfig(StorageConfigBase):
+    """Use to mount the local node disk storage to the container."""
+
+    def __init__(self, mount_path) -> None:
+        """
+        Args:
+            mount_path (str): The target path where the node disk storage will be mounted.
+        """
+        self.mount_path = mount_path
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "empty_dir": {},
+            "mount_path": self.mount_path,
+        }
+
+
+class SharedMemoryConfig(StorageConfigBase):
+    """Use to configure the shared memory for the container."""
+
+    def __init__(self, size_limit: int) -> None:
+        """
+        Args:
+            size_limit (int): Size limit of the shared memory, in GB.
+        """
+        self.size_limit = size_limit
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "empty_dir": {
+                "medium": "memory",
+                "size_limit": self.size_limit,
+            },
+            "mount_path": "/dev/shm",
+        }
 
 
 class ResourceConfig(object):
@@ -465,6 +580,7 @@ def container_serving_spec(
     requirements: Optional[List[str]] = None,
     requirements_path: Optional[str] = None,
     health_check: Optional[Dict[str, Any]] = None,
+    storage_configs: Optional[List[StorageConfigBase]] = None,
     session: Optional[Session] = None,
 ) -> InferenceSpec:
     """A convenient function to create an InferenceSpec instance that serving the model
@@ -539,6 +655,9 @@ def container_serving_spec(
         health_check (Dict[str, Any], optional): The health check configuration. If it
             not set, A TCP readiness probe will be used to check the health of the
             HTTP server.
+        storage_configs (List[StorageConfigBase], optional): A list of storage configs
+            used to mount the storage to the container. The storage can be OSS, NFS,
+            SharedMemory, or NodeStorage, etc.
         session (Session, optional): A PAI session instance used for communicating
             with PAI service.
 
@@ -619,8 +738,11 @@ def container_serving_spec(
         container_spec["prepare"] = {
             "pythonRequirementsPath": requirements_path,
         }
-
     inference_spec = InferenceSpec(containers=[container_spec])
+
+    if storage_configs:
+        storage = [s.to_dict() for s in storage_configs]
+        inference_spec.storage = storage
 
     # mount the uploaded serving scripts to the serving container.
     if source_dir:

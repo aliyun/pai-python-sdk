@@ -13,7 +13,15 @@
 #  limitations under the License.
 
 from pai.exception import DuplicatedMountException
-from pai.model import InferenceSpec, container_serving_spec
+from pai.model import (
+    InferenceSpec,
+    NfsStorageConfig,
+    NodeStorageConfig,
+    OssStorageConfig,
+    RawStorageConfig,
+    SharedMemoryConfig,
+    container_serving_spec,
+)
 from tests.unit import BaseUnitTestCase
 
 
@@ -110,3 +118,59 @@ class TestInferenceSpec(BaseUnitTestCase):
         model_path_v2 = "oss://pai-sdk-example/path/to/model/v2/"
         infer_spec.set_model_data(model_path_v2)
         self.assertEqual(model_path_v2, infer_spec.storage[1].oss.path)
+
+    def test_storage(self):
+        infer_spec = container_serving_spec(
+            command="python3 /ml/code/model.py",
+            image_uri="python:3",
+            storage_configs=[
+                OssStorageConfig(
+                    mount_path="/ml/model/",
+                    oss_path="oss://pai-sdk-example/path/to/model/",
+                ),
+                NfsStorageConfig(
+                    mount_path="/ml/shared/",
+                    nfs_server="nfs://abc",
+                    nfs_path="/path/to/shared/",
+                ),
+                SharedMemoryConfig(size_limit=64),
+                NodeStorageConfig(mount_path="/ml/disk/"),
+                RawStorageConfig(
+                    config={
+                        "image": {
+                            "image": "MyImageUri",
+                            "path": "/path/to/mount/",
+                        },
+                        "mount_path": "/data_image",
+                    }
+                ),
+            ],
+        )
+
+        truth = [
+            {
+                "mount_path": "/ml/model/",
+                "oss": {"path": "oss://pai-sdk-example/path/to/model/"},
+            },
+            {
+                "mount_path": "/ml/shared/",
+                "nfs": {
+                    "path": "/path/to/shared/",
+                    "readOnly": False,
+                    "server": "nfs://abc",
+                },
+            },
+            {
+                "empty_dir": {"medium": "memory", "size_limit": 64},
+                "mount_path": "/dev/shm",
+            },
+            {"empty_dir": {}, "mount_path": "/ml/disk/"},
+            {
+                "image": {
+                    "image": "MyImageUri",
+                    "path": "/path/to/mount/",
+                },
+                "mount_path": "/data_image",
+            },
+        ]
+        self.assertListEqual(truth, infer_spec.storage)

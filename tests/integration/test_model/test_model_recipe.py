@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
-from unittest import skipIf
+from pathlib import Path
+from unittest import skipUnless
 
 import pytest
 
 from pai.common.utils import camel_to_snake, random_str
+from pai.image import retrieve
 from pai.job import SpotSpec
 from pai.job._training_job import ResourceType
 from pai.model import ModelTrainingRecipe, RegisteredModel
@@ -65,7 +67,7 @@ class TestModelRecipe(BaseIntegTestCase):
         )
         self.assertIsNotNone(resp.choices[0].message.content)
 
-    @skipIf(t_context.support_spot_instance, "Skip spot instance test")
+    @skipUnless(t_context.support_spot_instance, "Skip spot instance test")
     def test_spot_instance(self):
         training_recipe = ModelTrainingRecipe(
             model_name="qwen2-7b-instruct",
@@ -93,12 +95,14 @@ class TestModelRecipe(BaseIntegTestCase):
             "Default inputs is empty for ModelTrainingRecipe.",
         )
 
+        self.assertIsNotNone(training_recipe.hyperparameter_definitions)
         train_data = os.path.join(test_data_dir, "chinese_medical/train_sampled.json")
-        training_recipe.train(
+        training_job = training_recipe.train(
             inputs={
                 "train": train_data,
             },
         )
+        self.assertIsNotNone(training_job)
         self.assertIsNotNone(training_recipe.model_data())
         predictor = training_recipe.deploy(
             service_name=self._gen_service_name("test_custom"),
@@ -113,3 +117,31 @@ class TestModelRecipe(BaseIntegTestCase):
             max_tokens=100,
         )
         self.assertIsNotNone(resp.choices[0].message.content)
+
+    def test_custom_args(self):
+        command = ["echo", "helloworld"]
+        xgb_img = retrieve("xgboost", "latest")
+        hps = {
+            "num_train_epochs": "helloworld",
+        }
+        session = self.default_session
+
+        recipe = ModelTrainingRecipe(
+            model_name="qwen1.5-0.5b-chat",
+            model_provider="pai",
+            source_dir=str(Path(test_data_dir) / "xgb_train"),
+            command=command,
+            hyperparameters=hps,
+            image_uri=xgb_img.image_uri,
+        )
+        job = recipe.train(
+            wait=False,
+        )
+        self.assertListEqual(job.algorithm_spec.command, command)
+        self.assertEqual(job.algorithm_spec.image, xgb_img.image_uri)
+        job_hps = {hp.name: hp.value for hp in job.hyperparameters if hp.name in hps}
+        self.assertDictEqual(job_hps, hps)
+        self.assertEqual(
+            job.algorithm_spec.code_dir.location_value.bucket,
+            session.oss_bucket.bucket_name,
+        )
