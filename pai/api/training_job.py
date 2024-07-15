@@ -139,7 +139,7 @@ class TrainingJobAPI(WorkspaceScopedResourceAPI):
             compute_resource = CreateTrainingJobRequestComputeResource(
                 ecs_count=instance_count,
                 ecs_spec=instance_type,
-                use_spot_instance=bool(spot_spec),
+                # use_spot_instance=bool(spot_spec),
                 spot_spec=spot_spec,
             )
         elif instance_spec:
