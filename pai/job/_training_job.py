@@ -779,6 +779,16 @@ class _TrainingJobSubmitter(object):
                 spot_spec["SpotDiscountLimit"] = self.spot_spec.spot_discount_limit
         else:
             spot_spec = None
+
+        # user vpc
+        if self.user_vpc_config:
+            user_vpc_config = {
+                "VpcId": self.user_vpc_config.vpc_id,
+                "SecurityGroupId": self.user_vpc_config.security_group_id,
+            }
+        else:
+            user_vpc_config = None
+
         training_job_id = session.training_job_api.create(
             instance_count=instance_count,
             instance_spec=instance_spec.model_dump() if instance_spec else None,
