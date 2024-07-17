@@ -9,12 +9,12 @@ PAI Python SDK是阿里云 [机器学习平台 PAI(Platform for Artificial Intel
 使用以下命令安装PAI Python SDK（支持Python版本 \>= 3.8）：
 
 ```shell
-python -m pip install alipai
+python -m pip install pai
 ```
 
 ## 📖 文档
 
-请通过访问 [PAI Python SDK文档](https://alipai.readthedocs.io/) 或是查看 [docs](./docs) 目录下的文件获取SDK的详细文档，包括用户指南和API文档。
+请通过访问 [PAI Python SDK文档](https://pai.readthedocs.io/) 或是查看 [docs](./docs) 目录下的文件获取SDK的详细文档，包括用户指南和API文档。
 
 ## 🛠 使用示例
 
