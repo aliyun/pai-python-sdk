@@ -7,6 +7,7 @@ from setuptools import find_packages, setup
 pkg_root = os.path.dirname(os.path.abspath(__file__))
 
 REQUIREMENTS_FILE = "requirements/requirements.txt"
+PACKAGE_NAME = os.getenv("PACKAGE_NAME", "pai")
 
 version_data = {}
 with open(os.path.join(pkg_root, "pai/version.py")) as fp:
@@ -25,7 +26,7 @@ if os.path.exists("README.md"):
         long_description = f.read()
 
 setup(
-    name="alipai",
+    name=PACKAGE_NAME,
     python_requires=">=3.8",
     version=version,
     setup_requires=["setuptools_scm"],
