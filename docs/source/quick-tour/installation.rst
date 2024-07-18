@@ -9,7 +9,7 @@
 
 .. parsed-literal::
 
-    python -m pip install alipai
+    python -m pip install pai
 
 
 前提条件
