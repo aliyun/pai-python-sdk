@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      PAI_PYPI_TOKEN: ${{ secrets.PAI_PYPI_TOKEN }}
+      ALIPAI_PYPI_TOKEN: ${{ secrets.ALIPAI_PYPI_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.8
@@ -23,7 +24,18 @@ jobs:
           python-version: '3.8'
       - name: Install dependencies
         run: pip install wheel setuptools twine
-      - name: Build package
+      # build and upload package pai
+      - name: Build package for pai
         run: python setup.py sdist bdist_wheel
-      - name: Publish package to PyPI
-        run: twine upload dist/* --skip-existing -u __token__ -p $PYPI_TOKEN
+      - name: Publish package to PyPI (pai)
+        run: twine upload dist/* --skip-existing -u __token__ -p $PAI_PYPI_TOKEN
+      - name: cleanup
+        run: |
+          rm -rf dist
+          rm -rf build
+          rm -rf pai.egg-info
+      # build and upload package alipai
+      - name: Build package for alipai
+        run: PACKAGE_NAME=alipai python setup.py sdist bdist_wheel
+      - name: Publish package to PyPI (alipai)
+        run: twine upload dist/* --skip-existing -u __token__ -p $ALIPAI_PYPI_TOKEN
