@@ -771,6 +771,7 @@ class Estimator(EstimatorBase):
     def fit(
         self,
         inputs: Dict[str, Any] = None,
+        outputs: Dict[str, Any] = None,
         wait: bool = True,
         show_logs: bool = True,
         job_name: Optional[str] = None,
@@ -783,6 +784,9 @@ class Estimator(EstimatorBase):
                 the key is the channel name, and the value is the input data. The input
                 data can be an OSS URI or a NAS URI object and will be mounted to the
                 `/ml/input/data/{channel_name}` directory in the training container.
+             outputs (Dict[str, Any]): A dictionary representing the output locations for
+                the training job. Each key/value pair in the dictionary is an output channel,
+                the key is the channel name, and the value is the output data location.
             wait (bool): Specifies whether to block until the training job is completed,
                 either succeeded, failed, or stopped. (Default True).
             show_logs (bool): Specifies whether to show the logs produced by the
@@ -808,13 +812,18 @@ class Estimator(EstimatorBase):
                 wait=wait,
             )
         return self._fit(
-            inputs=inputs, job_name=job_name, wait=wait, show_logs=show_logs
+            inputs=inputs,
+            outputs=outputs,
+            job_name=job_name,
+            wait=wait,
+            show_logs=show_logs,
         )
 
     def _fit(
         self,
         job_name,
         inputs: Dict[str, Any],
+        outputs: Dict[str, Any],
         wait: bool = True,
         show_logs: bool = True,
     ) -> TrainingJob:
@@ -829,10 +838,9 @@ class Estimator(EstimatorBase):
             input_channels=algo_spec.input_channels,
         )
 
+        outputs = outputs or {}
         if self.checkpoints_path:
-            outputs = {DEFAULT_CHECKPOINT_CHANNEL_NAME: self.checkpoints_path}
-        else:
-            outputs = None
+            outputs.update({DEFAULT_CHECKPOINT_CHANNEL_NAME: self.checkpoints_path})
 
         outputs = self.build_outputs(
             job_name=job_name,
@@ -1218,6 +1226,7 @@ class AlgorithmEstimator(EstimatorBase):
     def fit(
         self,
         inputs: Dict[str, Any] = None,
+        outputs: Dict[str, Any] = None,
         wait: bool = True,
         show_logs: bool = True,
         job_name: Optional[str] = None,
@@ -1251,6 +1260,7 @@ class AlgorithmEstimator(EstimatorBase):
         output_configs = self.build_outputs(
             job_name,
             output_channels=self._algo_spec.output_channels,
+            outputs=outputs,
         )
         return self._submit(
             instance_count=self.instance_count,

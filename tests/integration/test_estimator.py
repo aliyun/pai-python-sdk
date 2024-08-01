@@ -75,6 +75,39 @@ class TestEstimator(BaseIntegTestCase):
         model_path = os.path.join(os.path.join(est.model_data(), "model.json"))
         self.assertTrue(self.is_oss_object_exists(model_path))
 
+    def test_output_config(self):
+        xgb_image_uri = retrieve("xgboost", framework_version="latest").image_uri
+        sess = get_default_session()
+
+        est = Estimator(
+            image_uri=xgb_image_uri,
+            source_dir=os.path.join(test_data_dir, "xgb_train"),
+            command="python train.py",
+            hyperparameters={
+                "n_estimators": 50,
+                "objective": "binary:logistic",
+                "max_depth": 5,
+                "eval_metric": "auc",
+            },
+            instance_type="ecs.c6.large",
+        )
+        test_output_path = (
+            f"oss://{sess.oss_bucket.bucket_name}/sdk-test/test-output/{random_str(6)}/"
+        )
+        est.fit(
+            inputs={
+                "train": self.breast_cancer_train_data_uri,
+                "test": self.breast_cancer_test_data_uri,
+            },
+            outputs={
+                "model": test_output_path,
+            },
+        )
+
+        self.assertEqual(test_output_path, est.model_data())
+        model_path = os.path.join(os.path.join(test_output_path, "model.json"))
+        self.assertTrue(self.is_oss_object_exists(model_path))
+
     @skipUnless(t_context.support_spot_instance, "Skip spot instance test")
     def test_use_spot_instance(self):
         xgb_image_uri = retrieve("xgboost", framework_version="latest").image_uri

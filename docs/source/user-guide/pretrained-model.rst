@@ -87,113 +87,46 @@ PAI公共仓库中的部分模型，也提供了微调训练算法，支持用�
 
 .. code-block:: python
 
-    from pai.model import RegisteredModel
-    from pai.estimator import AlgorithmEstimator
+    from pai.model import RegisteredModel, ModelTrainingRecipe
 
     # 获取PAI提供的Bert模型
     m = RegisteredModel("bert-base-uncased", model_provider="pai")
-    # 获取模型的微调训练算法
-    est: AlgorithmEstimator = m.get_estimator()
+    training_recipe = m.training_recipe()
 
-    # 查看算法的超参数定义描述、输入定义描述，以及输出定义描述。
-    print(est.hyperparameter_definitions)
-    # [{'DefaultValue': '1',
-    # 'Type': 'Int',
-    # 'Description': 'Number of epochs to train the model. Each epoch is one complete iteration over the entire training dataset.',
-    # 'Required': True,
-    # 'Name': 'max_epochs'},
-    # {'DefaultValue': '16',
-    # 'Type': 'Int',
-    # 'Description': 'Number of samples that will be propagated through the model. A higher value might consume more memory.',
-    # 'Required': False,
-    # 'Name': 'batch_size'},
-    # {'DefaultValue': '0.00001',
-    # 'Type': 'Float',
-    # 'Description': 'The initial learning rate to be used for training. A higher value usually implies more aggression in gradient updates.',
-    # 'Required': False,
-    # 'Name': 'learning_rate'},
-    # {'DefaultValue': '2000',
-    # 'Type': 'Int',
-    # 'Description': 'Number of updates steps before two checkpoint.',
-    # 'Required': False,
-    # 'Name': 'save_steps'}
-    # ]
-    print(est.input_channel_definitions)
-    # [{'Description': 'Input channel for pretrained model to be fine-tuned on.',
-    # 'Required': True,
-    # 'SupportedChannelTypes': ['oss'],
-    # 'Properties': {'ResourceUse': 'Base', 'ResourceType': 'Model'},
-    # 'Name': 'model'},
-    # {'Description': 'Input channel for training dataset.',
-    # 'Required': True,
-    # 'SupportedChannelTypes': ['oss'],
-    # 'Properties': {'ResourceUse': 'Train', 'ResourceType': 'Dataset'},
-    # 'Name': 'train'},
-    # {'Description': 'Input channel for validation dataset.',
-    # 'Required': False,
-    # 'SupportedChannelTypes': ['oss'],
-    # 'Properties': {'ResourceUse': 'Validation', 'ResourceType': 'Dataset'},
-    # 'Name': 'validation'}]
+    training_recipe = ModelTrainingRecipe(
+        model_name = "bert-base-uncased",
+        model_provider = "pai",
+        instance_type = "ecs.c6.xlarge",
+        # 训练任务的超参数
+        hyperparameters={
+            "max_epochs": 1,
+            "learning_rate": 0.00001,
+            "batch_size": 16,
+            "save_steps": 2000,
+        },
+    )
 
+    # 查看模型微调算法输入定义
+    print(training_recipe.input_channels)
+    # 查看模型微调算法超参数定义
+    print(training_recipe.hyperparameter_definitions)
+    # 查看默认训练输入数据
+    print(training_recipe.default_inputs)
 
-    # 查看算法的默认输入，包含了预训练模型，训练数据，验证数据等
-    training_inputs = m.get_estimator_inputs()
-    print(training_inputs)
-    # {
-    #   'model': 'oss://pai-quickstart-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/huggingface/models/bert-base-uncased/main/',
-    #   'train': 'oss://pai-quickstart-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/huggingface/datasets/sst2/main/train.json',
-    #   'validation': 'oss://pai-quickstart-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/huggingface/datasets/sst2/main/validation.json'
-    # }
+    # 提交微调训练作业
+    job = training_recipe.train(
+        job_name="train_recipe_example",
+        # 配置使用用户在OSS Bucket上的数据作为训练数据
+        # inputs={
+        #     "train": "oss://<YourOssBucket>/<Path/to/Data>"
+        # }
+    )
+    # 获取微调后模型路径
+    print(training_recipe.model_data())
 
-    # 使用默认输入进行微调训练
-    est.fit(inputs=training_inputs)
+    # 使用PAI提供的推理服务配置部署模型
+    predictor = training_recipe.deploy(
+        service_name="bert_example",
+    )
 
-    # 查看训练输出的模型，默认模型存储在OSS URI上
-    print(est.model_data())
-
-
-以上的训练任务中，我们使用了PAI提供的公共数据集，对模型进行微调训练。当用户需要使用自己的数据集进行微调训练时，需要先将数据准备到OSS，或是NAS上，然后将数据的OSS或是NAS路径，作为训练任务的输入。
-
-
-使用用户训练数据集提交训练任务：
-
-.. code-block:: python
-
-    from pai.estimator import AlgorithmEstimator
-
-    # 获取模型的微调训练算法
-    est: AlgorithmEstimator = m.get_estimator()
-    # 配置修改提交的训练算法超参，具体的超参用途可以查看 est.hyperparameter_definitions 中的描述.
-    est.hyperparameters = {
-        'max_epochs': 1,
-        'batch_size': 8,
-        'learning_rate': 2e-05,
-        'save_steps': 2000
-    }
-
-    # 默认的训练输入
-    default_training_inputs = m.get_estimator_inputs()
-    # 使用用户的数据集进行微调训练
-    training_inputs = {
-        # 使用PAI提供预训练模型作为基础模型输入
-        "model": default_training_inputs["model"],
-        # 使用用户的训练和测试数据集
-        "train": "oss://<OssBucketName>/my-dataset/train.json",
-        "validation": "oss://<OssBucketName>/my-dataset/validation.json"
-    }
-
-    est.fit(inputs=training_inputs)
-
-用户可以通过模型卡片上的文档，查看模型的微调训练数据格式。同时也可以参考相应的模型微调训练的默认输入数据格式，进行数据的准备。
-
-下载PAI数据集到本地目录:
-
-.. code-block:: python
-
-    from pai.common.oss_util import download
-
-    # 默认的训练输入
-    default_training_inputs = m.get_estimator_inputs()
-
-    # 下载PAI提供的公共训练数据到本地
-    download(default_training_inputs["train"], "./train/")
+用户可以通过PAI ModelGallery提供的模型卡片上的文档，查看具体模型模型的微调训练数据格式。

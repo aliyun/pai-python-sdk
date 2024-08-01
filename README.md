@@ -78,7 +78,31 @@ print(res.choices[0].message.content)
 
 ```
 
-更多功能介绍，请参阅 [PAI Python SDK文档](https://alipai.readthedocs.io/) 。
+- 微调预训练模型
+
+通过PAI提供的微调脚本，提交一个模型微调任务
+
+```python
+
+from pai.model import ModelTrainingRecipe
+
+training_recipe = ModelTrainingRecipe(
+    model_name="qwen2-0.5b-instruct",
+    model_provider="pai",
+    instance_type="ecs.gn6e-c12g1.3xlarge",
+)
+
+training_recipe.train(
+    inputs={
+        # 本地或是阿里云OSS上的数据路径(oss://<bucketname>/path/to/data)
+        "train": "<YourTrainingDataPath>"
+    }
+)
+
+
+```
+
+通过访问PAI提供的示例仓库，可以了解更多使用示例：[pai-examples](https://github.com/aliyun/pai-examples/tree/master/pai-python-sdk)
 
 ## 🤝 贡献代码
 
