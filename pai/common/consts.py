@@ -23,7 +23,7 @@ DEFAULT_CONFIG_PATH = os.environ.get(
 DEFAULT_NETWORK_TYPE = os.environ.get("PAI_NETWORK_TYPE", None)
 
 # PAI VPC endpoint
-PAI_VPC_ENDPOINT = "pai-vpc.aliyuncs.com"
+PAI_VPC_ENDPOINT = "pai-vpc.{}.aliyuncs.com"
 
 
 class Network(enum.Enum):

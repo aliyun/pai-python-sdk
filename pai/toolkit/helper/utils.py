@@ -111,7 +111,7 @@ class UserProfile(object):
         else:
             self.network = (
                 Network.VPC
-                if is_domain_connectable(PAI_VPC_ENDPOINT)
+                if is_domain_connectable(PAI_VPC_ENDPOINT.format(self.region_id))
                 else Network.PUBLIC
             )
         self._caller_identify = self._get_caller_identity()
