@@ -191,7 +191,7 @@ def _init_default_session_from_env() -> Optional["Session"]:
     network = (
         Network.VPC
         if is_domain_connectable(
-            PAI_VPC_ENDPOINT,
+            PAI_VPC_ENDPOINT.format(region_id),
             timeout=1,
         )
         else Network.PUBLIC
