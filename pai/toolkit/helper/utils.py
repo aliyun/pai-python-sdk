@@ -15,7 +15,7 @@
 import locale
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import oss2
 from alibabacloud_credentials.client import Client as CredentialClient
@@ -41,6 +41,7 @@ from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import is_domain_connectable, make_list_resource_iterator
 from ...libs.alibabacloud_pai_dsw20220101.client import Client as DswClient
+from ...session import Session
 
 logger = get_logger(__name__)
 
@@ -111,7 +112,7 @@ class UserProfile(object):
         else:
             self.network = (
                 Network.VPC
-                if is_domain_connectable(PAI_VPC_ENDPOINT)
+                if is_domain_connectable(PAI_VPC_ENDPOINT.format(self.region_id))
                 else Network.PUBLIC
             )
         self._caller_identify = self._get_caller_identity()
@@ -137,9 +138,11 @@ class UserProfile(object):
                 config=open_api_models.Config(
                     credential=self._get_credential_client(),
                     region_id=self.region_id,
-                    network=None
-                    if self.network == Network.PUBLIC
-                    else self.network.value.lower(),
+                    network=(
+                        None
+                        if self.network == Network.PUBLIC
+                        else self.network.value.lower()
+                    ),
                 )
             )
             .get_caller_identity()
@@ -261,26 +264,15 @@ class UserProfile(object):
             acs_client=acs_ws_client,
         )
 
-    def get_default_oss_storage_uri(self, workspace_id: str):
-        workspace_api = self.get_workspace_api()
-        resp = workspace_api.list_configs(
+    def get_default_oss_storage_uri(
+        self, workspace_id: str
+    ) -> Tuple[Optional[str], Optional[str]]:
+        return Session._get_default_oss_storage(
             workspace_id=workspace_id,
-            config_keys=WorkspaceConfigKeys.DEFAULT_OSS_STORAGE_URI,
+            cred=self._get_credential_client(),
+            region_id=self.region_id,
+            network=self.network,
         )
-
-        oss_storage_uri = next(
-            (
-                item["ConfigValue"]
-                for item in resp["Configs"]
-                if item["ConfigKey"] == WorkspaceConfigKeys.DEFAULT_OSS_STORAGE_URI
-            ),
-            None,
-        )
-        if not oss_storage_uri:
-            return
-
-        uri_obj = OssUriObj(oss_storage_uri)
-        return "oss://{}".format(uri_obj.bucket_name)
 
     def set_default_oss_storage(
         self, workspace_id, bucket_name: str, intranet_endpoint: str

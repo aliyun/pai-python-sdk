@@ -82,7 +82,7 @@ class ResourceAPIsContainerMixin(object):
         else:
             self.network = (
                 Network.VPC
-                if is_domain_connectable(PAI_VPC_ENDPOINT)
+                if is_domain_connectable(PAI_VPC_ENDPOINT.format(self._region_id))
                 else Network.PUBLIC
             )
 

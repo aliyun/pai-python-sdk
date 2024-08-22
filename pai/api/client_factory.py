@@ -87,7 +87,12 @@ class ClientFactory(object):
             raise ValueError("Please provide region_id to get the endpoint.")
 
         if network and network != Network.PUBLIC:
-            subdomain = f"{service_name}-{network.value.lower()}"
+            if service_name == "pai-eas":
+                # see endpoint list provided by PAI-EAS
+                # https://next.api.aliyun.com/product/eas
+                subdomain = f"pai-eas-manage-{network.value.lower()}"
+            else:
+                subdomain = f"{service_name}-{network.value.lower()}"
         else:
             subdomain = service_name
         return DEFAULT_SERVICE_ENDPOINT_PATTERN.format(subdomain, region_id)
