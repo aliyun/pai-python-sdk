@@ -286,7 +286,7 @@ class Session(ResourceAPIsContainerMixin):
 
         self._credential_config = credential_config
         self._region_id = region_id
-        self._workspace_id = workspace_id
+        self._workspace_id = str(workspace_id)
         self._oss_bucket_name = oss_bucket_name
         self._oss_endpoint = oss_endpoint
 

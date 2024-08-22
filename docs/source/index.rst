@@ -32,16 +32,6 @@ PAI Python SDK 文档
 
 .. toctree::
     :maxdepth: 1
-    :caption: 示例教程
-
-    tutorial/framework
-    tutorial/train
-    tutorial/predict
-    tutorial/advance
-
-
-.. toctree::
-    :maxdepth: 1
     :caption: Reference
 
     reference
