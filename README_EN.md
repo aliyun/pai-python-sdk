@@ -81,7 +81,38 @@ print(res.choices[0].message.content)
 
 ```
 
-For more details, please refer to the [PAI Python SDK Documentation](https://alipai.readthedocs.io/).
+- Fine-tune the pretrained model
+-
+Submit a model fine-tuning task using the fine-tuning script provided by PAI.
+
+```python
+
+from pai.model import ModelTrainingRecipe
+
+# Retrieve the Qwen2-0.5b-instruct model training recipe provided by PAI
+training_recipe = ModelTrainingRecipe(
+    model_name="qwen2-0.5b-instruct",
+    model_provider="pai",
+    instance_type="ecs.gn6e-c12g1.3xlarge",
+)
+
+# Submit the training job
+job = training_recipe.train(
+    inputs={
+        # Data path on local or Alibaba Cloud OSS (oss://<bucketname>/path/to/data)
+        "train": "<YourTrainingDataPath>"
+    }
+)
+
+# Get output model path
+print(training_recipe.model_data())
+
+# Deploy the fine-tuned model
+predictor = training_recipe.deploy(service_name="qwen2_finetune")
+
+```
+
+You can learn more usage examples by visiting the PAI example repository: [pai-examples](https://github.com/aliyun/pai-examples/tree/master/pai-python-sdk)
 
 ## 🤝 Contributing
 
