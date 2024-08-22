@@ -392,7 +392,7 @@ def prompt_for_workspace(user_profile: UserProfile):
 
 
 def prompt_for_oss_bucket(user_profile: UserProfile, workspace_id: str):
-    default_storage_uri = user_profile.get_default_oss_storage_uri(
+    default_storage_uri, endpoint = user_profile.get_default_oss_storage_uri(
         workspace_id=workspace_id
     )
     print(
@@ -667,7 +667,7 @@ def prompt_config_with_default_dsw_role(user_profile: UserProfile):
         )
     )
 
-    default_storage_uri = user_profile.get_default_oss_storage_uri(
+    default_storage_uri, endpoint = user_profile.get_default_oss_storage_uri(
         workspace_id=workspace_id,
     )
 
@@ -687,7 +687,6 @@ def prompt_config_with_default_dsw_role(user_profile: UserProfile):
         bucket_name, endpoint = None, None
     else:
         bucket_name = OssUriObj(default_storage_uri).bucket_name
-        endpoint = f"oss-{user_profile.region_id}-internal.aliyuncs.com"
     return workspace_id, bucket_name, endpoint
 
 
