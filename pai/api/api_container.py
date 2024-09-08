@@ -18,6 +18,7 @@ from alibabacloud_sts20150401.client import Client as StsClient
 
 from ..common.consts import DEFAULT_NETWORK_TYPE, PAI_VPC_ENDPOINT, Network
 from ..common.utils import is_domain_connectable
+from ..libs.alibabacloud_pai_dsw20220101.client import Client as DswClient
 from .algorithm import AlgorithmAPI
 from .base import PAIRestResourceTypes, ServiceName, WorkspaceScopedResourceAPI
 from .client_factory import ClientFactory
@@ -127,6 +128,10 @@ class ResourceAPIsContainerMixin(object):
     @property
     def _acs_sts_client(self) -> StsClient:
         return self._get_acs_client(ServiceName.STS)
+
+    @property
+    def _acs_dsw_client(self) -> DswClient:
+        return self._get_acs_client(ServiceName.PAI_DSW)
 
     def get_api_by_resource(self, resource_type):
         if resource_type in self.api_container:
