@@ -242,7 +242,7 @@ class DswInstance:
 
         resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(self.instance_id)
         datasets = [
-            UpdateInstanceRequestDatasets.from_map(ds.to_map())
+            UpdateInstanceRequestDatasets().from_map(ds.to_map())
             for ds in resp.body.datasets
         ]
         datasets.append(
