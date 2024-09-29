@@ -2357,6 +2357,8 @@ class RegisteredModel(ModelBase):
             :class:`pai.model.ModelRecipe`: A ModelRecipe object.
 
         """
+        from ._model_recipe import ModelRecipe
+
         return ModelRecipe(
             model_name=self.model_name,
             model_version=self.model_version,
