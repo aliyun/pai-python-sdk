@@ -532,6 +532,7 @@ class ModelVersion(TeaModel):
     def __init__(
         self,
         approval_status: str = None,
+        compression_spec: Dict[str, Any] = None,
         evaluation_spec: Dict[str, Any] = None,
         extra_info: Dict[str, Any] = None,
         format_type: str = None,
@@ -552,6 +553,7 @@ class ModelVersion(TeaModel):
         version_name: str = None,
     ):
         self.approval_status = approval_status
+        self.compression_spec = compression_spec
         self.evaluation_spec = evaluation_spec
         self.extra_info = extra_info
         self.format_type = format_type
@@ -585,6 +587,8 @@ class ModelVersion(TeaModel):
         result = dict()
         if self.approval_status is not None:
             result['ApprovalStatus'] = self.approval_status
+        if self.compression_spec is not None:
+            result['CompressionSpec'] = self.compression_spec
         if self.evaluation_spec is not None:
             result['EvaluationSpec'] = self.evaluation_spec
         if self.extra_info is not None:
@@ -629,6 +633,8 @@ class ModelVersion(TeaModel):
         m = m or dict()
         if m.get('ApprovalStatus') is not None:
             self.approval_status = m.get('ApprovalStatus')
+        if m.get('CompressionSpec') is not None:
+            self.compression_spec = m.get('CompressionSpec')
         if m.get('EvaluationSpec') is not None:
             self.evaluation_spec = m.get('EvaluationSpec')
         if m.get('ExtraInfo') is not None:
@@ -1110,8 +1116,10 @@ class AddImageRequest(TeaModel):
         self.accessibility = accessibility
         self.description = description
         self.image_id = image_id
+        # This parameter is required.
         self.image_uri = image_uri
         self.labels = labels
+        # This parameter is required.
         self.name = name
         self.size = size
         self.workspace_id = workspace_id
@@ -1284,6 +1292,7 @@ class AddImageLabelsRequest(TeaModel):
         self,
         labels: List[AddImageLabelsRequestLabels] = None,
     ):
+        # This parameter is required.
         self.labels = labels
 
     def validate(self):
@@ -1604,6 +1613,101 @@ class AssumeServiceIdentityRoleResponse(TeaModel):
         return self
 
 
+class ChangeDatasetOwnerRequest(TeaModel):
+    def __init__(
+        self,
+        user_id: str = None,
+    ):
+        self.user_id = user_id
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.user_id is not None:
+            result['UserId'] = self.user_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('UserId') is not None:
+            self.user_id = m.get('UserId')
+        return self
+
+
+class ChangeDatasetOwnerResponseBody(TeaModel):
+    def __init__(
+        self,
+        request_id: str = None,
+    ):
+        self.request_id = request_id
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.request_id is not None:
+            result['requestId'] = self.request_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('requestId') is not None:
+            self.request_id = m.get('requestId')
+        return self
+
+
+class ChangeDatasetOwnerResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: ChangeDatasetOwnerResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = ChangeDatasetOwnerResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
 class CreateCodeSourceRequest(TeaModel):
     def __init__(
         self,
@@ -1623,8 +1727,10 @@ class CreateCodeSourceRequest(TeaModel):
         self.code_repo_access_token = code_repo_access_token
         self.code_repo_user_name = code_repo_user_name
         self.description = description
+        # This parameter is required.
         self.display_name = display_name
         self.mount_path = mount_path
+        # This parameter is required.
         self.workspace_id = workspace_id
 
     def validate(self):
@@ -1758,6 +1864,7 @@ class CreateCollectionRequest(TeaModel):
         self,
         collection_name: str = None,
     ):
+        # This parameter is required.
         self.collection_name = collection_name
 
     def validate(self):
@@ -1870,21 +1977,27 @@ class CreateDatasetRequest(TeaModel):
         source_id: str = None,
         source_type: str = None,
         uri: str = None,
+        user_id: str = None,
         workspace_id: str = None,
     ):
         self.accessibility = accessibility
+        # This parameter is required.
         self.data_source_type = data_source_type
         self.data_type = data_type
         self.description = description
         self.labels = labels
+        # This parameter is required.
         self.name = name
         self.options = options
+        # This parameter is required.
         self.property = property
         self.provider = provider
         self.provider_type = provider_type
         self.source_id = source_id
         self.source_type = source_type
+        # This parameter is required.
         self.uri = uri
+        self.user_id = user_id
         self.workspace_id = workspace_id
 
     def validate(self):
@@ -1927,6 +2040,8 @@ class CreateDatasetRequest(TeaModel):
             result['SourceType'] = self.source_type
         if self.uri is not None:
             result['Uri'] = self.uri
+        if self.user_id is not None:
+            result['UserId'] = self.user_id
         if self.workspace_id is not None:
             result['WorkspaceId'] = self.workspace_id
         return result
@@ -1962,6 +2077,8 @@ class CreateDatasetRequest(TeaModel):
             self.source_type = m.get('SourceType')
         if m.get('Uri') is not None:
             self.uri = m.get('Uri')
+        if m.get('UserId') is not None:
+            self.user_id = m.get('UserId')
         if m.get('WorkspaceId') is not None:
             self.workspace_id = m.get('WorkspaceId')
         return self
@@ -2186,7 +2303,9 @@ class CreateDefaultWorkspaceRequest(TeaModel):
         resources: List[CreateDefaultWorkspaceRequestResources] = None,
     ):
         self.add_all_ram_users = add_all_ram_users
+        # This parameter is required.
         self.description = description
+        # This parameter is required.
         self.env_types = env_types
         self.resources = resources
 
@@ -2233,9 +2352,11 @@ class CreateDefaultWorkspaceRequest(TeaModel):
 class CreateDefaultWorkspaceResponseBody(TeaModel):
     def __init__(
         self,
+        instance_job_id: str = None,
         request_id: str = None,
         workspace_id: str = None,
     ):
+        self.instance_job_id = instance_job_id
         self.request_id = request_id
         self.workspace_id = workspace_id
 
@@ -2248,6 +2369,8 @@ class CreateDefaultWorkspaceResponseBody(TeaModel):
             return _map
 
         result = dict()
+        if self.instance_job_id is not None:
+            result['InstanceJobId'] = self.instance_job_id
         if self.request_id is not None:
             result['RequestId'] = self.request_id
         if self.workspace_id is not None:
@@ -2256,6 +2379,8 @@ class CreateDefaultWorkspaceResponseBody(TeaModel):
 
     def from_map(self, m: dict = None):
         m = m or dict()
+        if m.get('InstanceJobId') is not None:
+            self.instance_job_id = m.get('InstanceJobId')
         if m.get('RequestId') is not None:
             self.request_id = m.get('RequestId')
         if m.get('WorkspaceId') is not None:
@@ -2311,7 +2436,9 @@ class CreateDingTalkRobotMessageRequest(TeaModel):
         message: str = None,
         secret: str = None,
     ):
+        # This parameter is required.
         self.access_token = access_token
+        # This parameter is required.
         self.message = message
         self.secret = secret
 
@@ -2422,12 +2549,18 @@ class CreateExperimentRequest(TeaModel):
     ):
         self.accessibility = accessibility
         # Artifact的OSS存储路径
+        # 
+        # This parameter is required.
         self.artifact_uri = artifact_uri
         # 标签
         self.labels = labels
         # 名称
+        # 
+        # This parameter is required.
         self.name = name
         # 工作空间ID
+        # 
+        # This parameter is required.
         self.workspace_id = workspace_id
 
     def validate(self):
@@ -2554,7 +2687,9 @@ class CreateMemberRequestMembers(TeaModel):
         roles: List[str] = None,
         user_id: str = None,
     ):
+        # This parameter is required.
         self.roles = roles
+        # This parameter is required.
         self.user_id = user_id
 
     def validate(self):
@@ -2586,6 +2721,7 @@ class CreateMemberRequest(TeaModel):
         self,
         members: List[CreateMemberRequestMembers] = None,
     ):
+        # This parameter is required.
         self.members = members
 
     def validate(self):
@@ -2765,6 +2901,7 @@ class CreateModelRequest(TeaModel):
         self.labels = labels
         self.model_description = model_description
         self.model_doc = model_doc
+        # This parameter is required.
         self.model_name = model_name
         self.model_type = model_type
         self.order_number = order_number
@@ -3138,6 +3275,7 @@ class CreateModelVersionRequest(TeaModel):
     def __init__(
         self,
         approval_status: str = None,
+        compression_spec: Dict[str, Any] = None,
         evaluation_spec: Dict[str, Any] = None,
         extra_info: Dict[str, Any] = None,
         format_type: str = None,
@@ -3154,6 +3292,7 @@ class CreateModelVersionRequest(TeaModel):
         version_name: str = None,
     ):
         self.approval_status = approval_status
+        self.compression_spec = compression_spec
         self.evaluation_spec = evaluation_spec
         self.extra_info = extra_info
         self.format_type = format_type
@@ -3165,6 +3304,7 @@ class CreateModelVersionRequest(TeaModel):
         self.source_id = source_id
         self.source_type = source_type
         self.training_spec = training_spec
+        # This parameter is required.
         self.uri = uri
         self.version_description = version_description
         self.version_name = version_name
@@ -3183,6 +3323,8 @@ class CreateModelVersionRequest(TeaModel):
         result = dict()
         if self.approval_status is not None:
             result['ApprovalStatus'] = self.approval_status
+        if self.compression_spec is not None:
+            result['CompressionSpec'] = self.compression_spec
         if self.evaluation_spec is not None:
             result['EvaluationSpec'] = self.evaluation_spec
         if self.extra_info is not None:
@@ -3219,6 +3361,8 @@ class CreateModelVersionRequest(TeaModel):
         m = m or dict()
         if m.get('ApprovalStatus') is not None:
             self.approval_status = m.get('ApprovalStatus')
+        if m.get('CompressionSpec') is not None:
+            self.compression_spec = m.get('CompressionSpec')
         if m.get('EvaluationSpec') is not None:
             self.evaluation_spec = m.get('EvaluationSpec')
         if m.get('ExtraInfo') is not None:
@@ -3785,6 +3929,7 @@ class CreateServiceIdentityRoleRequest(TeaModel):
         self,
         role_name: str = None,
     ):
+        # This parameter is required.
         self.role_name = role_name
 
     def validate(self):
@@ -3892,6 +4037,7 @@ class CreateServiceTemplateRequest(TeaModel):
         self.provider = provider
         self.service_template_description = service_template_description
         self.service_template_doc = service_template_doc
+        # This parameter is required.
         self.service_template_name = service_template_name
 
     def validate(self):
@@ -4132,10 +4278,12 @@ class CreateTrialRequest(TeaModel):
         source_id: str = None,
         source_type: str = None,
     ):
+        # This parameter is required.
         self.experiment_id = experiment_id
         self.labels = labels
         self.name = name
         self.source_id = source_id
+        # This parameter is required.
         self.source_type = source_type
 
     def validate(self):
@@ -4338,9 +4486,12 @@ class CreateWorkspaceRequest(TeaModel):
         env_types: List[str] = None,
         workspace_name: str = None,
     ):
+        # This parameter is required.
         self.description = description
         self.display_name = display_name
+        # This parameter is required.
         self.env_types = env_types
+        # This parameter is required.
         self.workspace_name = workspace_name
 
     def validate(self):
@@ -4487,6 +4638,7 @@ class CreateWorkspaceResourceRequestResourcesQuotas(TeaModel):
         self,
         id: str = None,
     ):
+        # This parameter is required.
         self.id = id
 
     def validate(self):
@@ -4523,15 +4675,18 @@ class CreateWorkspaceResourceRequestResources(TeaModel):
         spec: Dict[str, Any] = None,
         workspace_id: str = None,
     ):
+        # This parameter is required.
         self.env_type = env_type
         self.group_name = group_name
         self.is_default = is_default
         self.labels = labels
+        # This parameter is required.
         self.name = name
         self.product_type = product_type
         self.quotas = quotas
         self.resource_type = resource_type
         self.spec = spec
+        # This parameter is required.
         self.workspace_id = workspace_id
 
     def validate(self):
@@ -4614,6 +4769,7 @@ class CreateWorkspaceResourceRequest(TeaModel):
         resources: List[CreateWorkspaceResourceRequestResources] = None,
     ):
         self.option = option
+        # This parameter is required.
         self.resources = resources
 
     def validate(self):
@@ -5310,6 +5466,7 @@ class DeleteMembersRequest(TeaModel):
         self,
         member_ids: str = None,
     ):
+        # This parameter is required.
         self.member_ids = member_ids
 
     def validate(self):
@@ -6302,6 +6459,101 @@ class DeleteWorkspaceResourceResponse(TeaModel):
         return self
 
 
+class DeleteWorkspaceRolesRequest(TeaModel):
+    def __init__(
+        self,
+        role_ids: str = None,
+    ):
+        self.role_ids = role_ids
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.role_ids is not None:
+            result['RoleIds'] = self.role_ids
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('RoleIds') is not None:
+            self.role_ids = m.get('RoleIds')
+        return self
+
+
+class DeleteWorkspaceRolesResponseBody(TeaModel):
+    def __init__(
+        self,
+        request_id: str = None,
+    ):
+        self.request_id = request_id
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        return self
+
+
+class DeleteWorkspaceRolesResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: DeleteWorkspaceRolesResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = DeleteWorkspaceRolesResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
 class DescribePricingModuleRequest(TeaModel):
     def __init__(
         self,
@@ -6309,8 +6561,11 @@ class DescribePricingModuleRequest(TeaModel):
         product_type: str = None,
         subscription_type: str = None,
     ):
+        # This parameter is required.
         self.product_code = product_code
+        # This parameter is required.
         self.product_type = product_type
+        # This parameter is required.
         self.subscription_type = subscription_type
 
     def validate(self):
@@ -7928,6 +8183,265 @@ class GetImagesStatisticsResponse(TeaModel):
         return self
 
 
+class GetInstanceJobResponseBody(TeaModel):
+    def __init__(
+        self,
+        gmt_create_time: str = None,
+        instance_id: str = None,
+        instance_job_id: str = None,
+        reason_message: str = None,
+        request_id: str = None,
+        status: str = None,
+        type: str = None,
+    ):
+        self.gmt_create_time = gmt_create_time
+        self.instance_id = instance_id
+        self.instance_job_id = instance_job_id
+        self.reason_message = reason_message
+        self.request_id = request_id
+        self.status = status
+        self.type = type
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.gmt_create_time is not None:
+            result['GmtCreateTime'] = self.gmt_create_time
+        if self.instance_id is not None:
+            result['InstanceId'] = self.instance_id
+        if self.instance_job_id is not None:
+            result['InstanceJobId'] = self.instance_job_id
+        if self.reason_message is not None:
+            result['ReasonMessage'] = self.reason_message
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        if self.status is not None:
+            result['Status'] = self.status
+        if self.type is not None:
+            result['Type'] = self.type
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('GmtCreateTime') is not None:
+            self.gmt_create_time = m.get('GmtCreateTime')
+        if m.get('InstanceId') is not None:
+            self.instance_id = m.get('InstanceId')
+        if m.get('InstanceJobId') is not None:
+            self.instance_job_id = m.get('InstanceJobId')
+        if m.get('ReasonMessage') is not None:
+            self.reason_message = m.get('ReasonMessage')
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        if m.get('Status') is not None:
+            self.status = m.get('Status')
+        if m.get('Type') is not None:
+            self.type = m.get('Type')
+        return self
+
+
+class GetInstanceJobResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: GetInstanceJobResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = GetInstanceJobResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
+class GetInstanceStatisticsRequest(TeaModel):
+    def __init__(
+        self,
+        option: str = None,
+        status: str = None,
+        workspace_id: str = None,
+    ):
+        self.option = option
+        self.status = status
+        # This parameter is required.
+        self.workspace_id = workspace_id
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.option is not None:
+            result['Option'] = self.option
+        if self.status is not None:
+            result['Status'] = self.status
+        if self.workspace_id is not None:
+            result['WorkspaceId'] = self.workspace_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Option') is not None:
+            self.option = m.get('Option')
+        if m.get('Status') is not None:
+            self.status = m.get('Status')
+        if m.get('WorkspaceId') is not None:
+            self.workspace_id = m.get('WorkspaceId')
+        return self
+
+
+class GetInstanceStatisticsResponseBodyInstances(TeaModel):
+    def __init__(
+        self,
+        count: int = None,
+        instance_type: str = None,
+    ):
+        self.count = count
+        self.instance_type = instance_type
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.count is not None:
+            result['Count'] = self.count
+        if self.instance_type is not None:
+            result['InstanceType'] = self.instance_type
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Count') is not None:
+            self.count = m.get('Count')
+        if m.get('InstanceType') is not None:
+            self.instance_type = m.get('InstanceType')
+        return self
+
+
+class GetInstanceStatisticsResponseBody(TeaModel):
+    def __init__(
+        self,
+        instances: List[GetInstanceStatisticsResponseBodyInstances] = None,
+        request_id: str = None,
+    ):
+        self.instances = instances
+        self.request_id = request_id
+
+    def validate(self):
+        if self.instances:
+            for k in self.instances:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        result['Instances'] = []
+        if self.instances is not None:
+            for k in self.instances:
+                result['Instances'].append(k.to_map() if k else None)
+        if self.request_id is not None:
+            result['requestId'] = self.request_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        self.instances = []
+        if m.get('Instances') is not None:
+            for k in m.get('Instances'):
+                temp_model = GetInstanceStatisticsResponseBodyInstances()
+                self.instances.append(temp_model.from_map(k))
+        if m.get('requestId') is not None:
+            self.request_id = m.get('requestId')
+        return self
+
+
+class GetInstanceStatisticsResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: GetInstanceStatisticsResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = GetInstanceStatisticsResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
 class GetMemberRequest(TeaModel):
     def __init__(
         self,
@@ -8262,6 +8776,7 @@ class GetModelVersionResponseBody(TeaModel):
     def __init__(
         self,
         approval_status: str = None,
+        compression_spec: Dict[str, Any] = None,
         evaluation_spec: Dict[str, Any] = None,
         extra_info: Dict[str, Any] = None,
         format_type: str = None,
@@ -8283,6 +8798,7 @@ class GetModelVersionResponseBody(TeaModel):
         version_name: str = None,
     ):
         self.approval_status = approval_status
+        self.compression_spec = compression_spec
         self.evaluation_spec = evaluation_spec
         self.extra_info = extra_info
         self.format_type = format_type
@@ -8317,6 +8833,8 @@ class GetModelVersionResponseBody(TeaModel):
         result = dict()
         if self.approval_status is not None:
             result['ApprovalStatus'] = self.approval_status
+        if self.compression_spec is not None:
+            result['CompressionSpec'] = self.compression_spec
         if self.evaluation_spec is not None:
             result['EvaluationSpec'] = self.evaluation_spec
         if self.extra_info is not None:
@@ -8363,6 +8881,8 @@ class GetModelVersionResponseBody(TeaModel):
         m = m or dict()
         if m.get('ApprovalStatus') is not None:
             self.approval_status = m.get('ApprovalStatus')
+        if m.get('CompressionSpec') is not None:
+            self.compression_spec = m.get('CompressionSpec')
         if m.get('EvaluationSpec') is not None:
             self.evaluation_spec = m.get('EvaluationSpec')
         if m.get('ExtraInfo') is not None:
@@ -8666,9 +9186,13 @@ class GetPermissionRequest(TeaModel):
         self,
         accessibility: str = None,
         creator: str = None,
+        option: str = None,
+        resource: str = None,
     ):
         self.accessibility = accessibility
         self.creator = creator
+        self.option = option
+        self.resource = resource
 
     def validate(self):
         pass
@@ -8683,6 +9207,10 @@ class GetPermissionRequest(TeaModel):
             result['Accessibility'] = self.accessibility
         if self.creator is not None:
             result['Creator'] = self.creator
+        if self.option is not None:
+            result['Option'] = self.option
+        if self.resource is not None:
+            result['Resource'] = self.resource
         return result
 
     def from_map(self, m: dict = None):
@@ -8691,6 +9219,10 @@ class GetPermissionRequest(TeaModel):
             self.accessibility = m.get('Accessibility')
         if m.get('Creator') is not None:
             self.creator = m.get('Creator')
+        if m.get('Option') is not None:
+            self.option = m.get('Option')
+        if m.get('Resource') is not None:
+            self.resource = m.get('Resource')
         return self
 
 
@@ -8820,6 +9352,7 @@ class GetResourceRequest(TeaModel):
         self,
         resource_type: str = None,
     ):
+        # This parameter is required.
         self.resource_type = resource_type
 
     def validate(self):
@@ -9726,6 +10259,245 @@ class GetWorkspaceResponse(TeaModel):
         return self
 
 
+class GetWorkspaceRoleResponseBodyModulePermissionsPermissionsPermissionRules(TeaModel):
+    def __init__(
+        self,
+        accessibility: str = None,
+        entity_access_type: str = None,
+    ):
+        self.accessibility = accessibility
+        self.entity_access_type = entity_access_type
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.accessibility is not None:
+            result['Accessibility'] = self.accessibility
+        if self.entity_access_type is not None:
+            result['EntityAccessType'] = self.entity_access_type
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Accessibility') is not None:
+            self.accessibility = m.get('Accessibility')
+        if m.get('EntityAccessType') is not None:
+            self.entity_access_type = m.get('EntityAccessType')
+        return self
+
+
+class GetWorkspaceRoleResponseBodyModulePermissionsPermissions(TeaModel):
+    def __init__(
+        self,
+        permission_codes: List[str] = None,
+        permission_rules: List[GetWorkspaceRoleResponseBodyModulePermissionsPermissionsPermissionRules] = None,
+    ):
+        self.permission_codes = permission_codes
+        self.permission_rules = permission_rules
+
+    def validate(self):
+        if self.permission_rules:
+            for k in self.permission_rules:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.permission_codes is not None:
+            result['PermissionCodes'] = self.permission_codes
+        result['PermissionRules'] = []
+        if self.permission_rules is not None:
+            for k in self.permission_rules:
+                result['PermissionRules'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('PermissionCodes') is not None:
+            self.permission_codes = m.get('PermissionCodes')
+        self.permission_rules = []
+        if m.get('PermissionRules') is not None:
+            for k in m.get('PermissionRules'):
+                temp_model = GetWorkspaceRoleResponseBodyModulePermissionsPermissionsPermissionRules()
+                self.permission_rules.append(temp_model.from_map(k))
+        return self
+
+
+class GetWorkspaceRoleResponseBodyModulePermissions(TeaModel):
+    def __init__(
+        self,
+        module_name: str = None,
+        permission_type: str = None,
+        permissions: List[GetWorkspaceRoleResponseBodyModulePermissionsPermissions] = None,
+    ):
+        self.module_name = module_name
+        self.permission_type = permission_type
+        self.permissions = permissions
+
+    def validate(self):
+        if self.permissions:
+            for k in self.permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.module_name is not None:
+            result['ModuleName'] = self.module_name
+        if self.permission_type is not None:
+            result['PermissionType'] = self.permission_type
+        result['Permissions'] = []
+        if self.permissions is not None:
+            for k in self.permissions:
+                result['Permissions'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('ModuleName') is not None:
+            self.module_name = m.get('ModuleName')
+        if m.get('PermissionType') is not None:
+            self.permission_type = m.get('PermissionType')
+        self.permissions = []
+        if m.get('Permissions') is not None:
+            for k in m.get('Permissions'):
+                temp_model = GetWorkspaceRoleResponseBodyModulePermissionsPermissions()
+                self.permissions.append(temp_model.from_map(k))
+        return self
+
+
+class GetWorkspaceRoleResponseBody(TeaModel):
+    def __init__(
+        self,
+        creator: str = None,
+        gmt_create_time: str = None,
+        gmt_modified_time: str = None,
+        module_permissions: List[GetWorkspaceRoleResponseBodyModulePermissions] = None,
+        request_id: str = None,
+        role_id: str = None,
+        role_name: str = None,
+        status: str = None,
+    ):
+        self.creator = creator
+        self.gmt_create_time = gmt_create_time
+        self.gmt_modified_time = gmt_modified_time
+        self.module_permissions = module_permissions
+        self.request_id = request_id
+        self.role_id = role_id
+        self.role_name = role_name
+        self.status = status
+
+    def validate(self):
+        if self.module_permissions:
+            for k in self.module_permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.creator is not None:
+            result['Creator'] = self.creator
+        if self.gmt_create_time is not None:
+            result['GmtCreateTime'] = self.gmt_create_time
+        if self.gmt_modified_time is not None:
+            result['GmtModifiedTime'] = self.gmt_modified_time
+        result['ModulePermissions'] = []
+        if self.module_permissions is not None:
+            for k in self.module_permissions:
+                result['ModulePermissions'].append(k.to_map() if k else None)
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        if self.role_id is not None:
+            result['RoleId'] = self.role_id
+        if self.role_name is not None:
+            result['RoleName'] = self.role_name
+        if self.status is not None:
+            result['Status'] = self.status
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Creator') is not None:
+            self.creator = m.get('Creator')
+        if m.get('GmtCreateTime') is not None:
+            self.gmt_create_time = m.get('GmtCreateTime')
+        if m.get('GmtModifiedTime') is not None:
+            self.gmt_modified_time = m.get('GmtModifiedTime')
+        self.module_permissions = []
+        if m.get('ModulePermissions') is not None:
+            for k in m.get('ModulePermissions'):
+                temp_model = GetWorkspaceRoleResponseBodyModulePermissions()
+                self.module_permissions.append(temp_model.from_map(k))
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        if m.get('RoleId') is not None:
+            self.role_id = m.get('RoleId')
+        if m.get('RoleName') is not None:
+            self.role_name = m.get('RoleName')
+        if m.get('Status') is not None:
+            self.status = m.get('Status')
+        return self
+
+
+class GetWorkspaceRoleResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: GetWorkspaceRoleResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = GetWorkspaceRoleResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
 class ListCodeSourcesRequest(TeaModel):
     def __init__(
         self,
@@ -10067,10 +10839,12 @@ class ListConfigsResponseBodyConfigsLabels(TeaModel):
 class ListConfigsResponseBodyConfigs(TeaModel):
     def __init__(
         self,
+        category_name: str = None,
         config_key: str = None,
         config_value: str = None,
         labels: List[ListConfigsResponseBodyConfigsLabels] = None,
     ):
+        self.category_name = category_name
         self.config_key = config_key
         self.config_value = config_value
         self.labels = labels
@@ -10087,6 +10861,8 @@ class ListConfigsResponseBodyConfigs(TeaModel):
             return _map
 
         result = dict()
+        if self.category_name is not None:
+            result['CategoryName'] = self.category_name
         if self.config_key is not None:
             result['ConfigKey'] = self.config_key
         if self.config_value is not None:
@@ -10099,6 +10875,8 @@ class ListConfigsResponseBodyConfigs(TeaModel):
 
     def from_map(self, m: dict = None):
         m = m or dict()
+        if m.get('CategoryName') is not None:
+            self.category_name = m.get('CategoryName')
         if m.get('ConfigKey') is not None:
             self.config_key = m.get('ConfigKey')
         if m.get('ConfigValue') is not None:
@@ -10650,6 +11428,57 @@ class ListFeaturesResponse(TeaModel):
         return self
 
 
+class ListGlobalPermissionsRequest(TeaModel):
+    def __init__(
+        self,
+        module_names: str = None,
+        operation_type: str = None,
+        page_number: int = None,
+        page_size: int = None,
+        resource_types: str = None,
+    ):
+        self.module_names = module_names
+        self.operation_type = operation_type
+        self.page_number = page_number
+        self.page_size = page_size
+        self.resource_types = resource_types
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.module_names is not None:
+            result['ModuleNames'] = self.module_names
+        if self.operation_type is not None:
+            result['OperationType'] = self.operation_type
+        if self.page_number is not None:
+            result['PageNumber'] = self.page_number
+        if self.page_size is not None:
+            result['PageSize'] = self.page_size
+        if self.resource_types is not None:
+            result['ResourceTypes'] = self.resource_types
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('ModuleNames') is not None:
+            self.module_names = m.get('ModuleNames')
+        if m.get('OperationType') is not None:
+            self.operation_type = m.get('OperationType')
+        if m.get('PageNumber') is not None:
+            self.page_number = m.get('PageNumber')
+        if m.get('PageSize') is not None:
+            self.page_size = m.get('PageSize')
+        if m.get('ResourceTypes') is not None:
+            self.resource_types = m.get('ResourceTypes')
+        return self
+
+
 class ListGlobalPermissionsResponseBodyPermissionsPermissionRules(TeaModel):
     def __init__(
         self,
@@ -10811,6 +11640,7 @@ class ListImageLabelKeysRequest(TeaModel):
         self,
         label_key_prefixes: str = None,
     ):
+        # This parameter is required.
         self.label_key_prefixes = label_key_prefixes
 
     def validate(self):
@@ -12407,7 +13237,6 @@ class ListOperationLogsRequest(TeaModel):
         self,
         entity_status: str = None,
         entity_types: str = None,
-        operation_status: str = None,
         operations: str = None,
         order: str = None,
         page_number: int = None,
@@ -12416,7 +13245,6 @@ class ListOperationLogsRequest(TeaModel):
     ):
         self.entity_status = entity_status
         self.entity_types = entity_types
-        self.operation_status = operation_status
         self.operations = operations
         self.order = order
         self.page_number = page_number
@@ -12436,8 +13264,6 @@ class ListOperationLogsRequest(TeaModel):
             result['EntityStatus'] = self.entity_status
         if self.entity_types is not None:
             result['EntityTypes'] = self.entity_types
-        if self.operation_status is not None:
-            result['OperationStatus'] = self.operation_status
         if self.operations is not None:
             result['Operations'] = self.operations
         if self.order is not None:
@@ -12456,8 +13282,6 @@ class ListOperationLogsRequest(TeaModel):
             self.entity_status = m.get('EntityStatus')
         if m.get('EntityTypes') is not None:
             self.entity_types = m.get('EntityTypes')
-        if m.get('OperationStatus') is not None:
-            self.operation_status = m.get('OperationStatus')
         if m.get('Operations') is not None:
             self.operations = m.get('Operations')
         if m.get('Order') is not None:
@@ -12475,19 +13299,19 @@ class ListOperationLogsResponseBodyLogs(TeaModel):
     def __init__(
         self,
         entity_id: str = None,
+        entity_status: str = None,
         entity_type: str = None,
         gmt_create_time: str = None,
         message: str = None,
         operation: str = None,
-        operation_status: str = None,
         operator: str = None,
     ):
         self.entity_id = entity_id
+        self.entity_status = entity_status
         self.entity_type = entity_type
         self.gmt_create_time = gmt_create_time
         self.message = message
         self.operation = operation
-        self.operation_status = operation_status
         self.operator = operator
 
     def validate(self):
@@ -12501,6 +13325,8 @@ class ListOperationLogsResponseBodyLogs(TeaModel):
         result = dict()
         if self.entity_id is not None:
             result['EntityId'] = self.entity_id
+        if self.entity_status is not None:
+            result['EntityStatus'] = self.entity_status
         if self.entity_type is not None:
             result['EntityType'] = self.entity_type
         if self.gmt_create_time is not None:
@@ -12509,8 +13335,6 @@ class ListOperationLogsResponseBodyLogs(TeaModel):
             result['Message'] = self.message
         if self.operation is not None:
             result['Operation'] = self.operation
-        if self.operation_status is not None:
-            result['OperationStatus'] = self.operation_status
         if self.operator is not None:
             result['Operator'] = self.operator
         return result
@@ -12519,6 +13343,8 @@ class ListOperationLogsResponseBodyLogs(TeaModel):
         m = m or dict()
         if m.get('EntityId') is not None:
             self.entity_id = m.get('EntityId')
+        if m.get('EntityStatus') is not None:
+            self.entity_status = m.get('EntityStatus')
         if m.get('EntityType') is not None:
             self.entity_type = m.get('EntityType')
         if m.get('GmtCreateTime') is not None:
@@ -12527,8 +13353,6 @@ class ListOperationLogsResponseBodyLogs(TeaModel):
             self.message = m.get('Message')
         if m.get('Operation') is not None:
             self.operation = m.get('Operation')
-        if m.get('OperationStatus') is not None:
-            self.operation_status = m.get('OperationStatus')
         if m.get('Operator') is not None:
             self.operator = m.get('Operator')
         return self
@@ -14410,6 +15234,623 @@ class ListUsersResponse(TeaModel):
             self.status_code = m.get('statusCode')
         if m.get('body') is not None:
             temp_model = ListUsersResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
+class ListWorkspacePermissionsRequestPermissions(TeaModel):
+    def __init__(
+        self,
+        accessibility: str = None,
+        creator: str = None,
+        id: str = None,
+        permission_code: str = None,
+        resource: str = None,
+    ):
+        self.accessibility = accessibility
+        self.creator = creator
+        self.id = id
+        # This parameter is required.
+        self.permission_code = permission_code
+        self.resource = resource
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.accessibility is not None:
+            result['Accessibility'] = self.accessibility
+        if self.creator is not None:
+            result['Creator'] = self.creator
+        if self.id is not None:
+            result['ID'] = self.id
+        if self.permission_code is not None:
+            result['PermissionCode'] = self.permission_code
+        if self.resource is not None:
+            result['Resource'] = self.resource
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Accessibility') is not None:
+            self.accessibility = m.get('Accessibility')
+        if m.get('Creator') is not None:
+            self.creator = m.get('Creator')
+        if m.get('ID') is not None:
+            self.id = m.get('ID')
+        if m.get('PermissionCode') is not None:
+            self.permission_code = m.get('PermissionCode')
+        if m.get('Resource') is not None:
+            self.resource = m.get('Resource')
+        return self
+
+
+class ListWorkspacePermissionsRequest(TeaModel):
+    def __init__(
+        self,
+        options: Dict[str, Any] = None,
+        permissions: List[ListWorkspacePermissionsRequestPermissions] = None,
+    ):
+        self.options = options
+        # This parameter is required.
+        self.permissions = permissions
+
+    def validate(self):
+        if self.permissions:
+            for k in self.permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.options is not None:
+            result['Options'] = self.options
+        result['Permissions'] = []
+        if self.permissions is not None:
+            for k in self.permissions:
+                result['Permissions'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Options') is not None:
+            self.options = m.get('Options')
+        self.permissions = []
+        if m.get('Permissions') is not None:
+            for k in m.get('Permissions'):
+                temp_model = ListWorkspacePermissionsRequestPermissions()
+                self.permissions.append(temp_model.from_map(k))
+        return self
+
+
+class ListWorkspacePermissionsResponseBodyPermissionsPermissionRules(TeaModel):
+    def __init__(
+        self,
+        accessibility: str = None,
+        entity_access_type: str = None,
+    ):
+        self.accessibility = accessibility
+        self.entity_access_type = entity_access_type
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.accessibility is not None:
+            result['Accessibility'] = self.accessibility
+        if self.entity_access_type is not None:
+            result['EntityAccessType'] = self.entity_access_type
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Accessibility') is not None:
+            self.accessibility = m.get('Accessibility')
+        if m.get('EntityAccessType') is not None:
+            self.entity_access_type = m.get('EntityAccessType')
+        return self
+
+
+class ListWorkspacePermissionsResponseBodyPermissions(TeaModel):
+    def __init__(
+        self,
+        code: str = None,
+        id: str = None,
+        message: str = None,
+        permission_code: str = None,
+        permission_rules: List[ListWorkspacePermissionsResponseBodyPermissionsPermissionRules] = None,
+    ):
+        self.code = code
+        self.id = id
+        self.message = message
+        self.permission_code = permission_code
+        self.permission_rules = permission_rules
+
+    def validate(self):
+        if self.permission_rules:
+            for k in self.permission_rules:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.code is not None:
+            result['Code'] = self.code
+        if self.id is not None:
+            result['ID'] = self.id
+        if self.message is not None:
+            result['Message'] = self.message
+        if self.permission_code is not None:
+            result['PermissionCode'] = self.permission_code
+        result['PermissionRules'] = []
+        if self.permission_rules is not None:
+            for k in self.permission_rules:
+                result['PermissionRules'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Code') is not None:
+            self.code = m.get('Code')
+        if m.get('ID') is not None:
+            self.id = m.get('ID')
+        if m.get('Message') is not None:
+            self.message = m.get('Message')
+        if m.get('PermissionCode') is not None:
+            self.permission_code = m.get('PermissionCode')
+        self.permission_rules = []
+        if m.get('PermissionRules') is not None:
+            for k in m.get('PermissionRules'):
+                temp_model = ListWorkspacePermissionsResponseBodyPermissionsPermissionRules()
+                self.permission_rules.append(temp_model.from_map(k))
+        return self
+
+
+class ListWorkspacePermissionsResponseBody(TeaModel):
+    def __init__(
+        self,
+        permissions: List[ListWorkspacePermissionsResponseBodyPermissions] = None,
+        request_id: str = None,
+    ):
+        self.permissions = permissions
+        self.request_id = request_id
+
+    def validate(self):
+        if self.permissions:
+            for k in self.permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        result['Permissions'] = []
+        if self.permissions is not None:
+            for k in self.permissions:
+                result['Permissions'].append(k.to_map() if k else None)
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        self.permissions = []
+        if m.get('Permissions') is not None:
+            for k in m.get('Permissions'):
+                temp_model = ListWorkspacePermissionsResponseBodyPermissions()
+                self.permissions.append(temp_model.from_map(k))
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        return self
+
+
+class ListWorkspacePermissionsResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: ListWorkspacePermissionsResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = ListWorkspacePermissionsResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
+class ListWorkspaceRolesRequest(TeaModel):
+    def __init__(
+        self,
+        order: str = None,
+        page_number: int = None,
+        page_size: int = None,
+        role_ids: str = None,
+        role_name: str = None,
+        role_type: str = None,
+        sort_by: str = None,
+        status: str = None,
+        verbose_fields: str = None,
+    ):
+        self.order = order
+        self.page_number = page_number
+        self.page_size = page_size
+        self.role_ids = role_ids
+        self.role_name = role_name
+        self.role_type = role_type
+        self.sort_by = sort_by
+        self.status = status
+        self.verbose_fields = verbose_fields
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.order is not None:
+            result['Order'] = self.order
+        if self.page_number is not None:
+            result['PageNumber'] = self.page_number
+        if self.page_size is not None:
+            result['PageSize'] = self.page_size
+        if self.role_ids is not None:
+            result['RoleIds'] = self.role_ids
+        if self.role_name is not None:
+            result['RoleName'] = self.role_name
+        if self.role_type is not None:
+            result['RoleType'] = self.role_type
+        if self.sort_by is not None:
+            result['SortBy'] = self.sort_by
+        if self.status is not None:
+            result['Status'] = self.status
+        if self.verbose_fields is not None:
+            result['VerboseFields'] = self.verbose_fields
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Order') is not None:
+            self.order = m.get('Order')
+        if m.get('PageNumber') is not None:
+            self.page_number = m.get('PageNumber')
+        if m.get('PageSize') is not None:
+            self.page_size = m.get('PageSize')
+        if m.get('RoleIds') is not None:
+            self.role_ids = m.get('RoleIds')
+        if m.get('RoleName') is not None:
+            self.role_name = m.get('RoleName')
+        if m.get('RoleType') is not None:
+            self.role_type = m.get('RoleType')
+        if m.get('SortBy') is not None:
+            self.sort_by = m.get('SortBy')
+        if m.get('Status') is not None:
+            self.status = m.get('Status')
+        if m.get('VerboseFields') is not None:
+            self.verbose_fields = m.get('VerboseFields')
+        return self
+
+
+class ListWorkspaceRolesResponseBodyRolesModulePermissionsPermissionsPermissionRules(TeaModel):
+    def __init__(
+        self,
+        accessibility: str = None,
+        entity_access_type: str = None,
+    ):
+        self.accessibility = accessibility
+        self.entity_access_type = entity_access_type
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.accessibility is not None:
+            result['Accessibility'] = self.accessibility
+        if self.entity_access_type is not None:
+            result['EntityAccessType'] = self.entity_access_type
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Accessibility') is not None:
+            self.accessibility = m.get('Accessibility')
+        if m.get('EntityAccessType') is not None:
+            self.entity_access_type = m.get('EntityAccessType')
+        return self
+
+
+class ListWorkspaceRolesResponseBodyRolesModulePermissionsPermissions(TeaModel):
+    def __init__(
+        self,
+        permission_codes: List[str] = None,
+        permission_rules: List[ListWorkspaceRolesResponseBodyRolesModulePermissionsPermissionsPermissionRules] = None,
+    ):
+        self.permission_codes = permission_codes
+        self.permission_rules = permission_rules
+
+    def validate(self):
+        if self.permission_rules:
+            for k in self.permission_rules:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.permission_codes is not None:
+            result['PermissionCodes'] = self.permission_codes
+        result['PermissionRules'] = []
+        if self.permission_rules is not None:
+            for k in self.permission_rules:
+                result['PermissionRules'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('PermissionCodes') is not None:
+            self.permission_codes = m.get('PermissionCodes')
+        self.permission_rules = []
+        if m.get('PermissionRules') is not None:
+            for k in m.get('PermissionRules'):
+                temp_model = ListWorkspaceRolesResponseBodyRolesModulePermissionsPermissionsPermissionRules()
+                self.permission_rules.append(temp_model.from_map(k))
+        return self
+
+
+class ListWorkspaceRolesResponseBodyRolesModulePermissions(TeaModel):
+    def __init__(
+        self,
+        module_name: str = None,
+        permission_type: str = None,
+        permissions: List[ListWorkspaceRolesResponseBodyRolesModulePermissionsPermissions] = None,
+    ):
+        self.module_name = module_name
+        self.permission_type = permission_type
+        self.permissions = permissions
+
+    def validate(self):
+        if self.permissions:
+            for k in self.permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.module_name is not None:
+            result['ModuleName'] = self.module_name
+        if self.permission_type is not None:
+            result['PermissionType'] = self.permission_type
+        result['Permissions'] = []
+        if self.permissions is not None:
+            for k in self.permissions:
+                result['Permissions'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('ModuleName') is not None:
+            self.module_name = m.get('ModuleName')
+        if m.get('PermissionType') is not None:
+            self.permission_type = m.get('PermissionType')
+        self.permissions = []
+        if m.get('Permissions') is not None:
+            for k in m.get('Permissions'):
+                temp_model = ListWorkspaceRolesResponseBodyRolesModulePermissionsPermissions()
+                self.permissions.append(temp_model.from_map(k))
+        return self
+
+
+class ListWorkspaceRolesResponseBodyRoles(TeaModel):
+    def __init__(
+        self,
+        creator: str = None,
+        gmt_create_time: str = None,
+        gmt_modified_time: str = None,
+        module_permissions: List[ListWorkspaceRolesResponseBodyRolesModulePermissions] = None,
+        role_id: str = None,
+        role_name: str = None,
+    ):
+        self.creator = creator
+        self.gmt_create_time = gmt_create_time
+        self.gmt_modified_time = gmt_modified_time
+        self.module_permissions = module_permissions
+        self.role_id = role_id
+        self.role_name = role_name
+
+    def validate(self):
+        if self.module_permissions:
+            for k in self.module_permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.creator is not None:
+            result['Creator'] = self.creator
+        if self.gmt_create_time is not None:
+            result['GmtCreateTime'] = self.gmt_create_time
+        if self.gmt_modified_time is not None:
+            result['GmtModifiedTime'] = self.gmt_modified_time
+        result['ModulePermissions'] = []
+        if self.module_permissions is not None:
+            for k in self.module_permissions:
+                result['ModulePermissions'].append(k.to_map() if k else None)
+        if self.role_id is not None:
+            result['RoleId'] = self.role_id
+        if self.role_name is not None:
+            result['RoleName'] = self.role_name
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Creator') is not None:
+            self.creator = m.get('Creator')
+        if m.get('GmtCreateTime') is not None:
+            self.gmt_create_time = m.get('GmtCreateTime')
+        if m.get('GmtModifiedTime') is not None:
+            self.gmt_modified_time = m.get('GmtModifiedTime')
+        self.module_permissions = []
+        if m.get('ModulePermissions') is not None:
+            for k in m.get('ModulePermissions'):
+                temp_model = ListWorkspaceRolesResponseBodyRolesModulePermissions()
+                self.module_permissions.append(temp_model.from_map(k))
+        if m.get('RoleId') is not None:
+            self.role_id = m.get('RoleId')
+        if m.get('RoleName') is not None:
+            self.role_name = m.get('RoleName')
+        return self
+
+
+class ListWorkspaceRolesResponseBody(TeaModel):
+    def __init__(
+        self,
+        request_id: str = None,
+        roles: List[ListWorkspaceRolesResponseBodyRoles] = None,
+        total_count: int = None,
+    ):
+        self.request_id = request_id
+        self.roles = roles
+        self.total_count = total_count
+
+    def validate(self):
+        if self.roles:
+            for k in self.roles:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        result['Roles'] = []
+        if self.roles is not None:
+            for k in self.roles:
+                result['Roles'].append(k.to_map() if k else None)
+        if self.total_count is not None:
+            result['TotalCount'] = self.total_count
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        self.roles = []
+        if m.get('Roles') is not None:
+            for k in m.get('Roles'):
+                temp_model = ListWorkspaceRolesResponseBodyRoles()
+                self.roles.append(temp_model.from_map(k))
+        if m.get('TotalCount') is not None:
+            self.total_count = m.get('TotalCount')
+        return self
+
+
+class ListWorkspaceRolesResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: ListWorkspaceRolesResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = ListWorkspaceRolesResponseBody()
             self.body = temp_model.from_map(m['body'])
         return self
 
@@ -16724,6 +18165,7 @@ class UpdateModelVersionRequest(TeaModel):
     def __init__(
         self,
         approval_status: str = None,
+        compression_spec: Dict[str, Any] = None,
         evaluation_spec: Dict[str, Any] = None,
         extra_info: Dict[str, Any] = None,
         inference_spec: Dict[str, Any] = None,
@@ -16735,6 +18177,7 @@ class UpdateModelVersionRequest(TeaModel):
         version_description: str = None,
     ):
         self.approval_status = approval_status
+        self.compression_spec = compression_spec
         self.evaluation_spec = evaluation_spec
         self.extra_info = extra_info
         self.inference_spec = inference_spec
@@ -16756,6 +18199,8 @@ class UpdateModelVersionRequest(TeaModel):
         result = dict()
         if self.approval_status is not None:
             result['ApprovalStatus'] = self.approval_status
+        if self.compression_spec is not None:
+            result['CompressionSpec'] = self.compression_spec
         if self.evaluation_spec is not None:
             result['EvaluationSpec'] = self.evaluation_spec
         if self.extra_info is not None:
@@ -16780,6 +18225,8 @@ class UpdateModelVersionRequest(TeaModel):
         m = m or dict()
         if m.get('ApprovalStatus') is not None:
             self.approval_status = m.get('ApprovalStatus')
+        if m.get('CompressionSpec') is not None:
+            self.compression_spec = m.get('CompressionSpec')
         if m.get('EvaluationSpec') is not None:
             self.evaluation_spec = m.get('EvaluationSpec')
         if m.get('ExtraInfo') is not None:
@@ -17263,6 +18710,242 @@ class UpdateWorkspaceResourceResponse(TeaModel):
             self.status_code = m.get('statusCode')
         if m.get('body') is not None:
             temp_model = UpdateWorkspaceResourceResponseBody()
+            self.body = temp_model.from_map(m['body'])
+        return self
+
+
+class UpdateWorkspaceRoleRequestModulePermissionsPermissionsPermissionRules(TeaModel):
+    def __init__(
+        self,
+        accessibility: str = None,
+        entity_access_type: str = None,
+    ):
+        self.accessibility = accessibility
+        self.entity_access_type = entity_access_type
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.accessibility is not None:
+            result['Accessibility'] = self.accessibility
+        if self.entity_access_type is not None:
+            result['EntityAccessType'] = self.entity_access_type
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('Accessibility') is not None:
+            self.accessibility = m.get('Accessibility')
+        if m.get('EntityAccessType') is not None:
+            self.entity_access_type = m.get('EntityAccessType')
+        return self
+
+
+class UpdateWorkspaceRoleRequestModulePermissionsPermissions(TeaModel):
+    def __init__(
+        self,
+        permission_codes: List[str] = None,
+        permission_rules: List[UpdateWorkspaceRoleRequestModulePermissionsPermissionsPermissionRules] = None,
+    ):
+        self.permission_codes = permission_codes
+        self.permission_rules = permission_rules
+
+    def validate(self):
+        if self.permission_rules:
+            for k in self.permission_rules:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.permission_codes is not None:
+            result['PermissionCodes'] = self.permission_codes
+        result['PermissionRules'] = []
+        if self.permission_rules is not None:
+            for k in self.permission_rules:
+                result['PermissionRules'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('PermissionCodes') is not None:
+            self.permission_codes = m.get('PermissionCodes')
+        self.permission_rules = []
+        if m.get('PermissionRules') is not None:
+            for k in m.get('PermissionRules'):
+                temp_model = UpdateWorkspaceRoleRequestModulePermissionsPermissionsPermissionRules()
+                self.permission_rules.append(temp_model.from_map(k))
+        return self
+
+
+class UpdateWorkspaceRoleRequestModulePermissions(TeaModel):
+    def __init__(
+        self,
+        module_name: str = None,
+        permission_type: str = None,
+        permissions: List[UpdateWorkspaceRoleRequestModulePermissionsPermissions] = None,
+    ):
+        self.module_name = module_name
+        self.permission_type = permission_type
+        self.permissions = permissions
+
+    def validate(self):
+        if self.permissions:
+            for k in self.permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.module_name is not None:
+            result['ModuleName'] = self.module_name
+        if self.permission_type is not None:
+            result['PermissionType'] = self.permission_type
+        result['Permissions'] = []
+        if self.permissions is not None:
+            for k in self.permissions:
+                result['Permissions'].append(k.to_map() if k else None)
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('ModuleName') is not None:
+            self.module_name = m.get('ModuleName')
+        if m.get('PermissionType') is not None:
+            self.permission_type = m.get('PermissionType')
+        self.permissions = []
+        if m.get('Permissions') is not None:
+            for k in m.get('Permissions'):
+                temp_model = UpdateWorkspaceRoleRequestModulePermissionsPermissions()
+                self.permissions.append(temp_model.from_map(k))
+        return self
+
+
+class UpdateWorkspaceRoleRequest(TeaModel):
+    def __init__(
+        self,
+        module_permissions: List[UpdateWorkspaceRoleRequestModulePermissions] = None,
+        role_name: str = None,
+    ):
+        self.module_permissions = module_permissions
+        self.role_name = role_name
+
+    def validate(self):
+        if self.module_permissions:
+            for k in self.module_permissions:
+                if k:
+                    k.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        result['ModulePermissions'] = []
+        if self.module_permissions is not None:
+            for k in self.module_permissions:
+                result['ModulePermissions'].append(k.to_map() if k else None)
+        if self.role_name is not None:
+            result['RoleName'] = self.role_name
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        self.module_permissions = []
+        if m.get('ModulePermissions') is not None:
+            for k in m.get('ModulePermissions'):
+                temp_model = UpdateWorkspaceRoleRequestModulePermissions()
+                self.module_permissions.append(temp_model.from_map(k))
+        if m.get('RoleName') is not None:
+            self.role_name = m.get('RoleName')
+        return self
+
+
+class UpdateWorkspaceRoleResponseBody(TeaModel):
+    def __init__(
+        self,
+        instance_job_id: str = None,
+        request_id: str = None,
+    ):
+        self.instance_job_id = instance_job_id
+        self.request_id = request_id
+
+    def validate(self):
+        pass
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.instance_job_id is not None:
+            result['InstanceJobId'] = self.instance_job_id
+        if self.request_id is not None:
+            result['RequestId'] = self.request_id
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('InstanceJobId') is not None:
+            self.instance_job_id = m.get('InstanceJobId')
+        if m.get('RequestId') is not None:
+            self.request_id = m.get('RequestId')
+        return self
+
+
+class UpdateWorkspaceRoleResponse(TeaModel):
+    def __init__(
+        self,
+        headers: Dict[str, str] = None,
+        status_code: int = None,
+        body: UpdateWorkspaceRoleResponseBody = None,
+    ):
+        self.headers = headers
+        self.status_code = status_code
+        self.body = body
+
+    def validate(self):
+        if self.body:
+            self.body.validate()
+
+    def to_map(self):
+        _map = super().to_map()
+        if _map is not None:
+            return _map
+
+        result = dict()
+        if self.headers is not None:
+            result['headers'] = self.headers
+        if self.status_code is not None:
+            result['statusCode'] = self.status_code
+        if self.body is not None:
+            result['body'] = self.body.to_map()
+        return result
+
+    def from_map(self, m: dict = None):
+        m = m or dict()
+        if m.get('headers') is not None:
+            self.headers = m.get('headers')
+        if m.get('statusCode') is not None:
+            self.status_code = m.get('statusCode')
+        if m.get('body') is not None:
+            temp_model = UpdateWorkspaceRoleResponseBody()
             self.body = temp_model.from_map(m['body'])
         return self
 
