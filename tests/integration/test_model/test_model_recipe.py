@@ -22,6 +22,7 @@ from pai.image import retrieve
 from pai.job import SpotSpec
 from pai.job._training_job import ResourceType
 from pai.model import ModelTrainingRecipe, RegisteredModel
+from pai.model._model_recipe import ModelRecipeType
 from tests.integration import BaseIntegTestCase
 from tests.integration.utils import t_context
 from tests.test_data import test_data_dir
@@ -145,3 +146,12 @@ class TestModelRecipe(BaseIntegTestCase):
             job.algorithm_spec.code_dir.location_value.bucket,
             session.oss_bucket.bucket_name,
         )
+    
+    def test_compression(self):
+        model = RegisteredModel(model_name="qwen2-0.5b-instruct", model_provider="pai")
+        compress_recipe = model.model_recipe(
+            recipe_type=ModelRecipeType.COMPRESSION,
+            method='Quantization:MinMax-8Bit'
+        )
+        compress_recipe.run()
+        self.assertIsNotNone(compress_recipe.latest_job.output_path())

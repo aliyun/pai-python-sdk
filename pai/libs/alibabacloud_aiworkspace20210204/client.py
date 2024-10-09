@@ -16,16 +16,14 @@ class Client(OpenApiClient):
     """
     *\
     """
-
     def __init__(
-        self,
+        self, 
         config: open_api_models.Config,
     ):
         super().__init__(config)
         self._endpoint_rule = ''
         self.check_config(config)
-        self._endpoint = self.get_endpoint('aiworkspace', self._region_id, self._endpoint_rule, self._network,
-                                           self._suffix, self._endpoint_map, self._endpoint)
+        self._endpoint = self.get_endpoint('aiworkspace', self._region_id, self._endpoint_rule, self._network, self._suffix, self._endpoint_map, self._endpoint)
 
     def get_endpoint(
         self,
@@ -49,6 +47,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddImageResponse:
+        """
+        @summary 增加 Image
+        
+        @param request: AddImageRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddImageResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -93,6 +99,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddImageResponse:
+        """
+        @summary 增加 Image
+        
+        @param request: AddImageRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddImageResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -135,6 +149,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.AddImageRequest,
     ) -> aiwork_space_20210204_models.AddImageResponse:
+        """
+        @summary 增加 Image
+        
+        @param request: AddImageRequest
+        @return: AddImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.add_image_with_options(request, headers, runtime)
@@ -143,6 +163,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.AddImageRequest,
     ) -> aiwork_space_20210204_models.AddImageResponse:
+        """
+        @summary 增加 Image
+        
+        @param request: AddImageRequest
+        @return: AddImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.add_image_with_options_async(request, headers, runtime)
@@ -154,6 +180,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddImageLabelsResponse:
+        """
+        @summary 增加 Image 的标签
+        
+        @param request: AddImageLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddImageLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -185,6 +219,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddImageLabelsResponse:
+        """
+        @summary 增加 Image 的标签
+        
+        @param request: AddImageLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddImageLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -214,6 +256,12 @@ class Client(OpenApiClient):
         image_id: str,
         request: aiwork_space_20210204_models.AddImageLabelsRequest,
     ) -> aiwork_space_20210204_models.AddImageLabelsResponse:
+        """
+        @summary 增加 Image 的标签
+        
+        @param request: AddImageLabelsRequest
+        @return: AddImageLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.add_image_labels_with_options(image_id, request, headers, runtime)
@@ -223,6 +271,12 @@ class Client(OpenApiClient):
         image_id: str,
         request: aiwork_space_20210204_models.AddImageLabelsRequest,
     ) -> aiwork_space_20210204_models.AddImageLabelsResponse:
+        """
+        @summary 增加 Image 的标签
+        
+        @param request: AddImageLabelsRequest
+        @return: AddImageLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.add_image_labels_with_options_async(image_id, request, headers, runtime)
@@ -235,6 +289,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddMemberRoleResponse:
+        """
+        @summary 增加成员角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddMemberRoleResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -262,6 +323,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddMemberRoleResponse:
+        """
+        @summary 增加成员角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddMemberRoleResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -287,6 +355,11 @@ class Client(OpenApiClient):
         member_id: str,
         role_name: str,
     ) -> aiwork_space_20210204_models.AddMemberRoleResponse:
+        """
+        @summary 增加成员角色
+        
+        @return: AddMemberRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.add_member_role_with_options(workspace_id, member_id, role_name, headers, runtime)
@@ -297,6 +370,11 @@ class Client(OpenApiClient):
         member_id: str,
         role_name: str,
     ) -> aiwork_space_20210204_models.AddMemberRoleResponse:
+        """
+        @summary 增加成员角色
+        
+        @return: AddMemberRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.add_member_role_with_options_async(workspace_id, member_id, role_name, headers, runtime)
@@ -308,6 +386,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddWorkspaceQuotaResponse:
+        """
+        @summary 添加资源实例配额
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddWorkspaceQuotaResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -334,6 +419,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AddWorkspaceQuotaResponse:
+        """
+        @summary 添加资源实例配额
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AddWorkspaceQuotaResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -358,6 +450,11 @@ class Client(OpenApiClient):
         workspace_id: str,
         quota_id: str,
     ) -> aiwork_space_20210204_models.AddWorkspaceQuotaResponse:
+        """
+        @summary 添加资源实例配额
+        
+        @return: AddWorkspaceQuotaResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.add_workspace_quota_with_options(workspace_id, quota_id, headers, runtime)
@@ -367,6 +464,11 @@ class Client(OpenApiClient):
         workspace_id: str,
         quota_id: str,
     ) -> aiwork_space_20210204_models.AddWorkspaceQuotaResponse:
+        """
+        @summary 添加资源实例配额
+        
+        @return: AddWorkspaceQuotaResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.add_workspace_quota_with_options_async(workspace_id, quota_id, headers, runtime)
@@ -377,6 +479,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AssumeServiceIdentityRoleResponse:
+        """
+        @summary 用PAI服务账户扮演角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AssumeServiceIdentityRoleResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -402,6 +511,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.AssumeServiceIdentityRoleResponse:
+        """
+        @summary 用PAI服务账户扮演角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: AssumeServiceIdentityRoleResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -425,6 +541,11 @@ class Client(OpenApiClient):
         self,
         role_name: str,
     ) -> aiwork_space_20210204_models.AssumeServiceIdentityRoleResponse:
+        """
+        @summary 用PAI服务账户扮演角色
+        
+        @return: AssumeServiceIdentityRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.assume_service_identity_role_with_options(role_name, headers, runtime)
@@ -433,9 +554,122 @@ class Client(OpenApiClient):
         self,
         role_name: str,
     ) -> aiwork_space_20210204_models.AssumeServiceIdentityRoleResponse:
+        """
+        @summary 用PAI服务账户扮演角色
+        
+        @return: AssumeServiceIdentityRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.assume_service_identity_role_with_options_async(role_name, headers, runtime)
+
+    def change_dataset_owner_with_options(
+        self,
+        dataset_id: str,
+        request: aiwork_space_20210204_models.ChangeDatasetOwnerRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.ChangeDatasetOwnerResponse:
+        """
+        @summary 修改API的所有者
+        
+        @param request: ChangeDatasetOwnerRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ChangeDatasetOwnerResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.user_id):
+            body['UserId'] = request.user_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ChangeDatasetOwner',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/datasets/change/{OpenApiUtilClient.get_encode_param(dataset_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.ChangeDatasetOwnerResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def change_dataset_owner_with_options_async(
+        self,
+        dataset_id: str,
+        request: aiwork_space_20210204_models.ChangeDatasetOwnerRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.ChangeDatasetOwnerResponse:
+        """
+        @summary 修改API的所有者
+        
+        @param request: ChangeDatasetOwnerRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ChangeDatasetOwnerResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.user_id):
+            body['UserId'] = request.user_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ChangeDatasetOwner',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/datasets/change/{OpenApiUtilClient.get_encode_param(dataset_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.ChangeDatasetOwnerResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def change_dataset_owner(
+        self,
+        dataset_id: str,
+        request: aiwork_space_20210204_models.ChangeDatasetOwnerRequest,
+    ) -> aiwork_space_20210204_models.ChangeDatasetOwnerResponse:
+        """
+        @summary 修改API的所有者
+        
+        @param request: ChangeDatasetOwnerRequest
+        @return: ChangeDatasetOwnerResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.change_dataset_owner_with_options(dataset_id, request, headers, runtime)
+
+    async def change_dataset_owner_async(
+        self,
+        dataset_id: str,
+        request: aiwork_space_20210204_models.ChangeDatasetOwnerRequest,
+    ) -> aiwork_space_20210204_models.ChangeDatasetOwnerResponse:
+        """
+        @summary 修改API的所有者
+        
+        @param request: ChangeDatasetOwnerRequest
+        @return: ChangeDatasetOwnerResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.change_dataset_owner_with_options_async(dataset_id, request, headers, runtime)
 
     def create_code_source_with_options(
         self,
@@ -443,6 +677,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateCodeSourceResponse:
+        """
+        @summary 创建一个代码源配置
+        
+        @param request: CreateCodeSourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateCodeSourceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -489,6 +731,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateCodeSourceResponse:
+        """
+        @summary 创建一个代码源配置
+        
+        @param request: CreateCodeSourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateCodeSourceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -533,6 +783,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateCodeSourceRequest,
     ) -> aiwork_space_20210204_models.CreateCodeSourceResponse:
+        """
+        @summary 创建一个代码源配置
+        
+        @param request: CreateCodeSourceRequest
+        @return: CreateCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_code_source_with_options(request, headers, runtime)
@@ -541,6 +797,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateCodeSourceRequest,
     ) -> aiwork_space_20210204_models.CreateCodeSourceResponse:
+        """
+        @summary 创建一个代码源配置
+        
+        @param request: CreateCodeSourceRequest
+        @return: CreateCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_code_source_with_options_async(request, headers, runtime)
@@ -551,6 +813,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateCollectionResponse:
+        """
+        @summary 创建Collection
+        
+        @param request: CreateCollectionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateCollectionResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.collection_name):
@@ -581,6 +851,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateCollectionResponse:
+        """
+        @summary 创建Collection
+        
+        @param request: CreateCollectionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateCollectionResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.collection_name):
@@ -609,6 +887,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateCollectionRequest,
     ) -> aiwork_space_20210204_models.CreateCollectionResponse:
+        """
+        @summary 创建Collection
+        
+        @param request: CreateCollectionRequest
+        @return: CreateCollectionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_collection_with_options(request, headers, runtime)
@@ -617,6 +901,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateCollectionRequest,
     ) -> aiwork_space_20210204_models.CreateCollectionResponse:
+        """
+        @summary 创建Collection
+        
+        @param request: CreateCollectionRequest
+        @return: CreateCollectionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_collection_with_options_async(request, headers, runtime)
@@ -627,6 +917,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDatasetResponse:
+        """
+        @summary 创建数据集
+        
+        @param request: CreateDatasetRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDatasetResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -655,6 +953,8 @@ class Client(OpenApiClient):
             body['SourceType'] = request.source_type
         if not UtilClient.is_unset(request.uri):
             body['Uri'] = request.uri
+        if not UtilClient.is_unset(request.user_id):
+            body['UserId'] = request.user_id
         if not UtilClient.is_unset(request.workspace_id):
             body['WorkspaceId'] = request.workspace_id
         req = open_api_models.OpenApiRequest(
@@ -683,6 +983,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDatasetResponse:
+        """
+        @summary 创建数据集
+        
+        @param request: CreateDatasetRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDatasetResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -711,6 +1019,8 @@ class Client(OpenApiClient):
             body['SourceType'] = request.source_type
         if not UtilClient.is_unset(request.uri):
             body['Uri'] = request.uri
+        if not UtilClient.is_unset(request.user_id):
+            body['UserId'] = request.user_id
         if not UtilClient.is_unset(request.workspace_id):
             body['WorkspaceId'] = request.workspace_id
         req = open_api_models.OpenApiRequest(
@@ -737,6 +1047,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateDatasetRequest,
     ) -> aiwork_space_20210204_models.CreateDatasetResponse:
+        """
+        @summary 创建数据集
+        
+        @param request: CreateDatasetRequest
+        @return: CreateDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_dataset_with_options(request, headers, runtime)
@@ -745,6 +1061,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateDatasetRequest,
     ) -> aiwork_space_20210204_models.CreateDatasetResponse:
+        """
+        @summary 创建数据集
+        
+        @param request: CreateDatasetRequest
+        @return: CreateDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_dataset_with_options_async(request, headers, runtime)
@@ -756,6 +1078,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDatasetLabelsResponse:
+        """
+        @summary 创建或更新 Dataset 的标签
+        
+        @param request: CreateDatasetLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDatasetLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -787,6 +1117,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDatasetLabelsResponse:
+        """
+        @summary 创建或更新 Dataset 的标签
+        
+        @param request: CreateDatasetLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDatasetLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -816,6 +1154,12 @@ class Client(OpenApiClient):
         dataset_id: str,
         request: aiwork_space_20210204_models.CreateDatasetLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateDatasetLabelsResponse:
+        """
+        @summary 创建或更新 Dataset 的标签
+        
+        @param request: CreateDatasetLabelsRequest
+        @return: CreateDatasetLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_dataset_labels_with_options(dataset_id, request, headers, runtime)
@@ -825,6 +1169,12 @@ class Client(OpenApiClient):
         dataset_id: str,
         request: aiwork_space_20210204_models.CreateDatasetLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateDatasetLabelsResponse:
+        """
+        @summary 创建或更新 Dataset 的标签
+        
+        @param request: CreateDatasetLabelsRequest
+        @return: CreateDatasetLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_dataset_labels_with_options_async(dataset_id, request, headers, runtime)
@@ -835,6 +1185,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDefaultWorkspaceResponse:
+        """
+        @summary 创建默认工作空间
+        
+        @param request: CreateDefaultWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDefaultWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.add_all_ram_users):
@@ -871,6 +1229,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDefaultWorkspaceResponse:
+        """
+        @summary 创建默认工作空间
+        
+        @param request: CreateDefaultWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDefaultWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.add_all_ram_users):
@@ -905,6 +1271,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateDefaultWorkspaceRequest,
     ) -> aiwork_space_20210204_models.CreateDefaultWorkspaceResponse:
+        """
+        @summary 创建默认工作空间
+        
+        @param request: CreateDefaultWorkspaceRequest
+        @return: CreateDefaultWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_default_workspace_with_options(request, headers, runtime)
@@ -913,6 +1285,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateDefaultWorkspaceRequest,
     ) -> aiwork_space_20210204_models.CreateDefaultWorkspaceResponse:
+        """
+        @summary 创建默认工作空间
+        
+        @param request: CreateDefaultWorkspaceRequest
+        @return: CreateDefaultWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_default_workspace_with_options_async(request, headers, runtime)
@@ -923,6 +1301,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDingTalkRobotMessageResponse:
+        """
+        @summary 发送特定格式的消息给钉钉机器人
+        
+        @param request: CreateDingTalkRobotMessageRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDingTalkRobotMessageResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.access_token):
@@ -957,6 +1343,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateDingTalkRobotMessageResponse:
+        """
+        @summary 发送特定格式的消息给钉钉机器人
+        
+        @param request: CreateDingTalkRobotMessageRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateDingTalkRobotMessageResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.access_token):
@@ -989,6 +1383,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateDingTalkRobotMessageRequest,
     ) -> aiwork_space_20210204_models.CreateDingTalkRobotMessageResponse:
+        """
+        @summary 发送特定格式的消息给钉钉机器人
+        
+        @param request: CreateDingTalkRobotMessageRequest
+        @return: CreateDingTalkRobotMessageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_ding_talk_robot_message_with_options(request, headers, runtime)
@@ -997,6 +1397,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateDingTalkRobotMessageRequest,
     ) -> aiwork_space_20210204_models.CreateDingTalkRobotMessageResponse:
+        """
+        @summary 发送特定格式的消息给钉钉机器人
+        
+        @param request: CreateDingTalkRobotMessageRequest
+        @return: CreateDingTalkRobotMessageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_ding_talk_robot_message_with_options_async(request, headers, runtime)
@@ -1007,6 +1413,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateExperimentResponse:
+        """
+        @summary 创建实验
+        
+        @param request: CreateExperimentRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateExperimentResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -1045,6 +1459,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateExperimentResponse:
+        """
+        @summary 创建实验
+        
+        @param request: CreateExperimentRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateExperimentResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -1081,6 +1503,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateExperimentRequest,
     ) -> aiwork_space_20210204_models.CreateExperimentResponse:
+        """
+        @summary 创建实验
+        
+        @param request: CreateExperimentRequest
+        @return: CreateExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_experiment_with_options(request, headers, runtime)
@@ -1089,6 +1517,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateExperimentRequest,
     ) -> aiwork_space_20210204_models.CreateExperimentResponse:
+        """
+        @summary 创建实验
+        
+        @param request: CreateExperimentRequest
+        @return: CreateExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_experiment_with_options_async(request, headers, runtime)
@@ -1100,6 +1534,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateMemberResponse:
+        """
+        @summary 创建成员
+        
+        @param request: CreateMemberRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateMemberResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.members):
@@ -1131,6 +1573,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateMemberResponse:
+        """
+        @summary 创建成员
+        
+        @param request: CreateMemberRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateMemberResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.members):
@@ -1160,6 +1610,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.CreateMemberRequest,
     ) -> aiwork_space_20210204_models.CreateMemberResponse:
+        """
+        @summary 创建成员
+        
+        @param request: CreateMemberRequest
+        @return: CreateMemberResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_member_with_options(workspace_id, request, headers, runtime)
@@ -1169,6 +1625,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.CreateMemberRequest,
     ) -> aiwork_space_20210204_models.CreateMemberResponse:
+        """
+        @summary 创建成员
+        
+        @param request: CreateMemberRequest
+        @return: CreateMemberResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_member_with_options_async(workspace_id, request, headers, runtime)
@@ -1179,6 +1641,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelResponse:
+        """
+        @summary 创建模型
+        
+        @param request: CreateModelRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -1231,6 +1701,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelResponse:
+        """
+        @summary 创建模型
+        
+        @param request: CreateModelRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -1281,6 +1759,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateModelRequest,
     ) -> aiwork_space_20210204_models.CreateModelResponse:
+        """
+        @summary 创建模型
+        
+        @param request: CreateModelRequest
+        @return: CreateModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_model_with_options(request, headers, runtime)
@@ -1289,6 +1773,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateModelRequest,
     ) -> aiwork_space_20210204_models.CreateModelResponse:
+        """
+        @summary 创建模型
+        
+        @param request: CreateModelRequest
+        @return: CreateModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_model_with_options_async(request, headers, runtime)
@@ -1300,6 +1790,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelLabelsResponse:
+        """
+        @summary 创建或更新模型的标签
+        
+        @param request: CreateModelLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -1331,6 +1829,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelLabelsResponse:
+        """
+        @summary 创建或更新模型的标签
+        
+        @param request: CreateModelLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -1360,6 +1866,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.CreateModelLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateModelLabelsResponse:
+        """
+        @summary 创建或更新模型的标签
+        
+        @param request: CreateModelLabelsRequest
+        @return: CreateModelLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_model_labels_with_options(model_id, request, headers, runtime)
@@ -1369,6 +1881,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.CreateModelLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateModelLabelsResponse:
+        """
+        @summary 创建或更新模型的标签
+        
+        @param request: CreateModelLabelsRequest
+        @return: CreateModelLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_model_labels_with_options_async(model_id, request, headers, runtime)
@@ -1380,6 +1898,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelReleaseResponse:
+        """
+        @summary 发布模型
+        
+        @param request: CreateModelReleaseRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelReleaseResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.collections):
@@ -1415,6 +1941,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelReleaseResponse:
+        """
+        @summary 发布模型
+        
+        @param request: CreateModelReleaseRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelReleaseResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.collections):
@@ -1448,6 +1982,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.CreateModelReleaseRequest,
     ) -> aiwork_space_20210204_models.CreateModelReleaseResponse:
+        """
+        @summary 发布模型
+        
+        @param request: CreateModelReleaseRequest
+        @return: CreateModelReleaseResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_model_release_with_options(model_id, request, headers, runtime)
@@ -1457,6 +1997,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.CreateModelReleaseRequest,
     ) -> aiwork_space_20210204_models.CreateModelReleaseResponse:
+        """
+        @summary 发布模型
+        
+        @param request: CreateModelReleaseRequest
+        @return: CreateModelReleaseResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_model_release_with_options_async(model_id, request, headers, runtime)
@@ -1468,10 +2014,20 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelVersionResponse:
+        """
+        @summary 创建模型版本
+        
+        @param request: CreateModelVersionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelVersionResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.approval_status):
             body['ApprovalStatus'] = request.approval_status
+        if not UtilClient.is_unset(request.compression_spec):
+            body['CompressionSpec'] = request.compression_spec
         if not UtilClient.is_unset(request.evaluation_spec):
             body['EvaluationSpec'] = request.evaluation_spec
         if not UtilClient.is_unset(request.extra_info):
@@ -1527,10 +2083,20 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelVersionResponse:
+        """
+        @summary 创建模型版本
+        
+        @param request: CreateModelVersionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelVersionResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.approval_status):
             body['ApprovalStatus'] = request.approval_status
+        if not UtilClient.is_unset(request.compression_spec):
+            body['CompressionSpec'] = request.compression_spec
         if not UtilClient.is_unset(request.evaluation_spec):
             body['EvaluationSpec'] = request.evaluation_spec
         if not UtilClient.is_unset(request.extra_info):
@@ -1584,6 +2150,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.CreateModelVersionRequest,
     ) -> aiwork_space_20210204_models.CreateModelVersionResponse:
+        """
+        @summary 创建模型版本
+        
+        @param request: CreateModelVersionRequest
+        @return: CreateModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_model_version_with_options(model_id, request, headers, runtime)
@@ -1593,6 +2165,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.CreateModelVersionRequest,
     ) -> aiwork_space_20210204_models.CreateModelVersionResponse:
+        """
+        @summary 创建模型版本
+        
+        @param request: CreateModelVersionRequest
+        @return: CreateModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_model_version_with_options_async(model_id, request, headers, runtime)
@@ -1605,6 +2183,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelVersionLabelsResponse:
+        """
+        @summary 创建或更新模型版本的标签
+        
+        @param request: CreateModelVersionLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelVersionLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -1637,6 +2223,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelVersionLabelsResponse:
+        """
+        @summary 创建或更新模型版本的标签
+        
+        @param request: CreateModelVersionLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelVersionLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -1667,6 +2261,12 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.CreateModelVersionLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateModelVersionLabelsResponse:
+        """
+        @summary 创建或更新模型版本的标签
+        
+        @param request: CreateModelVersionLabelsRequest
+        @return: CreateModelVersionLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_model_version_labels_with_options(model_id, version_name, request, headers, runtime)
@@ -1677,10 +2277,15 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.CreateModelVersionLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateModelVersionLabelsResponse:
+        """
+        @summary 创建或更新模型版本的标签
+        
+        @param request: CreateModelVersionLabelsRequest
+        @return: CreateModelVersionLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.create_model_version_labels_with_options_async(model_id, version_name, request, headers,
-                                                                         runtime)
+        return await self.create_model_version_labels_with_options_async(model_id, version_name, request, headers, runtime)
 
     def create_model_version_release_with_options(
         self,
@@ -1690,6 +2295,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelVersionReleaseResponse:
+        """
+        @summary 发布模型版本
+        
+        @param request: CreateModelVersionReleaseRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelVersionReleaseResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.target_model_origin):
@@ -1724,6 +2337,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateModelVersionReleaseResponse:
+        """
+        @summary 发布模型版本
+        
+        @param request: CreateModelVersionReleaseRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateModelVersionReleaseResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.target_model_origin):
@@ -1756,6 +2377,12 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.CreateModelVersionReleaseRequest,
     ) -> aiwork_space_20210204_models.CreateModelVersionReleaseResponse:
+        """
+        @summary 发布模型版本
+        
+        @param request: CreateModelVersionReleaseRequest
+        @return: CreateModelVersionReleaseResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_model_version_release_with_options(model_id, version_name, request, headers, runtime)
@@ -1766,10 +2393,15 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.CreateModelVersionReleaseRequest,
     ) -> aiwork_space_20210204_models.CreateModelVersionReleaseResponse:
+        """
+        @summary 发布模型版本
+        
+        @param request: CreateModelVersionReleaseRequest
+        @return: CreateModelVersionReleaseResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.create_model_version_release_with_options_async(model_id, version_name, request, headers,
-                                                                          runtime)
+        return await self.create_model_version_release_with_options_async(model_id, version_name, request, headers, runtime)
 
     def create_product_orders_with_options(
         self,
@@ -1777,6 +2409,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateProductOrdersResponse:
+        """
+        @summary 创建产品订单
+        
+        @param request: CreateProductOrdersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateProductOrdersResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.auto_pay):
@@ -1809,6 +2449,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateProductOrdersResponse:
+        """
+        @summary 创建产品订单
+        
+        @param request: CreateProductOrdersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateProductOrdersResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.auto_pay):
@@ -1839,6 +2487,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateProductOrdersRequest,
     ) -> aiwork_space_20210204_models.CreateProductOrdersResponse:
+        """
+        @summary 创建产品订单
+        
+        @param request: CreateProductOrdersRequest
+        @return: CreateProductOrdersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_product_orders_with_options(request, headers, runtime)
@@ -1847,6 +2501,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateProductOrdersRequest,
     ) -> aiwork_space_20210204_models.CreateProductOrdersResponse:
+        """
+        @summary 创建产品订单
+        
+        @param request: CreateProductOrdersRequest
+        @return: CreateProductOrdersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_product_orders_with_options_async(request, headers, runtime)
@@ -1857,6 +2517,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateServiceIdentityRoleResponse:
+        """
+        @summary 创建被PAI服务账户扮演的角色
+        
+        @param request: CreateServiceIdentityRoleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateServiceIdentityRoleResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.role_name):
@@ -1887,6 +2555,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateServiceIdentityRoleResponse:
+        """
+        @summary 创建被PAI服务账户扮演的角色
+        
+        @param request: CreateServiceIdentityRoleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateServiceIdentityRoleResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.role_name):
@@ -1915,6 +2591,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateServiceIdentityRoleRequest,
     ) -> aiwork_space_20210204_models.CreateServiceIdentityRoleResponse:
+        """
+        @summary 创建被PAI服务账户扮演的角色
+        
+        @param request: CreateServiceIdentityRoleRequest
+        @return: CreateServiceIdentityRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_service_identity_role_with_options(request, headers, runtime)
@@ -1923,6 +2605,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateServiceIdentityRoleRequest,
     ) -> aiwork_space_20210204_models.CreateServiceIdentityRoleResponse:
+        """
+        @summary 创建被PAI服务账户扮演的角色
+        
+        @param request: CreateServiceIdentityRoleRequest
+        @return: CreateServiceIdentityRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_service_identity_role_with_options_async(request, headers, runtime)
@@ -1933,6 +2621,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateResponse:
+        """
+        @summary 创建服务模版
+        
+        @param request: CreateServiceTemplateRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateServiceTemplateResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.inference_spec):
@@ -1975,6 +2671,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateResponse:
+        """
+        @summary 创建服务模版
+        
+        @param request: CreateServiceTemplateRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateServiceTemplateResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.inference_spec):
@@ -2015,6 +2719,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateServiceTemplateRequest,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateResponse:
+        """
+        @summary 创建服务模版
+        
+        @param request: CreateServiceTemplateRequest
+        @return: CreateServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_service_template_with_options(request, headers, runtime)
@@ -2023,6 +2733,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateServiceTemplateRequest,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateResponse:
+        """
+        @summary 创建服务模版
+        
+        @param request: CreateServiceTemplateRequest
+        @return: CreateServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_service_template_with_options_async(request, headers, runtime)
@@ -2034,6 +2750,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateLabelsResponse:
+        """
+        @summary 创建或更新服务模版的标签
+        
+        @param request: CreateServiceTemplateLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateServiceTemplateLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -2065,6 +2789,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateLabelsResponse:
+        """
+        @summary 创建或更新服务模版的标签
+        
+        @param request: CreateServiceTemplateLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateServiceTemplateLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -2094,6 +2826,12 @@ class Client(OpenApiClient):
         service_template_id: str,
         request: aiwork_space_20210204_models.CreateServiceTemplateLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateLabelsResponse:
+        """
+        @summary 创建或更新服务模版的标签
+        
+        @param request: CreateServiceTemplateLabelsRequest
+        @return: CreateServiceTemplateLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_service_template_labels_with_options(service_template_id, request, headers, runtime)
@@ -2103,10 +2841,15 @@ class Client(OpenApiClient):
         service_template_id: str,
         request: aiwork_space_20210204_models.CreateServiceTemplateLabelsRequest,
     ) -> aiwork_space_20210204_models.CreateServiceTemplateLabelsResponse:
+        """
+        @summary 创建或更新服务模版的标签
+        
+        @param request: CreateServiceTemplateLabelsRequest
+        @return: CreateServiceTemplateLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.create_service_template_labels_with_options_async(service_template_id, request, headers,
-                                                                            runtime)
+        return await self.create_service_template_labels_with_options_async(service_template_id, request, headers, runtime)
 
     def create_trial_with_options(
         self,
@@ -2114,6 +2857,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateTrialResponse:
+        """
+        @summary 创建Trial
+        
+        @param request: CreateTrialRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateTrialResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.experiment_id):
@@ -2152,6 +2903,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateTrialResponse:
+        """
+        @summary 创建Trial
+        
+        @param request: CreateTrialRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateTrialResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.experiment_id):
@@ -2188,6 +2947,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateTrialRequest,
     ) -> aiwork_space_20210204_models.CreateTrialResponse:
+        """
+        @summary 创建Trial
+        
+        @param request: CreateTrialRequest
+        @return: CreateTrialResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_trial_with_options(request, headers, runtime)
@@ -2196,6 +2961,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateTrialRequest,
     ) -> aiwork_space_20210204_models.CreateTrialResponse:
+        """
+        @summary 创建Trial
+        
+        @param request: CreateTrialRequest
+        @return: CreateTrialResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_trial_with_options_async(request, headers, runtime)
@@ -2205,6 +2976,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateUserResponse:
+        """
+        @summary 创建用户
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateUserResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2229,6 +3007,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateUserResponse:
+        """
+        @summary 创建用户
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateUserResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2249,11 +3034,21 @@ class Client(OpenApiClient):
         )
 
     def create_user(self) -> aiwork_space_20210204_models.CreateUserResponse:
+        """
+        @summary 创建用户
+        
+        @return: CreateUserResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_user_with_options(headers, runtime)
 
     async def create_user_async(self) -> aiwork_space_20210204_models.CreateUserResponse:
+        """
+        @summary 创建用户
+        
+        @return: CreateUserResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_user_with_options_async(headers, runtime)
@@ -2264,6 +3059,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResponse:
+        """
+        @summary 创建工作空间
+        
+        @param request: CreateWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.description):
@@ -2300,6 +3103,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResponse:
+        """
+        @summary 创建工作空间
+        
+        @param request: CreateWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.description):
@@ -2334,6 +3145,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateWorkspaceRequest,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResponse:
+        """
+        @summary 创建工作空间
+        
+        @param request: CreateWorkspaceRequest
+        @return: CreateWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_workspace_with_options(request, headers, runtime)
@@ -2342,6 +3159,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.CreateWorkspaceRequest,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResponse:
+        """
+        @summary 创建工作空间
+        
+        @param request: CreateWorkspaceRequest
+        @return: CreateWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_workspace_with_options_async(request, headers, runtime)
@@ -2353,6 +3176,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResourceResponse:
+        """
+        @summary 创建资源
+        
+        @param request: CreateWorkspaceResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateWorkspaceResourceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.option):
@@ -2386,6 +3217,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResourceResponse:
+        """
+        @summary 创建资源
+        
+        @param request: CreateWorkspaceResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateWorkspaceResourceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.option):
@@ -2417,6 +3256,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.CreateWorkspaceResourceRequest,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResourceResponse:
+        """
+        @summary 创建资源
+        
+        @param request: CreateWorkspaceResourceRequest
+        @return: CreateWorkspaceResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_workspace_resource_with_options(workspace_id, request, headers, runtime)
@@ -2426,6 +3271,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.CreateWorkspaceResourceRequest,
     ) -> aiwork_space_20210204_models.CreateWorkspaceResourceResponse:
+        """
+        @summary 创建资源
+        
+        @param request: CreateWorkspaceResourceRequest
+        @return: CreateWorkspaceResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_workspace_resource_with_options_async(workspace_id, request, headers, runtime)
@@ -2436,6 +3287,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteCodeSourceResponse:
+        """
+        @summary 删除一个代码源配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteCodeSourceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2461,6 +3319,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteCodeSourceResponse:
+        """
+        @summary 删除一个代码源配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteCodeSourceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2484,6 +3349,11 @@ class Client(OpenApiClient):
         self,
         code_source_id: str,
     ) -> aiwork_space_20210204_models.DeleteCodeSourceResponse:
+        """
+        @summary 删除一个代码源配置
+        
+        @return: DeleteCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_code_source_with_options(code_source_id, headers, runtime)
@@ -2492,6 +3362,11 @@ class Client(OpenApiClient):
         self,
         code_source_id: str,
     ) -> aiwork_space_20210204_models.DeleteCodeSourceResponse:
+        """
+        @summary 删除一个代码源配置
+        
+        @return: DeleteCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_code_source_with_options_async(code_source_id, headers, runtime)
@@ -2502,6 +3377,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteCollectionResponse:
+        """
+        @summary 删除Collection
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteCollectionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2527,6 +3409,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteCollectionResponse:
+        """
+        @summary 删除Collection
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteCollectionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2550,6 +3439,11 @@ class Client(OpenApiClient):
         self,
         collection_name: str,
     ) -> aiwork_space_20210204_models.DeleteCollectionResponse:
+        """
+        @summary 删除Collection
+        
+        @return: DeleteCollectionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_collection_with_options(collection_name, headers, runtime)
@@ -2558,6 +3452,11 @@ class Client(OpenApiClient):
         self,
         collection_name: str,
     ) -> aiwork_space_20210204_models.DeleteCollectionResponse:
+        """
+        @summary 删除Collection
+        
+        @return: DeleteCollectionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_collection_with_options_async(collection_name, headers, runtime)
@@ -2570,6 +3469,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteConfigResponse:
+        """
+        @summary 删除配置
+        
+        @param request: DeleteConfigRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteConfigResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.labels):
@@ -2602,6 +3509,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteConfigResponse:
+        """
+        @summary 删除配置
+        
+        @param request: DeleteConfigRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteConfigResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.labels):
@@ -2632,6 +3547,12 @@ class Client(OpenApiClient):
         config_key: str,
         request: aiwork_space_20210204_models.DeleteConfigRequest,
     ) -> aiwork_space_20210204_models.DeleteConfigResponse:
+        """
+        @summary 删除配置
+        
+        @param request: DeleteConfigRequest
+        @return: DeleteConfigResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_config_with_options(workspace_id, config_key, request, headers, runtime)
@@ -2642,6 +3563,12 @@ class Client(OpenApiClient):
         config_key: str,
         request: aiwork_space_20210204_models.DeleteConfigRequest,
     ) -> aiwork_space_20210204_models.DeleteConfigResponse:
+        """
+        @summary 删除配置
+        
+        @param request: DeleteConfigRequest
+        @return: DeleteConfigResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_config_with_options_async(workspace_id, config_key, request, headers, runtime)
@@ -2652,6 +3579,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteDatasetResponse:
+        """
+        @summary 删除数据集
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteDatasetResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2677,6 +3611,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteDatasetResponse:
+        """
+        @summary 删除数据集
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteDatasetResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2700,6 +3641,11 @@ class Client(OpenApiClient):
         self,
         dataset_id: str,
     ) -> aiwork_space_20210204_models.DeleteDatasetResponse:
+        """
+        @summary 删除数据集
+        
+        @return: DeleteDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_dataset_with_options(dataset_id, headers, runtime)
@@ -2708,6 +3654,11 @@ class Client(OpenApiClient):
         self,
         dataset_id: str,
     ) -> aiwork_space_20210204_models.DeleteDatasetResponse:
+        """
+        @summary 删除数据集
+        
+        @return: DeleteDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_dataset_with_options_async(dataset_id, headers, runtime)
@@ -2719,6 +3670,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteDatasetLabelsResponse:
+        """
+        @summary 删除 Dataset 的标签
+        
+        @param request: DeleteDatasetLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteDatasetLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.keys):
@@ -2752,6 +3711,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteDatasetLabelsResponse:
+        """
+        @summary 删除 Dataset 的标签
+        
+        @param request: DeleteDatasetLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteDatasetLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.keys):
@@ -2783,6 +3750,12 @@ class Client(OpenApiClient):
         dataset_id: str,
         request: aiwork_space_20210204_models.DeleteDatasetLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteDatasetLabelsResponse:
+        """
+        @summary 删除 Dataset 的标签
+        
+        @param request: DeleteDatasetLabelsRequest
+        @return: DeleteDatasetLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_dataset_labels_with_options(dataset_id, request, headers, runtime)
@@ -2792,6 +3765,12 @@ class Client(OpenApiClient):
         dataset_id: str,
         request: aiwork_space_20210204_models.DeleteDatasetLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteDatasetLabelsResponse:
+        """
+        @summary 删除 Dataset 的标签
+        
+        @param request: DeleteDatasetLabelsRequest
+        @return: DeleteDatasetLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_dataset_labels_with_options_async(dataset_id, request, headers, runtime)
@@ -2802,6 +3781,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteExperimentResponse:
+        """
+        @summary 删除实验
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteExperimentResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2827,6 +3813,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteExperimentResponse:
+        """
+        @summary 删除实验
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteExperimentResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2850,6 +3843,11 @@ class Client(OpenApiClient):
         self,
         experiment_id: str,
     ) -> aiwork_space_20210204_models.DeleteExperimentResponse:
+        """
+        @summary 删除实验
+        
+        @return: DeleteExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_experiment_with_options(experiment_id, headers, runtime)
@@ -2858,6 +3856,11 @@ class Client(OpenApiClient):
         self,
         experiment_id: str,
     ) -> aiwork_space_20210204_models.DeleteExperimentResponse:
+        """
+        @summary 删除实验
+        
+        @return: DeleteExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_experiment_with_options_async(experiment_id, headers, runtime)
@@ -2869,6 +3872,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteExperimentLabelResponse:
+        """
+        @summary 删除实验标签
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteExperimentLabelResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2895,6 +3905,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteExperimentLabelResponse:
+        """
+        @summary 删除实验标签
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteExperimentLabelResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -2919,6 +3936,11 @@ class Client(OpenApiClient):
         experiment_id: str,
         key: str,
     ) -> aiwork_space_20210204_models.DeleteExperimentLabelResponse:
+        """
+        @summary 删除实验标签
+        
+        @return: DeleteExperimentLabelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_experiment_label_with_options(experiment_id, key, headers, runtime)
@@ -2928,6 +3950,11 @@ class Client(OpenApiClient):
         experiment_id: str,
         key: str,
     ) -> aiwork_space_20210204_models.DeleteExperimentLabelResponse:
+        """
+        @summary 删除实验标签
+        
+        @return: DeleteExperimentLabelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_experiment_label_with_options_async(experiment_id, key, headers, runtime)
@@ -2939,6 +3966,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteMembersResponse:
+        """
+        @summary 删除工作空间成员
+        
+        @param request: DeleteMembersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteMembersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.member_ids):
@@ -2970,6 +4005,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteMembersResponse:
+        """
+        @summary 删除工作空间成员
+        
+        @param request: DeleteMembersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteMembersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.member_ids):
@@ -2999,6 +4042,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.DeleteMembersRequest,
     ) -> aiwork_space_20210204_models.DeleteMembersResponse:
+        """
+        @summary 删除工作空间成员
+        
+        @param request: DeleteMembersRequest
+        @return: DeleteMembersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_members_with_options(workspace_id, request, headers, runtime)
@@ -3008,6 +4057,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.DeleteMembersRequest,
     ) -> aiwork_space_20210204_models.DeleteMembersResponse:
+        """
+        @summary 删除工作空间成员
+        
+        @param request: DeleteMembersRequest
+        @return: DeleteMembersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_members_with_options_async(workspace_id, request, headers, runtime)
@@ -3018,6 +4073,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelResponse:
+        """
+        @summary 删除模型
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3043,6 +4105,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelResponse:
+        """
+        @summary 删除模型
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3066,6 +4135,11 @@ class Client(OpenApiClient):
         self,
         model_id: str,
     ) -> aiwork_space_20210204_models.DeleteModelResponse:
+        """
+        @summary 删除模型
+        
+        @return: DeleteModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_model_with_options(model_id, headers, runtime)
@@ -3074,6 +4148,11 @@ class Client(OpenApiClient):
         self,
         model_id: str,
     ) -> aiwork_space_20210204_models.DeleteModelResponse:
+        """
+        @summary 删除模型
+        
+        @return: DeleteModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_model_with_options_async(model_id, headers, runtime)
@@ -3085,6 +4164,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelDomainResponse:
+        """
+        @summary 删除模型领域
+        
+        @param request: DeleteModelDomainRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelDomainResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.model_task_ids):
@@ -3116,6 +4203,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelDomainResponse:
+        """
+        @summary 删除模型领域
+        
+        @param request: DeleteModelDomainRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelDomainResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.model_task_ids):
@@ -3145,6 +4240,12 @@ class Client(OpenApiClient):
         model_domain_id: str,
         request: aiwork_space_20210204_models.DeleteModelDomainRequest,
     ) -> aiwork_space_20210204_models.DeleteModelDomainResponse:
+        """
+        @summary 删除模型领域
+        
+        @param request: DeleteModelDomainRequest
+        @return: DeleteModelDomainResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_model_domain_with_options(model_domain_id, request, headers, runtime)
@@ -3154,6 +4255,12 @@ class Client(OpenApiClient):
         model_domain_id: str,
         request: aiwork_space_20210204_models.DeleteModelDomainRequest,
     ) -> aiwork_space_20210204_models.DeleteModelDomainResponse:
+        """
+        @summary 删除模型领域
+        
+        @param request: DeleteModelDomainRequest
+        @return: DeleteModelDomainResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_model_domain_with_options_async(model_domain_id, request, headers, runtime)
@@ -3165,6 +4272,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelLabelsResponse:
+        """
+        @summary 删除模型的标签
+        
+        @param request: DeleteModelLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.keys):
@@ -3198,6 +4313,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelLabelsResponse:
+        """
+        @summary 删除模型的标签
+        
+        @param request: DeleteModelLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.keys):
@@ -3229,6 +4352,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.DeleteModelLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteModelLabelsResponse:
+        """
+        @summary 删除模型的标签
+        
+        @param request: DeleteModelLabelsRequest
+        @return: DeleteModelLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_model_labels_with_options(model_id, request, headers, runtime)
@@ -3238,6 +4367,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.DeleteModelLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteModelLabelsResponse:
+        """
+        @summary 删除模型的标签
+        
+        @param request: DeleteModelLabelsRequest
+        @return: DeleteModelLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_model_labels_with_options_async(model_id, request, headers, runtime)
@@ -3249,6 +4384,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelVersionResponse:
+        """
+        @summary 删除模型版本
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelVersionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3275,6 +4417,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelVersionResponse:
+        """
+        @summary 删除模型版本
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelVersionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3299,6 +4448,11 @@ class Client(OpenApiClient):
         model_id: str,
         version_name: str,
     ) -> aiwork_space_20210204_models.DeleteModelVersionResponse:
+        """
+        @summary 删除模型版本
+        
+        @return: DeleteModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_model_version_with_options(model_id, version_name, headers, runtime)
@@ -3308,6 +4462,11 @@ class Client(OpenApiClient):
         model_id: str,
         version_name: str,
     ) -> aiwork_space_20210204_models.DeleteModelVersionResponse:
+        """
+        @summary 删除模型版本
+        
+        @return: DeleteModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_model_version_with_options_async(model_id, version_name, headers, runtime)
@@ -3320,6 +4479,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelVersionLabelsResponse:
+        """
+        @summary 删除模型版本的标签
+        
+        @param request: DeleteModelVersionLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelVersionLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.keys):
@@ -3354,6 +4521,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteModelVersionLabelsResponse:
+        """
+        @summary 删除模型版本的标签
+        
+        @param request: DeleteModelVersionLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteModelVersionLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.keys):
@@ -3386,6 +4561,12 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.DeleteModelVersionLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteModelVersionLabelsResponse:
+        """
+        @summary 删除模型版本的标签
+        
+        @param request: DeleteModelVersionLabelsRequest
+        @return: DeleteModelVersionLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_model_version_labels_with_options(model_id, version_name, request, headers, runtime)
@@ -3396,10 +4577,15 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.DeleteModelVersionLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteModelVersionLabelsResponse:
+        """
+        @summary 删除模型版本的标签
+        
+        @param request: DeleteModelVersionLabelsRequest
+        @return: DeleteModelVersionLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.delete_model_version_labels_with_options_async(model_id, version_name, request, headers,
-                                                                         runtime)
+        return await self.delete_model_version_labels_with_options_async(model_id, version_name, request, headers, runtime)
 
     def delete_service_template_with_options(
         self,
@@ -3407,6 +4593,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateResponse:
+        """
+        @summary 删除服务模版
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteServiceTemplateResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3432,6 +4625,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateResponse:
+        """
+        @summary 删除服务模版
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteServiceTemplateResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3455,6 +4655,11 @@ class Client(OpenApiClient):
         self,
         service_template_id: str,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateResponse:
+        """
+        @summary 删除服务模版
+        
+        @return: DeleteServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_service_template_with_options(service_template_id, headers, runtime)
@@ -3463,6 +4668,11 @@ class Client(OpenApiClient):
         self,
         service_template_id: str,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateResponse:
+        """
+        @summary 删除服务模版
+        
+        @return: DeleteServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_service_template_with_options_async(service_template_id, headers, runtime)
@@ -3474,6 +4684,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateLabelsResponse:
+        """
+        @summary 删除服务模版的标签
+        
+        @param request: DeleteServiceTemplateLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteServiceTemplateLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.label_keys):
@@ -3505,6 +4723,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateLabelsResponse:
+        """
+        @summary 删除服务模版的标签
+        
+        @param request: DeleteServiceTemplateLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteServiceTemplateLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.label_keys):
@@ -3534,6 +4760,12 @@ class Client(OpenApiClient):
         service_template_id: str,
         request: aiwork_space_20210204_models.DeleteServiceTemplateLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateLabelsResponse:
+        """
+        @summary 删除服务模版的标签
+        
+        @param request: DeleteServiceTemplateLabelsRequest
+        @return: DeleteServiceTemplateLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_service_template_labels_with_options(service_template_id, request, headers, runtime)
@@ -3543,10 +4775,15 @@ class Client(OpenApiClient):
         service_template_id: str,
         request: aiwork_space_20210204_models.DeleteServiceTemplateLabelsRequest,
     ) -> aiwork_space_20210204_models.DeleteServiceTemplateLabelsResponse:
+        """
+        @summary 删除服务模版的标签
+        
+        @param request: DeleteServiceTemplateLabelsRequest
+        @return: DeleteServiceTemplateLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.delete_service_template_labels_with_options_async(service_template_id, request, headers,
-                                                                            runtime)
+        return await self.delete_service_template_labels_with_options_async(service_template_id, request, headers, runtime)
 
     def delete_user_config_with_options(
         self,
@@ -3555,6 +4792,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteUserConfigResponse:
+        """
+        @summary 删除用户配置
+        
+        @param request: DeleteUserConfigRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteUserConfigResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.config_key):
@@ -3586,6 +4831,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteUserConfigResponse:
+        """
+        @summary 删除用户配置
+        
+        @param request: DeleteUserConfigRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteUserConfigResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.config_key):
@@ -3615,6 +4868,12 @@ class Client(OpenApiClient):
         category_name: str,
         request: aiwork_space_20210204_models.DeleteUserConfigRequest,
     ) -> aiwork_space_20210204_models.DeleteUserConfigResponse:
+        """
+        @summary 删除用户配置
+        
+        @param request: DeleteUserConfigRequest
+        @return: DeleteUserConfigResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_user_config_with_options(category_name, request, headers, runtime)
@@ -3624,6 +4883,12 @@ class Client(OpenApiClient):
         category_name: str,
         request: aiwork_space_20210204_models.DeleteUserConfigRequest,
     ) -> aiwork_space_20210204_models.DeleteUserConfigResponse:
+        """
+        @summary 删除用户配置
+        
+        @param request: DeleteUserConfigRequest
+        @return: DeleteUserConfigResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_user_config_with_options_async(category_name, request, headers, runtime)
@@ -3634,6 +4899,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResponse:
+        """
+        @summary 删除工作空间
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteWorkspaceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3659,6 +4931,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResponse:
+        """
+        @summary 删除工作空间
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteWorkspaceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3682,6 +4961,11 @@ class Client(OpenApiClient):
         self,
         workspace_id: str,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResponse:
+        """
+        @summary 删除工作空间
+        
+        @return: DeleteWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_workspace_with_options(workspace_id, headers, runtime)
@@ -3690,6 +4974,11 @@ class Client(OpenApiClient):
         self,
         workspace_id: str,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResponse:
+        """
+        @summary 删除工作空间
+        
+        @return: DeleteWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_workspace_with_options_async(workspace_id, headers, runtime)
@@ -3701,6 +4990,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResourceResponse:
+        """
+        @summary 删除工作空间资源
+        
+        @param request: DeleteWorkspaceResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteWorkspaceResourceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.group_name):
@@ -3742,6 +5039,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResourceResponse:
+        """
+        @summary 删除工作空间资源
+        
+        @param request: DeleteWorkspaceResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteWorkspaceResourceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.group_name):
@@ -3781,6 +5086,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.DeleteWorkspaceResourceRequest,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResourceResponse:
+        """
+        @summary 删除工作空间资源
+        
+        @param request: DeleteWorkspaceResourceRequest
+        @return: DeleteWorkspaceResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_workspace_resource_with_options(workspace_id, request, headers, runtime)
@@ -3790,9 +5101,123 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.DeleteWorkspaceResourceRequest,
     ) -> aiwork_space_20210204_models.DeleteWorkspaceResourceResponse:
+        """
+        @summary 删除工作空间资源
+        
+        @param request: DeleteWorkspaceResourceRequest
+        @return: DeleteWorkspaceResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_workspace_resource_with_options_async(workspace_id, request, headers, runtime)
+
+    def delete_workspace_roles_with_options(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.DeleteWorkspaceRolesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.DeleteWorkspaceRolesResponse:
+        """
+        @summary 批量删除工作空间角色
+        
+        @param request: DeleteWorkspaceRolesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteWorkspaceRolesResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.role_ids):
+            body['RoleIds'] = request.role_ids
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='DeleteWorkspaceRoles',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles/action/delete',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.DeleteWorkspaceRolesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def delete_workspace_roles_with_options_async(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.DeleteWorkspaceRolesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.DeleteWorkspaceRolesResponse:
+        """
+        @summary 批量删除工作空间角色
+        
+        @param request: DeleteWorkspaceRolesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteWorkspaceRolesResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.role_ids):
+            body['RoleIds'] = request.role_ids
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='DeleteWorkspaceRoles',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles/action/delete',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.DeleteWorkspaceRolesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def delete_workspace_roles(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.DeleteWorkspaceRolesRequest,
+    ) -> aiwork_space_20210204_models.DeleteWorkspaceRolesResponse:
+        """
+        @summary 批量删除工作空间角色
+        
+        @param request: DeleteWorkspaceRolesRequest
+        @return: DeleteWorkspaceRolesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.delete_workspace_roles_with_options(workspace_id, request, headers, runtime)
+
+    async def delete_workspace_roles_async(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.DeleteWorkspaceRolesRequest,
+    ) -> aiwork_space_20210204_models.DeleteWorkspaceRolesResponse:
+        """
+        @summary 批量删除工作空间角色
+        
+        @param request: DeleteWorkspaceRolesRequest
+        @return: DeleteWorkspaceRolesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.delete_workspace_roles_with_options_async(workspace_id, request, headers, runtime)
 
     def describe_pricing_module_with_options(
         self,
@@ -3800,6 +5225,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DescribePricingModuleResponse:
+        """
+        @summary 查询阿里云商品对应模块信息
+        
+        @param request: DescribePricingModuleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DescribePricingModuleResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.product_code):
@@ -3834,6 +5267,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.DescribePricingModuleResponse:
+        """
+        @summary 查询阿里云商品对应模块信息
+        
+        @param request: DescribePricingModuleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DescribePricingModuleResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.product_code):
@@ -3866,6 +5307,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.DescribePricingModuleRequest,
     ) -> aiwork_space_20210204_models.DescribePricingModuleResponse:
+        """
+        @summary 查询阿里云商品对应模块信息
+        
+        @param request: DescribePricingModuleRequest
+        @return: DescribePricingModuleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.describe_pricing_module_with_options(request, headers, runtime)
@@ -3874,6 +5321,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.DescribePricingModuleRequest,
     ) -> aiwork_space_20210204_models.DescribePricingModuleResponse:
+        """
+        @summary 查询阿里云商品对应模块信息
+        
+        @param request: DescribePricingModuleRequest
+        @return: DescribePricingModuleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.describe_pricing_module_with_options_async(request, headers, runtime)
@@ -3884,6 +5337,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetCodeSourceResponse:
+        """
+        @summary 获取一个代码源配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetCodeSourceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3909,6 +5369,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetCodeSourceResponse:
+        """
+        @summary 获取一个代码源配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetCodeSourceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -3932,6 +5399,11 @@ class Client(OpenApiClient):
         self,
         code_source_id: str,
     ) -> aiwork_space_20210204_models.GetCodeSourceResponse:
+        """
+        @summary 获取一个代码源配置
+        
+        @return: GetCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_code_source_with_options(code_source_id, headers, runtime)
@@ -3940,6 +5412,11 @@ class Client(OpenApiClient):
         self,
         code_source_id: str,
     ) -> aiwork_space_20210204_models.GetCodeSourceResponse:
+        """
+        @summary 获取一个代码源配置
+        
+        @return: GetCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_code_source_with_options_async(code_source_id, headers, runtime)
@@ -3950,6 +5427,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetCodeSourcesStatisticsResponse:
+        """
+        @summary 获取当前工作空间下的CodeSources的统计信息
+        
+        @param request: GetCodeSourcesStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetCodeSourcesStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -3980,6 +5465,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetCodeSourcesStatisticsResponse:
+        """
+        @summary 获取当前工作空间下的CodeSources的统计信息
+        
+        @param request: GetCodeSourcesStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetCodeSourcesStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -4008,6 +5501,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetCodeSourcesStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetCodeSourcesStatisticsResponse:
+        """
+        @summary 获取当前工作空间下的CodeSources的统计信息
+        
+        @param request: GetCodeSourcesStatisticsRequest
+        @return: GetCodeSourcesStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_code_sources_statistics_with_options(request, headers, runtime)
@@ -4016,6 +5515,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetCodeSourcesStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetCodeSourcesStatisticsResponse:
+        """
+        @summary 获取当前工作空间下的CodeSources的统计信息
+        
+        @param request: GetCodeSourcesStatisticsRequest
+        @return: GetCodeSourcesStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_code_sources_statistics_with_options_async(request, headers, runtime)
@@ -4026,6 +5531,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetCollectionResponse:
+        """
+        @summary 获取Collection
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetCollectionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4051,6 +5563,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetCollectionResponse:
+        """
+        @summary 获取Collection
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetCollectionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4074,6 +5593,11 @@ class Client(OpenApiClient):
         self,
         collection_name: str,
     ) -> aiwork_space_20210204_models.GetCollectionResponse:
+        """
+        @summary 获取Collection
+        
+        @return: GetCollectionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_collection_with_options(collection_name, headers, runtime)
@@ -4082,6 +5606,11 @@ class Client(OpenApiClient):
         self,
         collection_name: str,
     ) -> aiwork_space_20210204_models.GetCollectionResponse:
+        """
+        @summary 获取Collection
+        
+        @return: GetCollectionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_collection_with_options_async(collection_name, headers, runtime)
@@ -4092,6 +5621,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetDatasetResponse:
+        """
+        @summary 获取数据集
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetDatasetResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4117,6 +5653,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetDatasetResponse:
+        """
+        @summary 获取数据集
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetDatasetResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4140,6 +5683,11 @@ class Client(OpenApiClient):
         self,
         dataset_id: str,
     ) -> aiwork_space_20210204_models.GetDatasetResponse:
+        """
+        @summary 获取数据集
+        
+        @return: GetDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_dataset_with_options(dataset_id, headers, runtime)
@@ -4148,6 +5696,11 @@ class Client(OpenApiClient):
         self,
         dataset_id: str,
     ) -> aiwork_space_20210204_models.GetDatasetResponse:
+        """
+        @summary 获取数据集
+        
+        @return: GetDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_dataset_with_options_async(dataset_id, headers, runtime)
@@ -4158,6 +5711,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetDatasetsStatisticsResponse:
+        """
+        @summary 获取数据集总数
+        
+        @param request: GetDatasetsStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetDatasetsStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -4188,6 +5749,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetDatasetsStatisticsResponse:
+        """
+        @summary 获取数据集总数
+        
+        @param request: GetDatasetsStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetDatasetsStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -4216,6 +5785,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetDatasetsStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetDatasetsStatisticsResponse:
+        """
+        @summary 获取数据集总数
+        
+        @param request: GetDatasetsStatisticsRequest
+        @return: GetDatasetsStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_datasets_statistics_with_options(request, headers, runtime)
@@ -4224,6 +5799,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetDatasetsStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetDatasetsStatisticsResponse:
+        """
+        @summary 获取数据集总数
+        
+        @param request: GetDatasetsStatisticsRequest
+        @return: GetDatasetsStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_datasets_statistics_with_options_async(request, headers, runtime)
@@ -4234,6 +5815,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetDefaultWorkspaceResponse:
+        """
+        @summary 获取默认工作空间
+        
+        @param request: GetDefaultWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetDefaultWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.verbose):
@@ -4264,6 +5853,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetDefaultWorkspaceResponse:
+        """
+        @summary 获取默认工作空间
+        
+        @param request: GetDefaultWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetDefaultWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.verbose):
@@ -4292,6 +5889,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetDefaultWorkspaceRequest,
     ) -> aiwork_space_20210204_models.GetDefaultWorkspaceResponse:
+        """
+        @summary 获取默认工作空间
+        
+        @param request: GetDefaultWorkspaceRequest
+        @return: GetDefaultWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_default_workspace_with_options(request, headers, runtime)
@@ -4300,6 +5903,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetDefaultWorkspaceRequest,
     ) -> aiwork_space_20210204_models.GetDefaultWorkspaceResponse:
+        """
+        @summary 获取默认工作空间
+        
+        @param request: GetDefaultWorkspaceRequest
+        @return: GetDefaultWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_default_workspace_with_options_async(request, headers, runtime)
@@ -4310,6 +5919,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetExperimentResponse:
+        """
+        @summary 获取实验
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetExperimentResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4335,6 +5951,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetExperimentResponse:
+        """
+        @summary 获取实验
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetExperimentResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4358,6 +5981,11 @@ class Client(OpenApiClient):
         self,
         experiment_id: str,
     ) -> aiwork_space_20210204_models.GetExperimentResponse:
+        """
+        @summary 获取实验
+        
+        @return: GetExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_experiment_with_options(experiment_id, headers, runtime)
@@ -4366,6 +5994,11 @@ class Client(OpenApiClient):
         self,
         experiment_id: str,
     ) -> aiwork_space_20210204_models.GetExperimentResponse:
+        """
+        @summary 获取实验
+        
+        @return: GetExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_experiment_with_options_async(experiment_id, headers, runtime)
@@ -4377,6 +6010,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetImageResponse:
+        """
+        @summary 获取镜像
+        
+        @param request: GetImageRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetImageResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.verbose):
@@ -4408,6 +6049,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetImageResponse:
+        """
+        @summary 获取镜像
+        
+        @param request: GetImageRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetImageResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.verbose):
@@ -4437,6 +6086,12 @@ class Client(OpenApiClient):
         image_id: str,
         request: aiwork_space_20210204_models.GetImageRequest,
     ) -> aiwork_space_20210204_models.GetImageResponse:
+        """
+        @summary 获取镜像
+        
+        @param request: GetImageRequest
+        @return: GetImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_image_with_options(image_id, request, headers, runtime)
@@ -4446,6 +6101,12 @@ class Client(OpenApiClient):
         image_id: str,
         request: aiwork_space_20210204_models.GetImageRequest,
     ) -> aiwork_space_20210204_models.GetImageResponse:
+        """
+        @summary 获取镜像
+        
+        @param request: GetImageRequest
+        @return: GetImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_image_with_options_async(image_id, request, headers, runtime)
@@ -4456,6 +6117,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetImagesStatisticsResponse:
+        """
+        @summary 获取镜像统计
+        
+        @param request: GetImagesStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetImagesStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -4486,6 +6155,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetImagesStatisticsResponse:
+        """
+        @summary 获取镜像统计
+        
+        @param request: GetImagesStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetImagesStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -4514,6 +6191,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetImagesStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetImagesStatisticsResponse:
+        """
+        @summary 获取镜像统计
+        
+        @param request: GetImagesStatisticsRequest
+        @return: GetImagesStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_images_statistics_with_options(request, headers, runtime)
@@ -4522,9 +6205,217 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetImagesStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetImagesStatisticsResponse:
+        """
+        @summary 获取镜像统计
+        
+        @param request: GetImagesStatisticsRequest
+        @return: GetImagesStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_images_statistics_with_options_async(request, headers, runtime)
+
+    def get_instance_job_with_options(
+        self,
+        instance_job_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.GetInstanceJobResponse:
+        """
+        @summary 获取任务
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceJobResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetInstanceJob',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/instancejobs/{OpenApiUtilClient.get_encode_param(instance_job_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.GetInstanceJobResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_instance_job_with_options_async(
+        self,
+        instance_job_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.GetInstanceJobResponse:
+        """
+        @summary 获取任务
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceJobResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetInstanceJob',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/instancejobs/{OpenApiUtilClient.get_encode_param(instance_job_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.GetInstanceJobResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_instance_job(
+        self,
+        instance_job_id: str,
+    ) -> aiwork_space_20210204_models.GetInstanceJobResponse:
+        """
+        @summary 获取任务
+        
+        @return: GetInstanceJobResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_instance_job_with_options(instance_job_id, headers, runtime)
+
+    async def get_instance_job_async(
+        self,
+        instance_job_id: str,
+    ) -> aiwork_space_20210204_models.GetInstanceJobResponse:
+        """
+        @summary 获取任务
+        
+        @return: GetInstanceJobResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_instance_job_with_options_async(instance_job_id, headers, runtime)
+
+    def get_instance_statistics_with_options(
+        self,
+        request: aiwork_space_20210204_models.GetInstanceStatisticsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.GetInstanceStatisticsResponse:
+        """
+        @summary 获得工作空间下实例统计数据
+        
+        @param request: GetInstanceStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceStatisticsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.option):
+            query['Option'] = request.option
+        if not UtilClient.is_unset(request.status):
+            query['Status'] = request.status
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetInstanceStatistics',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/statistics/instances',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.GetInstanceStatisticsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_instance_statistics_with_options_async(
+        self,
+        request: aiwork_space_20210204_models.GetInstanceStatisticsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.GetInstanceStatisticsResponse:
+        """
+        @summary 获得工作空间下实例统计数据
+        
+        @param request: GetInstanceStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceStatisticsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.option):
+            query['Option'] = request.option
+        if not UtilClient.is_unset(request.status):
+            query['Status'] = request.status
+        if not UtilClient.is_unset(request.workspace_id):
+            query['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetInstanceStatistics',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/statistics/instances',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.GetInstanceStatisticsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_instance_statistics(
+        self,
+        request: aiwork_space_20210204_models.GetInstanceStatisticsRequest,
+    ) -> aiwork_space_20210204_models.GetInstanceStatisticsResponse:
+        """
+        @summary 获得工作空间下实例统计数据
+        
+        @param request: GetInstanceStatisticsRequest
+        @return: GetInstanceStatisticsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_instance_statistics_with_options(request, headers, runtime)
+
+    async def get_instance_statistics_async(
+        self,
+        request: aiwork_space_20210204_models.GetInstanceStatisticsRequest,
+    ) -> aiwork_space_20210204_models.GetInstanceStatisticsResponse:
+        """
+        @summary 获得工作空间下实例统计数据
+        
+        @param request: GetInstanceStatisticsRequest
+        @return: GetInstanceStatisticsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_instance_statistics_with_options_async(request, headers, runtime)
 
     def get_member_with_options(
         self,
@@ -4533,6 +6424,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetMemberResponse:
+        """
+        @summary 获取成员
+        
+        @param request: GetMemberRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetMemberResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.member_id):
@@ -4566,6 +6465,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetMemberResponse:
+        """
+        @summary 获取成员
+        
+        @param request: GetMemberRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetMemberResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.member_id):
@@ -4597,6 +6504,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.GetMemberRequest,
     ) -> aiwork_space_20210204_models.GetMemberResponse:
+        """
+        @summary 获取成员
+        
+        @param request: GetMemberRequest
+        @return: GetMemberResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_member_with_options(workspace_id, request, headers, runtime)
@@ -4606,6 +6519,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.GetMemberRequest,
     ) -> aiwork_space_20210204_models.GetMemberResponse:
+        """
+        @summary 获取成员
+        
+        @param request: GetMemberRequest
+        @return: GetMemberResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_member_with_options_async(workspace_id, request, headers, runtime)
@@ -4616,6 +6535,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetModelResponse:
+        """
+        @summary 获取模型
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetModelResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4641,6 +6567,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetModelResponse:
+        """
+        @summary 获取模型
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetModelResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4664,6 +6597,11 @@ class Client(OpenApiClient):
         self,
         model_id: str,
     ) -> aiwork_space_20210204_models.GetModelResponse:
+        """
+        @summary 获取模型
+        
+        @return: GetModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_model_with_options(model_id, headers, runtime)
@@ -4672,6 +6610,11 @@ class Client(OpenApiClient):
         self,
         model_id: str,
     ) -> aiwork_space_20210204_models.GetModelResponse:
+        """
+        @summary 获取模型
+        
+        @return: GetModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_model_with_options_async(model_id, headers, runtime)
@@ -4683,6 +6626,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetModelVersionResponse:
+        """
+        @summary 获取模型版本
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetModelVersionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4709,6 +6659,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetModelVersionResponse:
+        """
+        @summary 获取模型版本
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetModelVersionResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -4733,6 +6690,11 @@ class Client(OpenApiClient):
         model_id: str,
         version_name: str,
     ) -> aiwork_space_20210204_models.GetModelVersionResponse:
+        """
+        @summary 获取模型版本
+        
+        @return: GetModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_model_version_with_options(model_id, version_name, headers, runtime)
@@ -4742,6 +6704,11 @@ class Client(OpenApiClient):
         model_id: str,
         version_name: str,
     ) -> aiwork_space_20210204_models.GetModelVersionResponse:
+        """
+        @summary 获取模型版本
+        
+        @return: GetModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_model_version_with_options_async(model_id, version_name, headers, runtime)
@@ -4752,6 +6719,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetPayAsYouGoPriceResponse:
+        """
+        @summary 查询阿里云商品后付费价格
+        
+        @param request: GetPayAsYouGoPriceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetPayAsYouGoPriceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.module_list):
@@ -4788,6 +6763,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetPayAsYouGoPriceResponse:
+        """
+        @summary 查询阿里云商品后付费价格
+        
+        @param request: GetPayAsYouGoPriceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetPayAsYouGoPriceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.module_list):
@@ -4822,6 +6805,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetPayAsYouGoPriceRequest,
     ) -> aiwork_space_20210204_models.GetPayAsYouGoPriceResponse:
+        """
+        @summary 查询阿里云商品后付费价格
+        
+        @param request: GetPayAsYouGoPriceRequest
+        @return: GetPayAsYouGoPriceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_pay_as_you_go_price_with_options(request, headers, runtime)
@@ -4830,6 +6819,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetPayAsYouGoPriceRequest,
     ) -> aiwork_space_20210204_models.GetPayAsYouGoPriceResponse:
+        """
+        @summary 查询阿里云商品后付费价格
+        
+        @param request: GetPayAsYouGoPriceRequest
+        @return: GetPayAsYouGoPriceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_pay_as_you_go_price_with_options_async(request, headers, runtime)
@@ -4842,12 +6837,24 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetPermissionResponse:
+        """
+        @summary 获取权限，若无权限则返回错误
+        
+        @param request: GetPermissionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetPermissionResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.accessibility):
             query['Accessibility'] = request.accessibility
         if not UtilClient.is_unset(request.creator):
             query['Creator'] = request.creator
+        if not UtilClient.is_unset(request.option):
+            query['Option'] = request.option
+        if not UtilClient.is_unset(request.resource):
+            query['Resource'] = request.resource
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -4876,12 +6883,24 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetPermissionResponse:
+        """
+        @summary 获取权限，若无权限则返回错误
+        
+        @param request: GetPermissionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetPermissionResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.accessibility):
             query['Accessibility'] = request.accessibility
         if not UtilClient.is_unset(request.creator):
             query['Creator'] = request.creator
+        if not UtilClient.is_unset(request.option):
+            query['Option'] = request.option
+        if not UtilClient.is_unset(request.resource):
+            query['Resource'] = request.resource
         req = open_api_models.OpenApiRequest(
             headers=headers,
             query=OpenApiUtilClient.query(query)
@@ -4908,6 +6927,12 @@ class Client(OpenApiClient):
         permission_code: str,
         request: aiwork_space_20210204_models.GetPermissionRequest,
     ) -> aiwork_space_20210204_models.GetPermissionResponse:
+        """
+        @summary 获取权限，若无权限则返回错误
+        
+        @param request: GetPermissionRequest
+        @return: GetPermissionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_permission_with_options(workspace_id, permission_code, request, headers, runtime)
@@ -4918,6 +6943,12 @@ class Client(OpenApiClient):
         permission_code: str,
         request: aiwork_space_20210204_models.GetPermissionRequest,
     ) -> aiwork_space_20210204_models.GetPermissionResponse:
+        """
+        @summary 获取权限，若无权限则返回错误
+        
+        @param request: GetPermissionRequest
+        @return: GetPermissionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_permission_with_options_async(workspace_id, permission_code, request, headers, runtime)
@@ -4930,6 +6961,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetResourceResponse:
+        """
+        @summary 获取工作空间资源
+        
+        @param request: GetResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetResourceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.resource_type):
@@ -4962,6 +7001,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetResourceResponse:
+        """
+        @summary 获取工作空间资源
+        
+        @param request: GetResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetResourceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.resource_type):
@@ -4992,6 +7039,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.GetResourceRequest,
     ) -> aiwork_space_20210204_models.GetResourceResponse:
+        """
+        @summary 获取工作空间资源
+        
+        @param request: GetResourceRequest
+        @return: GetResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_resource_with_options(resource_id, workspace_id, request, headers, runtime)
@@ -5002,6 +7055,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.GetResourceRequest,
     ) -> aiwork_space_20210204_models.GetResourceResponse:
+        """
+        @summary 获取工作空间资源
+        
+        @param request: GetResourceRequest
+        @return: GetResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_resource_with_options_async(resource_id, workspace_id, request, headers, runtime)
@@ -5012,6 +7071,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetRoleStatisticsResponse:
+        """
+        @summary 获得角色统计
+        
+        @param request: GetRoleStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetRoleStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -5042,6 +7109,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetRoleStatisticsResponse:
+        """
+        @summary 获得角色统计
+        
+        @param request: GetRoleStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetRoleStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -5070,6 +7145,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetRoleStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetRoleStatisticsResponse:
+        """
+        @summary 获得角色统计
+        
+        @param request: GetRoleStatisticsRequest
+        @return: GetRoleStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_role_statistics_with_options(request, headers, runtime)
@@ -5078,6 +7159,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.GetRoleStatisticsRequest,
     ) -> aiwork_space_20210204_models.GetRoleStatisticsResponse:
+        """
+        @summary 获得角色统计
+        
+        @param request: GetRoleStatisticsRequest
+        @return: GetRoleStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_role_statistics_with_options_async(request, headers, runtime)
@@ -5088,6 +7175,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetServiceTemplateResponse:
+        """
+        @summary 获取服务模版
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetServiceTemplateResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -5113,6 +7207,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetServiceTemplateResponse:
+        """
+        @summary 获取服务模版
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetServiceTemplateResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -5136,6 +7237,11 @@ class Client(OpenApiClient):
         self,
         service_template_id: str,
     ) -> aiwork_space_20210204_models.GetServiceTemplateResponse:
+        """
+        @summary 获取服务模版
+        
+        @return: GetServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_service_template_with_options(service_template_id, headers, runtime)
@@ -5144,6 +7250,11 @@ class Client(OpenApiClient):
         self,
         service_template_id: str,
     ) -> aiwork_space_20210204_models.GetServiceTemplateResponse:
+        """
+        @summary 获取服务模版
+        
+        @return: GetServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_service_template_with_options_async(service_template_id, headers, runtime)
@@ -5154,6 +7265,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetTrialResponse:
+        """
+        @summary Get trial
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetTrialResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -5179,6 +7297,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetTrialResponse:
+        """
+        @summary Get trial
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetTrialResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -5202,6 +7327,11 @@ class Client(OpenApiClient):
         self,
         trial_id: str,
     ) -> aiwork_space_20210204_models.GetTrialResponse:
+        """
+        @summary Get trial
+        
+        @return: GetTrialResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_trial_with_options(trial_id, headers, runtime)
@@ -5210,6 +7340,11 @@ class Client(OpenApiClient):
         self,
         trial_id: str,
     ) -> aiwork_space_20210204_models.GetTrialResponse:
+        """
+        @summary Get trial
+        
+        @return: GetTrialResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_trial_with_options_async(trial_id, headers, runtime)
@@ -5221,6 +7356,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetWorkspaceResponse:
+        """
+        @summary 获取工作空间
+        
+        @param request: GetWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.verbose):
@@ -5252,6 +7395,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.GetWorkspaceResponse:
+        """
+        @summary 获取工作空间
+        
+        @param request: GetWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.verbose):
@@ -5281,6 +7432,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.GetWorkspaceRequest,
     ) -> aiwork_space_20210204_models.GetWorkspaceResponse:
+        """
+        @summary 获取工作空间
+        
+        @param request: GetWorkspaceRequest
+        @return: GetWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_workspace_with_options(workspace_id, request, headers, runtime)
@@ -5290,9 +7447,109 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.GetWorkspaceRequest,
     ) -> aiwork_space_20210204_models.GetWorkspaceResponse:
+        """
+        @summary 获取工作空间
+        
+        @param request: GetWorkspaceRequest
+        @return: GetWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_workspace_with_options_async(workspace_id, request, headers, runtime)
+
+    def get_workspace_role_with_options(
+        self,
+        workspace_id: str,
+        role_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.GetWorkspaceRoleResponse:
+        """
+        @summary 获取工作空间角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetWorkspaceRoleResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetWorkspaceRole',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles/{OpenApiUtilClient.get_encode_param(role_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.GetWorkspaceRoleResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_workspace_role_with_options_async(
+        self,
+        workspace_id: str,
+        role_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.GetWorkspaceRoleResponse:
+        """
+        @summary 获取工作空间角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetWorkspaceRoleResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetWorkspaceRole',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles/{OpenApiUtilClient.get_encode_param(role_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.GetWorkspaceRoleResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_workspace_role(
+        self,
+        workspace_id: str,
+        role_id: str,
+    ) -> aiwork_space_20210204_models.GetWorkspaceRoleResponse:
+        """
+        @summary 获取工作空间角色
+        
+        @return: GetWorkspaceRoleResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_workspace_role_with_options(workspace_id, role_id, headers, runtime)
+
+    async def get_workspace_role_async(
+        self,
+        workspace_id: str,
+        role_id: str,
+    ) -> aiwork_space_20210204_models.GetWorkspaceRoleResponse:
+        """
+        @summary 获取工作空间角色
+        
+        @return: GetWorkspaceRoleResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_workspace_role_with_options_async(workspace_id, role_id, headers, runtime)
 
     def list_code_sources_with_options(
         self,
@@ -5300,6 +7557,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListCodeSourcesResponse:
+        """
+        @summary 获取代码源配置列表
+        
+        @param request: ListCodeSourcesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListCodeSourcesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.display_name):
@@ -5340,6 +7605,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListCodeSourcesResponse:
+        """
+        @summary 获取代码源配置列表
+        
+        @param request: ListCodeSourcesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListCodeSourcesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.display_name):
@@ -5378,6 +7651,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListCodeSourcesRequest,
     ) -> aiwork_space_20210204_models.ListCodeSourcesResponse:
+        """
+        @summary 获取代码源配置列表
+        
+        @param request: ListCodeSourcesRequest
+        @return: ListCodeSourcesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_code_sources_with_options(request, headers, runtime)
@@ -5386,6 +7665,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListCodeSourcesRequest,
     ) -> aiwork_space_20210204_models.ListCodeSourcesResponse:
+        """
+        @summary 获取代码源配置列表
+        
+        @param request: ListCodeSourcesRequest
+        @return: ListCodeSourcesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_code_sources_with_options_async(request, headers, runtime)
@@ -5396,6 +7681,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListCollectionsResponse:
+        """
+        @summary 获取Collection列表
+        
+        @param request: ListCollectionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListCollectionsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.page_number):
@@ -5428,6 +7721,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListCollectionsResponse:
+        """
+        @summary 获取Collection列表
+        
+        @param request: ListCollectionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListCollectionsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.page_number):
@@ -5458,6 +7759,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListCollectionsRequest,
     ) -> aiwork_space_20210204_models.ListCollectionsResponse:
+        """
+        @summary 获取Collection列表
+        
+        @param request: ListCollectionsRequest
+        @return: ListCollectionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_collections_with_options(request, headers, runtime)
@@ -5466,6 +7773,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListCollectionsRequest,
     ) -> aiwork_space_20210204_models.ListCollectionsResponse:
+        """
+        @summary 获取Collection列表
+        
+        @param request: ListCollectionsRequest
+        @return: ListCollectionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_collections_with_options_async(request, headers, runtime)
@@ -5477,6 +7790,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListConfigsResponse:
+        """
+        @summary 获取配置
+        
+        @param request: ListConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListConfigsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.config_keys):
@@ -5512,6 +7833,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListConfigsResponse:
+        """
+        @summary 获取配置
+        
+        @param request: ListConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListConfigsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.config_keys):
@@ -5545,6 +7874,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListConfigsRequest,
     ) -> aiwork_space_20210204_models.ListConfigsResponse:
+        """
+        @summary 获取配置
+        
+        @param request: ListConfigsRequest
+        @return: ListConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_configs_with_options(workspace_id, request, headers, runtime)
@@ -5554,6 +7889,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListConfigsRequest,
     ) -> aiwork_space_20210204_models.ListConfigsResponse:
+        """
+        @summary 获取配置
+        
+        @param request: ListConfigsRequest
+        @return: ListConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_configs_with_options_async(workspace_id, request, headers, runtime)
@@ -5564,6 +7905,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListDatasetsResponse:
+        """
+        @summary 获取数据集列表
+        
+        @param request: ListDatasetsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListDatasetsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.data_source_types):
@@ -5620,6 +7969,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListDatasetsResponse:
+        """
+        @summary 获取数据集列表
+        
+        @param request: ListDatasetsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListDatasetsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.data_source_types):
@@ -5674,6 +8031,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListDatasetsRequest,
     ) -> aiwork_space_20210204_models.ListDatasetsResponse:
+        """
+        @summary 获取数据集列表
+        
+        @param request: ListDatasetsRequest
+        @return: ListDatasetsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_datasets_with_options(request, headers, runtime)
@@ -5682,6 +8045,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListDatasetsRequest,
     ) -> aiwork_space_20210204_models.ListDatasetsResponse:
+        """
+        @summary 获取数据集列表
+        
+        @param request: ListDatasetsRequest
+        @return: ListDatasetsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_datasets_with_options_async(request, headers, runtime)
@@ -5692,6 +8061,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListExperimentResponse:
+        """
+        @summary 获取实验列表
+        
+        @param request: ListExperimentRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListExperimentResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.labels):
@@ -5734,6 +8111,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListExperimentResponse:
+        """
+        @summary 获取实验列表
+        
+        @param request: ListExperimentRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListExperimentResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.labels):
@@ -5774,6 +8159,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListExperimentRequest,
     ) -> aiwork_space_20210204_models.ListExperimentResponse:
+        """
+        @summary 获取实验列表
+        
+        @param request: ListExperimentRequest
+        @return: ListExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_experiment_with_options(request, headers, runtime)
@@ -5782,6 +8173,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListExperimentRequest,
     ) -> aiwork_space_20210204_models.ListExperimentResponse:
+        """
+        @summary 获取实验列表
+        
+        @param request: ListExperimentRequest
+        @return: ListExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_experiment_with_options_async(request, headers, runtime)
@@ -5792,6 +8189,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListFeaturesResponse:
+        """
+        @summary 列举特性
+        
+        @param request: ListFeaturesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListFeaturesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.names):
@@ -5822,6 +8227,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListFeaturesResponse:
+        """
+        @summary 列举特性
+        
+        @param request: ListFeaturesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListFeaturesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.names):
@@ -5850,6 +8263,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListFeaturesRequest,
     ) -> aiwork_space_20210204_models.ListFeaturesResponse:
+        """
+        @summary 列举特性
+        
+        @param request: ListFeaturesRequest
+        @return: ListFeaturesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_features_with_options(request, headers, runtime)
@@ -5858,17 +8277,45 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListFeaturesRequest,
     ) -> aiwork_space_20210204_models.ListFeaturesResponse:
+        """
+        @summary 列举特性
+        
+        @param request: ListFeaturesRequest
+        @return: ListFeaturesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_features_with_options_async(request, headers, runtime)
 
     def list_global_permissions_with_options(
         self,
+        request: aiwork_space_20210204_models.ListGlobalPermissionsRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListGlobalPermissionsResponse:
+        """
+        @summary 获取用户全局权限
+        
+        @param request: ListGlobalPermissionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListGlobalPermissionsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.module_names):
+            query['ModuleNames'] = request.module_names
+        if not UtilClient.is_unset(request.operation_type):
+            query['OperationType'] = request.operation_type
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.resource_types):
+            query['ResourceTypes'] = request.resource_types
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='ListGlobalPermissions',
@@ -5888,11 +8335,33 @@ class Client(OpenApiClient):
 
     async def list_global_permissions_with_options_async(
         self,
+        request: aiwork_space_20210204_models.ListGlobalPermissionsRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListGlobalPermissionsResponse:
+        """
+        @summary 获取用户全局权限
+        
+        @param request: ListGlobalPermissionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListGlobalPermissionsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.module_names):
+            query['ModuleNames'] = request.module_names
+        if not UtilClient.is_unset(request.operation_type):
+            query['OperationType'] = request.operation_type
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.resource_types):
+            query['ResourceTypes'] = request.resource_types
         req = open_api_models.OpenApiRequest(
-            headers=headers
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
         )
         params = open_api_models.Params(
             action='ListGlobalPermissions',
@@ -5910,15 +8379,33 @@ class Client(OpenApiClient):
             await self.call_api_async(params, req, runtime)
         )
 
-    def list_global_permissions(self) -> aiwork_space_20210204_models.ListGlobalPermissionsResponse:
+    def list_global_permissions(
+        self,
+        request: aiwork_space_20210204_models.ListGlobalPermissionsRequest,
+    ) -> aiwork_space_20210204_models.ListGlobalPermissionsResponse:
+        """
+        @summary 获取用户全局权限
+        
+        @param request: ListGlobalPermissionsRequest
+        @return: ListGlobalPermissionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return self.list_global_permissions_with_options(headers, runtime)
+        return self.list_global_permissions_with_options(request, headers, runtime)
 
-    async def list_global_permissions_async(self) -> aiwork_space_20210204_models.ListGlobalPermissionsResponse:
+    async def list_global_permissions_async(
+        self,
+        request: aiwork_space_20210204_models.ListGlobalPermissionsRequest,
+    ) -> aiwork_space_20210204_models.ListGlobalPermissionsResponse:
+        """
+        @summary 获取用户全局权限
+        
+        @param request: ListGlobalPermissionsRequest
+        @return: ListGlobalPermissionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
-        return await self.list_global_permissions_with_options_async(headers, runtime)
+        return await self.list_global_permissions_with_options_async(request, headers, runtime)
 
     def list_image_label_keys_with_options(
         self,
@@ -5926,6 +8413,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListImageLabelKeysResponse:
+        """
+        @summary 列举匹配标签前缀的所有标签
+        
+        @param request: ListImageLabelKeysRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListImageLabelKeysResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.label_key_prefixes):
@@ -5956,6 +8451,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListImageLabelKeysResponse:
+        """
+        @summary 列举匹配标签前缀的所有标签
+        
+        @param request: ListImageLabelKeysRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListImageLabelKeysResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.label_key_prefixes):
@@ -5984,6 +8487,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListImageLabelKeysRequest,
     ) -> aiwork_space_20210204_models.ListImageLabelKeysResponse:
+        """
+        @summary 列举匹配标签前缀的所有标签
+        
+        @param request: ListImageLabelKeysRequest
+        @return: ListImageLabelKeysResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_image_label_keys_with_options(request, headers, runtime)
@@ -5992,6 +8501,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListImageLabelKeysRequest,
     ) -> aiwork_space_20210204_models.ListImageLabelKeysResponse:
+        """
+        @summary 列举匹配标签前缀的所有标签
+        
+        @param request: ListImageLabelKeysRequest
+        @return: ListImageLabelKeysResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_image_label_keys_with_options_async(request, headers, runtime)
@@ -6002,6 +8517,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListImageLabelsResponse:
+        """
+        @summary 列举标签
+        
+        @param request: ListImageLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListImageLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.image_id):
@@ -6040,6 +8563,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListImageLabelsResponse:
+        """
+        @summary 列举标签
+        
+        @param request: ListImageLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListImageLabelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.image_id):
@@ -6076,6 +8607,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListImageLabelsRequest,
     ) -> aiwork_space_20210204_models.ListImageLabelsResponse:
+        """
+        @summary 列举标签
+        
+        @param request: ListImageLabelsRequest
+        @return: ListImageLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_image_labels_with_options(request, headers, runtime)
@@ -6084,6 +8621,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListImageLabelsRequest,
     ) -> aiwork_space_20210204_models.ListImageLabelsResponse:
+        """
+        @summary 列举标签
+        
+        @param request: ListImageLabelsRequest
+        @return: ListImageLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_image_labels_with_options_async(request, headers, runtime)
@@ -6094,6 +8637,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListImagesResponse:
+        """
+        @summary 列举已注册镜像
+        
+        @param request: ListImagesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListImagesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -6146,6 +8697,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListImagesResponse:
+        """
+        @summary 列举已注册镜像
+        
+        @param request: ListImagesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListImagesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -6196,6 +8755,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListImagesRequest,
     ) -> aiwork_space_20210204_models.ListImagesResponse:
+        """
+        @summary 列举已注册镜像
+        
+        @param request: ListImagesRequest
+        @return: ListImagesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_images_with_options(request, headers, runtime)
@@ -6204,6 +8769,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListImagesRequest,
     ) -> aiwork_space_20210204_models.ListImagesResponse:
+        """
+        @summary 列举已注册镜像
+        
+        @param request: ListImagesRequest
+        @return: ListImagesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_images_with_options_async(request, headers, runtime)
@@ -6215,6 +8786,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListMembersResponse:
+        """
+        @summary 列举工作空间成员
+        
+        @param request: ListMembersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListMembersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.member_name):
@@ -6252,6 +8831,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListMembersResponse:
+        """
+        @summary 列举工作空间成员
+        
+        @param request: ListMembersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListMembersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.member_name):
@@ -6287,6 +8874,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListMembersRequest,
     ) -> aiwork_space_20210204_models.ListMembersResponse:
+        """
+        @summary 列举工作空间成员
+        
+        @param request: ListMembersRequest
+        @return: ListMembersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_members_with_options(workspace_id, request, headers, runtime)
@@ -6296,6 +8889,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListMembersRequest,
     ) -> aiwork_space_20210204_models.ListMembersResponse:
+        """
+        @summary 列举工作空间成员
+        
+        @param request: ListMembersRequest
+        @return: ListMembersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_members_with_options_async(workspace_id, request, headers, runtime)
@@ -6306,6 +8905,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModelDomainsResponse:
+        """
+        @summary 获取模型领域列表
+        
+        @param request: ListModelDomainsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModelDomainsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.model_domain_ids):
@@ -6336,6 +8943,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModelDomainsResponse:
+        """
+        @summary 获取模型领域列表
+        
+        @param request: ListModelDomainsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModelDomainsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.model_domain_ids):
@@ -6364,6 +8979,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListModelDomainsRequest,
     ) -> aiwork_space_20210204_models.ListModelDomainsResponse:
+        """
+        @summary 获取模型领域列表
+        
+        @param request: ListModelDomainsRequest
+        @return: ListModelDomainsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_model_domains_with_options(request, headers, runtime)
@@ -6372,6 +8993,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListModelDomainsRequest,
     ) -> aiwork_space_20210204_models.ListModelDomainsResponse:
+        """
+        @summary 获取模型领域列表
+        
+        @param request: ListModelDomainsRequest
+        @return: ListModelDomainsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_model_domains_with_options_async(request, headers, runtime)
@@ -6383,6 +9010,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModelVersionsResponse:
+        """
+        @summary 获取模型版本列表
+        
+        @param request: ListModelVersionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModelVersionsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.approval_status):
@@ -6438,6 +9073,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModelVersionsResponse:
+        """
+        @summary 获取模型版本列表
+        
+        @param request: ListModelVersionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModelVersionsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.approval_status):
@@ -6491,6 +9134,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.ListModelVersionsRequest,
     ) -> aiwork_space_20210204_models.ListModelVersionsResponse:
+        """
+        @summary 获取模型版本列表
+        
+        @param request: ListModelVersionsRequest
+        @return: ListModelVersionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_model_versions_with_options(model_id, request, headers, runtime)
@@ -6500,6 +9149,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.ListModelVersionsRequest,
     ) -> aiwork_space_20210204_models.ListModelVersionsResponse:
+        """
+        @summary 获取模型版本列表
+        
+        @param request: ListModelVersionsRequest
+        @return: ListModelVersionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_model_versions_with_options_async(model_id, request, headers, runtime)
@@ -6510,6 +9165,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModelsResponse:
+        """
+        @summary 获取模型列表
+        
+        @param request: ListModelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.collections):
@@ -6570,6 +9233,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModelsResponse:
+        """
+        @summary 获取模型列表
+        
+        @param request: ListModelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModelsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.collections):
@@ -6628,6 +9299,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListModelsRequest,
     ) -> aiwork_space_20210204_models.ListModelsResponse:
+        """
+        @summary 获取模型列表
+        
+        @param request: ListModelsRequest
+        @return: ListModelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_models_with_options(request, headers, runtime)
@@ -6636,6 +9313,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListModelsRequest,
     ) -> aiwork_space_20210204_models.ListModelsResponse:
+        """
+        @summary 获取模型列表
+        
+        @param request: ListModelsRequest
+        @return: ListModelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_models_with_options_async(request, headers, runtime)
@@ -6646,6 +9329,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModuleConfigsResponse:
+        """
+        @summary 列举PAI云产品的配置
+        
+        @param request: ListModuleConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModuleConfigsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.module_codes):
@@ -6678,6 +9369,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListModuleConfigsResponse:
+        """
+        @summary 列举PAI云产品的配置
+        
+        @param request: ListModuleConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListModuleConfigsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.module_codes):
@@ -6708,6 +9407,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListModuleConfigsRequest,
     ) -> aiwork_space_20210204_models.ListModuleConfigsResponse:
+        """
+        @summary 列举PAI云产品的配置
+        
+        @param request: ListModuleConfigsRequest
+        @return: ListModuleConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_module_configs_with_options(request, headers, runtime)
@@ -6716,6 +9421,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListModuleConfigsRequest,
     ) -> aiwork_space_20210204_models.ListModuleConfigsResponse:
+        """
+        @summary 列举PAI云产品的配置
+        
+        @param request: ListModuleConfigsRequest
+        @return: ListModuleConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_module_configs_with_options_async(request, headers, runtime)
@@ -6727,14 +9438,20 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListOperationLogsResponse:
+        """
+        @summary 列出操作日志
+        
+        @param request: ListOperationLogsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListOperationLogsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.entity_status):
             query['EntityStatus'] = request.entity_status
         if not UtilClient.is_unset(request.entity_types):
             query['EntityTypes'] = request.entity_types
-        if not UtilClient.is_unset(request.operation_status):
-            query['OperationStatus'] = request.operation_status
         if not UtilClient.is_unset(request.operations):
             query['Operations'] = request.operations
         if not UtilClient.is_unset(request.order):
@@ -6772,14 +9489,20 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListOperationLogsResponse:
+        """
+        @summary 列出操作日志
+        
+        @param request: ListOperationLogsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListOperationLogsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.entity_status):
             query['EntityStatus'] = request.entity_status
         if not UtilClient.is_unset(request.entity_types):
             query['EntityTypes'] = request.entity_types
-        if not UtilClient.is_unset(request.operation_status):
-            query['OperationStatus'] = request.operation_status
         if not UtilClient.is_unset(request.operations):
             query['Operations'] = request.operations
         if not UtilClient.is_unset(request.order):
@@ -6815,6 +9538,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListOperationLogsRequest,
     ) -> aiwork_space_20210204_models.ListOperationLogsResponse:
+        """
+        @summary 列出操作日志
+        
+        @param request: ListOperationLogsRequest
+        @return: ListOperationLogsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_operation_logs_with_options(workspace_id, request, headers, runtime)
@@ -6824,6 +9553,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListOperationLogsRequest,
     ) -> aiwork_space_20210204_models.ListOperationLogsResponse:
+        """
+        @summary 列出操作日志
+        
+        @param request: ListOperationLogsRequest
+        @return: ListOperationLogsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_operation_logs_with_options_async(workspace_id, request, headers, runtime)
@@ -6834,6 +9569,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListPermissionsResponse:
+        """
+        @summary 列举权限
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListPermissionsResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -6859,6 +9601,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListPermissionsResponse:
+        """
+        @summary 列举权限
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListPermissionsResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -6882,6 +9631,11 @@ class Client(OpenApiClient):
         self,
         workspace_id: str,
     ) -> aiwork_space_20210204_models.ListPermissionsResponse:
+        """
+        @summary 列举权限
+        
+        @return: ListPermissionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_permissions_with_options(workspace_id, headers, runtime)
@@ -6890,6 +9644,11 @@ class Client(OpenApiClient):
         self,
         workspace_id: str,
     ) -> aiwork_space_20210204_models.ListPermissionsResponse:
+        """
+        @summary 列举权限
+        
+        @return: ListPermissionsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_permissions_with_options_async(workspace_id, headers, runtime)
@@ -6900,6 +9659,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListProductAuthorizationsResponse:
+        """
+        @summary 获取产品授权
+        
+        @param request: ListProductAuthorizationsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListProductAuthorizationsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.ram_role_names):
@@ -6930,6 +9697,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListProductAuthorizationsResponse:
+        """
+        @summary 获取产品授权
+        
+        @param request: ListProductAuthorizationsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListProductAuthorizationsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.ram_role_names):
@@ -6958,6 +9733,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListProductAuthorizationsRequest,
     ) -> aiwork_space_20210204_models.ListProductAuthorizationsResponse:
+        """
+        @summary 获取产品授权
+        
+        @param request: ListProductAuthorizationsRequest
+        @return: ListProductAuthorizationsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_product_authorizations_with_options(request, headers, runtime)
@@ -6966,6 +9747,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListProductAuthorizationsRequest,
     ) -> aiwork_space_20210204_models.ListProductAuthorizationsResponse:
+        """
+        @summary 获取产品授权
+        
+        @param request: ListProductAuthorizationsRequest
+        @return: ListProductAuthorizationsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_product_authorizations_with_options_async(request, headers, runtime)
@@ -6976,6 +9763,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListProductsResponse:
+        """
+        @summary 列举产品
+        
+        @param request: ListProductsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListProductsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.product_codes):
@@ -7010,6 +9805,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListProductsResponse:
+        """
+        @summary 列举产品
+        
+        @param request: ListProductsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListProductsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.product_codes):
@@ -7042,6 +9845,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListProductsRequest,
     ) -> aiwork_space_20210204_models.ListProductsResponse:
+        """
+        @summary 列举产品
+        
+        @param request: ListProductsRequest
+        @return: ListProductsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_products_with_options(request, headers, runtime)
@@ -7050,6 +9859,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListProductsRequest,
     ) -> aiwork_space_20210204_models.ListProductsResponse:
+        """
+        @summary 列举产品
+        
+        @param request: ListProductsRequest
+        @return: ListProductsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_products_with_options_async(request, headers, runtime)
@@ -7060,6 +9875,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListQuotasResponse:
+        """
+        @summary 获取已有配额列表
+        
+        @param request: ListQuotasRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListQuotasResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.name):
@@ -7090,6 +9913,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListQuotasResponse:
+        """
+        @summary 获取已有配额列表
+        
+        @param request: ListQuotasRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListQuotasResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.name):
@@ -7118,6 +9949,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListQuotasRequest,
     ) -> aiwork_space_20210204_models.ListQuotasResponse:
+        """
+        @summary 获取已有配额列表
+        
+        @param request: ListQuotasRequest
+        @return: ListQuotasResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_quotas_with_options(request, headers, runtime)
@@ -7126,6 +9963,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListQuotasRequest,
     ) -> aiwork_space_20210204_models.ListQuotasResponse:
+        """
+        @summary 获取已有配额列表
+        
+        @param request: ListQuotasRequest
+        @return: ListQuotasResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_quotas_with_options_async(request, headers, runtime)
@@ -7136,6 +9979,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListResourcesResponse:
+        """
+        @summary 列举工作空间资源
+        
+        @param request: ListResourcesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListResourcesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.group_name):
@@ -7188,6 +10039,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListResourcesResponse:
+        """
+        @summary 列举工作空间资源
+        
+        @param request: ListResourcesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListResourcesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.group_name):
@@ -7238,6 +10097,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListResourcesRequest,
     ) -> aiwork_space_20210204_models.ListResourcesResponse:
+        """
+        @summary 列举工作空间资源
+        
+        @param request: ListResourcesRequest
+        @return: ListResourcesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_resources_with_options(request, headers, runtime)
@@ -7246,6 +10111,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListResourcesRequest,
     ) -> aiwork_space_20210204_models.ListResourcesResponse:
+        """
+        @summary 列举工作空间资源
+        
+        @param request: ListResourcesRequest
+        @return: ListResourcesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_resources_with_options_async(request, headers, runtime)
@@ -7256,6 +10127,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListServiceTemplatesResponse:
+        """
+        @summary 获取服务模版列表
+        
+        @param request: ListServiceTemplatesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListServiceTemplatesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.label):
@@ -7300,6 +10179,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListServiceTemplatesResponse:
+        """
+        @summary 获取服务模版列表
+        
+        @param request: ListServiceTemplatesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListServiceTemplatesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.label):
@@ -7342,6 +10229,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListServiceTemplatesRequest,
     ) -> aiwork_space_20210204_models.ListServiceTemplatesResponse:
+        """
+        @summary 获取服务模版列表
+        
+        @param request: ListServiceTemplatesRequest
+        @return: ListServiceTemplatesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_service_templates_with_options(request, headers, runtime)
@@ -7350,6 +10243,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListServiceTemplatesRequest,
     ) -> aiwork_space_20210204_models.ListServiceTemplatesResponse:
+        """
+        @summary 获取服务模版列表
+        
+        @param request: ListServiceTemplatesRequest
+        @return: ListServiceTemplatesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_service_templates_with_options_async(request, headers, runtime)
@@ -7360,6 +10259,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListUserConfigsResponse:
+        """
+        @summary 获取用户配置
+        
+        @param request: ListUserConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListUserConfigsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.category_names):
@@ -7392,6 +10299,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListUserConfigsResponse:
+        """
+        @summary 获取用户配置
+        
+        @param request: ListUserConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListUserConfigsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.category_names):
@@ -7422,6 +10337,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListUserConfigsRequest,
     ) -> aiwork_space_20210204_models.ListUserConfigsResponse:
+        """
+        @summary 获取用户配置
+        
+        @param request: ListUserConfigsRequest
+        @return: ListUserConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_user_configs_with_options(request, headers, runtime)
@@ -7430,6 +10351,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListUserConfigsRequest,
     ) -> aiwork_space_20210204_models.ListUserConfigsResponse:
+        """
+        @summary 获取用户配置
+        
+        @param request: ListUserConfigsRequest
+        @return: ListUserConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_user_configs_with_options_async(request, headers, runtime)
@@ -7440,6 +10367,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListUsersResponse:
+        """
+        @summary 列出用户
+        
+        @param request: ListUsersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListUsersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.account_types):
@@ -7478,6 +10413,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListUsersResponse:
+        """
+        @summary 列出用户
+        
+        @param request: ListUsersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListUsersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.account_types):
@@ -7514,6 +10457,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListUsersRequest,
     ) -> aiwork_space_20210204_models.ListUsersResponse:
+        """
+        @summary 列出用户
+        
+        @param request: ListUsersRequest
+        @return: ListUsersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_users_with_options(request, headers, runtime)
@@ -7522,9 +10471,267 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListUsersRequest,
     ) -> aiwork_space_20210204_models.ListUsersResponse:
+        """
+        @summary 列出用户
+        
+        @param request: ListUsersRequest
+        @return: ListUsersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_users_with_options_async(request, headers, runtime)
+
+    def list_workspace_permissions_with_options(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspacePermissionsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.ListWorkspacePermissionsResponse:
+        """
+        @summary 批量获取权限
+        
+        @param request: ListWorkspacePermissionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspacePermissionsResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.options):
+            body['Options'] = request.options
+        if not UtilClient.is_unset(request.permissions):
+            body['Permissions'] = request.permissions
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ListWorkspacePermissions',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/permissions/action/list',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.ListWorkspacePermissionsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_workspace_permissions_with_options_async(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspacePermissionsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.ListWorkspacePermissionsResponse:
+        """
+        @summary 批量获取权限
+        
+        @param request: ListWorkspacePermissionsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspacePermissionsResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.options):
+            body['Options'] = request.options
+        if not UtilClient.is_unset(request.permissions):
+            body['Permissions'] = request.permissions
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ListWorkspacePermissions',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/permissions/action/list',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.ListWorkspacePermissionsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_workspace_permissions(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspacePermissionsRequest,
+    ) -> aiwork_space_20210204_models.ListWorkspacePermissionsResponse:
+        """
+        @summary 批量获取权限
+        
+        @param request: ListWorkspacePermissionsRequest
+        @return: ListWorkspacePermissionsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_workspace_permissions_with_options(workspace_id, request, headers, runtime)
+
+    async def list_workspace_permissions_async(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspacePermissionsRequest,
+    ) -> aiwork_space_20210204_models.ListWorkspacePermissionsResponse:
+        """
+        @summary 批量获取权限
+        
+        @param request: ListWorkspacePermissionsRequest
+        @return: ListWorkspacePermissionsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_workspace_permissions_with_options_async(workspace_id, request, headers, runtime)
+
+    def list_workspace_roles_with_options(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspaceRolesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.ListWorkspaceRolesResponse:
+        """
+        @summary 列举工作空间角色
+        
+        @param request: ListWorkspaceRolesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspaceRolesResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.role_ids):
+            query['RoleIds'] = request.role_ids
+        if not UtilClient.is_unset(request.role_name):
+            query['RoleName'] = request.role_name
+        if not UtilClient.is_unset(request.role_type):
+            query['RoleType'] = request.role_type
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.status):
+            query['Status'] = request.status
+        if not UtilClient.is_unset(request.verbose_fields):
+            query['VerboseFields'] = request.verbose_fields
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListWorkspaceRoles',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.ListWorkspaceRolesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_workspace_roles_with_options_async(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspaceRolesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.ListWorkspaceRolesResponse:
+        """
+        @summary 列举工作空间角色
+        
+        @param request: ListWorkspaceRolesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspaceRolesResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.role_ids):
+            query['RoleIds'] = request.role_ids
+        if not UtilClient.is_unset(request.role_name):
+            query['RoleName'] = request.role_name
+        if not UtilClient.is_unset(request.role_type):
+            query['RoleType'] = request.role_type
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        if not UtilClient.is_unset(request.status):
+            query['Status'] = request.status
+        if not UtilClient.is_unset(request.verbose_fields):
+            query['VerboseFields'] = request.verbose_fields
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListWorkspaceRoles',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.ListWorkspaceRolesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_workspace_roles(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspaceRolesRequest,
+    ) -> aiwork_space_20210204_models.ListWorkspaceRolesResponse:
+        """
+        @summary 列举工作空间角色
+        
+        @param request: ListWorkspaceRolesRequest
+        @return: ListWorkspaceRolesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_workspace_roles_with_options(workspace_id, request, headers, runtime)
+
+    async def list_workspace_roles_async(
+        self,
+        workspace_id: str,
+        request: aiwork_space_20210204_models.ListWorkspaceRolesRequest,
+    ) -> aiwork_space_20210204_models.ListWorkspaceRolesResponse:
+        """
+        @summary 列举工作空间角色
+        
+        @param request: ListWorkspaceRolesRequest
+        @return: ListWorkspaceRolesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_workspace_roles_with_options_async(workspace_id, request, headers, runtime)
 
     def list_workspace_users_with_options(
         self,
@@ -7533,6 +10740,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListWorkspaceUsersResponse:
+        """
+        @summary 列出工作空间的可变为成员的用户
+        
+        @param request: ListWorkspaceUsersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspaceUsersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.user_name):
@@ -7564,6 +10779,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListWorkspaceUsersResponse:
+        """
+        @summary 列出工作空间的可变为成员的用户
+        
+        @param request: ListWorkspaceUsersRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspaceUsersResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.user_name):
@@ -7593,6 +10816,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListWorkspaceUsersRequest,
     ) -> aiwork_space_20210204_models.ListWorkspaceUsersResponse:
+        """
+        @summary 列出工作空间的可变为成员的用户
+        
+        @param request: ListWorkspaceUsersRequest
+        @return: ListWorkspaceUsersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_workspace_users_with_options(workspace_id, request, headers, runtime)
@@ -7602,6 +10831,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.ListWorkspaceUsersRequest,
     ) -> aiwork_space_20210204_models.ListWorkspaceUsersResponse:
+        """
+        @summary 列出工作空间的可变为成员的用户
+        
+        @param request: ListWorkspaceUsersRequest
+        @return: ListWorkspaceUsersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_workspace_users_with_options_async(workspace_id, request, headers, runtime)
@@ -7612,6 +10847,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListWorkspacesResponse:
+        """
+        @summary 获得工作空间列表
+        
+        @param request: ListWorkspacesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspacesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.fields):
@@ -7662,6 +10905,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.ListWorkspacesResponse:
+        """
+        @summary 获得工作空间列表
+        
+        @param request: ListWorkspacesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListWorkspacesResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.fields):
@@ -7710,6 +10961,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListWorkspacesRequest,
     ) -> aiwork_space_20210204_models.ListWorkspacesResponse:
+        """
+        @summary 获得工作空间列表
+        
+        @param request: ListWorkspacesRequest
+        @return: ListWorkspacesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_workspaces_with_options(request, headers, runtime)
@@ -7718,6 +10975,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.ListWorkspacesRequest,
     ) -> aiwork_space_20210204_models.ListWorkspacesResponse:
+        """
+        @summary 获得工作空间列表
+        
+        @param request: ListWorkspacesRequest
+        @return: ListWorkspacesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_workspaces_with_options_async(request, headers, runtime)
@@ -7728,6 +10991,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.MigrateDatasetsResponse:
+        """
+        @summary 迁移数据集
+        
+        @param request: MigrateDatasetsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: MigrateDatasetsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.count):
@@ -7766,6 +11037,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.MigrateDatasetsResponse:
+        """
+        @summary 迁移数据集
+        
+        @param request: MigrateDatasetsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: MigrateDatasetsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.count):
@@ -7802,6 +11081,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.MigrateDatasetsRequest,
     ) -> aiwork_space_20210204_models.MigrateDatasetsResponse:
+        """
+        @summary 迁移数据集
+        
+        @param request: MigrateDatasetsRequest
+        @return: MigrateDatasetsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.migrate_datasets_with_options(request, headers, runtime)
@@ -7810,6 +11095,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.MigrateDatasetsRequest,
     ) -> aiwork_space_20210204_models.MigrateDatasetsResponse:
+        """
+        @summary 迁移数据集
+        
+        @param request: MigrateDatasetsRequest
+        @return: MigrateDatasetsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.migrate_datasets_with_options_async(request, headers, runtime)
@@ -7820,6 +11111,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.PublishCodeSourceResponse:
+        """
+        @summary 发布一个代码源配置为本工作空间下所有人可见
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: PublishCodeSourceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -7845,6 +11143,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.PublishCodeSourceResponse:
+        """
+        @summary 发布一个代码源配置为本工作空间下所有人可见
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: PublishCodeSourceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -7868,6 +11173,11 @@ class Client(OpenApiClient):
         self,
         code_source_id: str,
     ) -> aiwork_space_20210204_models.PublishCodeSourceResponse:
+        """
+        @summary 发布一个代码源配置为本工作空间下所有人可见
+        
+        @return: PublishCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.publish_code_source_with_options(code_source_id, headers, runtime)
@@ -7876,6 +11186,11 @@ class Client(OpenApiClient):
         self,
         code_source_id: str,
     ) -> aiwork_space_20210204_models.PublishCodeSourceResponse:
+        """
+        @summary 发布一个代码源配置为本工作空间下所有人可见
+        
+        @return: PublishCodeSourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.publish_code_source_with_options_async(code_source_id, headers, runtime)
@@ -7886,6 +11201,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.PublishDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: PublishDatasetResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -7911,6 +11233,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.PublishDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: PublishDatasetResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -7934,6 +11263,11 @@ class Client(OpenApiClient):
         self,
         dataset_id: str,
     ) -> aiwork_space_20210204_models.PublishDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @return: PublishDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.publish_dataset_with_options(dataset_id, headers, runtime)
@@ -7942,6 +11276,11 @@ class Client(OpenApiClient):
         self,
         dataset_id: str,
     ) -> aiwork_space_20210204_models.PublishDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @return: PublishDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.publish_dataset_with_options_async(dataset_id, headers, runtime)
@@ -7952,6 +11291,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.PublishImageResponse:
+        """
+        @summary 发布 Image
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: PublishImageResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -7977,6 +11323,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.PublishImageResponse:
+        """
+        @summary 发布 Image
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: PublishImageResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8000,6 +11353,11 @@ class Client(OpenApiClient):
         self,
         image_id: str,
     ) -> aiwork_space_20210204_models.PublishImageResponse:
+        """
+        @summary 发布 Image
+        
+        @return: PublishImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.publish_image_with_options(image_id, headers, runtime)
@@ -8008,6 +11366,11 @@ class Client(OpenApiClient):
         self,
         image_id: str,
     ) -> aiwork_space_20210204_models.PublishImageResponse:
+        """
+        @summary 发布 Image
+        
+        @return: PublishImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.publish_image_with_options_async(image_id, headers, runtime)
@@ -8018,6 +11381,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveImageResponse:
+        """
+        @summary 删除 Image
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveImageResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8043,6 +11413,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveImageResponse:
+        """
+        @summary 删除 Image
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveImageResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8066,6 +11443,11 @@ class Client(OpenApiClient):
         self,
         image_id: str,
     ) -> aiwork_space_20210204_models.RemoveImageResponse:
+        """
+        @summary 删除 Image
+        
+        @return: RemoveImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.remove_image_with_options(image_id, headers, runtime)
@@ -8074,6 +11456,11 @@ class Client(OpenApiClient):
         self,
         image_id: str,
     ) -> aiwork_space_20210204_models.RemoveImageResponse:
+        """
+        @summary 删除 Image
+        
+        @return: RemoveImageResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.remove_image_with_options_async(image_id, headers, runtime)
@@ -8085,6 +11472,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveImageLabelsResponse:
+        """
+        @summary 删除 Image 的标签
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveImageLabelsResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8111,6 +11505,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveImageLabelsResponse:
+        """
+        @summary 删除 Image 的标签
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveImageLabelsResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8135,6 +11536,11 @@ class Client(OpenApiClient):
         image_id: str,
         label_key: str,
     ) -> aiwork_space_20210204_models.RemoveImageLabelsResponse:
+        """
+        @summary 删除 Image 的标签
+        
+        @return: RemoveImageLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.remove_image_labels_with_options(image_id, label_key, headers, runtime)
@@ -8144,6 +11550,11 @@ class Client(OpenApiClient):
         image_id: str,
         label_key: str,
     ) -> aiwork_space_20210204_models.RemoveImageLabelsResponse:
+        """
+        @summary 删除 Image 的标签
+        
+        @return: RemoveImageLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.remove_image_labels_with_options_async(image_id, label_key, headers, runtime)
@@ -8156,6 +11567,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveMemberRoleResponse:
+        """
+        @summary 删除成员角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveMemberRoleResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8183,6 +11601,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveMemberRoleResponse:
+        """
+        @summary 删除成员角色
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveMemberRoleResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8208,6 +11633,11 @@ class Client(OpenApiClient):
         member_id: str,
         role_name: str,
     ) -> aiwork_space_20210204_models.RemoveMemberRoleResponse:
+        """
+        @summary 删除成员角色
+        
+        @return: RemoveMemberRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.remove_member_role_with_options(workspace_id, member_id, role_name, headers, runtime)
@@ -8218,6 +11648,11 @@ class Client(OpenApiClient):
         member_id: str,
         role_name: str,
     ) -> aiwork_space_20210204_models.RemoveMemberRoleResponse:
+        """
+        @summary 删除成员角色
+        
+        @return: RemoveMemberRoleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.remove_member_role_with_options_async(workspace_id, member_id, role_name, headers, runtime)
@@ -8229,6 +11664,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveWorkspaceQuotaResponse:
+        """
+        @summary 移除资源实例配额
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveWorkspaceQuotaResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8255,6 +11697,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.RemoveWorkspaceQuotaResponse:
+        """
+        @summary 移除资源实例配额
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: RemoveWorkspaceQuotaResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8279,6 +11728,11 @@ class Client(OpenApiClient):
         workspace_id: str,
         quota_id: str,
     ) -> aiwork_space_20210204_models.RemoveWorkspaceQuotaResponse:
+        """
+        @summary 移除资源实例配额
+        
+        @return: RemoveWorkspaceQuotaResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.remove_workspace_quota_with_options(workspace_id, quota_id, headers, runtime)
@@ -8288,6 +11742,11 @@ class Client(OpenApiClient):
         workspace_id: str,
         quota_id: str,
     ) -> aiwork_space_20210204_models.RemoveWorkspaceQuotaResponse:
+        """
+        @summary 移除资源实例配额
+        
+        @return: RemoveWorkspaceQuotaResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.remove_workspace_quota_with_options_async(workspace_id, quota_id, headers, runtime)
@@ -8299,6 +11758,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SetExperimentLabelsResponse:
+        """
+        @summary 更新实验标签
+        
+        @param request: SetExperimentLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SetExperimentLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -8330,6 +11797,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SetExperimentLabelsResponse:
+        """
+        @summary 更新实验标签
+        
+        @param request: SetExperimentLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SetExperimentLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -8359,6 +11834,12 @@ class Client(OpenApiClient):
         experiment_id: str,
         request: aiwork_space_20210204_models.SetExperimentLabelsRequest,
     ) -> aiwork_space_20210204_models.SetExperimentLabelsResponse:
+        """
+        @summary 更新实验标签
+        
+        @param request: SetExperimentLabelsRequest
+        @return: SetExperimentLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.set_experiment_labels_with_options(experiment_id, request, headers, runtime)
@@ -8368,6 +11849,12 @@ class Client(OpenApiClient):
         experiment_id: str,
         request: aiwork_space_20210204_models.SetExperimentLabelsRequest,
     ) -> aiwork_space_20210204_models.SetExperimentLabelsResponse:
+        """
+        @summary 更新实验标签
+        
+        @param request: SetExperimentLabelsRequest
+        @return: SetExperimentLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.set_experiment_labels_with_options_async(experiment_id, request, headers, runtime)
@@ -8379,6 +11866,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SetTrialLabelsResponse:
+        """
+        @summary 更新Trial标签
+        
+        @param request: SetTrialLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SetTrialLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -8410,6 +11905,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SetTrialLabelsResponse:
+        """
+        @summary 更新Trial标签
+        
+        @param request: SetTrialLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SetTrialLabelsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.labels):
@@ -8439,6 +11942,12 @@ class Client(OpenApiClient):
         trial_id: str,
         request: aiwork_space_20210204_models.SetTrialLabelsRequest,
     ) -> aiwork_space_20210204_models.SetTrialLabelsResponse:
+        """
+        @summary 更新Trial标签
+        
+        @param request: SetTrialLabelsRequest
+        @return: SetTrialLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.set_trial_labels_with_options(trial_id, request, headers, runtime)
@@ -8448,6 +11957,12 @@ class Client(OpenApiClient):
         trial_id: str,
         request: aiwork_space_20210204_models.SetTrialLabelsRequest,
     ) -> aiwork_space_20210204_models.SetTrialLabelsResponse:
+        """
+        @summary 更新Trial标签
+        
+        @param request: SetTrialLabelsRequest
+        @return: SetTrialLabelsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.set_trial_labels_with_options_async(trial_id, request, headers, runtime)
@@ -8458,6 +11973,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SetUserConfigsResponse:
+        """
+        @summary 更新用户配置
+        
+        @param request: SetUserConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SetUserConfigsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.configs):
@@ -8488,6 +12011,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SetUserConfigsResponse:
+        """
+        @summary 更新用户配置
+        
+        @param request: SetUserConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SetUserConfigsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.configs):
@@ -8516,6 +12047,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.SetUserConfigsRequest,
     ) -> aiwork_space_20210204_models.SetUserConfigsResponse:
+        """
+        @summary 更新用户配置
+        
+        @param request: SetUserConfigsRequest
+        @return: SetUserConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.set_user_configs_with_options(request, headers, runtime)
@@ -8524,6 +12061,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.SetUserConfigsRequest,
     ) -> aiwork_space_20210204_models.SetUserConfigsResponse:
+        """
+        @summary 更新用户配置
+        
+        @param request: SetUserConfigsRequest
+        @return: SetUserConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.set_user_configs_with_options_async(request, headers, runtime)
@@ -8533,6 +12076,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SyncUsersResponse:
+        """
+        @summary 同步用户信息
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SyncUsersResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8557,6 +12107,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.SyncUsersResponse:
+        """
+        @summary 同步用户信息
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: SyncUsersResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -8577,11 +12134,21 @@ class Client(OpenApiClient):
         )
 
     def sync_users(self) -> aiwork_space_20210204_models.SyncUsersResponse:
+        """
+        @summary 同步用户信息
+        
+        @return: SyncUsersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.sync_users_with_options(headers, runtime)
 
     async def sync_users_async(self) -> aiwork_space_20210204_models.SyncUsersResponse:
+        """
+        @summary 同步用户信息
+        
+        @return: SyncUsersResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.sync_users_with_options_async(headers, runtime)
@@ -8593,6 +12160,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateConfigsResponse:
+        """
+        @summary 更新配置
+        
+        @param request: UpdateConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateConfigsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.configs):
@@ -8624,6 +12199,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateConfigsResponse:
+        """
+        @summary 更新配置
+        
+        @param request: UpdateConfigsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateConfigsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.configs):
@@ -8653,6 +12236,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.UpdateConfigsRequest,
     ) -> aiwork_space_20210204_models.UpdateConfigsResponse:
+        """
+        @summary 更新配置
+        
+        @param request: UpdateConfigsRequest
+        @return: UpdateConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_configs_with_options(workspace_id, request, headers, runtime)
@@ -8662,6 +12251,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.UpdateConfigsRequest,
     ) -> aiwork_space_20210204_models.UpdateConfigsResponse:
+        """
+        @summary 更新配置
+        
+        @param request: UpdateConfigsRequest
+        @return: UpdateConfigsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_configs_with_options_async(workspace_id, request, headers, runtime)
@@ -8673,6 +12268,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @param request: UpdateDatasetRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateDatasetResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.description):
@@ -8708,6 +12311,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @param request: UpdateDatasetRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateDatasetResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.description):
@@ -8741,6 +12352,12 @@ class Client(OpenApiClient):
         dataset_id: str,
         request: aiwork_space_20210204_models.UpdateDatasetRequest,
     ) -> aiwork_space_20210204_models.UpdateDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @param request: UpdateDatasetRequest
+        @return: UpdateDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_dataset_with_options(dataset_id, request, headers, runtime)
@@ -8750,6 +12367,12 @@ class Client(OpenApiClient):
         dataset_id: str,
         request: aiwork_space_20210204_models.UpdateDatasetRequest,
     ) -> aiwork_space_20210204_models.UpdateDatasetResponse:
+        """
+        @summary 更新数据集
+        
+        @param request: UpdateDatasetRequest
+        @return: UpdateDatasetResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_dataset_with_options_async(dataset_id, request, headers, runtime)
@@ -8760,6 +12383,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateDefaultWorkspaceResponse:
+        """
+        @summary 更新默认工作空间
+        
+        @param request: UpdateDefaultWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateDefaultWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -8790,6 +12421,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateDefaultWorkspaceResponse:
+        """
+        @summary 更新默认工作空间
+        
+        @param request: UpdateDefaultWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateDefaultWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.workspace_id):
@@ -8818,6 +12457,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.UpdateDefaultWorkspaceRequest,
     ) -> aiwork_space_20210204_models.UpdateDefaultWorkspaceResponse:
+        """
+        @summary 更新默认工作空间
+        
+        @param request: UpdateDefaultWorkspaceRequest
+        @return: UpdateDefaultWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_default_workspace_with_options(request, headers, runtime)
@@ -8826,6 +12471,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.UpdateDefaultWorkspaceRequest,
     ) -> aiwork_space_20210204_models.UpdateDefaultWorkspaceResponse:
+        """
+        @summary 更新默认工作空间
+        
+        @param request: UpdateDefaultWorkspaceRequest
+        @return: UpdateDefaultWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_default_workspace_with_options_async(request, headers, runtime)
@@ -8837,6 +12488,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateExperimentResponse:
+        """
+        @summary 更新实验
+        
+        @param request: UpdateExperimentRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateExperimentResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -8870,6 +12529,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateExperimentResponse:
+        """
+        @summary 更新实验
+        
+        @param request: UpdateExperimentRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateExperimentResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -8901,6 +12568,12 @@ class Client(OpenApiClient):
         experiment_id: str,
         request: aiwork_space_20210204_models.UpdateExperimentRequest,
     ) -> aiwork_space_20210204_models.UpdateExperimentResponse:
+        """
+        @summary 更新实验
+        
+        @param request: UpdateExperimentRequest
+        @return: UpdateExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_experiment_with_options(experiment_id, request, headers, runtime)
@@ -8910,6 +12583,12 @@ class Client(OpenApiClient):
         experiment_id: str,
         request: aiwork_space_20210204_models.UpdateExperimentRequest,
     ) -> aiwork_space_20210204_models.UpdateExperimentResponse:
+        """
+        @summary 更新实验
+        
+        @param request: UpdateExperimentRequest
+        @return: UpdateExperimentResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_experiment_with_options_async(experiment_id, request, headers, runtime)
@@ -8921,6 +12600,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateModelResponse:
+        """
+        @summary 更新模型
+        
+        @param request: UpdateModelRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateModelResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -8970,6 +12657,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateModelResponse:
+        """
+        @summary 更新模型
+        
+        @param request: UpdateModelRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateModelResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
@@ -9017,6 +12712,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.UpdateModelRequest,
     ) -> aiwork_space_20210204_models.UpdateModelResponse:
+        """
+        @summary 更新模型
+        
+        @param request: UpdateModelRequest
+        @return: UpdateModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_model_with_options(model_id, request, headers, runtime)
@@ -9026,6 +12727,12 @@ class Client(OpenApiClient):
         model_id: str,
         request: aiwork_space_20210204_models.UpdateModelRequest,
     ) -> aiwork_space_20210204_models.UpdateModelResponse:
+        """
+        @summary 更新模型
+        
+        @param request: UpdateModelRequest
+        @return: UpdateModelResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_model_with_options_async(model_id, request, headers, runtime)
@@ -9036,6 +12743,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateModelDomainsResponse:
+        """
+        @summary 更新模型领域
+        
+        @param request: UpdateModelDomainsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateModelDomainsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.model_domains):
@@ -9066,6 +12781,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateModelDomainsResponse:
+        """
+        @summary 更新模型领域
+        
+        @param request: UpdateModelDomainsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateModelDomainsResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.model_domains):
@@ -9094,6 +12817,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.UpdateModelDomainsRequest,
     ) -> aiwork_space_20210204_models.UpdateModelDomainsResponse:
+        """
+        @summary 更新模型领域
+        
+        @param request: UpdateModelDomainsRequest
+        @return: UpdateModelDomainsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_model_domains_with_options(request, headers, runtime)
@@ -9102,6 +12831,12 @@ class Client(OpenApiClient):
         self,
         request: aiwork_space_20210204_models.UpdateModelDomainsRequest,
     ) -> aiwork_space_20210204_models.UpdateModelDomainsResponse:
+        """
+        @summary 更新模型领域
+        
+        @param request: UpdateModelDomainsRequest
+        @return: UpdateModelDomainsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_model_domains_with_options_async(request, headers, runtime)
@@ -9114,10 +12849,20 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateModelVersionResponse:
+        """
+        @summary 更新模型版本
+        
+        @param request: UpdateModelVersionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateModelVersionResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.approval_status):
             body['ApprovalStatus'] = request.approval_status
+        if not UtilClient.is_unset(request.compression_spec):
+            body['CompressionSpec'] = request.compression_spec
         if not UtilClient.is_unset(request.evaluation_spec):
             body['EvaluationSpec'] = request.evaluation_spec
         if not UtilClient.is_unset(request.extra_info):
@@ -9164,10 +12909,20 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateModelVersionResponse:
+        """
+        @summary 更新模型版本
+        
+        @param request: UpdateModelVersionRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateModelVersionResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.approval_status):
             body['ApprovalStatus'] = request.approval_status
+        if not UtilClient.is_unset(request.compression_spec):
+            body['CompressionSpec'] = request.compression_spec
         if not UtilClient.is_unset(request.evaluation_spec):
             body['EvaluationSpec'] = request.evaluation_spec
         if not UtilClient.is_unset(request.extra_info):
@@ -9212,6 +12967,12 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.UpdateModelVersionRequest,
     ) -> aiwork_space_20210204_models.UpdateModelVersionResponse:
+        """
+        @summary 更新模型版本
+        
+        @param request: UpdateModelVersionRequest
+        @return: UpdateModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_model_version_with_options(model_id, version_name, request, headers, runtime)
@@ -9222,6 +12983,12 @@ class Client(OpenApiClient):
         version_name: str,
         request: aiwork_space_20210204_models.UpdateModelVersionRequest,
     ) -> aiwork_space_20210204_models.UpdateModelVersionResponse:
+        """
+        @summary 更新模型版本
+        
+        @param request: UpdateModelVersionRequest
+        @return: UpdateModelVersionResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_model_version_with_options_async(model_id, version_name, request, headers, runtime)
@@ -9233,6 +13000,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateServiceTemplateResponse:
+        """
+        @summary 更新服务模版
+        
+        @param request: UpdateServiceTemplateRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateServiceTemplateResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.inference_spec):
@@ -9272,6 +13047,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateServiceTemplateResponse:
+        """
+        @summary 更新服务模版
+        
+        @param request: UpdateServiceTemplateRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateServiceTemplateResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.inference_spec):
@@ -9309,6 +13092,12 @@ class Client(OpenApiClient):
         service_template_id: str,
         request: aiwork_space_20210204_models.UpdateServiceTemplateRequest,
     ) -> aiwork_space_20210204_models.UpdateServiceTemplateResponse:
+        """
+        @summary 更新服务模版
+        
+        @param request: UpdateServiceTemplateRequest
+        @return: UpdateServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_service_template_with_options(service_template_id, request, headers, runtime)
@@ -9318,6 +13107,12 @@ class Client(OpenApiClient):
         service_template_id: str,
         request: aiwork_space_20210204_models.UpdateServiceTemplateRequest,
     ) -> aiwork_space_20210204_models.UpdateServiceTemplateResponse:
+        """
+        @summary 更新服务模版
+        
+        @param request: UpdateServiceTemplateRequest
+        @return: UpdateServiceTemplateResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_service_template_with_options_async(service_template_id, request, headers, runtime)
@@ -9329,6 +13124,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResponse:
+        """
+        @summary 更新工作空间
+        
+        @param request: UpdateWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.description):
@@ -9362,6 +13165,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResponse:
+        """
+        @summary 更新工作空间
+        
+        @param request: UpdateWorkspaceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateWorkspaceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.description):
@@ -9393,6 +13204,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.UpdateWorkspaceRequest,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResponse:
+        """
+        @summary 更新工作空间
+        
+        @param request: UpdateWorkspaceRequest
+        @return: UpdateWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_workspace_with_options(workspace_id, request, headers, runtime)
@@ -9402,6 +13219,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.UpdateWorkspaceRequest,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResponse:
+        """
+        @summary 更新工作空间
+        
+        @param request: UpdateWorkspaceRequest
+        @return: UpdateWorkspaceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_workspace_with_options_async(workspace_id, request, headers, runtime)
@@ -9413,6 +13236,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResourceResponse:
+        """
+        @summary 更新工作空间资源
+        
+        @param request: UpdateWorkspaceResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateWorkspaceResourceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.group_name):
@@ -9456,6 +13287,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResourceResponse:
+        """
+        @summary 更新工作空间资源
+        
+        @param request: UpdateWorkspaceResourceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateWorkspaceResourceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.group_name):
@@ -9497,6 +13336,12 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.UpdateWorkspaceResourceRequest,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResourceResponse:
+        """
+        @summary 更新工作空间资源
+        
+        @param request: UpdateWorkspaceResourceRequest
+        @return: UpdateWorkspaceResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_workspace_resource_with_options(workspace_id, request, headers, runtime)
@@ -9506,6 +13351,128 @@ class Client(OpenApiClient):
         workspace_id: str,
         request: aiwork_space_20210204_models.UpdateWorkspaceResourceRequest,
     ) -> aiwork_space_20210204_models.UpdateWorkspaceResourceResponse:
+        """
+        @summary 更新工作空间资源
+        
+        @param request: UpdateWorkspaceResourceRequest
+        @return: UpdateWorkspaceResourceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_workspace_resource_with_options_async(workspace_id, request, headers, runtime)
+
+    def update_workspace_role_with_options(
+        self,
+        workspace_id: str,
+        role_id: str,
+        request: aiwork_space_20210204_models.UpdateWorkspaceRoleRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.UpdateWorkspaceRoleResponse:
+        """
+        @summary 更新工作空间角色
+        
+        @param request: UpdateWorkspaceRoleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateWorkspaceRoleResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.module_permissions):
+            body['ModulePermissions'] = request.module_permissions
+        if not UtilClient.is_unset(request.role_name):
+            body['RoleName'] = request.role_name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateWorkspaceRole',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles/{OpenApiUtilClient.get_encode_param(role_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.UpdateWorkspaceRoleResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_workspace_role_with_options_async(
+        self,
+        workspace_id: str,
+        role_id: str,
+        request: aiwork_space_20210204_models.UpdateWorkspaceRoleRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> aiwork_space_20210204_models.UpdateWorkspaceRoleResponse:
+        """
+        @summary 更新工作空间角色
+        
+        @param request: UpdateWorkspaceRoleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateWorkspaceRoleResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.module_permissions):
+            body['ModulePermissions'] = request.module_permissions
+        if not UtilClient.is_unset(request.role_name):
+            body['RoleName'] = request.role_name
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateWorkspaceRole',
+            version='2021-02-04',
+            protocol='HTTPS',
+            pathname=f'/api/v1/workspaces/{OpenApiUtilClient.get_encode_param(workspace_id)}/roles/{OpenApiUtilClient.get_encode_param(role_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            aiwork_space_20210204_models.UpdateWorkspaceRoleResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_workspace_role(
+        self,
+        workspace_id: str,
+        role_id: str,
+        request: aiwork_space_20210204_models.UpdateWorkspaceRoleRequest,
+    ) -> aiwork_space_20210204_models.UpdateWorkspaceRoleResponse:
+        """
+        @summary 更新工作空间角色
+        
+        @param request: UpdateWorkspaceRoleRequest
+        @return: UpdateWorkspaceRoleResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_workspace_role_with_options(workspace_id, role_id, request, headers, runtime)
+
+    async def update_workspace_role_async(
+        self,
+        workspace_id: str,
+        role_id: str,
+        request: aiwork_space_20210204_models.UpdateWorkspaceRoleRequest,
+    ) -> aiwork_space_20210204_models.UpdateWorkspaceRoleResponse:
+        """
+        @summary 更新工作空间角色
+        
+        @param request: UpdateWorkspaceRoleRequest
+        @return: UpdateWorkspaceRoleResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_workspace_role_with_options_async(workspace_id, role_id, request, headers, runtime)

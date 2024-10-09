@@ -77,6 +77,7 @@ class ModelAPI(WorkspaceScopedResourceAPI):
 
     def list(
         self,
+        collections: str = None,
         domain: str = None,
         label: str = None,
         label_string: str = None,
@@ -93,6 +94,7 @@ class ModelAPI(WorkspaceScopedResourceAPI):
         workspace_id: str = None,
     ) -> PaginatedResult:
         request = ListModelsRequest(
+            collections=collections,
             domain=domain,
             label=label,
             label_string=label_string,
