@@ -7,10 +7,10 @@ from alibabacloud_tea_openapi.client import Client as OpenApiClient
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util.client import Client as UtilClient
 from alibabacloud_endpoint_util.client import Client as EndpointUtilClient
+from pai.libs.alibabacloud_pai_dsw20220101 import models as pai_dsw_20220101_models
 from alibabacloud_tea_util import models as util_models
 from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
 
-from pai.libs.alibabacloud_pai_dsw20220101 import models as pai_dsw_20220101_models
 
 class Client(OpenApiClient):
     """
@@ -41,6 +41,254 @@ class Client(OpenApiClient):
             return endpoint_map.get(region_id)
         return EndpointUtilClient.get_endpoint_rules(product_id, region_id, endpoint_rule, network, suffix)
 
+    def check_instance_existence_with_options(
+        self,
+        request: pai_dsw_20220101_models.CheckInstanceExistenceRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CheckInstanceExistenceResponse:
+        """
+        @summary 检查实例是否存在
+        
+        @param request: CheckInstanceExistenceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CheckInstanceExistenceResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.instance_name):
+            body['InstanceName'] = request.instance_name
+        if not UtilClient.is_unset(request.workspace_id):
+            body['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CheckInstanceExistence',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instances/action/checkexistence',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CheckInstanceExistenceResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def check_instance_existence_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.CheckInstanceExistenceRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CheckInstanceExistenceResponse:
+        """
+        @summary 检查实例是否存在
+        
+        @param request: CheckInstanceExistenceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CheckInstanceExistenceResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.instance_name):
+            body['InstanceName'] = request.instance_name
+        if not UtilClient.is_unset(request.workspace_id):
+            body['WorkspaceId'] = request.workspace_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CheckInstanceExistence',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instances/action/checkexistence',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CheckInstanceExistenceResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def check_instance_existence(
+        self,
+        request: pai_dsw_20220101_models.CheckInstanceExistenceRequest,
+    ) -> pai_dsw_20220101_models.CheckInstanceExistenceResponse:
+        """
+        @summary 检查实例是否存在
+        
+        @param request: CheckInstanceExistenceRequest
+        @return: CheckInstanceExistenceResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.check_instance_existence_with_options(request, headers, runtime)
+
+    async def check_instance_existence_async(
+        self,
+        request: pai_dsw_20220101_models.CheckInstanceExistenceRequest,
+    ) -> pai_dsw_20220101_models.CheckInstanceExistenceResponse:
+        """
+        @summary 检查实例是否存在
+        
+        @param request: CheckInstanceExistenceRequest
+        @return: CheckInstanceExistenceResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.check_instance_existence_with_options_async(request, headers, runtime)
+
+    def create_endpoint_with_options(
+        self,
+        request: pai_dsw_20220101_models.CreateEndpointRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateEndpointResponse:
+        """
+        @summary 创建第三方AppEndpoint配置
+        
+        @param request: CreateEndpointRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateEndpointResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.action):
+            body['Action'] = request.action
+        if not UtilClient.is_unset(request.app):
+            body['App'] = request.app
+        if not UtilClient.is_unset(request.endpoint):
+            body['Endpoint'] = request.endpoint
+        if not UtilClient.is_unset(request.method):
+            body['Method'] = request.method
+        if not UtilClient.is_unset(request.path_name):
+            body['PathName'] = request.path_name
+        if not UtilClient.is_unset(request.protocol):
+            body['Protocol'] = request.protocol
+        if not UtilClient.is_unset(request.req_body_type):
+            body['ReqBodyType'] = request.req_body_type
+        if not UtilClient.is_unset(request.style):
+            body['Style'] = request.style
+        if not UtilClient.is_unset(request.timeout):
+            body['Timeout'] = request.timeout
+        if not UtilClient.is_unset(request.version):
+            body['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateEndpoint',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/inner/api/thirdParty/endpoints',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateEndpointResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_endpoint_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.CreateEndpointRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateEndpointResponse:
+        """
+        @summary 创建第三方AppEndpoint配置
+        
+        @param request: CreateEndpointRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateEndpointResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.action):
+            body['Action'] = request.action
+        if not UtilClient.is_unset(request.app):
+            body['App'] = request.app
+        if not UtilClient.is_unset(request.endpoint):
+            body['Endpoint'] = request.endpoint
+        if not UtilClient.is_unset(request.method):
+            body['Method'] = request.method
+        if not UtilClient.is_unset(request.path_name):
+            body['PathName'] = request.path_name
+        if not UtilClient.is_unset(request.protocol):
+            body['Protocol'] = request.protocol
+        if not UtilClient.is_unset(request.req_body_type):
+            body['ReqBodyType'] = request.req_body_type
+        if not UtilClient.is_unset(request.style):
+            body['Style'] = request.style
+        if not UtilClient.is_unset(request.timeout):
+            body['Timeout'] = request.timeout
+        if not UtilClient.is_unset(request.version):
+            body['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateEndpoint',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/inner/api/thirdParty/endpoints',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateEndpointResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_endpoint(
+        self,
+        request: pai_dsw_20220101_models.CreateEndpointRequest,
+    ) -> pai_dsw_20220101_models.CreateEndpointResponse:
+        """
+        @summary 创建第三方AppEndpoint配置
+        
+        @param request: CreateEndpointRequest
+        @return: CreateEndpointResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_endpoint_with_options(request, headers, runtime)
+
+    async def create_endpoint_async(
+        self,
+        request: pai_dsw_20220101_models.CreateEndpointRequest,
+    ) -> pai_dsw_20220101_models.CreateEndpointResponse:
+        """
+        @summary 创建第三方AppEndpoint配置
+        
+        @param request: CreateEndpointRequest
+        @return: CreateEndpointResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_endpoint_with_options_async(request, headers, runtime)
+
     def create_idle_instance_culler_with_options(
         self,
         instance_id: str,
@@ -48,6 +296,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateIdleInstanceCullerResponse:
+        """
+        @param request: CreateIdleInstanceCullerRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateIdleInstanceCullerResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.cpu_percent_threshold):
@@ -83,6 +337,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateIdleInstanceCullerResponse:
+        """
+        @param request: CreateIdleInstanceCullerRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateIdleInstanceCullerResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.cpu_percent_threshold):
@@ -116,6 +376,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.CreateIdleInstanceCullerRequest,
     ) -> pai_dsw_20220101_models.CreateIdleInstanceCullerResponse:
+        """
+        @param request: CreateIdleInstanceCullerRequest
+        @return: CreateIdleInstanceCullerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_idle_instance_culler_with_options(instance_id, request, headers, runtime)
@@ -125,6 +389,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.CreateIdleInstanceCullerRequest,
     ) -> pai_dsw_20220101_models.CreateIdleInstanceCullerResponse:
+        """
+        @param request: CreateIdleInstanceCullerRequest
+        @return: CreateIdleInstanceCullerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_idle_instance_culler_with_options_async(instance_id, request, headers, runtime)
@@ -135,20 +403,36 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateInstanceResponse:
+        """
+        @summary 创建实例
+        
+        @param request: CreateInstanceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateInstanceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
             body['Accessibility'] = request.accessibility
+        if not UtilClient.is_unset(request.affinity):
+            body['Affinity'] = request.affinity
         if not UtilClient.is_unset(request.cloud_disks):
             body['CloudDisks'] = request.cloud_disks
+        if not UtilClient.is_unset(request.credential_config):
+            body['CredentialConfig'] = request.credential_config
         if not UtilClient.is_unset(request.datasets):
             body['Datasets'] = request.datasets
         if not UtilClient.is_unset(request.driver):
             body['Driver'] = request.driver
+        if not UtilClient.is_unset(request.dynamic_mount):
+            body['DynamicMount'] = request.dynamic_mount
         if not UtilClient.is_unset(request.ecs_spec):
             body['EcsSpec'] = request.ecs_spec
         if not UtilClient.is_unset(request.environment_variables):
             body['EnvironmentVariables'] = request.environment_variables
+        if not UtilClient.is_unset(request.image_auth):
+            body['ImageAuth'] = request.image_auth
         if not UtilClient.is_unset(request.image_id):
             body['ImageId'] = request.image_id
         if not UtilClient.is_unset(request.image_url):
@@ -163,6 +447,8 @@ class Client(OpenApiClient):
             body['RequestedResource'] = request.requested_resource
         if not UtilClient.is_unset(request.resource_id):
             body['ResourceId'] = request.resource_id
+        if not UtilClient.is_unset(request.system_image_url):
+            body['SystemImageUrl'] = request.system_image_url
         if not UtilClient.is_unset(request.user_id):
             body['UserId'] = request.user_id
         if not UtilClient.is_unset(request.user_vpc):
@@ -197,20 +483,36 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateInstanceResponse:
+        """
+        @summary 创建实例
+        
+        @param request: CreateInstanceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateInstanceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
             body['Accessibility'] = request.accessibility
+        if not UtilClient.is_unset(request.affinity):
+            body['Affinity'] = request.affinity
         if not UtilClient.is_unset(request.cloud_disks):
             body['CloudDisks'] = request.cloud_disks
+        if not UtilClient.is_unset(request.credential_config):
+            body['CredentialConfig'] = request.credential_config
         if not UtilClient.is_unset(request.datasets):
             body['Datasets'] = request.datasets
         if not UtilClient.is_unset(request.driver):
             body['Driver'] = request.driver
+        if not UtilClient.is_unset(request.dynamic_mount):
+            body['DynamicMount'] = request.dynamic_mount
         if not UtilClient.is_unset(request.ecs_spec):
             body['EcsSpec'] = request.ecs_spec
         if not UtilClient.is_unset(request.environment_variables):
             body['EnvironmentVariables'] = request.environment_variables
+        if not UtilClient.is_unset(request.image_auth):
+            body['ImageAuth'] = request.image_auth
         if not UtilClient.is_unset(request.image_id):
             body['ImageId'] = request.image_id
         if not UtilClient.is_unset(request.image_url):
@@ -225,6 +527,8 @@ class Client(OpenApiClient):
             body['RequestedResource'] = request.requested_resource
         if not UtilClient.is_unset(request.resource_id):
             body['ResourceId'] = request.resource_id
+        if not UtilClient.is_unset(request.system_image_url):
+            body['SystemImageUrl'] = request.system_image_url
         if not UtilClient.is_unset(request.user_id):
             body['UserId'] = request.user_id
         if not UtilClient.is_unset(request.user_vpc):
@@ -257,6 +561,12 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.CreateInstanceRequest,
     ) -> pai_dsw_20220101_models.CreateInstanceResponse:
+        """
+        @summary 创建实例
+        
+        @param request: CreateInstanceRequest
+        @return: CreateInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_instance_with_options(request, headers, runtime)
@@ -265,6 +575,12 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.CreateInstanceRequest,
     ) -> pai_dsw_20220101_models.CreateInstanceResponse:
+        """
+        @summary 创建实例
+        
+        @param request: CreateInstanceRequest
+        @return: CreateInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_instance_with_options_async(request, headers, runtime)
@@ -276,6 +592,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateInstanceShutdownTimerResponse:
+        """
+        @summary 创建定时关机任务
+        
+        @param request: CreateInstanceShutdownTimerRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateInstanceShutdownTimerResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.due_time):
@@ -309,6 +633,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateInstanceShutdownTimerResponse:
+        """
+        @summary 创建定时关机任务
+        
+        @param request: CreateInstanceShutdownTimerRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateInstanceShutdownTimerResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.due_time):
@@ -340,6 +672,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.CreateInstanceShutdownTimerRequest,
     ) -> pai_dsw_20220101_models.CreateInstanceShutdownTimerResponse:
+        """
+        @summary 创建定时关机任务
+        
+        @param request: CreateInstanceShutdownTimerRequest
+        @return: CreateInstanceShutdownTimerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_instance_shutdown_timer_with_options(instance_id, request, headers, runtime)
@@ -349,6 +687,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.CreateInstanceShutdownTimerRequest,
     ) -> pai_dsw_20220101_models.CreateInstanceShutdownTimerResponse:
+        """
+        @summary 创建定时关机任务
+        
+        @param request: CreateInstanceShutdownTimerRequest
+        @return: CreateInstanceShutdownTimerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_instance_shutdown_timer_with_options_async(instance_id, request, headers, runtime)
@@ -360,6 +704,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateInstanceSnapshotResponse:
+        """
+        @summary 创建实例快照
+        
+        @param request: CreateInstanceSnapshotRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateInstanceSnapshotResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.exclude_paths):
@@ -401,6 +753,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.CreateInstanceSnapshotResponse:
+        """
+        @summary 创建实例快照
+        
+        @param request: CreateInstanceSnapshotRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateInstanceSnapshotResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.exclude_paths):
@@ -440,6 +800,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.CreateInstanceSnapshotRequest,
     ) -> pai_dsw_20220101_models.CreateInstanceSnapshotResponse:
+        """
+        @summary 创建实例快照
+        
+        @param request: CreateInstanceSnapshotRequest
+        @return: CreateInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.create_instance_snapshot_with_options(instance_id, request, headers, runtime)
@@ -449,9 +815,343 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.CreateInstanceSnapshotRequest,
     ) -> pai_dsw_20220101_models.CreateInstanceSnapshotResponse:
+        """
+        @summary 创建实例快照
+        
+        @param request: CreateInstanceSnapshotRequest
+        @return: CreateInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.create_instance_snapshot_with_options_async(instance_id, request, headers, runtime)
+
+    def create_share_with_options(
+        self,
+        request: pai_dsw_20220101_models.CreateShareRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateShareResponse:
+        """
+        @param request: CreateShareRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateShareResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.file_name):
+            body['FileName'] = request.file_name
+        if not UtilClient.is_unset(request.ttl):
+            body['Ttl'] = request.ttl
+        if not UtilClient.is_unset(request.version):
+            body['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateShare',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/shares',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateShareResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_share_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.CreateShareRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateShareResponse:
+        """
+        @param request: CreateShareRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateShareResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.file_name):
+            body['FileName'] = request.file_name
+        if not UtilClient.is_unset(request.ttl):
+            body['Ttl'] = request.ttl
+        if not UtilClient.is_unset(request.version):
+            body['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateShare',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/shares',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateShareResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_share(
+        self,
+        request: pai_dsw_20220101_models.CreateShareRequest,
+    ) -> pai_dsw_20220101_models.CreateShareResponse:
+        """
+        @param request: CreateShareRequest
+        @return: CreateShareResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_share_with_options(request, headers, runtime)
+
+    async def create_share_async(
+        self,
+        request: pai_dsw_20220101_models.CreateShareRequest,
+    ) -> pai_dsw_20220101_models.CreateShareResponse:
+        """
+        @param request: CreateShareRequest
+        @return: CreateShareResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_share_with_options_async(request, headers, runtime)
+
+    def create_temp_file_with_options(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateTempFileResponse:
+        """
+        @summary 创建临时文件
+        
+        @param request: CreateTempFileRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateTempFileResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.capacity):
+            body['Capacity'] = request.capacity
+        if not UtilClient.is_unset(request.instance_id):
+            body['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
+        if not UtilClient.is_unset(request.prefix):
+            body['Prefix'] = request.prefix
+        if not UtilClient.is_unset(request.task_id):
+            body['TaskId'] = request.task_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateTempFileResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_temp_file_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateTempFileResponse:
+        """
+        @summary 创建临时文件
+        
+        @param request: CreateTempFileRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateTempFileResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.capacity):
+            body['Capacity'] = request.capacity
+        if not UtilClient.is_unset(request.instance_id):
+            body['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.name):
+            body['Name'] = request.name
+        if not UtilClient.is_unset(request.prefix):
+            body['Prefix'] = request.prefix
+        if not UtilClient.is_unset(request.task_id):
+            body['TaskId'] = request.task_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateTempFileResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_temp_file(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileRequest,
+    ) -> pai_dsw_20220101_models.CreateTempFileResponse:
+        """
+        @summary 创建临时文件
+        
+        @param request: CreateTempFileRequest
+        @return: CreateTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_temp_file_with_options(request, headers, runtime)
+
+    async def create_temp_file_async(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileRequest,
+    ) -> pai_dsw_20220101_models.CreateTempFileResponse:
+        """
+        @summary 创建临时文件
+        
+        @param request: CreateTempFileRequest
+        @return: CreateTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_temp_file_with_options_async(request, headers, runtime)
+
+    def create_temp_file_task_with_options(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileTaskRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateTempFileTaskResponse:
+        """
+        @summary 创建临时文件任务
+        
+        @param request: CreateTempFileTaskRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateTempFileTaskResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.instance_id):
+            body['InstanceId'] = request.instance_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateTempFileTask',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiletasks',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateTempFileTaskResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def create_temp_file_task_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileTaskRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.CreateTempFileTaskResponse:
+        """
+        @summary 创建临时文件任务
+        
+        @param request: CreateTempFileTaskRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: CreateTempFileTaskResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.instance_id):
+            body['InstanceId'] = request.instance_id
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='CreateTempFileTask',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiletasks',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.CreateTempFileTaskResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def create_temp_file_task(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileTaskRequest,
+    ) -> pai_dsw_20220101_models.CreateTempFileTaskResponse:
+        """
+        @summary 创建临时文件任务
+        
+        @param request: CreateTempFileTaskRequest
+        @return: CreateTempFileTaskResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.create_temp_file_task_with_options(request, headers, runtime)
+
+    async def create_temp_file_task_async(
+        self,
+        request: pai_dsw_20220101_models.CreateTempFileTaskRequest,
+    ) -> pai_dsw_20220101_models.CreateTempFileTaskResponse:
+        """
+        @summary 创建临时文件任务
+        
+        @param request: CreateTempFileTaskRequest
+        @return: CreateTempFileTaskResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.create_temp_file_task_with_options_async(request, headers, runtime)
 
     def delete_idle_instance_culler_with_options(
         self,
@@ -459,6 +1159,11 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteIdleInstanceCullerResponse:
+        """
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteIdleInstanceCullerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -484,6 +1189,11 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteIdleInstanceCullerResponse:
+        """
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteIdleInstanceCullerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -507,6 +1217,9 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.DeleteIdleInstanceCullerResponse:
+        """
+        @return: DeleteIdleInstanceCullerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_idle_instance_culler_with_options(instance_id, headers, runtime)
@@ -515,6 +1228,9 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.DeleteIdleInstanceCullerResponse:
+        """
+        @return: DeleteIdleInstanceCullerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_idle_instance_culler_with_options_async(instance_id, headers, runtime)
@@ -525,6 +1241,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteInstanceResponse:
+        """
+        @summary 删除实例
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -550,6 +1273,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteInstanceResponse:
+        """
+        @summary 删除实例
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -573,6 +1303,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.DeleteInstanceResponse:
+        """
+        @summary 删除实例
+        
+        @return: DeleteInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_instance_with_options(instance_id, headers, runtime)
@@ -581,9 +1316,122 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.DeleteInstanceResponse:
+        """
+        @summary 删除实例
+        
+        @return: DeleteInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_instance_with_options_async(instance_id, headers, runtime)
+
+    def delete_instance_labels_with_options(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.DeleteInstanceLabelsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.DeleteInstanceLabelsResponse:
+        """
+        @summary 删除DSW实例的标签
+        
+        @param request: DeleteInstanceLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceLabelsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.label_keys):
+            query['LabelKeys'] = request.label_keys
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='DeleteInstanceLabels',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/labels',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.DeleteInstanceLabelsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def delete_instance_labels_with_options_async(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.DeleteInstanceLabelsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.DeleteInstanceLabelsResponse:
+        """
+        @summary 删除DSW实例的标签
+        
+        @param request: DeleteInstanceLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceLabelsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.label_keys):
+            query['LabelKeys'] = request.label_keys
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='DeleteInstanceLabels',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/labels',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.DeleteInstanceLabelsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def delete_instance_labels(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.DeleteInstanceLabelsRequest,
+    ) -> pai_dsw_20220101_models.DeleteInstanceLabelsResponse:
+        """
+        @summary 删除DSW实例的标签
+        
+        @param request: DeleteInstanceLabelsRequest
+        @return: DeleteInstanceLabelsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.delete_instance_labels_with_options(instance_id, request, headers, runtime)
+
+    async def delete_instance_labels_async(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.DeleteInstanceLabelsRequest,
+    ) -> pai_dsw_20220101_models.DeleteInstanceLabelsResponse:
+        """
+        @summary 删除DSW实例的标签
+        
+        @param request: DeleteInstanceLabelsRequest
+        @return: DeleteInstanceLabelsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.delete_instance_labels_with_options_async(instance_id, request, headers, runtime)
 
     def delete_instance_shutdown_timer_with_options(
         self,
@@ -591,6 +1439,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteInstanceShutdownTimerResponse:
+        """
+        @summary 删除定时关机任务
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceShutdownTimerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -616,6 +1471,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteInstanceShutdownTimerResponse:
+        """
+        @summary 删除定时关机任务
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceShutdownTimerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -639,6 +1501,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.DeleteInstanceShutdownTimerResponse:
+        """
+        @summary 删除定时关机任务
+        
+        @return: DeleteInstanceShutdownTimerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_instance_shutdown_timer_with_options(instance_id, headers, runtime)
@@ -647,6 +1514,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.DeleteInstanceShutdownTimerResponse:
+        """
+        @summary 删除定时关机任务
+        
+        @return: DeleteInstanceShutdownTimerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_instance_shutdown_timer_with_options_async(instance_id, headers, runtime)
@@ -658,6 +1530,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceSnapshotResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -684,6 +1563,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.DeleteInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteInstanceSnapshotResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -708,6 +1594,11 @@ class Client(OpenApiClient):
         instance_id: str,
         snapshot_id: str,
     ) -> pai_dsw_20220101_models.DeleteInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @return: DeleteInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.delete_instance_snapshot_with_options(instance_id, snapshot_id, headers, runtime)
@@ -717,9 +1608,194 @@ class Client(OpenApiClient):
         instance_id: str,
         snapshot_id: str,
     ) -> pai_dsw_20220101_models.DeleteInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @return: DeleteInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.delete_instance_snapshot_with_options_async(instance_id, snapshot_id, headers, runtime)
+
+    def delete_temp_file_with_options(
+        self,
+        temp_file_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.DeleteTempFileResponse:
+        """
+        @summary 删除临时文件
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteTempFileResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles/{OpenApiUtilClient.get_encode_param(temp_file_id)}',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.DeleteTempFileResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def delete_temp_file_with_options_async(
+        self,
+        temp_file_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.DeleteTempFileResponse:
+        """
+        @summary 删除临时文件
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteTempFileResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles/{OpenApiUtilClient.get_encode_param(temp_file_id)}',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.DeleteTempFileResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def delete_temp_file(
+        self,
+        temp_file_id: str,
+    ) -> pai_dsw_20220101_models.DeleteTempFileResponse:
+        """
+        @summary 删除临时文件
+        
+        @return: DeleteTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.delete_temp_file_with_options(temp_file_id, headers, runtime)
+
+    async def delete_temp_file_async(
+        self,
+        temp_file_id: str,
+    ) -> pai_dsw_20220101_models.DeleteTempFileResponse:
+        """
+        @summary 删除临时文件
+        
+        @return: DeleteTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.delete_temp_file_with_options_async(temp_file_id, headers, runtime)
+
+    def delete_temp_file_task_with_options(
+        self,
+        temp_file_task_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.DeleteTempFileTaskResponse:
+        """
+        @summary 删除临时文件
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteTempFileTaskResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteTempFileTask',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiletasks/{OpenApiUtilClient.get_encode_param(temp_file_task_id)}',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.DeleteTempFileTaskResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def delete_temp_file_task_with_options_async(
+        self,
+        temp_file_task_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.DeleteTempFileTaskResponse:
+        """
+        @summary 删除临时文件
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: DeleteTempFileTaskResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='DeleteTempFileTask',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiletasks/{OpenApiUtilClient.get_encode_param(temp_file_task_id)}',
+            method='DELETE',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.DeleteTempFileTaskResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def delete_temp_file_task(
+        self,
+        temp_file_task_id: str,
+    ) -> pai_dsw_20220101_models.DeleteTempFileTaskResponse:
+        """
+        @summary 删除临时文件
+        
+        @return: DeleteTempFileTaskResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.delete_temp_file_task_with_options(temp_file_task_id, headers, runtime)
+
+    async def delete_temp_file_task_async(
+        self,
+        temp_file_task_id: str,
+    ) -> pai_dsw_20220101_models.DeleteTempFileTaskResponse:
+        """
+        @summary 删除临时文件
+        
+        @return: DeleteTempFileTaskResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.delete_temp_file_task_with_options_async(temp_file_task_id, headers, runtime)
 
     def get_idle_instance_culler_with_options(
         self,
@@ -727,6 +1803,11 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetIdleInstanceCullerResponse:
+        """
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetIdleInstanceCullerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -752,6 +1833,11 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetIdleInstanceCullerResponse:
+        """
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetIdleInstanceCullerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -775,6 +1861,9 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.GetIdleInstanceCullerResponse:
+        """
+        @return: GetIdleInstanceCullerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_idle_instance_culler_with_options(instance_id, headers, runtime)
@@ -783,6 +1872,9 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.GetIdleInstanceCullerResponse:
+        """
+        @return: GetIdleInstanceCullerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_idle_instance_culler_with_options_async(instance_id, headers, runtime)
@@ -793,6 +1885,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceResponse:
+        """
+        @summary 获取实例详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -818,6 +1917,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceResponse:
+        """
+        @summary 获取实例详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -841,6 +1947,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.GetInstanceResponse:
+        """
+        @summary 获取实例详情
+        
+        @return: GetInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_instance_with_options(instance_id, headers, runtime)
@@ -849,6 +1960,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.GetInstanceResponse:
+        """
+        @summary 获取实例详情
+        
+        @return: GetInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_instance_with_options_async(instance_id, headers, runtime)
@@ -860,6 +1976,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceEventsResponse:
+        """
+        @param request: GetInstanceEventsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceEventsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -895,6 +2017,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceEventsResponse:
+        """
+        @param request: GetInstanceEventsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceEventsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -928,6 +2056,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.GetInstanceEventsRequest,
     ) -> pai_dsw_20220101_models.GetInstanceEventsResponse:
+        """
+        @param request: GetInstanceEventsRequest
+        @return: GetInstanceEventsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_instance_events_with_options(instance_id, request, headers, runtime)
@@ -937,6 +2069,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.GetInstanceEventsRequest,
     ) -> pai_dsw_20220101_models.GetInstanceEventsResponse:
+        """
+        @param request: GetInstanceEventsRequest
+        @return: GetInstanceEventsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_instance_events_with_options_async(instance_id, request, headers, runtime)
@@ -948,6 +2084,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceMetricsResponse:
+        """
+        @param request: GetInstanceMetricsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceMetricsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -985,6 +2127,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceMetricsResponse:
+        """
+        @param request: GetInstanceMetricsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceMetricsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -1020,6 +2168,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.GetInstanceMetricsRequest,
     ) -> pai_dsw_20220101_models.GetInstanceMetricsResponse:
+        """
+        @param request: GetInstanceMetricsRequest
+        @return: GetInstanceMetricsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_instance_metrics_with_options(instance_id, request, headers, runtime)
@@ -1029,6 +2181,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.GetInstanceMetricsRequest,
     ) -> pai_dsw_20220101_models.GetInstanceMetricsResponse:
+        """
+        @param request: GetInstanceMetricsRequest
+        @return: GetInstanceMetricsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_instance_metrics_with_options_async(instance_id, request, headers, runtime)
@@ -1039,6 +2195,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceShutdownTimerResponse:
+        """
+        @summary 获取定时关机任务
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceShutdownTimerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1064,6 +2227,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceShutdownTimerResponse:
+        """
+        @summary 获取定时关机任务
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceShutdownTimerResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1087,6 +2257,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.GetInstanceShutdownTimerResponse:
+        """
+        @summary 获取定时关机任务
+        
+        @return: GetInstanceShutdownTimerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_instance_shutdown_timer_with_options(instance_id, headers, runtime)
@@ -1095,6 +2270,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.GetInstanceShutdownTimerResponse:
+        """
+        @summary 获取定时关机任务
+        
+        @return: GetInstanceShutdownTimerResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_instance_shutdown_timer_with_options_async(instance_id, headers, runtime)
@@ -1106,6 +2286,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceSnapshotResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1132,6 +2319,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetInstanceSnapshotResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1156,6 +2350,11 @@ class Client(OpenApiClient):
         instance_id: str,
         snapshot_id: str,
     ) -> pai_dsw_20220101_models.GetInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @return: GetInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_instance_snapshot_with_options(instance_id, snapshot_id, headers, runtime)
@@ -1165,6 +2364,11 @@ class Client(OpenApiClient):
         instance_id: str,
         snapshot_id: str,
     ) -> pai_dsw_20220101_models.GetInstanceSnapshotResponse:
+        """
+        @summary 获取实例快照详情
+        
+        @return: GetInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_instance_snapshot_with_options_async(instance_id, snapshot_id, headers, runtime)
@@ -1176,6 +2380,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetLifecycleResponse:
+        """
+        @param request: GetLifecycleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetLifecycleResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -1215,6 +2425,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetLifecycleResponse:
+        """
+        @param request: GetLifecycleRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetLifecycleResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -1252,6 +2468,10 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.GetLifecycleRequest,
     ) -> pai_dsw_20220101_models.GetLifecycleResponse:
+        """
+        @param request: GetLifecycleRequest
+        @return: GetLifecycleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_lifecycle_with_options(instance_id, request, headers, runtime)
@@ -1261,9 +2481,149 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.GetLifecycleRequest,
     ) -> pai_dsw_20220101_models.GetLifecycleResponse:
+        """
+        @param request: GetLifecycleRequest
+        @return: GetLifecycleResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_lifecycle_with_options_async(instance_id, request, headers, runtime)
+
+    def get_metrics_with_options(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.GetMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.GetMetricsResponse:
+        """
+        @summary 获取metrics数据
+        
+        @param request: GetMetricsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetMetricsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.dimensions):
+            query['Dimensions'] = request.dimensions
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.length):
+            query['Length'] = request.length
+        if not UtilClient.is_unset(request.metric_name):
+            query['MetricName'] = request.metric_name
+        if not UtilClient.is_unset(request.namespace):
+            query['Namespace'] = request.namespace
+        if not UtilClient.is_unset(request.next_token):
+            query['NextToken'] = request.next_token
+        if not UtilClient.is_unset(request.period):
+            query['Period'] = request.period
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetMetrics',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instance/{OpenApiUtilClient.get_encode_param(instance_id)}/cms/metrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.GetMetricsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_metrics_with_options_async(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.GetMetricsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.GetMetricsResponse:
+        """
+        @summary 获取metrics数据
+        
+        @param request: GetMetricsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetMetricsResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.dimensions):
+            query['Dimensions'] = request.dimensions
+        if not UtilClient.is_unset(request.end_time):
+            query['EndTime'] = request.end_time
+        if not UtilClient.is_unset(request.length):
+            query['Length'] = request.length
+        if not UtilClient.is_unset(request.metric_name):
+            query['MetricName'] = request.metric_name
+        if not UtilClient.is_unset(request.namespace):
+            query['Namespace'] = request.namespace
+        if not UtilClient.is_unset(request.next_token):
+            query['NextToken'] = request.next_token
+        if not UtilClient.is_unset(request.period):
+            query['Period'] = request.period
+        if not UtilClient.is_unset(request.start_time):
+            query['StartTime'] = request.start_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='GetMetrics',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instance/{OpenApiUtilClient.get_encode_param(instance_id)}/cms/metrics',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.GetMetricsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_metrics(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.GetMetricsRequest,
+    ) -> pai_dsw_20220101_models.GetMetricsResponse:
+        """
+        @summary 获取metrics数据
+        
+        @param request: GetMetricsRequest
+        @return: GetMetricsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_metrics_with_options(instance_id, request, headers, runtime)
+
+    async def get_metrics_async(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.GetMetricsRequest,
+    ) -> pai_dsw_20220101_models.GetMetricsResponse:
+        """
+        @summary 获取metrics数据
+        
+        @param request: GetMetricsRequest
+        @return: GetMetricsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_metrics_with_options_async(instance_id, request, headers, runtime)
 
     def get_resource_group_statistics_with_options(
         self,
@@ -1271,6 +2631,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetResourceGroupStatisticsResponse:
+        """
+        @param request: GetResourceGroupStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetResourceGroupStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -1307,6 +2673,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetResourceGroupStatisticsResponse:
+        """
+        @param request: GetResourceGroupStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetResourceGroupStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.end_time):
@@ -1341,6 +2713,10 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.GetResourceGroupStatisticsRequest,
     ) -> pai_dsw_20220101_models.GetResourceGroupStatisticsResponse:
+        """
+        @param request: GetResourceGroupStatisticsRequest
+        @return: GetResourceGroupStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_resource_group_statistics_with_options(request, headers, runtime)
@@ -1349,9 +2725,103 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.GetResourceGroupStatisticsRequest,
     ) -> pai_dsw_20220101_models.GetResourceGroupStatisticsResponse:
+        """
+        @param request: GetResourceGroupStatisticsRequest
+        @return: GetResourceGroupStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_resource_group_statistics_with_options_async(request, headers, runtime)
+
+    def get_temp_file_with_options(
+        self,
+        temp_file_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.GetTempFileResponse:
+        """
+        @summary 获取临时文件详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetTempFileResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles/{OpenApiUtilClient.get_encode_param(temp_file_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.GetTempFileResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def get_temp_file_with_options_async(
+        self,
+        temp_file_id: str,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.GetTempFileResponse:
+        """
+        @summary 获取临时文件详情
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetTempFileResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='GetTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles/{OpenApiUtilClient.get_encode_param(temp_file_id)}',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.GetTempFileResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def get_temp_file(
+        self,
+        temp_file_id: str,
+    ) -> pai_dsw_20220101_models.GetTempFileResponse:
+        """
+        @summary 获取临时文件详情
+        
+        @return: GetTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.get_temp_file_with_options(temp_file_id, headers, runtime)
+
+    async def get_temp_file_async(
+        self,
+        temp_file_id: str,
+    ) -> pai_dsw_20220101_models.GetTempFileResponse:
+        """
+        @summary 获取临时文件详情
+        
+        @return: GetTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.get_temp_file_with_options_async(temp_file_id, headers, runtime)
 
     def get_token_with_options(
         self,
@@ -1359,6 +2829,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetTokenResponse:
+        """
+        @param request: GetTokenRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetTokenResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.expire_time):
@@ -1391,6 +2867,12 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetTokenResponse:
+        """
+        @param request: GetTokenRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetTokenResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.expire_time):
@@ -1421,6 +2903,10 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.GetTokenRequest,
     ) -> pai_dsw_20220101_models.GetTokenResponse:
+        """
+        @param request: GetTokenRequest
+        @return: GetTokenResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_token_with_options(request, headers, runtime)
@@ -1429,6 +2915,10 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.GetTokenRequest,
     ) -> pai_dsw_20220101_models.GetTokenResponse:
+        """
+        @param request: GetTokenRequest
+        @return: GetTokenResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_token_with_options_async(request, headers, runtime)
@@ -1438,6 +2928,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetUserConfigResponse:
+        """
+        @summary 获取用户配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetUserConfigResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1462,6 +2959,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.GetUserConfigResponse:
+        """
+        @summary 获取用户配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: GetUserConfigResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1482,14 +2986,106 @@ class Client(OpenApiClient):
         )
 
     def get_user_config(self) -> pai_dsw_20220101_models.GetUserConfigResponse:
+        """
+        @summary 获取用户配置
+        
+        @return: GetUserConfigResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.get_user_config_with_options(headers, runtime)
 
     async def get_user_config_async(self) -> pai_dsw_20220101_models.GetUserConfigResponse:
+        """
+        @summary 获取用户配置
+        
+        @return: GetUserConfigResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.get_user_config_with_options_async(headers, runtime)
+
+    def list_app_endpoints_with_options(
+        self,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListAppEndpointsResponse:
+        """
+        @summary 列出第三方AppEndpoint配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListAppEndpointsResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='ListAppEndpoints',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/inner/api/thirdParty/endpoints',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListAppEndpointsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_app_endpoints_with_options_async(
+        self,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListAppEndpointsResponse:
+        """
+        @summary 列出第三方AppEndpoint配置
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListAppEndpointsResponse
+        """
+        req = open_api_models.OpenApiRequest(
+            headers=headers
+        )
+        params = open_api_models.Params(
+            action='ListAppEndpoints',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/inner/api/thirdParty/endpoints',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListAppEndpointsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_app_endpoints(self) -> pai_dsw_20220101_models.ListAppEndpointsResponse:
+        """
+        @summary 列出第三方AppEndpoint配置
+        
+        @return: ListAppEndpointsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_app_endpoints_with_options(headers, runtime)
+
+    async def list_app_endpoints_async(self) -> pai_dsw_20220101_models.ListAppEndpointsResponse:
+        """
+        @summary 列出第三方AppEndpoint配置
+        
+        @return: ListAppEndpointsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_app_endpoints_with_options_async(headers, runtime)
 
     def list_ecs_specs_with_options(
         self,
@@ -1497,6 +3093,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListEcsSpecsResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListEcsSpecsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.accelerator_type):
@@ -1535,6 +3139,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListEcsSpecsResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListEcsSpecsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.accelerator_type):
@@ -1571,6 +3183,12 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.ListEcsSpecsRequest,
     ) -> pai_dsw_20220101_models.ListEcsSpecsResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsRequest
+        @return: ListEcsSpecsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_ecs_specs_with_options(request, headers, runtime)
@@ -1579,9 +3197,119 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.ListEcsSpecsRequest,
     ) -> pai_dsw_20220101_models.ListEcsSpecsResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsRequest
+        @return: ListEcsSpecsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_ecs_specs_with_options_async(request, headers, runtime)
+
+    def list_ecs_specs_by_instance_types_with_options(
+        self,
+        request: pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsByInstanceTypesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListEcsSpecsByInstanceTypesResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.instance_types):
+            body['InstanceTypes'] = request.instance_types
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ListEcsSpecsByInstanceTypes',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/ecsspecs/action/listEcsSpecsByInstanceTypes',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_ecs_specs_by_instance_types_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsByInstanceTypesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListEcsSpecsByInstanceTypesResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.instance_types):
+            body['InstanceTypes'] = request.instance_types
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='ListEcsSpecsByInstanceTypes',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/ecsspecs/action/listEcsSpecsByInstanceTypes',
+            method='POST',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_ecs_specs_by_instance_types(
+        self,
+        request: pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesRequest,
+    ) -> pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsByInstanceTypesRequest
+        @return: ListEcsSpecsByInstanceTypesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_ecs_specs_by_instance_types_with_options(request, headers, runtime)
+
+    async def list_ecs_specs_by_instance_types_async(
+        self,
+        request: pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesRequest,
+    ) -> pai_dsw_20220101_models.ListEcsSpecsByInstanceTypesResponse:
+        """
+        @summary 获取ECS规格列表
+        
+        @param request: ListEcsSpecsByInstanceTypesRequest
+        @return: ListEcsSpecsByInstanceTypesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_ecs_specs_by_instance_types_with_options_async(request, headers, runtime)
 
     def list_instance_snapshot_with_options(
         self,
@@ -1590,6 +3318,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListInstanceSnapshotResponse:
+        """
+        @summary 查询实例快照列表
+        
+        @param request: ListInstanceSnapshotRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListInstanceSnapshotResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.order):
@@ -1627,6 +3363,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListInstanceSnapshotResponse:
+        """
+        @summary 查询实例快照列表
+        
+        @param request: ListInstanceSnapshotRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListInstanceSnapshotResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.order):
@@ -1662,6 +3406,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.ListInstanceSnapshotRequest,
     ) -> pai_dsw_20220101_models.ListInstanceSnapshotResponse:
+        """
+        @summary 查询实例快照列表
+        
+        @param request: ListInstanceSnapshotRequest
+        @return: ListInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_instance_snapshot_with_options(instance_id, request, headers, runtime)
@@ -1671,6 +3421,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.ListInstanceSnapshotRequest,
     ) -> pai_dsw_20220101_models.ListInstanceSnapshotResponse:
+        """
+        @summary 查询实例快照列表
+        
+        @param request: ListInstanceSnapshotRequest
+        @return: ListInstanceSnapshotResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_instance_snapshot_with_options_async(instance_id, request, headers, runtime)
@@ -1681,6 +3437,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListInstanceStatisticsResponse:
+        """
+        @summary 获取实例统计信息
+        
+        @param request: ListInstanceStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListInstanceStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_ids):
@@ -1711,6 +3475,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListInstanceStatisticsResponse:
+        """
+        @summary 获取实例统计信息
+        
+        @param request: ListInstanceStatisticsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListInstanceStatisticsResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.workspace_ids):
@@ -1739,6 +3511,12 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.ListInstanceStatisticsRequest,
     ) -> pai_dsw_20220101_models.ListInstanceStatisticsResponse:
+        """
+        @summary 获取实例统计信息
+        
+        @param request: ListInstanceStatisticsRequest
+        @return: ListInstanceStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_instance_statistics_with_options(request, headers, runtime)
@@ -1747,26 +3525,66 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.ListInstanceStatisticsRequest,
     ) -> pai_dsw_20220101_models.ListInstanceStatisticsResponse:
+        """
+        @summary 获取实例统计信息
+        
+        @param request: ListInstanceStatisticsRequest
+        @return: ListInstanceStatisticsResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_instance_statistics_with_options_async(request, headers, runtime)
 
     def list_instances_with_options(
         self,
-        request: pai_dsw_20220101_models.ListInstancesRequest,
+        tmp_req: pai_dsw_20220101_models.ListInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListInstancesResponse:
-        UtilClient.validate_model(request)
+        """
+        @param tmp_req: ListInstancesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListInstancesResponse
+        """
+        UtilClient.validate_model(tmp_req)
+        request = pai_dsw_20220101_models.ListInstancesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.labels):
+            request.labels_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.labels, 'Labels', 'json')
         query = {}
         if not UtilClient.is_unset(request.accelerator_type):
             query['AcceleratorType'] = request.accelerator_type
         if not UtilClient.is_unset(request.accessibility):
             query['Accessibility'] = request.accessibility
+        if not UtilClient.is_unset(request.create_user_id):
+            query['CreateUserId'] = request.create_user_id
+        if not UtilClient.is_unset(request.gpu_type):
+            query['GpuType'] = request.gpu_type
+        if not UtilClient.is_unset(request.image_name):
+            query['ImageName'] = request.image_name
         if not UtilClient.is_unset(request.instance_id):
             query['InstanceId'] = request.instance_id
         if not UtilClient.is_unset(request.instance_name):
             query['InstanceName'] = request.instance_name
+        if not UtilClient.is_unset(request.labels_shrink):
+            query['Labels'] = request.labels_shrink
+        if not UtilClient.is_unset(request.max_cpu):
+            query['MaxCpu'] = request.max_cpu
+        if not UtilClient.is_unset(request.max_gpu):
+            query['MaxGpu'] = request.max_gpu
+        if not UtilClient.is_unset(request.max_gpu_memory):
+            query['MaxGpuMemory'] = request.max_gpu_memory
+        if not UtilClient.is_unset(request.max_memory):
+            query['MaxMemory'] = request.max_memory
+        if not UtilClient.is_unset(request.min_cpu):
+            query['MinCpu'] = request.min_cpu
+        if not UtilClient.is_unset(request.min_gpu):
+            query['MinGpu'] = request.min_gpu
+        if not UtilClient.is_unset(request.min_gpu_memory):
+            query['MinGpuMemory'] = request.min_gpu_memory
+        if not UtilClient.is_unset(request.min_memory):
+            query['MinMemory'] = request.min_memory
         if not UtilClient.is_unset(request.order):
             query['Order'] = request.order
         if not UtilClient.is_unset(request.page_number):
@@ -1805,20 +3623,54 @@ class Client(OpenApiClient):
 
     async def list_instances_with_options_async(
         self,
-        request: pai_dsw_20220101_models.ListInstancesRequest,
+        tmp_req: pai_dsw_20220101_models.ListInstancesRequest,
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.ListInstancesResponse:
-        UtilClient.validate_model(request)
+        """
+        @param tmp_req: ListInstancesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListInstancesResponse
+        """
+        UtilClient.validate_model(tmp_req)
+        request = pai_dsw_20220101_models.ListInstancesShrinkRequest()
+        OpenApiUtilClient.convert(tmp_req, request)
+        if not UtilClient.is_unset(tmp_req.labels):
+            request.labels_shrink = OpenApiUtilClient.array_to_string_with_specified_style(tmp_req.labels, 'Labels', 'json')
         query = {}
         if not UtilClient.is_unset(request.accelerator_type):
             query['AcceleratorType'] = request.accelerator_type
         if not UtilClient.is_unset(request.accessibility):
             query['Accessibility'] = request.accessibility
+        if not UtilClient.is_unset(request.create_user_id):
+            query['CreateUserId'] = request.create_user_id
+        if not UtilClient.is_unset(request.gpu_type):
+            query['GpuType'] = request.gpu_type
+        if not UtilClient.is_unset(request.image_name):
+            query['ImageName'] = request.image_name
         if not UtilClient.is_unset(request.instance_id):
             query['InstanceId'] = request.instance_id
         if not UtilClient.is_unset(request.instance_name):
             query['InstanceName'] = request.instance_name
+        if not UtilClient.is_unset(request.labels_shrink):
+            query['Labels'] = request.labels_shrink
+        if not UtilClient.is_unset(request.max_cpu):
+            query['MaxCpu'] = request.max_cpu
+        if not UtilClient.is_unset(request.max_gpu):
+            query['MaxGpu'] = request.max_gpu
+        if not UtilClient.is_unset(request.max_gpu_memory):
+            query['MaxGpuMemory'] = request.max_gpu_memory
+        if not UtilClient.is_unset(request.max_memory):
+            query['MaxMemory'] = request.max_memory
+        if not UtilClient.is_unset(request.min_cpu):
+            query['MinCpu'] = request.min_cpu
+        if not UtilClient.is_unset(request.min_gpu):
+            query['MinGpu'] = request.min_gpu
+        if not UtilClient.is_unset(request.min_gpu_memory):
+            query['MinGpuMemory'] = request.min_gpu_memory
+        if not UtilClient.is_unset(request.min_memory):
+            query['MinMemory'] = request.min_memory
         if not UtilClient.is_unset(request.order):
             query['Order'] = request.order
         if not UtilClient.is_unset(request.page_number):
@@ -1859,6 +3711,10 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.ListInstancesRequest,
     ) -> pai_dsw_20220101_models.ListInstancesResponse:
+        """
+        @param request: ListInstancesRequest
+        @return: ListInstancesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.list_instances_with_options(request, headers, runtime)
@@ -1867,9 +3723,245 @@ class Client(OpenApiClient):
         self,
         request: pai_dsw_20220101_models.ListInstancesRequest,
     ) -> pai_dsw_20220101_models.ListInstancesResponse:
+        """
+        @param request: ListInstancesRequest
+        @return: ListInstancesResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.list_instances_with_options_async(request, headers, runtime)
+
+    def list_shares_with_options(
+        self,
+        request: pai_dsw_20220101_models.ListSharesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListSharesResponse:
+        """
+        @param request: ListSharesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListSharesResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.expiration_time_greater_than):
+            query['ExpirationTimeGreaterThan'] = request.expiration_time_greater_than
+        if not UtilClient.is_unset(request.expiration_time_less_than):
+            query['ExpirationTimeLessThan'] = request.expiration_time_less_than
+        if not UtilClient.is_unset(request.file_name):
+            query['FileName'] = request.file_name
+        if not UtilClient.is_unset(request.version):
+            query['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListShares',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/shares',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListSharesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_shares_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.ListSharesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListSharesResponse:
+        """
+        @param request: ListSharesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListSharesResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.expiration_time_greater_than):
+            query['ExpirationTimeGreaterThan'] = request.expiration_time_greater_than
+        if not UtilClient.is_unset(request.expiration_time_less_than):
+            query['ExpirationTimeLessThan'] = request.expiration_time_less_than
+        if not UtilClient.is_unset(request.file_name):
+            query['FileName'] = request.file_name
+        if not UtilClient.is_unset(request.version):
+            query['Version'] = request.version
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListShares',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/shares',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListSharesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_shares(
+        self,
+        request: pai_dsw_20220101_models.ListSharesRequest,
+    ) -> pai_dsw_20220101_models.ListSharesResponse:
+        """
+        @param request: ListSharesRequest
+        @return: ListSharesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_shares_with_options(request, headers, runtime)
+
+    async def list_shares_async(
+        self,
+        request: pai_dsw_20220101_models.ListSharesRequest,
+    ) -> pai_dsw_20220101_models.ListSharesResponse:
+        """
+        @param request: ListSharesRequest
+        @return: ListSharesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_shares_with_options_async(request, headers, runtime)
+
+    def list_temp_files_with_options(
+        self,
+        request: pai_dsw_20220101_models.ListTempFilesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListTempFilesResponse:
+        """
+        @param request: ListTempFilesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListTempFilesResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.delimiter):
+            query['Delimiter'] = request.delimiter
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.name):
+            query['Name'] = request.name
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.prefix):
+            query['Prefix'] = request.prefix
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTempFiles',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListTempFilesResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def list_temp_files_with_options_async(
+        self,
+        request: pai_dsw_20220101_models.ListTempFilesRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.ListTempFilesResponse:
+        """
+        @param request: ListTempFilesRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: ListTempFilesResponse
+        """
+        UtilClient.validate_model(request)
+        query = {}
+        if not UtilClient.is_unset(request.delimiter):
+            query['Delimiter'] = request.delimiter
+        if not UtilClient.is_unset(request.instance_id):
+            query['InstanceId'] = request.instance_id
+        if not UtilClient.is_unset(request.name):
+            query['Name'] = request.name
+        if not UtilClient.is_unset(request.order):
+            query['Order'] = request.order
+        if not UtilClient.is_unset(request.page_number):
+            query['PageNumber'] = request.page_number
+        if not UtilClient.is_unset(request.page_size):
+            query['PageSize'] = request.page_size
+        if not UtilClient.is_unset(request.prefix):
+            query['Prefix'] = request.prefix
+        if not UtilClient.is_unset(request.sort_by):
+            query['SortBy'] = request.sort_by
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            query=OpenApiUtilClient.query(query)
+        )
+        params = open_api_models.Params(
+            action='ListTempFiles',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles',
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.ListTempFilesResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def list_temp_files(
+        self,
+        request: pai_dsw_20220101_models.ListTempFilesRequest,
+    ) -> pai_dsw_20220101_models.ListTempFilesResponse:
+        """
+        @param request: ListTempFilesRequest
+        @return: ListTempFilesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.list_temp_files_with_options(request, headers, runtime)
+
+    async def list_temp_files_async(
+        self,
+        request: pai_dsw_20220101_models.ListTempFilesRequest,
+    ) -> pai_dsw_20220101_models.ListTempFilesResponse:
+        """
+        @param request: ListTempFilesRequest
+        @return: ListTempFilesResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.list_temp_files_with_options_async(request, headers, runtime)
 
     def start_instance_with_options(
         self,
@@ -1877,6 +3969,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.StartInstanceResponse:
+        """
+        @summary 启动实例
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: StartInstanceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1902,6 +4001,13 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.StartInstanceResponse:
+        """
+        @summary 启动实例
+        
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: StartInstanceResponse
+        """
         req = open_api_models.OpenApiRequest(
             headers=headers
         )
@@ -1925,6 +4031,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.StartInstanceResponse:
+        """
+        @summary 启动实例
+        
+        @return: StartInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.start_instance_with_options(instance_id, headers, runtime)
@@ -1933,6 +4044,11 @@ class Client(OpenApiClient):
         self,
         instance_id: str,
     ) -> pai_dsw_20220101_models.StartInstanceResponse:
+        """
+        @summary 启动实例
+        
+        @return: StartInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.start_instance_with_options_async(instance_id, headers, runtime)
@@ -1944,6 +4060,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.StopInstanceResponse:
+        """
+        @summary 停止实例
+        
+        @param request: StopInstanceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: StopInstanceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.save_image):
@@ -1975,6 +4099,14 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.StopInstanceResponse:
+        """
+        @summary 停止实例
+        
+        @param request: StopInstanceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: StopInstanceResponse
+        """
         UtilClient.validate_model(request)
         query = {}
         if not UtilClient.is_unset(request.save_image):
@@ -2004,6 +4136,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.StopInstanceRequest,
     ) -> pai_dsw_20220101_models.StopInstanceResponse:
+        """
+        @summary 停止实例
+        
+        @param request: StopInstanceRequest
+        @return: StopInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.stop_instance_with_options(instance_id, request, headers, runtime)
@@ -2013,6 +4151,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.StopInstanceRequest,
     ) -> pai_dsw_20220101_models.StopInstanceResponse:
+        """
+        @summary 停止实例
+        
+        @param request: StopInstanceRequest
+        @return: StopInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.stop_instance_with_options_async(instance_id, request, headers, runtime)
@@ -2024,14 +4168,28 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.UpdateInstanceResponse:
+        """
+        @summary 更新实例
+        
+        @param request: UpdateInstanceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateInstanceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
             body['Accessibility'] = request.accessibility
+        if not UtilClient.is_unset(request.affinity):
+            body['Affinity'] = request.affinity
         if not UtilClient.is_unset(request.cloud_disks):
             body['CloudDisks'] = request.cloud_disks
+        if not UtilClient.is_unset(request.credential_config):
+            body['CredentialConfig'] = request.credential_config
         if not UtilClient.is_unset(request.datasets):
             body['Datasets'] = request.datasets
+        if not UtilClient.is_unset(request.disassociate_credential):
+            body['DisassociateCredential'] = request.disassociate_credential
         if not UtilClient.is_unset(request.disassociate_datasets):
             body['DisassociateDatasets'] = request.disassociate_datasets
         if not UtilClient.is_unset(request.disassociate_driver):
@@ -2042,8 +4200,12 @@ class Client(OpenApiClient):
             body['DisassociateVpc'] = request.disassociate_vpc
         if not UtilClient.is_unset(request.driver):
             body['Driver'] = request.driver
+        if not UtilClient.is_unset(request.dynamic_mount):
+            body['DynamicMount'] = request.dynamic_mount
         if not UtilClient.is_unset(request.ecs_spec):
             body['EcsSpec'] = request.ecs_spec
+        if not UtilClient.is_unset(request.image_auth):
+            body['ImageAuth'] = request.image_auth
         if not UtilClient.is_unset(request.image_id):
             body['ImageId'] = request.image_id
         if not UtilClient.is_unset(request.image_url):
@@ -2054,6 +4216,8 @@ class Client(OpenApiClient):
             body['Priority'] = request.priority
         if not UtilClient.is_unset(request.requested_resource):
             body['RequestedResource'] = request.requested_resource
+        if not UtilClient.is_unset(request.system_image_url):
+            body['SystemImageUrl'] = request.system_image_url
         if not UtilClient.is_unset(request.user_id):
             body['UserId'] = request.user_id
         if not UtilClient.is_unset(request.user_vpc):
@@ -2087,14 +4251,28 @@ class Client(OpenApiClient):
         headers: Dict[str, str],
         runtime: util_models.RuntimeOptions,
     ) -> pai_dsw_20220101_models.UpdateInstanceResponse:
+        """
+        @summary 更新实例
+        
+        @param request: UpdateInstanceRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateInstanceResponse
+        """
         UtilClient.validate_model(request)
         body = {}
         if not UtilClient.is_unset(request.accessibility):
             body['Accessibility'] = request.accessibility
+        if not UtilClient.is_unset(request.affinity):
+            body['Affinity'] = request.affinity
         if not UtilClient.is_unset(request.cloud_disks):
             body['CloudDisks'] = request.cloud_disks
+        if not UtilClient.is_unset(request.credential_config):
+            body['CredentialConfig'] = request.credential_config
         if not UtilClient.is_unset(request.datasets):
             body['Datasets'] = request.datasets
+        if not UtilClient.is_unset(request.disassociate_credential):
+            body['DisassociateCredential'] = request.disassociate_credential
         if not UtilClient.is_unset(request.disassociate_datasets):
             body['DisassociateDatasets'] = request.disassociate_datasets
         if not UtilClient.is_unset(request.disassociate_driver):
@@ -2105,8 +4283,12 @@ class Client(OpenApiClient):
             body['DisassociateVpc'] = request.disassociate_vpc
         if not UtilClient.is_unset(request.driver):
             body['Driver'] = request.driver
+        if not UtilClient.is_unset(request.dynamic_mount):
+            body['DynamicMount'] = request.dynamic_mount
         if not UtilClient.is_unset(request.ecs_spec):
             body['EcsSpec'] = request.ecs_spec
+        if not UtilClient.is_unset(request.image_auth):
+            body['ImageAuth'] = request.image_auth
         if not UtilClient.is_unset(request.image_id):
             body['ImageId'] = request.image_id
         if not UtilClient.is_unset(request.image_url):
@@ -2117,6 +4299,8 @@ class Client(OpenApiClient):
             body['Priority'] = request.priority
         if not UtilClient.is_unset(request.requested_resource):
             body['RequestedResource'] = request.requested_resource
+        if not UtilClient.is_unset(request.system_image_url):
+            body['SystemImageUrl'] = request.system_image_url
         if not UtilClient.is_unset(request.user_id):
             body['UserId'] = request.user_id
         if not UtilClient.is_unset(request.user_vpc):
@@ -2148,6 +4332,12 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.UpdateInstanceRequest,
     ) -> pai_dsw_20220101_models.UpdateInstanceResponse:
+        """
+        @summary 更新实例
+        
+        @param request: UpdateInstanceRequest
+        @return: UpdateInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return self.update_instance_with_options(instance_id, request, headers, runtime)
@@ -2157,6 +4347,340 @@ class Client(OpenApiClient):
         instance_id: str,
         request: pai_dsw_20220101_models.UpdateInstanceRequest,
     ) -> pai_dsw_20220101_models.UpdateInstanceResponse:
+        """
+        @summary 更新实例
+        
+        @param request: UpdateInstanceRequest
+        @return: UpdateInstanceResponse
+        """
         runtime = util_models.RuntimeOptions()
         headers = {}
         return await self.update_instance_with_options_async(instance_id, request, headers, runtime)
+
+    def update_instance_labels_with_options(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.UpdateInstanceLabelsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.UpdateInstanceLabelsResponse:
+        """
+        @summary 修改DSW实例的标签
+        
+        @param request: UpdateInstanceLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateInstanceLabelsResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateInstanceLabels',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/labels',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.UpdateInstanceLabelsResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_instance_labels_with_options_async(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.UpdateInstanceLabelsRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.UpdateInstanceLabelsResponse:
+        """
+        @summary 修改DSW实例的标签
+        
+        @param request: UpdateInstanceLabelsRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateInstanceLabelsResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.labels):
+            body['Labels'] = request.labels
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateInstanceLabels',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/instances/{OpenApiUtilClient.get_encode_param(instance_id)}/labels',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.UpdateInstanceLabelsResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_instance_labels(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.UpdateInstanceLabelsRequest,
+    ) -> pai_dsw_20220101_models.UpdateInstanceLabelsResponse:
+        """
+        @summary 修改DSW实例的标签
+        
+        @param request: UpdateInstanceLabelsRequest
+        @return: UpdateInstanceLabelsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_instance_labels_with_options(instance_id, request, headers, runtime)
+
+    async def update_instance_labels_async(
+        self,
+        instance_id: str,
+        request: pai_dsw_20220101_models.UpdateInstanceLabelsRequest,
+    ) -> pai_dsw_20220101_models.UpdateInstanceLabelsResponse:
+        """
+        @summary 修改DSW实例的标签
+        
+        @param request: UpdateInstanceLabelsRequest
+        @return: UpdateInstanceLabelsResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_instance_labels_with_options_async(instance_id, request, headers, runtime)
+
+    def update_temp_file_with_options(
+        self,
+        temp_file_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.UpdateTempFileResponse:
+        """
+        @summary 更新临时文件
+        
+        @param request: UpdateTempFileRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateTempFileResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.gmt_expired_time):
+            body['GmtExpiredTime'] = request.gmt_expired_time
+        if not UtilClient.is_unset(request.status):
+            body['Status'] = request.status
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles/{OpenApiUtilClient.get_encode_param(temp_file_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.UpdateTempFileResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_temp_file_with_options_async(
+        self,
+        temp_file_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.UpdateTempFileResponse:
+        """
+        @summary 更新临时文件
+        
+        @param request: UpdateTempFileRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateTempFileResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.gmt_expired_time):
+            body['GmtExpiredTime'] = request.gmt_expired_time
+        if not UtilClient.is_unset(request.status):
+            body['Status'] = request.status
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateTempFile',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiles/{OpenApiUtilClient.get_encode_param(temp_file_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.UpdateTempFileResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_temp_file(
+        self,
+        temp_file_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileRequest,
+    ) -> pai_dsw_20220101_models.UpdateTempFileResponse:
+        """
+        @summary 更新临时文件
+        
+        @param request: UpdateTempFileRequest
+        @return: UpdateTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_temp_file_with_options(temp_file_id, request, headers, runtime)
+
+    async def update_temp_file_async(
+        self,
+        temp_file_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileRequest,
+    ) -> pai_dsw_20220101_models.UpdateTempFileResponse:
+        """
+        @summary 更新临时文件
+        
+        @param request: UpdateTempFileRequest
+        @return: UpdateTempFileResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_temp_file_with_options_async(temp_file_id, request, headers, runtime)
+
+    def update_temp_file_task_with_options(
+        self,
+        temp_file_task_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileTaskRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.UpdateTempFileTaskResponse:
+        """
+        @summary 更新临时文件任务
+        
+        @param request: UpdateTempFileTaskRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateTempFileTaskResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.gmt_expired_time):
+            body['GmtExpiredTime'] = request.gmt_expired_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateTempFileTask',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiletasks/{OpenApiUtilClient.get_encode_param(temp_file_task_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.UpdateTempFileTaskResponse(),
+            self.call_api(params, req, runtime)
+        )
+
+    async def update_temp_file_task_with_options_async(
+        self,
+        temp_file_task_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileTaskRequest,
+        headers: Dict[str, str],
+        runtime: util_models.RuntimeOptions,
+    ) -> pai_dsw_20220101_models.UpdateTempFileTaskResponse:
+        """
+        @summary 更新临时文件任务
+        
+        @param request: UpdateTempFileTaskRequest
+        @param headers: map
+        @param runtime: runtime options for this request RuntimeOptions
+        @return: UpdateTempFileTaskResponse
+        """
+        UtilClient.validate_model(request)
+        body = {}
+        if not UtilClient.is_unset(request.gmt_expired_time):
+            body['GmtExpiredTime'] = request.gmt_expired_time
+        req = open_api_models.OpenApiRequest(
+            headers=headers,
+            body=OpenApiUtilClient.parse_to_map(body)
+        )
+        params = open_api_models.Params(
+            action='UpdateTempFileTask',
+            version='2022-01-01',
+            protocol='HTTPS',
+            pathname=f'/api/v2/tempfiletasks/{OpenApiUtilClient.get_encode_param(temp_file_task_id)}',
+            method='PUT',
+            auth_type='AK',
+            style='ROA',
+            req_body_type='json',
+            body_type='json'
+        )
+        return TeaCore.from_map(
+            pai_dsw_20220101_models.UpdateTempFileTaskResponse(),
+            await self.call_api_async(params, req, runtime)
+        )
+
+    def update_temp_file_task(
+        self,
+        temp_file_task_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileTaskRequest,
+    ) -> pai_dsw_20220101_models.UpdateTempFileTaskResponse:
+        """
+        @summary 更新临时文件任务
+        
+        @param request: UpdateTempFileTaskRequest
+        @return: UpdateTempFileTaskResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return self.update_temp_file_task_with_options(temp_file_task_id, request, headers, runtime)
+
+    async def update_temp_file_task_async(
+        self,
+        temp_file_task_id: str,
+        request: pai_dsw_20220101_models.UpdateTempFileTaskRequest,
+    ) -> pai_dsw_20220101_models.UpdateTempFileTaskResponse:
+        """
+        @summary 更新临时文件任务
+        
+        @param request: UpdateTempFileTaskRequest
+        @return: UpdateTempFileTaskResponse
+        """
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+        return await self.update_temp_file_task_with_options_async(temp_file_task_id, request, headers, runtime)
