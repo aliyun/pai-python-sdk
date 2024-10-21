@@ -12,7 +12,7 @@ from .libs.alibabacloud_pai_dsw20220101.models import (
     UpdateInstanceRequest,
     UpdateInstanceRequestDatasets,
 )
-from .session import Session, get_default_session
+from .session import get_default_session
 
 logger = get_logger()
 
