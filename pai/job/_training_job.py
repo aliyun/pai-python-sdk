@@ -708,10 +708,7 @@ class _TrainingJobSubmitter(object):
             StoragePathCategory.TrainingJob,
             f"{to_plain_text(job_name)}_{random_str(6)}",
         )
-        base_output_path = (
-            f"oss://{bucket_name}.{session.oss_endpoint}/"
-            f"{storage_path}"
-        )
+        base_output_path = f"oss://{bucket_name}/{storage_path}"
         return base_output_path
 
     def build_outputs(
@@ -918,7 +915,6 @@ class _TrainingJobSubmitter(object):
                 source_path=source_dir,
                 oss_path=code_dest,
                 bucket=self.session.oss_bucket,
-                is_tar=True,
             )
         oss_uri_obj = OssUriObj(uri=self.session.patch_oss_endpoint(code_uri))
         code_dir = CodeDir(
