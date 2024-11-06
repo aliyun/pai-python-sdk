@@ -1,5 +1,6 @@
 import os
 import posixpath
+import uuid
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -163,6 +164,7 @@ def get_dynamic_mount_config() -> Dict[str, Any]:
         dict: The dynamic mount config of the DSW Instance.
     """
     instance = _default_instance()
+
     return instance.get_dynamic_mount_config()
 
 
@@ -186,6 +188,12 @@ class DswInstance:
         Returns:
             dict: The dynamic mount config of the DSW Instance.
         """
+        if not self._instance_info.dynamic_mount:
+            raise RuntimeError(
+                "Dynamic mount config not found for the DSW instance: {}".format(
+                    self.instance_id
+                )
+            )
         return self._instance_info.dynamic_mount.to_map()
 
     def default_dynamic_mount_path(self) -> Optional[str]:
@@ -194,12 +202,26 @@ class DswInstance:
         Returns:
             str: The default dynamic mount path of the DSW Instance.
         """
-        if (
-            not self._instance_info.dynamic_mount.enable
-            or not self._instance_info.dynamic_mount.mount_points
-        ):
-            return
+        if not self.is_enabled_dynamic_mount():
+            raise RuntimeError(
+                "Dynamic mount is not enabled for the DSW instance: {}".format(
+                    self.instance_id
+                )
+            )
+
+        if not self._instance_info.dynamic_mount.mount_points:
+            raise RuntimeError(
+                "No dynamic mount point found for the DSW instance: {}".format(
+                    self.instance_id
+                )
+            )
         return self._instance_info.dynamic_mount.mount_points[0].root_path
+
+    def is_enabled_dynamic_mount(self):
+        return (
+            self._instance_info.dynamic_mount
+            and self._instance_info.dynamic_mount.enable
+        )
 
     def mount(
         self,
@@ -227,7 +249,7 @@ class DswInstance:
             raise ValueError(
                 "options and option_type cannot be specified at the same time"
             )
-        if not self._instance_info.dynamic_mount.enable:
+        if not self.is_enabled_dynamic_mount():
             raise RuntimeError(
                 "Dynamic mount is not enabled for the DSW instance: {}".format(
                     self.instance_id
@@ -259,12 +281,10 @@ class DswInstance:
             raise ValueError("Source must be oss uri or dataset id")
 
         if not mount_point:
-            if is_oss_uri(source):
-                obj = OssUriObj(source)
-                mount_point = f"{obj.bucket_name}/{obj.object_key}"
-            else:
-                mount_point = source
-        if not posixpath.isabs(mount_point):
+            # currently, only support to mount to subdir of default dynamic mount path
+            dir_name = str(uuid.uuid4())
+            mount_point = posixpath.join(default_root_path, dir_name)
+        elif not posixpath.isabs(mount_point):
             mount_point = posixpath.join(default_root_path, mount_point)
 
         resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(self.instance_id)
@@ -300,6 +320,13 @@ class DswInstance:
         Returns:
             None
         """
+        if not self.is_enabled_dynamic_mount():
+            raise RuntimeError(
+                "Dynamic mount is not enabled for the DSW instance: {}".format(
+                    self.instance_id
+                )
+            )
+
         sess = get_default_session()
 
         resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(self.instance_id)

@@ -273,6 +273,8 @@ class UserProfile(object):
             region_id=self.region_id,
             network=self.network,
         )
+        if not bucket_name:
+            return None, None
         return "oss://{}/".format(bucket_name), endpoint
 
     def set_default_oss_storage(
