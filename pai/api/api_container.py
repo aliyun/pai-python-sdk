@@ -27,6 +27,7 @@ from .dataset import DatasetAPI
 from .experiment import ExperimentAPI
 from .image import ImageAPI
 from .job import JobAPI
+from .lineage import LineageAPI
 from .model import ModelAPI
 from .pipeline import PipelineAPI
 from .pipeline_run import PipelineRunAPI
@@ -49,6 +50,7 @@ _RESOURCE_API_MAPPING = {
     PAIRestResourceTypes.PipelineRun: PipelineRunAPI,
     PAIRestResourceTypes.TensorBoard: TensorBoardAPI,
     PAIRestResourceTypes.Experiment: ExperimentAPI,
+    PAIRestResourceTypes.Lineage: LineageAPI,
 }
 
 
@@ -217,3 +219,7 @@ class ResourceAPIsContainerMixin(object):
     @property
     def experiment_api(self) -> ExperimentAPI:
         return self.get_api_by_resource(PAIRestResourceTypes.Experiment)
+
+    @property
+    def lineage_api(self) -> LineageAPI:
+        return self.get_api_by_resource(PAIRestResourceTypes.Lineage)

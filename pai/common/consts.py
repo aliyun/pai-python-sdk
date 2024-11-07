@@ -25,6 +25,44 @@ DEFAULT_NETWORK_TYPE = os.environ.get("PAI_NETWORK_TYPE", None)
 # PAI VPC endpoint
 PAI_VPC_ENDPOINT = "pai-vpc.{}.aliyuncs.com"
 
+# All region list, https://help.aliyun.com/document_detail/40654.html
+ALIYUN_ALL_REGION_ID_LIST = [
+    "cn-qingdao",
+    "cn-beijing",
+    "cn-zhangjiakou",
+    "cn-huhehaote",
+    "cn-wulanchabu",
+    "cn-hangzhou",
+    "cn-shanghai",
+    "cn-nanjing",
+    "cn-fuzhou",
+    "cn-wuhan-lr",
+    "cn-shenzhen",
+    "cn-heyuan",
+    "cn-guangzhou",
+    "cn-chengdu",
+    "cn-hongkong",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-southeast-3",
+    "ap-southeast-5",
+    "ap-southeast-6",
+    "ap-southeast-7",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "eu-west-1",
+    "us-east-1",
+    "eu-central-1",
+    "eu-west-1",
+    "me-east-1",
+    "me-central-1",
+    "cn-hangzhou-finance",
+    "cn-shanghai-finance-1",
+    "cn-shenzhen-finance-1",
+    "cn-beijing-finance-1",
+    "cn-north-2-gov-1",
+]
+
 
 class Network(enum.Enum):
     VPC = "VPC"
