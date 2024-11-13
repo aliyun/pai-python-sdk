@@ -19,7 +19,9 @@ from __future__ import absolute_import, print_function
 import os
 
 from pai.common.oss_utils import is_oss_uri
-from pai.common.utils import generate_repr, is_filesystem_uri, is_odps_table_uri
+from pai.common.utils import generate_repr, is_filesystem_uri, is_odps_table_uri, parse_region_id_from_endpoint, \
+    parse_oss_uri, parse_nas_uri, parse_cpfs_uri, parse_local_file_uri, parse_pai_dataset_uri, parse_odps_uri, \
+    parse_bmcpfs_uri
 from tests.test_data import SCRIPT_DIR_PATH
 from tests.unit import BaseUnitTestCase
 from tests.unit.utils import extract_odps_table_info, file_checksum
@@ -197,3 +199,113 @@ class TestUtils(BaseUnitTestCase):
             with self.subTest(tc=tc):
                 result = is_filesystem_uri(tc["arguments"]["uri"])
                 self.assertEqual(result, tc["expected"])
+
+    def test_parse_region_id_from_valid_endpoint(self):
+        self.assertEqual(parse_region_id_from_endpoint("cn-shanghai"), 'cn-shanghai')
+        self.assertEqual(parse_region_id_from_endpoint("cn-shanghai-internal"), 'cn-shanghai')
+        self.assertEqual(parse_region_id_from_endpoint("cn-shanghai-internal.aliyuncs.com"), 'cn-shanghai')
+
+    def test_parse_region_id_from_invalid_endpoint(self):
+        self.assertIsNone(parse_region_id_from_endpoint("http://someotherendpoint.com"))
+        self.assertIsNone(parse_region_id_from_endpoint(""))
+        self.assertIsNone(parse_region_id_from_endpoint(None))
+
+    def test_parse_valid_oss_uri(self):
+        self.assertEqual(parse_oss_uri('oss://test-bucket.oss-cn-hangzhou.aliyuncs.com/models/ALBERTv2-Chinese'
+                                       '-NewsBase.pth'),
+                         ('test-bucket', 'cn-hangzhou', 'models/ALBERTv2-Chinese-NewsBase.pth'))
+        self.assertEqual(
+            parse_oss_uri(
+                'oss://test-bucket.oss-cn-hangzhou-internal.aliyuncs.com/models/ALBERTv2-Chinese-NewsBase.pth'),
+            ('test-bucket', 'cn-hangzhou', 'models/ALBERTv2-Chinese-NewsBase.pth'))
+        self.assertEqual(parse_oss_uri('oss://test-bucket.oss-cn-hangzhou.aliyuncs.com/'),
+                         ('test-bucket', 'cn-hangzhou', '/'))
+        self.assertEqual(parse_oss_uri('oss://test-bucket.oss-cn-hangzhou.aliyuncs.com'),
+                         ('test-bucket', 'cn-hangzhou', '/'))
+
+    def test_parse_invalid_oss_uri(self):
+        self.assertIsNone(parse_oss_uri('oss://test-bucket/models/ALBERTv2-Chinese'
+                                        '-NewsBase.pth'))
+        self.assertIsNone(parse_oss_uri('oss://'))
+        self.assertIsNone(parse_oss_uri(''))
+
+    def test_parse_valid_nas_uri(self):
+        self.assertEqual(parse_nas_uri('nas://007636fd-gfyy.cn-hangzhou.extreme.nas.aliyuncs.com/mnt/foo/'),
+                         ('nas://007636fd-gfyy.cn-hangzhou.extreme.nas.aliyuncs.com/mnt/foo/', 'cn-hangzhou'))
+        self.assertEqual(parse_nas_uri('nas://007636fd-gfyy.cn-hangzhou.extreme.nas.aliyuncs.com/'),
+                         ('nas://007636fd-gfyy.cn-hangzhou.extreme.nas.aliyuncs.com/', 'cn-hangzhou'))
+        self.assertEqual(parse_nas_uri('nas://007636fd-gfyy.cn-hangzhou.extreme.nas.aliyuncs.com'),
+                         ('nas://007636fd-gfyy.cn-hangzhou.extreme.nas.aliyuncs.com', 'cn-hangzhou'))
+        self.assertEqual(parse_nas_uri('nas://066e54a580.cn-hangzhou/'),
+                         ('nas://066e54a580.cn-hangzhou/', 'cn-hangzhou'))
+
+    def test_parse_invalid_nas_uri(self):
+        self.assertIsNone(parse_nas_uri('nas://007636fd-gfyy.extreme.nas.aliyuncs.com/mnt/foo/'))
+        self.assertIsNone(parse_nas_uri('nas://'))
+        self.assertIsNone(parse_nas_uri(''))
+
+    def test_parse_valid_cpfs_uri(self):
+        self.assertEqual(
+            parse_cpfs_uri('cpfs://cpfs-00f4b992044a71be.cn-hangzhou/ptc-008727a69e07d3cf/exp-00d695a1b9f6c926/'),
+            ('cpfs://cpfs-00f4b992044a71be.cn-hangzhou/ptc-008727a69e07d3cf/exp-00d695a1b9f6c926/', 'cn-hangzhou'))
+        self.assertEqual(parse_cpfs_uri('cpfs://cpfs-00f4b992044a71be.cn-hangzhou/'),
+                         ('cpfs://cpfs-00f4b992044a71be.cn-hangzhou/', 'cn-hangzhou'))
+        self.assertEqual(parse_cpfs_uri('cpfs://cpfs-00f4b992044a71be.cn-hangzhou'),
+                         ('cpfs://cpfs-00f4b992044a71be.cn-hangzhou', 'cn-hangzhou'))
+
+    def test_parse_invalid_cpfs_uri(self):
+        self.assertIsNone(parse_cpfs_uri('cpfs://cpfs-00f4b992044a71be/mnt/foo/'))
+        self.assertIsNone(parse_cpfs_uri('cpfs://'))
+        self.assertIsNone(parse_cpfs_uri(''))
+
+    def test_parse_valid_bmcpfs_uri(self):
+        self.assertEqual(
+            parse_bmcpfs_uri('bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com/sub/dir'),
+            ('bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com/sub/dir', 'cn-wulanchabu'))
+        self.assertEqual(parse_bmcpfs_uri('bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com/'),
+                         ('bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com/', 'cn-wulanchabu'))
+        self.assertEqual(parse_bmcpfs_uri('bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com'),
+                         ('bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com', 'cn-wulanchabu'))
+
+    def test_parse_invalid_bmcpfs_uri(self):
+        self.assertIsNone(parse_bmcpfs_uri('bmcpfs://cpfs-291070fd9529c747-000001.cpfs.aliyuncs.com/'))
+        self.assertIsNone(parse_bmcpfs_uri('bmcpfs://'))
+        self.assertIsNone(parse_bmcpfs_uri(''))
+
+    def test_parse_valid_local_file_uri(self):
+        self.assertEqual(parse_local_file_uri('file:///mnt/dataset_123-456+789'),
+                         '/mnt/dataset_123-456+789')
+        self.assertEqual(parse_local_file_uri('file:///mnt/dataset 123'),
+                         '/mnt/dataset 123')
+        self.assertEqual(parse_local_file_uri('file:///'),
+                         '/')
+
+    def test_parse_invalid_local_file_uri(self):
+        self.assertIsNone(parse_local_file_uri('file://mnt/dataset'))
+        self.assertIsNone(parse_local_file_uri('file://'))
+        self.assertIsNone(parse_local_file_uri(''))
+
+    def test_parse_valid_pai_dataset_uri(self):
+        self.assertEqual(parse_pai_dataset_uri('pai://datasets/d-123456'),
+                         ('d-123456', '1'))
+        self.assertEqual(parse_pai_dataset_uri('pai://datasets/d-123456/2'),
+                         ('d-123456', '2'))
+        self.assertEqual(parse_pai_dataset_uri('pai://datasets/d-123456/2/3'),
+                         ('d-123456', '2'))
+
+    def test_parse_invalid_pai_dataset_uri(self):
+        self.assertIsNone(parse_pai_dataset_uri('pai://datasets/'))
+        self.assertIsNone(parse_pai_dataset_uri('pai://'))
+        self.assertIsNone(parse_pai_dataset_uri(''))
+
+    def test_parse_valid_odps_uri(self):
+        self.assertEqual(parse_odps_uri('odps://project_mc/schema1/tables/flow_model_label_table_v1'),
+                         ('project_mc', 'schema1', 'flow_model_label_table_v1'))
+        self.assertEqual(parse_odps_uri('odps://project_mc/tables/flow_model_label_table_v1'),
+                         ('project_mc', None, 'flow_model_label_table_v1'))
+
+    def test_parse_invalid_odps_uri(self):
+        self.assertIsNone(parse_odps_uri('odps://project_mc/tables/'))
+        self.assertIsNone(parse_odps_uri('odps://project_mc/'))
+        self.assertIsNone(parse_odps_uri('odps://'))
+        self.assertIsNone(parse_odps_uri(''))
