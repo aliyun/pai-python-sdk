@@ -230,7 +230,9 @@ def _init_default_session_from_env() -> Optional["Session"]:
     return sess
 
 
-def load_default_config_file(config_path: Optional[str] = DEFAULT_CONFIG_PATH) -> Optional[Dict[str, Any]]:
+def load_default_config_file(
+    config_path: Optional[str] = DEFAULT_CONFIG_PATH,
+) -> Optional[Dict[str, Any]]:
     """Read config file"""
     if not os.path.exists(config_path):
         return
