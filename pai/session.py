@@ -44,7 +44,6 @@ ENV_PAI_CONFIG_PATH = "PAI_CONFIG_PATH"
 
 INNER_REGION_IDS = ["center"]
 
-
 # Global default session used by the program.
 _default_session = None
 
@@ -169,24 +168,12 @@ def _init_default_session_from_env() -> Optional["Session"]:
         logger.debug("Not found credential from default credential provider chain.")
         return
 
-    # legacy region id env var in DSW
-    region_id = os.getenv("dsw_region")
-    region_id = os.getenv("REGION", region_id)
+    region_id = _get_current_region_id()
     if not region_id:
         logger.debug(
             "No region id found(env var: REGION or dsw_region), skip init default session"
         )
         return
-
-    dsw_instance_id = os.getenv("DSW_INSTANCE_ID")
-    if not dsw_instance_id:
-        logger.debug(
-            "No dsw instance id (env var: DSW_INSTANCE_ID) found, skip init default session"
-        )
-        return
-
-    workspace_id = os.getenv("PAI_AI_WORKSPACE_ID")
-    workspace_id = os.getenv("PAI_WORKSPACE_ID", workspace_id)
 
     network = (
         Network.VPC
@@ -197,19 +184,31 @@ def _init_default_session_from_env() -> Optional["Session"]:
         else Network.PUBLIC
     )
 
-    if dsw_instance_id and not workspace_id:
-        logger.debug("Getting workspace id by dsw instance id: %s", dsw_instance_id)
-        workspace_id = Session._get_workspace_id_by_dsw_instance_id(
-            dsw_instance_id=dsw_instance_id,
-            cred=credential_client,
-            region_id=region_id,
-            network=network,
-        )
-        if not workspace_id:
-            logger.warning(
-                "Failed to get workspace id by dsw instance id: %s", dsw_instance_id
+    workspace_id = _get_current_workspace_id()
+
+    dsw_instance_id = _get_dsw_instance_id()
+    if _is_running_in_dsw():
+        if dsw_instance_id and not workspace_id:
+            logger.debug("Getting workspace id by dsw instance id: %s", dsw_instance_id)
+            workspace_id = Session._get_workspace_id_by_dsw_instance_id(
+                dsw_instance_id=dsw_instance_id,
+                cred=credential_client,
+                region_id=region_id,
+                network=network,
             )
-            return
+            if not workspace_id:
+                logger.warning(
+                    "Failed to get workspace id by dsw instance id: %s", dsw_instance_id
+                )
+                return
+    elif _is_running_in_dlc():
+        pass
+    else:
+        logger.debug(
+            "No dsw instance id (env var: DSW_INSTANCE_ID) found, skip init default session"
+        )
+        return
+
     bucket_name, oss_endpoint = Session.get_default_oss_storage(
         workspace_id, credential_client, region_id, network
     )
@@ -231,10 +230,8 @@ def _init_default_session_from_env() -> Optional["Session"]:
     return sess
 
 
-def load_default_config_file() -> Optional[Dict[str, Any]]:
+def load_default_config_file(config_path: Optional[str] = DEFAULT_CONFIG_PATH) -> Optional[Dict[str, Any]]:
     """Read config file"""
-
-    config_path = DEFAULT_CONFIG_PATH
     if not os.path.exists(config_path):
         return
 
@@ -253,6 +250,36 @@ def load_default_config_file() -> Optional[Dict[str, Any]]:
         )
 
     return config
+
+
+def _is_running_in_dlc() -> bool:
+    return os.environ.get("DLC_JOB_ID") is not None
+
+
+def _is_running_in_dsw() -> bool:
+    return os.environ.get("DSW_INSTANCE_ID") is not None
+
+
+def _get_current_region_id() -> str:
+    # legacy region id env var in DSW
+    region_id = os.getenv("dsw_region")
+    region_id = os.getenv("REGION", region_id)
+    return region_id
+
+
+def _get_current_workspace_id() -> str:
+    # legacy workspace id
+    workspace_id = os.getenv("PAI_AI_WORKSPACE_ID")
+    workspace_id = os.getenv("PAI_WORKSPACE_ID", workspace_id)
+    return workspace_id
+
+
+def _get_dlc_job_id() -> str:
+    return os.environ.get("DLC_JOB_ID")
+
+
+def _get_dsw_instance_id() -> str:
+    return os.environ.get("DSW_INSTANCE_ID")
 
 
 class Session(ResourceAPIsContainerMixin):

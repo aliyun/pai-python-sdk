@@ -267,12 +267,13 @@ class UserProfile(object):
     def get_default_oss_storage_uri(
         self, workspace_id: str
     ) -> Tuple[Optional[str], Optional[str]]:
-        return Session._get_default_oss_storage(
+        bucket_name, endpoint = Session.get_default_oss_storage(
             workspace_id=workspace_id,
             cred=self._get_credential_client(),
             region_id=self.region_id,
             network=self.network,
         )
+        return "oss://{}/".format(bucket_name), endpoint
 
     def set_default_oss_storage(
         self, workspace_id, bucket_name: str, intranet_endpoint: str
