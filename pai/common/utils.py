@@ -30,10 +30,10 @@ from typing import Callable, Dict, List, Optional, Union
 from semantic_version import Version
 
 from pai.common.consts import (
+    ALIYUN_ALL_REGION_ID_LIST,
     INSTANCE_TYPE_LOCAL,
     INSTANCE_TYPE_LOCAL_GPU,
     FileSystemInputScheme,
-    ALIYUN_ALL_REGION_ID_LIST,
 )
 from pai.version import VERSION
 
@@ -110,7 +110,7 @@ def make_list_resource_iterator(method: Callable, **kwargs):
 
 
 def to_plain_text(
-        input_str: str, allowed_characters=DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS, repl_ch="_"
+    input_str: str, allowed_characters=DEFAULT_PLAIN_TEXT_ALLOW_CHARACTERS, repl_ch="_"
 ):
     """Replace characters in input_str if it is not in allowed_characters."""
     return "".join([c if c in allowed_characters else repl_ch for c in input_str])
@@ -373,8 +373,8 @@ def parse_region_id_from_endpoint(endpoint) -> str:
 
 
 def parse_oss_uri(uri):
-    if uri.startswith('oss://'):
-        match = re.match(r'^oss://([^./]+)\.([^./]+)\.aliyuncs\.com(?:/(.+))?', uri)
+    if uri.startswith("oss://"):
+        match = re.match(r"^oss://([^./]+)\.([^./]+)\.aliyuncs\.com(?:/(.+))?", uri)
         if not match:
             warnings.warn("Invalid OSS URI format.")
             return None
@@ -383,13 +383,13 @@ def parse_oss_uri(uri):
         if not region_id:
             warnings.warn("Invalid OSS URI format.")
             return None
-        return bucket_name, region_id, '/' if path is None else path
+        return bucket_name, region_id, "/" if path is None else path
     return None
 
 
 def parse_nas_uri(uri):
-    if uri.startswith('nas://'):
-        match = re.match(r'^nas://([^./]+)\.([^/]+)(?:/(.+))?', uri)
+    if uri.startswith("nas://"):
+        match = re.match(r"^nas://([^./]+)\.([^/]+)(?:/(.+))?", uri)
         if not match:
             warnings.warn("Invalid NAS URI format.")
             return None
@@ -403,8 +403,8 @@ def parse_nas_uri(uri):
 
 
 def parse_cpfs_uri(uri):
-    if uri.startswith('cpfs://'):
-        match = re.match(r'^cpfs://([^./]+)\.([^/]+)(?:/(.+))?', uri)
+    if uri.startswith("cpfs://"):
+        match = re.match(r"^cpfs://([^./]+)\.([^/]+)(?:/(.+))?", uri)
         if not match:
             warnings.warn("Invalid CPFS URI format.")
             return None
@@ -418,8 +418,8 @@ def parse_cpfs_uri(uri):
 
 
 def parse_bmcpfs_uri(uri):
-    if uri.startswith('bmcpfs://'):
-        match = re.match(r'^bmcpfs://([^./]+)\.([^/]+)(?:/(.+))?', uri)
+    if uri.startswith("bmcpfs://"):
+        match = re.match(r"^bmcpfs://([^./]+)\.([^/]+)(?:/(.+))?", uri)
         if not match:
             warnings.warn("Invalid BMCPFS URI format.")
             return None
@@ -433,8 +433,8 @@ def parse_bmcpfs_uri(uri):
 
 
 def parse_local_file_uri(uri):
-    if uri.startswith('file:///'):
-        match = re.match(r'^file://(.+)', uri)
+    if uri.startswith("file:///"):
+        match = re.match(r"^file://(.+)", uri)
         if not match:
             warnings.warn("Invalid local file URI format.")
             return None
@@ -443,26 +443,31 @@ def parse_local_file_uri(uri):
 
 
 def parse_pai_dataset_uri(uri):
-    if uri.startswith('pai://datasets'):
-        match = re.match(r'^pai://datasets/([^/]+)(?:/(.+))?', uri)
+    if uri.startswith("pai://datasets"):
+        match = re.match(r"^pai://datasets/([^/]+)(?:/(.+))?", uri)
         if not match:
-            warnings.warn('Invalid PAI dataset URI format.')
+            warnings.warn("Invalid PAI dataset URI format.")
             return None
         dataset_id, dataset_version = match.groups()
-        dataset_version = dataset_version if dataset_version else '1'
-        dataset_version = dataset_version.split('/')[0] if '/' in dataset_version else dataset_version
+        dataset_version = dataset_version if dataset_version else "1"
+        dataset_version = (
+            dataset_version.split("/")[0] if "/" in dataset_version else dataset_version
+        )
         return dataset_id, dataset_version
     return None
 
 
 def parse_odps_uri(uri):
-    if uri.startswith('odps://'):
-        match = re.match(r'^odps://(.+)/tables/(.+)', uri)
+    if uri.startswith("odps://"):
+        match = re.match(r"^odps://(.+)/tables/(.+)", uri)
         if not match:
             warnings.warn("Invalid MaxCompute URI format.")
             return None
         project_and_schema, table_name = match.groups()
-        project_name, schema = project_and_schema.split('/') if '/' in project_and_schema else (
-            project_and_schema, None)
+        project_name, schema = (
+            project_and_schema.split("/")
+            if "/" in project_and_schema
+            else (project_and_schema, None)
+        )
         return project_name, schema, table_name
     return None

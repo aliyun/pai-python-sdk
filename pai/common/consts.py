@@ -60,8 +60,8 @@ ALIYUN_ALL_REGION_ID_LIST = [
     "cn-shanghai-finance-1",
     "cn-shenzhen-finance-1",
     "cn-beijing-finance-1",
-    "cn-north-2-gov-1"
- ]
+    "cn-north-2-gov-1",
+]
 
 
 class Network(enum.Enum):

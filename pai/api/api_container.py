@@ -24,9 +24,9 @@ from .client_factory import ClientFactory
 from .code_source import CodeSourceAPI
 from .dataset import DatasetAPI
 from .experiment import ExperimentAPI
-from .lineage import LineageAPI
 from .image import ImageAPI
 from .job import JobAPI
+from .lineage import LineageAPI
 from .model import ModelAPI
 from .pipeline import PipelineAPI
 from .pipeline_run import PipelineRunAPI

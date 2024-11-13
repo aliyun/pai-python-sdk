@@ -1,4 +1,1 @@
-from .lineage import (
-    log_lineage,
-    LineageEntity
-)
+from .lineage import LineageEntity, log_lineage
