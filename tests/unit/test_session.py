@@ -45,8 +45,13 @@ class TestSession(BaseUnitTestCase):
     @mock_env(REGION="cn-hangzhou")
     def test_init_default_session_from_env_in_dsw(self):
         mock_cred = Credential()
-        with patch('pai.session.Session._get_default_credential_client', return_value=mock_cred):
-            with patch('pai.session.Session.get_default_oss_storage', return_value=("bucket", "endpoint")):
+        with patch(
+            "pai.session.Session._get_default_credential_client", return_value=mock_cred
+        ):
+            with patch(
+                "pai.session.Session.get_default_oss_storage",
+                return_value=("bucket", "endpoint"),
+            ):
                 s = _init_default_session_from_env()
                 self.assertEqual(s.workspace_id, "1234567")
                 self.assertEqual(s.region_id, "cn-hangzhou")
@@ -56,8 +61,13 @@ class TestSession(BaseUnitTestCase):
     @mock_env(REGION="cn-shanghai")
     def test_init_default_session_from_env_in_dlc(self):
         mock_cred = Credential()
-        with patch('pai.session.Session._get_default_credential_client', return_value=mock_cred):
-            with patch('pai.session.Session.get_default_oss_storage', return_value=("bucket", "endpoint")):
+        with patch(
+            "pai.session.Session._get_default_credential_client", return_value=mock_cred
+        ):
+            with patch(
+                "pai.session.Session.get_default_oss_storage",
+                return_value=("bucket", "endpoint"),
+            ):
                 s = _init_default_session_from_env()
                 self.assertEqual(s.workspace_id, "1234567")
                 self.assertEqual(s.region_id, "cn-shanghai")
