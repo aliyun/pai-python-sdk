@@ -87,13 +87,13 @@ class LineageEntity:
 
 def _find_datasource_uri_by_mount_path(mount_path: str):
     try:
-        with open("/var/DATA_SOURCES", "r") as file:
-            data_sources = json.load(file)
+        with open("/var/metadata/config.json", "r") as file:
+            config = json.load(file)
     except (json.JSONDecodeError, FileNotFoundError) as e:
         logger.warning("Error parsing data source JSON or file not found: %s", e)
         return None
 
-    for source in data_sources:
+    for source in config["DATA_SOURCES"]:
         mount_path_in_source = source.get("MountPath", "")
         uri_in_source = source.get("Uri")
 
