@@ -47,7 +47,7 @@ class TestLineage(BaseIntegTestCase):
 
     @mock_env(DLC_JOB_ID="d123456")
     @mock_env(REGION="cn-hangzhou")
-    def test_log_lineage_with_no_var_datasources_file_in_dlc(self):
+    def test_log_lineage_with_no_datasources_config_file_in_dlc(self):
         with self.assertLogs(
             logger=get_logger("pai.tracking.lineage"), level=logging.WARNING
         ) as captured:
@@ -68,7 +68,7 @@ class TestLineage(BaseIntegTestCase):
                 ],
             )
             self.assertIn(
-                "WARNING:pai.tracking.lineage:Error parsing data source JSON or file not found: [Errno 2] No such file or directory: '/var/DATA_SOURCES'",
+                "WARNING:pai.tracking.lineage:Error parsing data source JSON or file not found: [Errno 2] No such file or directory: '/var/metadata/config.json'",
                 captured.output[0],
             )
 
