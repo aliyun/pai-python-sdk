@@ -54,14 +54,14 @@ class TestLineage(BaseIntegTestCase):
             log_lineage(
                 input_entities=[
                     LineageEntity(
-                        uri="file:///mnt/models/model.pth",
+                        uri="file:///mnt/input/dataset",
                         resource_type="model",
                         resource_use="extension",
                     )
                 ],
                 output_entities=[
                     LineageEntity(
-                        uri="oss://test-bucket.oss-cn-shanghai.aliyuncs.com/model/model.pth",
+                        uri="file:///mnt/output/model/model.pth",
                         resource_type="model",
                         resource_use="extension",
                     )
