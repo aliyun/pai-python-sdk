@@ -93,14 +93,28 @@ def _find_datasource_uri_by_mount_path(mount_path: str):
         logger.warning("Error parsing data source JSON or file not found: %s", e)
         return None
 
-    for source in config["DATA_SOURCES"]:
+    best_match = ""
+    best_uri = None
+
+    for source in config.get("DATA_SOURCES", []):
         mount_path_in_source = source.get("MountPath", "")
+        if mount_path_in_source.endswith("/") and mount_path_in_source != "/":
+            mount_path_in_source = mount_path_in_source[:-1]
         uri_in_source = source.get("Uri")
+        if not uri_in_source.endswith("/"):
+            uri_in_source += "/"
 
         if mount_path.startswith(mount_path_in_source):
-            remaining_path = mount_path[len(mount_path_in_source) :]
-            return uri_in_source + remaining_path
+            # Check if this is the longest match so far
+            if len(mount_path_in_source) > len(best_match):
+                best_match = mount_path_in_source
+                best_uri = uri_in_source
 
+    if best_uri is not None:
+        remaining_path = mount_path[len(best_match) :]
+        if remaining_path.startswith("/"):
+            remaining_path = remaining_path[1:]
+        return best_uri + remaining_path
     return None
 
 
