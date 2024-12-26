@@ -85,48 +85,136 @@ class LineageEntity:
     resource_use: Optional[str] = "train"
 
 
-def _find_datasource_uri_by_mount_path(mount_path: str):
+@dataclass
+class _NasEntityAttributes:
+    file_system_id: str
+    path: str
+
+
+@dataclass
+class _PvcEntityAttributes:
+    cluster_id: str
+    name_space: str
+    pvc_name: str
+    path: str
+    pvc_type: str
+
+
+def _read_metadata_config_in_dlc():
     try:
         with open("/var/metadata/config.json", "r") as file:
-            config = json.load(file)
+            return json.load(file)
     except (json.JSONDecodeError, FileNotFoundError) as e:
         logger.warning("Error parsing data source JSON or file not found: %s", e)
         return None
 
+
+def _get_entity_attributes(source, entity_type):
+    attributes = source.get("Attributes", {})
+    if entity_type == "nas":
+        return _NasEntityAttributes(
+            file_system_id=attributes.get("FileSystemId"), path=attributes.get("Path")
+        )
+    if entity_type == "pvc":
+        return _PvcEntityAttributes(
+            pvc_type=attributes.get("PvcType"),
+            pvc_name=attributes.get("PvcName"),
+            path=attributes.get("Path"),
+            cluster_id=attributes.get("ClusterId"),
+            name_space=attributes.get("NameSpace"),
+        )
+    return None
+
+
+def _find_best_match_source(config, mount_path):
     best_match = ""
-    best_uri = None
+    best_details = {}
 
     for source in config.get("DATA_SOURCES", []):
-        mount_path_in_source = source.get("MountPath", "")
-        if mount_path_in_source.endswith("/") and mount_path_in_source != "/":
-            mount_path_in_source = mount_path_in_source[:-1]
-        uri_in_source = source.get("Uri")
-        if not uri_in_source.endswith("/"):
-            uri_in_source += "/"
+        entity_type = source.get("EntityType")
+        attributes = source.get("Attributes", {})
+        mount_path_in_source = attributes.get("MountPath", "").rstrip("/")
+        uri_in_source = source.get("Uri", "").rstrip("/") + "/"
 
-        if mount_path.startswith(mount_path_in_source):
-            # Check if this is the longest match so far
-            if len(mount_path_in_source) > len(best_match):
-                best_match = mount_path_in_source
-                best_uri = uri_in_source
+        if mount_path.startswith(mount_path_in_source) and len(
+            mount_path_in_source
+        ) > len(best_match):
+            best_match = mount_path_in_source
+            best_details = {
+                "uri_in_source": uri_in_source,
+                "entity_type": entity_type,
+                "entity_attributes": _get_entity_attributes(source, entity_type),
+            }
 
-    if best_uri is not None:
-        remaining_path = mount_path[len(best_match) :]
-        if remaining_path.startswith("/"):
-            remaining_path = remaining_path[1:]
-        return best_uri + remaining_path
-    return None
+    return best_match, best_details
+
+
+def _find_datasource_by_mount_path(mount_path: str):
+    config = _read_metadata_config_in_dlc()
+    if config is None:
+        return None, None, None, None
+
+    best_match, best_details = _find_best_match_source(config, mount_path)
+    if best_match:
+        region_id = config.get("DLC_REGION_ID")
+        remaining_path = mount_path[len(best_match) :].lstrip("/")
+        return (
+            f"{best_details['uri_in_source']}{remaining_path}",
+            region_id,
+            (
+                best_details["entity_attributes"]
+                if best_details["entity_type"] == "nas"
+                else None
+            ),
+            (
+                best_details["entity_attributes"]
+                if best_details["entity_type"] == "pvc"
+                else None
+            ),
+        )
+    return None, None, None, None
 
 
 def _fill_lineage_entity(entity: LineageEntity) -> _LineageEntity:
     input_uri = entity.uri
-    path = parse_local_file_uri(input_uri)
-    if path:
-        uri = _find_datasource_uri_by_mount_path(path)
+    local_file_path = parse_local_file_uri(input_uri)
+    if local_file_path:
+        (
+            uri,
+            region_id,
+            nas_entity_attributes,
+            pvc_entity_attributes,
+        ) = _find_datasource_by_mount_path(local_file_path)
+        if nas_entity_attributes:
+            _entity = _LineageEntity()
+            _entity.EntityType = "nas-file"
+            _entity.Attributes = {
+                "Uri": uri,
+                "ResourceType": entity.resource_type,
+                "ResourceUse": entity.resource_use,
+                "RegionId": region_id,
+                "FileSystemId": nas_entity_attributes.file_system_id,
+                "Path": nas_entity_attributes.path,
+            }
+            return _entity
+        if pvc_entity_attributes:
+            _entity = _LineageEntity()
+            _entity.EntityType = "pvc-file"
+            _entity.Attributes = {
+                "ResourceType": entity.resource_type,
+                "ResourceUse": entity.resource_use,
+                "RegionId": region_id,
+                "ClusterId": pvc_entity_attributes.cluster_id,
+                "NameSpace": pvc_entity_attributes.name_space,
+                "PvcName": pvc_entity_attributes.pvc_name,
+                "Path": pvc_entity_attributes.path,
+                "PvcType": pvc_entity_attributes.pvc_type,
+            }
+            return _entity
         if uri:
             input_uri = uri
         else:
-            logger.warning(f"can not find uri by mount path: {path}")
+            logger.warning(f"can not find uri by mount path: {local_file_path}")
     parsed_result = parse_oss_uri(input_uri)
     if parsed_result:
         bucket_name, region_id, path = parsed_result
@@ -140,23 +228,6 @@ def _fill_lineage_entity(entity: LineageEntity) -> _LineageEntity:
             "RegionId": region_id,
         }
         return _entity
-    parsed_result = parse_nas_uri(input_uri)
-    if not parsed_result:
-        parsed_result = parse_cpfs_uri(input_uri)
-    if not parsed_result:
-        parsed_result = parse_bmcpfs_uri(input_uri)
-    if parsed_result:
-        uri, region_id = parsed_result
-        _entity = _LineageEntity()
-        _entity.EntityType = "nas-file"
-        _entity.Attributes = {
-            "Uri": uri,
-            "ResourceType": entity.resource_type,
-            "ResourceUse": entity.resource_use,
-            "RegionId": region_id,
-        }
-        return _entity
-
     parsed_result = parse_pai_dataset_uri(input_uri)
     if parsed_result:
         dataset_id, dataset_version = parsed_result

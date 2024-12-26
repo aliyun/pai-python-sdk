@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
+from unittest.mock import patch
 
 from pai.common.logging import get_logger
 from pai.tracking import LineageEntity, log_lineage
@@ -20,7 +21,7 @@ from tests.unit.utils import mock_env
 
 
 class TestLineage(BaseIntegTestCase):
-    def test_run_in_non_dlc_env(self):
+    def test_log_lineage_run_in_non_dlc_env(self):
         with self.assertLogs(
             logger=get_logger("pai.tracking.lineage"), level=logging.WARNING
         ) as captured:
@@ -74,7 +75,72 @@ class TestLineage(BaseIntegTestCase):
 
     @mock_env(DLC_JOB_ID="d123456")
     @mock_env(REGION="cn-hangzhou")
-    def test_valid_log_lineage_in_dlc(self):
+    def test_log_lineage_with_valid_mount_path_in_dlc(self):
+        with self.assertLogs(
+            logger=get_logger("pai.tracking.lineage"), level=logging.DEBUG
+        ) as captured:
+            mock_config = {
+                "DATA_SOURCES": [
+                    {
+                        "EntityType": "pvc",
+                        "Attributes": {
+                            "ClusterId": "cbb8f09f999534c5187532a19fe6a3bba",
+                            "MountPath": "/mnt/input",
+                            "NameSpace": "quota2md3bak6ovi",
+                            "Path": "/nas",
+                            "PvcName": "nas-pvc",
+                            "PvcType": "hostPath",
+                        },
+                    },
+                    {
+                        "EntityType": "nas",
+                        "Attributes": {
+                            "DataSourceId": "data16mjfuvf6v3a",
+                            "FileSystemId": "2964e349a2d",
+                            "MountPath": "/mnt/output",
+                            "Path": "/",
+                            "Uri": "",
+                            "Version": "",
+                        },
+                    },
+                ],
+                "DLC_JOB_ID": "dlcrmzton6fvujw5",
+                "DLC_REGION_ID": "eflops",
+                "DLC_USER_ID": "",
+                "WORK_SPACE_ID": "wspdfsp20olq9l9m",
+            }
+            with patch(
+                "pai.tracking.lineage._read_metadata_config_in_dlc",
+                return_value=mock_config,
+            ):
+                log_lineage(
+                    input_entities=[
+                        LineageEntity(
+                            uri="file:///mnt/input/dataset",
+                            resource_type="model",
+                            resource_use="extension",
+                        )
+                    ],
+                    output_entities=[
+                        LineageEntity(
+                            uri="file:///mnt/output/model/model.pth",
+                            resource_type="model",
+                            resource_use="extension",
+                        )
+                    ],
+                )
+                self.assertIn(
+                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'eflops', 'ClusterId': 'cbb8f09f999534c5187532a19fe6a3bba', 'NameSpace': 'quota2md3bak6ovi', 'PvcName': 'nas-pvc', 'Path': '/nas', 'PvcType': 'hostPath'}, EntityType='pvc-file', Name=None, QualifiedName=None)]",
+                    captured.output[0],
+                )
+                self.assertIn(
+                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Uri': '/model/model.pth', 'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'eflops', 'FileSystemId': '2964e349a2d', 'Path': '/'}, EntityType='nas-file', Name=None, QualifiedName=None)]",
+                    captured.output[1],
+                )
+
+    @mock_env(DLC_JOB_ID="d123456")
+    @mock_env(REGION="cn-hangzhou")
+    def test_log_lineage_with_valid_entities_in_dlc(self):
         with self.assertLogs(
             logger=get_logger("pai.tracking.lineage"), level=logging.DEBUG
         ) as captured:
@@ -84,21 +150,6 @@ class TestLineage(BaseIntegTestCase):
                         uri="oss://test-bucket.oss-cn-shanghai.aliyuncs.com/models/ALBERTv2-Chinese-NewsBase.pth",
                         resource_type="model",
                         resource_use="base",
-                    ),
-                    LineageEntity(
-                        uri="nas://fsId-mountTarget.cn-hangzhou.nas.aliyuncs.com/nas/mountTarget/",
-                        resource_type="dataset",
-                        resource_use="train",
-                    ),
-                    LineageEntity(
-                        uri="cpfs://cpfs-0077f18ed141a84e.cn-hangzhou/ptc-00f31da01c2a9c12/exp-005607872325f692/",
-                        resource_type="dataset",
-                        resource_use="train",
-                    ),
-                    LineageEntity(
-                        uri="bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com/",
-                        resource_type="dataset",
-                        resource_use="train",
                     ),
                     LineageEntity(
                         uri="pai://datasets/d-jipftzxinc7nm1z0uh/v1",
@@ -121,7 +172,7 @@ class TestLineage(BaseIntegTestCase):
             )
             self.maxDiff = None
             self.assertEquals(
-                "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'test-bucket', 'Path': 'models/ALBERTv2-Chinese-NewsBase.pth', 'ResourceType': 'model', 'ResourceUse': 'base', 'RegionId': 'cn-shanghai'}, EntityType='oss-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'Uri': 'nas://fsId-mountTarget.cn-hangzhou.nas.aliyuncs.com/nas/mountTarget/', 'ResourceType': 'dataset', 'ResourceUse': 'train', 'RegionId': 'cn-hangzhou'}, EntityType='nas-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'Uri': 'cpfs://cpfs-0077f18ed141a84e.cn-hangzhou/ptc-00f31da01c2a9c12/exp-005607872325f692/', 'ResourceType': 'dataset', 'ResourceUse': 'train', 'RegionId': 'cn-hangzhou'}, EntityType='nas-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'Uri': 'bmcpfs://cpfs-291070fd9529c747-000001.cn-wulanchabu.cpfs.aliyuncs.com/', 'ResourceType': 'dataset', 'ResourceUse': 'train', 'RegionId': 'cn-wulanchabu'}, EntityType='nas-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'ResourceUse': 'train', 'Provider': 'pai'}, EntityType=None, Name='Aishell_1_subset_qwen', QualifiedName='pai-dataset.d-jipftzxinc7nm1z0uh_v1'), _LineageEntity(Attributes={'ResourceType': 'dataset', 'ResourceUse': 'test'}, EntityType=None, Name=None, QualifiedName='maxcompute-table.project_mc.flow_model_label_table_v1')]",
+                "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'test-bucket', 'Path': 'models/ALBERTv2-Chinese-NewsBase.pth', 'ResourceType': 'model', 'ResourceUse': 'base', 'RegionId': 'cn-shanghai'}, EntityType='oss-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'ResourceUse': 'train', 'Provider': 'pai'}, EntityType=None, Name='Aishell_1_subset_qwen', QualifiedName='pai-dataset.d-jipftzxinc7nm1z0uh_v1'), _LineageEntity(Attributes={'ResourceType': 'dataset', 'ResourceUse': 'test'}, EntityType=None, Name=None, QualifiedName='maxcompute-table.project_mc.flow_model_label_table_v1')]",
                 captured.output[0],
             )
             self.assertEquals(
