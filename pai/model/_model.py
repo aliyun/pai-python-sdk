@@ -933,8 +933,32 @@ class ModelBase(object):
             else:
                 yield _get_relative_path(obj_info.key)
 
-    def _get_inference_spec(self):
-        return self.inference_spec
+    def _get_inference_spec(self, method: str) -> InferenceSpec:
+        if type(self)._is_multiple_inference_spec(self.inference_spec):
+            supported_methods = list(self.inference_spec.to_dict().keys())
+            if method and method not in supported_methods:
+                raise ValueError(
+                    "The model does not support the given method:"
+                    f" {method}. Supported methods are: {supported_methods}."
+                )
+            elif method:
+                spec = InferenceSpec(self.inference_spec.to_dict().get(method))
+            else:
+                method = supported_methods[0]
+                logger.warning(
+                    f"Model contains multiple specs and method is not specified. "
+                    f"Default method is used: '{method}'. Supported inference methods are:"
+                    f" {supported_methods}."
+                )
+                spec = InferenceSpec(self.inference_spec.to_dict().get(method))
+        else:
+            if method:
+                raise ValueError(
+                    "The model contains only one inference spec, do not specify the method."
+                )
+            else:
+                spec = self.inference_spec
+        return spec
 
     def deploy(
         self,
@@ -947,6 +971,7 @@ class ModelBase(object):
         service_type: Optional[str] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
+        inference_method: str = None,
         **kwargs,
     ):
         """Deploy a prediction service with the model."""
@@ -967,12 +992,17 @@ class ModelBase(object):
                 options=options,
                 wait=wait,
                 serializer=serializer,
+                inference_method=inference_method,
                 **kwargs,
             )
 
     def _generate_service_name(self):
         s = os.path.basename(self.model_data.rstrip("/")) + random_str(8)
         return to_plain_text(s)
+
+    @classmethod
+    def _is_multiple_inference_spec(cls, spec: Dict[str, Any]) -> bool:
+        return not ("metadata" in spec)
 
     def _deploy(
         self,
@@ -986,6 +1016,7 @@ class ModelBase(object):
         wait: bool = True,
         serializer: "SerializerBase" = None,
         labels: Optional[Dict[str, str]] = None,
+        inference_method: str = None,
         **kwargs,
     ):
         """Create a prediction service."""
@@ -1004,6 +1035,7 @@ class ModelBase(object):
             resource_config=resource_config,
             resource_id=resource_id,
             options=options,
+            inference_method=inference_method,
         )
         service_name = self.session.service_api.create(config=config, labels=labels)
         self._wait_service_visible(service_name)
@@ -1053,6 +1085,7 @@ class ModelBase(object):
         resource_id: str = None,
         service_type: str = None,
         options: Dict[str, Any] = None,
+        inference_method: str = None,
     ) -> Dict[str, Any]:
         """Build a service config dictionary used to create a PAI EAS service."""
         self.model_data = self._upload_model_data()
@@ -1072,7 +1105,9 @@ class ModelBase(object):
             )
 
         inference_spec = InferenceSpec(
-            self._get_inference_spec().to_dict() if self.inference_spec else dict()
+            self._get_inference_spec(method=inference_method).to_dict()
+            if self.inference_spec
+            else dict()
         )
         inference_spec.set_model_data(model_data=self.model_data)
         if service_type:
@@ -1709,10 +1744,6 @@ class RegisteredModel(ModelBase):
         gen_name = f"{base_name}_{random_str(8)}"
         return to_plain_text(gen_name)
 
-    def _get_inference_spec(self) -> InferenceSpec:
-        """Get the inference_spec of the registered model."""
-        return self.inference_spec
-
     def _get_model_version_obj(
         self,
         model_name: str,
@@ -1798,6 +1829,7 @@ class RegisteredModel(ModelBase):
         service_type: Optional[str] = None,
         wait: bool = True,
         serializer: Optional["SerializerBase"] = None,
+        inference_method: str = None,
         **kwargs,
     ):
         """Deploy an online prediction service with the registered model.
@@ -1850,6 +1882,8 @@ class RegisteredModel(ModelBase):
             serializer (:class:`pai.predictor.serializers.BaseSerializer`, optional): A
                 serializer object used to serialize the prediction request and
                 deserialize the prediction response.
+            inference_method (str, optional): The inference method of the service.
+            **kwargs: Additional arguments for the service.
         Returns:
             A ``PredictorBase`` instance used for making prediction to the prediction
             service.
@@ -1892,6 +1926,7 @@ class RegisteredModel(ModelBase):
                 wait=wait,
                 serializer=serializer,
                 labels=labels,
+                inference_method=inference_method,
                 **kwargs,
             )
 
@@ -1904,6 +1939,7 @@ class RegisteredModel(ModelBase):
         resource_id: str = None,
         service_type: str = None,
         options: Dict[str, Any] = None,
+        inference_method: str = None,
     ) -> Dict[str, Any]:
         """Build a service config dictionary with RegisteredModel's inference_spec.
 
@@ -1926,7 +1962,9 @@ class RegisteredModel(ModelBase):
             )
 
         inference_spec = InferenceSpec(
-            self._get_inference_spec().to_dict() if self.inference_spec else dict()
+            self._get_inference_spec(method=inference_method).to_dict()
+            if self.inference_spec
+            else dict()
         )
 
         if service_type:
