@@ -82,10 +82,10 @@ class TestLineage(BaseIntegTestCase):
             mock_config = {
                 "DATA_SOURCES": [
                     {
-                        "EntityType": "pvc",
+                        "EntityType": "pvc-file",
                         "Attributes": {
                             "ClusterId": "cbb8f09f999534c5187532a19fe6a3bba",
-                            "MountPath": "/mnt/input",
+                            "MountPath": "/mnt/input/pvc",
                             "NameSpace": "quota2md3bak6ovi",
                             "Path": "/nas",
                             "PvcName": "nas-pvc",
@@ -93,15 +93,26 @@ class TestLineage(BaseIntegTestCase):
                         },
                     },
                     {
-                        "EntityType": "nas",
+                        "EntityType": "nas-file",
                         "Attributes": {
                             "DataSourceId": "data16mjfuvf6v3a",
                             "FileSystemId": "2964e349a2d",
-                            "MountPath": "/mnt/output",
+                            "MountPath": "/mnt/input/nas",
                             "Path": "/",
                             "Uri": "",
                             "Version": "",
                         },
+                    },
+                    {
+                        "Attributes": {
+                            "DataSourceId": "data824oavjsogd7",
+                            "FileSystemId": "",
+                            "MountPath": "/mnt/output/model",
+                            "Path": "oss://dlc-upload-test/model/",
+                            "Uri": "oss://dlc-upload-test.oss-cn-hangzhou-internal.aliyuncs.com/model/",
+                            "Version": "",
+                        },
+                        "EntityType": "oss-file",
                     },
                 ],
                 "DLC_JOB_ID": "dlcrmzton6fvujw5",
@@ -116,10 +127,15 @@ class TestLineage(BaseIntegTestCase):
                 log_lineage(
                     input_entities=[
                         LineageEntity(
-                            uri="file:///mnt/input/dataset",
+                            uri="file:///mnt/input/pvc/dataset",
                             resource_type="model",
                             resource_use="extension",
-                        )
+                        ),
+                        LineageEntity(
+                            uri="file:///mnt/input/nas/dataset",
+                            resource_type="dataset",
+                            resource_use="train",
+                        ),
                     ],
                     output_entities=[
                         LineageEntity(
@@ -130,11 +146,11 @@ class TestLineage(BaseIntegTestCase):
                     ],
                 )
                 self.assertIn(
-                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'eflops', 'ClusterId': 'cbb8f09f999534c5187532a19fe6a3bba', 'NameSpace': 'quota2md3bak6ovi', 'PvcName': 'nas-pvc', 'Path': '/nas', 'PvcType': 'hostPath'}, EntityType='pvc-file', Name=None, QualifiedName=None)]",
+                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'eflops', 'ClusterId': 'cbb8f09f999534c5187532a19fe6a3bba', 'NameSpace': 'quota2md3bak6ovi', 'PvcName': 'nas-pvc', 'Path': '/nas', 'PvcType': 'hostPath'}, EntityType='pvc-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'Uri': None, 'ResourceType': 'dataset', 'ResourceUse': 'train', 'RegionId': 'eflops', 'FileSystemId': '2964e349a2d', 'Path': '/'}, EntityType='nas-file', Name=None, QualifiedName=None)]",
                     captured.output[0],
                 )
                 self.assertIn(
-                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Uri': '/model/model.pth', 'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'eflops', 'FileSystemId': '2964e349a2d', 'Path': '/'}, EntityType='nas-file', Name=None, QualifiedName=None)]",
+                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'dlc-upload-test', 'Path': 'model/model.pth', 'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'cn-hangzhou'}, EntityType='oss-file', Name=None, QualifiedName=None)]",
                     captured.output[1],
                 )
 
