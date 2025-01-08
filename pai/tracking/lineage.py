@@ -100,6 +100,11 @@ class _PvcEntityAttributes:
     pvc_type: str
 
 
+@dataclass
+class _OssEntityAttributes:
+    uri: str
+
+
 def _read_metadata_config_in_dlc():
     try:
         with open("/var/metadata/config.json", "r") as file:
@@ -111,11 +116,11 @@ def _read_metadata_config_in_dlc():
 
 def _get_entity_attributes(source, entity_type):
     attributes = source.get("Attributes", {})
-    if entity_type == "nas":
+    if entity_type == "nas-file":
         return _NasEntityAttributes(
             file_system_id=attributes.get("FileSystemId"), path=attributes.get("Path")
         )
-    if entity_type == "pvc":
+    if entity_type == "pvc-file":
         return _PvcEntityAttributes(
             pvc_type=attributes.get("PvcType"),
             pvc_name=attributes.get("PvcName"),
@@ -123,6 +128,8 @@ def _get_entity_attributes(source, entity_type):
             cluster_id=attributes.get("ClusterId"),
             name_space=attributes.get("NameSpace"),
         )
+    if entity_type == "oss-file":
+        return _OssEntityAttributes(uri=attributes.get("Uri"))
     return None
 
 
@@ -134,14 +141,12 @@ def _find_best_match_source(config, mount_path):
         entity_type = source.get("EntityType")
         attributes = source.get("Attributes", {})
         mount_path_in_source = attributes.get("MountPath", "").rstrip("/")
-        uri_in_source = source.get("Uri", "").rstrip("/") + "/"
 
         if mount_path.startswith(mount_path_in_source) and len(
             mount_path_in_source
         ) > len(best_match):
             best_match = mount_path_in_source
             best_details = {
-                "uri_in_source": uri_in_source,
                 "entity_type": entity_type,
                 "entity_attributes": _get_entity_attributes(source, entity_type),
             }
@@ -159,16 +164,20 @@ def _find_datasource_by_mount_path(mount_path: str):
         region_id = config.get("DLC_REGION_ID")
         remaining_path = mount_path[len(best_match) :].lstrip("/")
         return (
-            f"{best_details['uri_in_source']}{remaining_path}",
+            (
+                f"{best_details['entity_attributes'].uri.rstrip('/') + '/'}{remaining_path}"
+                if best_details["entity_type"] == "oss-file"
+                else None
+            ),
             region_id,
             (
                 best_details["entity_attributes"]
-                if best_details["entity_type"] == "nas"
+                if best_details["entity_type"] == "nas-file"
                 else None
             ),
             (
                 best_details["entity_attributes"]
-                if best_details["entity_type"] == "pvc"
+                if best_details["entity_type"] == "pvc-file"
                 else None
             ),
         )
