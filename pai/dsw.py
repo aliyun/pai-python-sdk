@@ -5,8 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 
 from .common.logging import get_logger
 from .common.oss_utils import OssUriObj, is_oss_uri
-from .common.utils import is_dataset_id
+from .common.utils import is_dataset_id, is_nas_uri
 from .libs.alibabacloud_pai_dsw20220101.models import (
+    GetInstanceRequest,
     GetInstanceResponse,
     GetInstanceResponseBody,
     UpdateInstanceRequest,
@@ -176,7 +177,8 @@ class DswInstance:
     def _get_instance_info(self):
         session = get_default_session()
         resp: GetInstanceResponse = session._acs_dsw_client.get_instance(
-            self.instance_id
+            self.instance_id,
+            request=GetInstanceRequest(),
         )
         return resp.body
 
@@ -194,11 +196,10 @@ class DswInstance:
         Returns:
             str: The default dynamic mount path of the DSW Instance.
         """
-        if (
-            not self._instance_info.dynamic_mount.enable
-            or not self._instance_info.dynamic_mount.mount_points
-        ):
-            return
+        if not self._instance_info.dynamic_mount.enable:
+            return None
+        if not self._instance_info.dynamic_mount.mount_points:
+            return "/mnt/dynamic"
         return self._instance_info.dynamic_mount.mount_points[0].root_path
 
     def mount(
@@ -212,9 +213,9 @@ class DswInstance:
         Dynamic mount a data source to the DSW Instance.
 
         Args:
-            source (str): The source to be mounted, can be a dataset id or an OSS uri.
+            source (str): The source to be mounted, can be a dataset id or OSS/NAS uri.
             mount_point (str): Target mount point in the instance, if not specified, the
-                mount point be generate with given source under the default mount point.
+                mount point be generated with given source under the default mount point.
             options (str): Options that apply to when mount a data source, can not be
                 specified with option_type.
             option_type(str): Preset data source mount options, can not be specified with
@@ -233,12 +234,6 @@ class DswInstance:
                     self.instance_id
                 )
             )
-        if not self._instance_info.dynamic_mount.mount_points:
-            raise RuntimeError(
-                "No dynamic mount points found for the DSW instance: {}".format(
-                    self.instance_id
-                )
-            )
 
         sess = get_default_session()
         default_root_path = self.default_dynamic_mount_path()
@@ -251,23 +246,40 @@ class DswInstance:
             _, dir_path, _ = obj.parse_object_key()
             uri = f"oss://{obj.bucket_name}.{obj.endpoint}{dir_path}"
             dataset_id = None
+            dataset_version = None
+        elif is_nas_uri(source):
+            uri = source
+            dataset_id = None
+            dataset_version = None
         else:
             dataset_id = source
             uri = None
+            if "/" in dataset_id:
+                dataset_id, dataset_version = dataset_id.split("/", 1)
+            else:
+                dataset_version = "v1"
 
-        if not is_oss_uri(source) and not is_dataset_id(source):
-            raise ValueError("Source must be oss uri or dataset id")
+        if (
+            not is_oss_uri(source)
+            and not is_nas_uri(source)
+            and not is_dataset_id(source)
+        ):
+            raise ValueError("Source must be oss uri or nas uri or dataset id")
 
         if not mount_point:
             if is_oss_uri(source):
                 obj = OssUriObj(source)
                 mount_point = f"{obj.bucket_name}/{obj.object_key}"
+            elif is_nas_uri(source):
+                raise ValueError("Mount point is required for nas url.")
             else:
                 mount_point = source
         if not posixpath.isabs(mount_point):
             mount_point = posixpath.join(default_root_path, mount_point)
 
-        resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(self.instance_id)
+        resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(
+            self.instance_id, request=GetInstanceRequest()
+        )
         datasets = [
             UpdateInstanceRequestDatasets().from_map(ds.to_map())
             for ds in resp.body.datasets
@@ -275,6 +287,7 @@ class DswInstance:
         datasets.append(
             UpdateInstanceRequestDatasets(
                 dataset_id=dataset_id,
+                dataset_version=dataset_version,
                 dynamic=True,
                 mount_path=mount_point,
                 option_type=option_type,
@@ -285,9 +298,10 @@ class DswInstance:
         request = UpdateInstanceRequest(
             datasets=datasets,
         )
-        sess._acs_dsw_client.update_instance(
+        update_resp = sess._acs_dsw_client.update_instance(
             instance_id=self.instance_id, request=request
         )
+        print("Mount succeed, request id: {}".format(update_resp.body.request_id))
         return mount_point
 
     def unmount(self, mount_point: str) -> None:
@@ -302,7 +316,9 @@ class DswInstance:
         """
         sess = get_default_session()
 
-        resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(self.instance_id)
+        resp: GetInstanceResponse = sess._acs_dsw_client.get_instance(
+            self.instance_id, request=GetInstanceRequest()
+        )
         datasets = [
             UpdateInstanceRequestDatasets().from_map(ds.to_map())
             for ds in resp.body.datasets
@@ -328,6 +344,7 @@ class DswInstance:
         )
         if not request.datasets:
             request.disassociate_datasets = True
-        sess._acs_dsw_client.update_instance(
+        update_resp = sess._acs_dsw_client.update_instance(
             instance_id=self.instance_id, request=request
         )
+        print("Unmount succeed, request id: {}".format(update_resp.body.request_id))

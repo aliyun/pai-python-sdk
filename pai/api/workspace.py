@@ -216,9 +216,11 @@ class WorkspaceAPI(ResourceAPI):
     def list_configs(self, workspace_id, config_keys: Union[List[str], str]) -> Dict:
         """List configs used in the Workspace."""
         request = ListConfigsRequest(
-            config_keys=",".join(config_keys)
-            if isinstance(config_keys, (tuple, list))
-            else config_keys,
+            config_keys=(
+                ",".join(config_keys)
+                if isinstance(config_keys, (tuple, list))
+                else config_keys
+            ),
         )
 
         resp: ListConfigsResponseBody = self._do_request(

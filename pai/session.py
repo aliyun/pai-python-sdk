@@ -35,6 +35,7 @@ from .common.consts import DEFAULT_CONFIG_PATH, PAI_VPC_ENDPOINT, Network
 from .common.logging import get_logger
 from .common.oss_utils import CredentialProviderWrapper, OssUriObj
 from .common.utils import is_domain_connectable, make_list_resource_iterator
+from .libs.alibabacloud_pai_dsw20220101.models import GetInstanceRequest
 
 logger = get_logger(__name__)
 
@@ -584,7 +585,9 @@ class Session(ResourceAPIsContainerMixin):
             network=network,
         )
         try:
-            resp = dsw_client.get_instance(dsw_instance_id)
+            resp = dsw_client.get_instance(
+                dsw_instance_id, request=GetInstanceRequest()
+            )
             return resp.body.workspace_id
         except TeaException as e:
             logger.warning("Failed to get instance info by dsw instance id: %s", e)
