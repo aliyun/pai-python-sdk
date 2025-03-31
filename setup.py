@@ -29,7 +29,6 @@ setup(
     name=PACKAGE_NAME,
     python_requires=">=3.8",
     version=version,
-    setup_requires=["setuptools_scm"],
     description="Alibaba Cloud PAI Python SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",

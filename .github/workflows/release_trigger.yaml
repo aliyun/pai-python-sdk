@@ -45,7 +45,9 @@ jobs:
       - name: Install dependencies
         run: pip install wheel setuptools twine
       - name: Build package for pai
-        run: python setup.py sdist bdist_wheel
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python setup.py sdist bdist_wheel
       - name: Publish package to PyPI (pai)
         run: twine upload dist/* --skip-existing -u __token__ -p $PAI_PYPI_TOKEN
       - name: cleanup
