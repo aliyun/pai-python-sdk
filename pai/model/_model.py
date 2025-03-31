@@ -2124,8 +2124,8 @@ class RegisteredModel(ModelBase):
                 ts.scheduler.max_running_time_in_seconds if ts.scheduler else None
             )
 
-        resource_id = kwargs.get("resource_id")
-        instance_spec = kwargs.get("instance_spec")
+        resource_id = kwargs.pop("resource_id", None)
+        instance_spec = kwargs.pop("instance_spec", None)
         compute_resource = ts.compute_resource
         if resource_id:
             if instance_type:
@@ -2146,6 +2146,7 @@ class RegisteredModel(ModelBase):
             )
         else:
             if instance_spec:
+                instance_spec = None
                 logger.warning(
                     "The instance spec is ignored when resource_id is not provided."
                 )
@@ -2182,6 +2183,7 @@ class RegisteredModel(ModelBase):
             instance_type=instance_type,
             instance_count=instance_count,
             instance_spec=instance_spec,
+            resource_id=resource_id,
             output_path=output_path,
             labels=labels,
             **kwargs,
