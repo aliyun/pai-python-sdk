@@ -230,13 +230,31 @@ def is_dataset_id(item: str) -> bool:
     """Return True if given input is a dataset ID.
 
     Args:
-        item (str): user input dataset ID.
+        item (str): user input dataset ID or Dataset ID and dataset version, separated by a slash.
 
     Examples:
         >>> is_dataset_id('d-ybko3rap60c4gs9flc')
         True
+        >>> is_dataset_id('d-ybko3rap60c4gs9flc/v1')
+        True
     """
     return item.startswith("d-")
+
+
+def is_nas_uri(uri: Union[str, bytes]) -> bool:
+    """Determines whether the given uri is a NAS uri.
+
+    Args:
+        uri (Union[str, bytes]): A string in NAS URI schema:
+            nas://29**d-b12****446.cn-hangzhou.nas.aliyuncs.com/data/path/
+            nas://29****123-y**r.cn-hangzhou.extreme.nas.aliyuncs.com/data/path/
+
+
+    Returns:
+        bool: True if the given uri is a NAS uri, else False.
+
+    """
+    return bool(uri and isinstance(uri, (str, bytes)) and str(uri).startswith("nas://"))
 
 
 @lru_cache()

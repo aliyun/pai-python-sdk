@@ -41,6 +41,7 @@ from ...common.logging import get_logger
 from ...common.oss_utils import CredentialProviderWrapper, OssUriObj
 from ...common.utils import is_domain_connectable, make_list_resource_iterator
 from ...libs.alibabacloud_pai_dsw20220101.client import Client as DswClient
+from ...libs.alibabacloud_pai_dsw20220101.models import GetInstanceRequest
 from ...session import Session
 
 logger = get_logger(__name__)
@@ -165,7 +166,9 @@ class UserProfile(object):
 
     def get_instance_info(self, instance_id: str) -> Dict[str, Any]:
         dsw_client = self.get_acs_dsw_client()
-        return dsw_client.get_instance(instance_id).body.to_map()
+        return dsw_client.get_instance(
+            instance_id, request=GetInstanceRequest()
+        ).body.to_map()
 
     def get_credential(self):
         return self._credential_client.get_access_key_id()

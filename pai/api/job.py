@@ -183,7 +183,6 @@ class JobAPI(WorkspaceScopedResourceAPI):
         page_size=10,
         sort_by="Gpu",
     ) -> PaginatedResult:
-
         """List EcsSpecs that DLC service provided."""
 
         request = ListEcsSpecsRequest(
