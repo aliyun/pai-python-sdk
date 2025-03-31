@@ -724,6 +724,7 @@ class Estimator(EstimatorBase):
             experiment_config=experiment_config,
             resource_id=resource_id,
             session=session,
+            **kwargs,
         )
 
     def training_image_uri(self) -> str:
