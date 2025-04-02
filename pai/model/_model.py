@@ -1002,7 +1002,12 @@ class ModelBase(object):
 
     @classmethod
     def _is_multiple_inference_spec(cls, spec: Dict[str, Any]) -> bool:
-        return not ("metadata" in spec)
+        return not (
+            "metadata" in spec
+            or "cloud" in spec
+            or "containers" in spec
+            or "storage" in spec
+        )
 
     def _deploy(
         self,
