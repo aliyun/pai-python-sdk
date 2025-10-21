@@ -86,9 +86,14 @@ access_key_secret = {access_key_secret}
 
 def _get_default_credential_client() -> Optional[CredentialClient]:
     try:
-        return CredentialClient()
-    except CredentialException:
-        logger.debug("Not found credential from default credential provider chain.")
+        client = CredentialClient()
+        client.get_credential()
+        return client
+    except Exception as e:
+        logger.info(
+            "Not found credential from default credential provider chain: %s", e
+        )
+        return None
 
 
 class CredentialProviderType(Enum):
@@ -216,9 +221,10 @@ def prompt_for_credential():
         )
     )
 
-    access_key_id = credential_client.get_access_key_id()
-    access_key_secret = credential_client.get_access_key_secret()
-    security_token = credential_client.get_security_token()
+    credential = credential_client.get_credential()
+    access_key_id = credential.get_access_key_id()
+    access_key_secret = credential.get_access_key_secret()
+    security_token = credential.get_security_token()
 
     print_highlight(f"AccessKeyId: {access_key_id}")
     print_highlight(f"AccessKeySecret: { mask_secret(access_key_secret)}")
