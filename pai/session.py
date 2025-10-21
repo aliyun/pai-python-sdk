@@ -569,8 +569,13 @@ class Session(ResourceAPIsContainerMixin):
         try:
             # Initialize the credential client with default credential chain.
             # see: https://help.aliyun.com/zh/sdk/developer-reference/v2-manage-python-access-credentials#3ca299f04bw3c
-            return CredentialClient()
-        except CredentialException:
+            client = CredentialClient()
+            client.get_credential()
+            return client
+        except Exception as e:
+            logger.debug(
+                "Not found credential from default credential provider chain: %s", e
+            )
             return
 
     @staticmethod
