@@ -82,37 +82,31 @@ class TestLineage(BaseIntegTestCase):
             mock_config = {
                 "DATA_SOURCES": [
                     {
-                        "EntityType": "pvc-file",
-                        "Attributes": {
-                            "ClusterId": "cbb8f09f999534c5187532a19fe6a3bba",
-                            "MountPath": "/mnt/input/pvc",
-                            "NameSpace": "quota2md3bak6ovi",
-                            "Path": "/nas",
-                            "PvcName": "nas-pvc",
-                            "PvcType": "hostPath",
-                        },
+                        "DataSourceType": "pvc",
+                        "ClusterId": "cbb8f09f999534c5187532a19fe6a3bba",
+                        "MountPath": "/mnt/input/pvc",
+                        "NameSpace": "quota2md3bak6ovi",
+                        "Path": "/nas",
+                        "PvcName": "nas-pvc",
+                        "PvcType": "hostPath",
                     },
                     {
-                        "EntityType": "nas-file",
-                        "Attributes": {
-                            "DataSourceId": "data16mjfuvf6v3a",
-                            "FileSystemId": "2964e349a2d",
-                            "MountPath": "/mnt/input/nas",
-                            "Path": "/",
-                            "Uri": "",
-                            "Version": "",
-                        },
+                        "DataSourceType": "nas",
+                        "DataSourceId": "data16mjfuvf6v3a",
+                        "FileSystemId": "2964e349a2d",
+                        "MountPath": "/mnt/input/nas",
+                        "Path": "/",
+                        "Uri": "",
+                        "Version": "",
                     },
                     {
-                        "Attributes": {
-                            "DataSourceId": "data824oavjsogd7",
-                            "FileSystemId": "",
-                            "MountPath": "/mnt/output/model",
-                            "Path": "oss://dlc-upload-test/model/",
-                            "Uri": "oss://dlc-upload-test.oss-cn-hangzhou-internal.aliyuncs.com/model/",
-                            "Version": "",
-                        },
-                        "EntityType": "oss-file",
+                        "DataSourceId": "data824oavjsogd7",
+                        "FileSystemId": "",
+                        "MountPath": "/mnt/output/model",
+                        "Path": "oss://dlc-upload-test/model/",
+                        "Uri": "oss://dlc-upload-test.oss-cn-hangzhou-internal.aliyuncs.com/model/",
+                        "Version": "",
+                        "DataSourceType": "oss",
                     },
                 ],
                 "DLC_JOB_ID": "dlcrmzton6fvujw5",
@@ -160,42 +154,46 @@ class TestLineage(BaseIntegTestCase):
         with self.assertLogs(
             logger=get_logger("pai.tracking.lineage"), level=logging.DEBUG
         ) as captured:
-            log_lineage(
-                input_entities=[
-                    LineageEntity(
-                        uri="oss://test-bucket.oss-cn-shanghai.aliyuncs.com/models/ALBERTv2-Chinese-NewsBase.pth",
-                        resource_type="model",
-                        resource_use="base",
-                    ),
-                    LineageEntity(
-                        uri="pai://datasets/d-jipftzxinc7nm1z0uh/v1",
-                        resource_type="dataset",
-                        resource_use="train",
-                    ),
-                    LineageEntity(
-                        uri="odps://project_mc/tables/flow_model_label_table_v1",
-                        resource_type="dataset",
-                        resource_use="test",
-                    ),
-                ],
-                output_entities=[
-                    LineageEntity(
-                        uri="oss://hangzhoutest01.oss-cn-hangzhou-internal.aliyuncs.com/models/model.pth",
-                        resource_type="model",
-                        resource_use="extension",
-                    )
-                ],
-            )
-            self.maxDiff = None
-            self.assertEquals(
-                "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'test-bucket', 'Path': 'models/ALBERTv2-Chinese-NewsBase.pth', 'ResourceType': 'model', 'ResourceUse': 'base', 'RegionId': 'cn-shanghai'}, EntityType='oss-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'ResourceUse': 'train', 'Provider': 'pai'}, EntityType=None, Name='Aishell_1_subset_qwen', QualifiedName='pai-dataset.d-jipftzxinc7nm1z0uh_v1'), _LineageEntity(Attributes={'ResourceType': 'dataset', 'ResourceUse': 'test'}, EntityType=None, Name=None, QualifiedName='maxcompute-table.project_mc.flow_model_label_table_v1')]",
-                captured.output[0],
-            )
-            self.assertEquals(
-                "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'hangzhoutest01', 'Path': 'models/model.pth', 'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'cn-hangzhou'}, EntityType='oss-file', Name=None, QualifiedName=None)]",
-                captured.output[1],
-            )
-            self.assertEquals("DEBUG:pai.tracking.lineage:d123456", captured.output[2])
+            with patch(
+        "pai.api.api_container.ResourceAPIsContainerMixin.lineage_api",
+                return_value={},
+            ):
+                log_lineage(
+                    input_entities=[
+                        LineageEntity(
+                            uri="oss://test-bucket.oss-cn-shanghai.aliyuncs.com/models/ALBERTv2-Chinese-NewsBase.pth",
+                            resource_type="model",
+                            resource_use="base",
+                        ),
+                        LineageEntity(
+                            uri="pai://datasets/d-jipftzxinc7nm1z0uh/v1",
+                            resource_type="dataset",
+                            resource_use="train",
+                        ),
+                        LineageEntity(
+                            uri="odps://project_mc/tables/flow_model_label_table_v1",
+                            resource_type="dataset",
+                            resource_use="test",
+                        ),
+                    ],
+                    output_entities=[
+                        LineageEntity(
+                            uri="oss://hangzhoutest01.oss-cn-hangzhou-internal.aliyuncs.com/models/model.pth",
+                            resource_type="model",
+                            resource_use="extension",
+                        )
+                    ],
+                )
+                self.maxDiff = None
+                self.assertEquals(
+                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'test-bucket', 'Path': 'models/ALBERTv2-Chinese-NewsBase.pth', 'ResourceType': 'model', 'ResourceUse': 'base', 'RegionId': 'cn-shanghai'}, EntityType='oss-file', Name=None, QualifiedName=None), _LineageEntity(Attributes={'ResourceUse': 'train', 'Provider': 'pai'}, EntityType=None, Name='Aishell_1_subset_qwen', QualifiedName='pai-dataset.d-jipftzxinc7nm1z0uh_v1'), _LineageEntity(Attributes={'ResourceType': 'dataset', 'ResourceUse': 'test'}, EntityType=None, Name=None, QualifiedName='maxcompute-table.project_mc.flow_model_label_table_v1')]",
+                    captured.output[0],
+                )
+                self.assertEquals(
+                    "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'hangzhoutest01', 'Path': 'models/model.pth', 'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'cn-hangzhou'}, EntityType='oss-file', Name=None, QualifiedName=None)]",
+                    captured.output[1],
+                )
+                self.assertEquals("DEBUG:pai.tracking.lineage:d123456", captured.output[2])
 
     @mock_env(DLC_JOB_ID="d123456")
     @mock_env(REGION="cn-hangzhou")
