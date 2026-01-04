@@ -86,13 +86,13 @@ class LineageEntity:
 
 
 @dataclass
-class _NasEntityAttributes:
+class _NasDatasourceAttributes:
     file_system_id: str
     path: str
 
 
 @dataclass
-class _PvcEntityAttributes:
+class _PvcDatasourceAttributes:
     cluster_id: str
     name_space: str
     pvc_name: str
@@ -101,7 +101,7 @@ class _PvcEntityAttributes:
 
 
 @dataclass
-class _OssEntityAttributes:
+class _OssDatasourceAttributes:
     uri: str
 
 
@@ -114,22 +114,21 @@ def _read_metadata_config_in_dlc():
         return None
 
 
-def _get_entity_attributes(source, entity_type):
-    attributes = source.get("Attributes", {})
-    if entity_type == "nas-file":
-        return _NasEntityAttributes(
-            file_system_id=attributes.get("FileSystemId"), path=attributes.get("Path")
+def _get_datasource_attributes(source, datasource_type):
+    if datasource_type == "nas" or datasource_type == "cpfs":
+        return _NasDatasourceAttributes(
+            file_system_id=source.get("FileSystemId"), path=source.get("Path")
         )
-    if entity_type == "pvc-file":
-        return _PvcEntityAttributes(
-            pvc_type=attributes.get("PvcType"),
-            pvc_name=attributes.get("PvcName"),
-            path=attributes.get("Path"),
-            cluster_id=attributes.get("ClusterId"),
-            name_space=attributes.get("NameSpace"),
+    if datasource_type == "pvc":
+        return _PvcDatasourceAttributes(
+            pvc_type=source.get("PvcType"),
+            pvc_name=source.get("PvcName"),
+            path=source.get("Path"),
+            cluster_id=source.get("ClusterId"),
+            name_space=source.get("NameSpace"),
         )
-    if entity_type == "oss-file":
-        return _OssEntityAttributes(uri=attributes.get("Uri"))
+    if datasource_type == "oss":
+        return _OssDatasourceAttributes(uri=source.get("Uri"))
     return None
 
 
@@ -138,17 +137,18 @@ def _find_best_match_source(config, mount_path):
     best_details = {}
 
     for source in config.get("DATA_SOURCES", []):
-        entity_type = source.get("EntityType")
-        attributes = source.get("Attributes", {})
-        mount_path_in_source = attributes.get("MountPath", "").rstrip("/")
+        datasource_type = source.get("DataSourceType")
+        mount_path_in_source = source.get("MountPath", "").rstrip("/")
 
         if mount_path.startswith(mount_path_in_source) and len(
             mount_path_in_source
         ) > len(best_match):
             best_match = mount_path_in_source
             best_details = {
-                "entity_type": entity_type,
-                "entity_attributes": _get_entity_attributes(source, entity_type),
+                "datasource_type": datasource_type,
+                "datasource_attributes": _get_datasource_attributes(
+                    source, datasource_type
+                ),
             }
 
     return best_match, best_details
@@ -165,19 +165,20 @@ def _find_datasource_by_mount_path(mount_path: str):
         remaining_path = mount_path[len(best_match) :].lstrip("/")
         return (
             (
-                f"{best_details['entity_attributes'].uri.rstrip('/') + '/'}{remaining_path}"
-                if best_details["entity_type"] == "oss-file"
+                f"{best_details['datasource_attributes'].uri.rstrip('/') + '/'}{remaining_path}"
+                if best_details["datasource_type"] == "oss"
                 else None
             ),
             region_id,
             (
-                best_details["entity_attributes"]
-                if best_details["entity_type"] == "nas-file"
+                best_details["datasource_attributes"]
+                if best_details["datasource_type"] == "nas"
+                or best_details["datasource_type"] == "cpfs"
                 else None
             ),
             (
-                best_details["entity_attributes"]
-                if best_details["entity_type"] == "pvc-file"
+                best_details["datasource_attributes"]
+                if best_details["datasource_type"] == "pvc"
                 else None
             ),
         )
