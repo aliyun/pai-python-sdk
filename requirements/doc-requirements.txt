@@ -1,4 +1,4 @@
-sphinx>=5.0.0
+sphinx
 sphinx-rtd-theme
 sphinx-copybutton
 sphinx_book_theme
