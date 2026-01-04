@@ -100,7 +100,7 @@ def unit(session: Session):
 def lint(session: Session):
     """Enforce code style with flake8."""
     session.install("-r", LINT_REQUIREMENTS)
-    session.run("flake8", "--config", ".flake8")
+    session.run("flake8", "--exclude", "venv,.venv,env,.nox,build,dist", "--config", ".flake8")
     session.run("black", "--check", ".")
     session.run("typos", "--config", "typos.toml", "-w")
 
