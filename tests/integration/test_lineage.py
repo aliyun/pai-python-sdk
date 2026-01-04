@@ -193,7 +193,9 @@ class TestLineage(BaseIntegTestCase):
                     "DEBUG:pai.tracking.lineage:[_LineageEntity(Attributes={'Bucket': 'hangzhoutest01', 'Path': 'models/model.pth', 'ResourceType': 'model', 'ResourceUse': 'extension', 'RegionId': 'cn-hangzhou'}, EntityType='oss-file', Name=None, QualifiedName=None)]",
                     captured.output[1],
                 )
-                self.assertEquals("DEBUG:pai.tracking.lineage:d123456", captured.output[2])
+                self.assertEquals(
+                    "DEBUG:pai.tracking.lineage:d123456", captured.output[2]
+                )
 
     @mock_env(DLC_JOB_ID="d123456")
     @mock_env(REGION="cn-hangzhou")
