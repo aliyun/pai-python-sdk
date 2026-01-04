@@ -155,7 +155,7 @@ class TestLineage(BaseIntegTestCase):
             logger=get_logger("pai.tracking.lineage"), level=logging.DEBUG
         ) as captured:
             with patch(
-        "pai.api.api_container.ResourceAPIsContainerMixin.lineage_api",
+                "pai.api.api_container.ResourceAPIsContainerMixin.lineage_api",
                 return_value={},
             ):
                 log_lineage(
