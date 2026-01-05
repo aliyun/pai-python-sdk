@@ -54,6 +54,7 @@ class PAIRestResourceTypes(object):
     PipelineRun = "PipelineRun"
     TensorBoard = "TensorBoard"
     Experiment = "Experiment"
+    Lineage = "Lineage"
 
 
 class ResourceAPI(with_metaclass(ABCMeta, object)):
